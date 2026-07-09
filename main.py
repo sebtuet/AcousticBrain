@@ -1,26 +1,23 @@
+from acousticbrain.brain import AcousticBrain
+
+from acousticbrain.project import Project
+
 from acousticbrain.importers import REWTxtImporter
-from acousticbrain.analyzers.peak_detector import PeakDetector
+
+from acousticbrain.report import ConsoleReporter
+
+
+project = Project("Salle Home Cinema")
 
 measurement = REWTxtImporter().load("LR.txt")
 
-detector = PeakDetector()
-
-peaks = detector.detect(
+project.add_measurement(
+    "L+R",
     measurement,
-    prominence=3,
-    distance=10,
 )
 
-print()
-print(f"{len(peaks)} pics détectés")
-print()
+brain = AcousticBrain()
 
-for peak in peaks:
+report = brain.analyze(project)
 
-    print(
-        f"{peak.frequency:8.2f} Hz"
-        f"   {peak.spl:6.2f} dB"
-        f"   prominence={peak.prominence:.2f}"
-    )
-
-    
+ConsoleReporter().print(report)

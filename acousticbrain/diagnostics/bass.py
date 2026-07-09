@@ -1,45 +1,69 @@
-from acousticbrain.analyzers import PeakDetector
-from .model import Diagnostic
+from acousticbrain.models import EvidenceLevel
+
+from .base import DiagnosticBase
+from .diagnostic import Diagnostic
 
 
-class BassDiagnostic:
+class BassDiagnostic(DiagnosticBase):
 
-    def analyze(self, measurement):
+    def analyze(self, context):
 
-        detector = PeakDetector()
+        bass_band = context.bands[0]
 
-        peaks = detector.detect(measurement)
-
-        bass_peaks = []
-
-        for peak in peaks:
-
-            if peak.kind == "peak" and peak.frequency < 300:
-
-                bass_peaks.append(peak)
-
-        if len(bass_peaks) == 0:
+        if len(bass_band.peaks) == 0:
 
             return Diagnostic(
 
-                title="Grave",
+                title="Réponse dans le grave",
 
-                message="Aucun pic important détecté.",
+                severity="OK",
 
-                confidence=90,
+                confidence=100,
+
+                evidence_level=EvidenceLevel.OBSERVED,
+
+                message="Aucun pic détecté."
 
             )
 
-        strongest = max(bass_peaks, key=lambda p: p.level)
+        strongest = max(
+            bass_band.peaks,
+            key=lambda peak: peak.prominence
+        )
+
+        severity = "LOW"
+
+        if strongest.prominence > 15:
+            severity = "HIGH"
+
+        elif strongest.prominence > 8:
+            severity = "MEDIUM"
 
         return Diagnostic(
 
-            title="Grave",
+            title="Réponse dans le grave",
 
-            message=f"Pic détecté à {strongest.frequency:.1f} Hz ({strongest.level:.1f} dB)",
+            severity=severity,
 
-            confidence=90,
+            confidence=95,
+
+            evidence_level=EvidenceLevel.OBSERVED,
+
+            message=(
+                f"Pic dominant à "
+                f"{strongest.frequency:.1f} Hz "
+                f"(prominence {strongest.prominence:.1f} dB)"
+            ),
+
+            causes=[
+                "Mode propre de la pièce",
+                "Position d'écoute",
+                "Interaction enceinte / mur",
+            ],
+
+            recommendations=[
+                "Mesurer chaque enceinte séparément",
+                "Vérifier la position d'écoute",
+            ],
 
         )
-
-        

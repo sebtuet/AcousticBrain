@@ -1,2 +1,9 @@
 from .measurement import Measurement
 from .peak import Peak
+from .band import FrequencyBand
+
+from .room import Room
+from .room_mode import RoomMode
+from .mode_match import ModeMatch
+
+from .evidence import EvidenceLevel
