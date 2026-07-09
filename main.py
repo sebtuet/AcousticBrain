@@ -1,27 +1,26 @@
 from acousticbrain.importers import REWTxtImporter
-from acousticbrain.analyzers import SPLAnalyzer
+from acousticbrain.analyzers.peak_detector import PeakDetector
 
+measurement = REWTxtImporter().load("LR.txt")
 
-importer = REWTxtImporter()
+detector = PeakDetector()
 
-measurement = importer.load("LR.txt")
-
-
-analyzer = SPLAnalyzer()
-
-result = analyzer.analyze(measurement)
-
-
-print()
-
-print("===== ANALYSE SPL =====")
+peaks = detector.detect(
+    measurement,
+    prominence=3,
+    distance=10,
+)
 
 print()
+print(f"{len(peaks)} pics détectés")
+print()
 
-for key, value in result.items():
+for peak in peaks:
 
-    if isinstance(value, float):
-        print(f"{key:20}: {value:.2f}")
-    else:
-        print(f"{key:20}: {value}")
-        
+    print(
+        f"{peak.frequency:8.2f} Hz"
+        f"   {peak.spl:6.2f} dB"
+        f"   prominence={peak.prominence:.2f}"
+    )
+
+    

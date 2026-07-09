@@ -1,1 +1,3 @@
 from .spl import SPLAnalyzer
+from .peak_detector import PeakDetector
+
