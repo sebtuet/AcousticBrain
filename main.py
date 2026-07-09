@@ -1,9 +1,27 @@
-from acousticbrain import AcousticBrain
+from acousticbrain.importers import REWTxtImporter
+from acousticbrain.analyzers import SPLAnalyzer
 
-brain = AcousticBrain()
 
-print(brain.info())
+importer = REWTxtImporter()
+
+measurement = importer.load("LR.txt")
+
+
+analyzer = SPLAnalyzer()
+
+result = analyzer.analyze(measurement)
+
 
 print()
 
-print(brain.ask("Dis uniquement : Bonjour Sébastien"))
+print("===== ANALYSE SPL =====")
+
+print()
+
+for key, value in result.items():
+
+    if isinstance(value, float):
+        print(f"{key:20}: {value:.2f}")
+    else:
+        print(f"{key:20}: {value}")
+        
