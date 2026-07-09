@@ -1,13 +1,5 @@
-from ollama import chat
+from acousticbrain import AcousticBrain
 
-response = chat(
-    model="qwen3:8b",
-    messages=[
-        {
-            "role": "user",
-            "content": "Bonjour AcousticBrain"
-        }
-    ]
-)
+brain = AcousticBrain()
 
-print(response.message.content)
+print(brain.get_version())
