@@ -18,11 +18,10 @@ class AnalysisContext:
 
     mode_matches: list = field(default_factory=list)
 
+    stereo = None
+
     room_properties = None
 
     project = None
 
     comparison = None
-    
-
-    

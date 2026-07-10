@@ -7,3 +7,4 @@ from .mode_match import ModeMatch
 from .evidence import EvidenceLevel
 from .room_properties import RoomProperties
 from .speaker import Speaker
+from .stereo_analysis import StereoAnalysis

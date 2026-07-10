@@ -1,4 +1,7 @@
-from acousticbrain.analysis import AnalysisContext
+from acousticbrain.analysis import (
+    AnalysisContext,
+    StereoAnalyzer,
+)
 
 from acousticbrain.analyzers import (
     PeakDetector,
@@ -81,7 +84,7 @@ class AcousticBrain:
         )
 
         #
-        # Analyse SPL
+        # Analyse SPL (stéréo)
         #
 
         context.peaks = (
@@ -107,6 +110,43 @@ class AcousticBrain:
             )
 
         )
+
+        #
+        # Analyse stéréo
+        #
+
+        left_measurement = project.get_measurement(
+            Measurements.LEFT
+        )
+
+        right_measurement = project.get_measurement(
+            Measurements.RIGHT
+        )
+
+        if (
+            left_measurement is not None
+            and right_measurement is not None
+        ):
+
+            left_peaks = PeakDetector().detect(
+                left_measurement
+            )
+
+            right_peaks = PeakDetector().detect(
+                right_measurement
+            )
+
+            context.stereo = (
+
+                StereoAnalyzer().analyze(
+
+                    left_peaks,
+
+                    right_peaks,
+
+                )
+
+            )
 
         #
         # Modes propres

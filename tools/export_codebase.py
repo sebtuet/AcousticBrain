@@ -4,9 +4,29 @@ from pathlib import Path
 from datetime import datetime
 import platform
 
-PROJECT_ROOT = Path(".").resolve()
+def find_project_root() -> Path:
+    current = Path(__file__).resolve().parent
 
-OUTPUT_FILE = PROJECT_ROOT / "AcousticBrain.codebase"
+    while current != current.parent:
+
+        if (current / ".git").exists():
+            return current
+
+        current = current.parent
+
+    raise RuntimeError(
+        "Impossible de trouver la racine du projet (.git)"
+    )
+
+PROJECT_ROOT = find_project_root()
+
+
+OUTPUT_DIR = PROJECT_ROOT / "exchanges"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+OUTPUT_FILE = OUTPUT_DIR / f"AcousticBrain_{timestamp}.codebase"
 
 EXTENSIONS = {
     ".py",
@@ -27,6 +47,16 @@ IGNORE_DIRS = {
     ".vscode",
     "dist",
     "build",
+    "docs",
+    "exchanges",
+    "knowledge",
+    "tools",
+    "ARCHITECTURE.md",
+    "README.md",
+    "requirements.txt",
+    "ROADMAP.md",
+    "exchanges",
+    "measurements"
 }
 
 IGNORE_FILES = {
