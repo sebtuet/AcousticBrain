@@ -1,16 +1,3 @@
-from acousticbrain.analysis import (
-    AnalysisContext,
-    StereoAnalyzer,
-)
-
-from acousticbrain.analyzers import (
-    PeakDetector,
-    DipDetector,
-)
-
-from acousticbrain.classifiers import (
-    FrequencyBandClassifier,
-)
 
 from acousticbrain.diagnostics import (
     BassDiagnostic,
@@ -18,15 +5,7 @@ from acousticbrain.diagnostics import (
     DipDiagnostic,
 )
 
-from acousticbrain.physics import (
-    RoomAcoustics,
-    ModesCalculator,
-    ModeMatcher,
-)
-
 from acousticbrain.project import Measurements
-
-from acousticbrain.report import Report
 
 from .stages.analysis import AnalysisStage
 
@@ -36,6 +15,7 @@ from .builders.report import ReportBuilder
 
 from .stages.diagnostics import DiagnosticsStage
 
+from .builders.context import ContextBuilder
 
 
 
@@ -73,10 +53,6 @@ class BrainPipeline:
         # Contexte
         #
 
-        from .builders.context import ContextBuilder
-
-        ...
-
         context = ContextBuilder().build(
         project,
         measurement,
@@ -92,17 +68,6 @@ class BrainPipeline:
             context,
         )
 
-        context.mode_matches = (
-
-            ModeMatcher().match(
-
-                context.peaks,
-
-                context.room_modes,
-
-            )
-
-        )
         report = ReportBuilder().build(
             project,
             context,

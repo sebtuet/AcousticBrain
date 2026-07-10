@@ -1,6 +1,12 @@
 from dataclasses import dataclass, field
 
-from acousticbrain.models import Measurement
+from acousticbrain.models import (
+    Measurement,
+    RoomProperties,
+    StereoAnalysis,
+)
+
+from acousticbrain.project import Project
 
 
 @dataclass
@@ -18,10 +24,10 @@ class AnalysisContext:
 
     mode_matches: list = field(default_factory=list)
 
-    stereo = None
+    stereo: StereoAnalysis | None = None
 
-    room_properties = None
+    room_properties: RoomProperties | None = None
 
-    project = None
+    project: Project | None = None
 
     comparison = None
