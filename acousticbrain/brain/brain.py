@@ -15,6 +15,7 @@ from acousticbrain.diagnostics import (
     BassDiagnostic,
     RoomModeDiagnostic,
     DipDiagnostic,
+    SBIRDiagnostic,
 )
 
 from acousticbrain.analyzers import DipDetector
@@ -30,6 +31,8 @@ class AcousticBrain:
             RoomModeDiagnostic(),
 
             DipDiagnostic(),
+
+            SBIRDiagnostic(),
             
 
         ]
@@ -41,6 +44,8 @@ class AcousticBrain:
         context = AnalysisContext(
             measurement=measurement
         )
+
+        context.project = project
 
         #
         # Calculs communs

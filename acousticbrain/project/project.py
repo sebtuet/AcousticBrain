@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 
-from acousticbrain.models import Measurement, Room
+from acousticbrain.models import (
+    Measurement,
+    Room,
+    Speaker,
+)
 
 
 @dataclass
@@ -11,6 +15,8 @@ class Project:
     room: Room
 
     measurements: dict[str, Measurement] = field(default_factory=dict)
+
+    speakers: dict[str, Speaker] = field(default_factory=dict)
 
     def add_measurement(
         self,
@@ -26,6 +32,20 @@ class Project:
     ):
 
         return self.measurements.get(name)
+
+    def add_speaker(
+        self,
+        speaker: Speaker,
+    ):
+
+        self.speakers[speaker.name] = speaker
+
+    def get_speaker(
+        self,
+        name: str,
+    ):
+
+        return self.speakers.get(name)
 
     def list_measurements(self):
 
