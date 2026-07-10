@@ -11,3 +11,5 @@ from .stereo_analysis import StereoAnalysis
 from .reflection_surface import ReflectionSurface
 from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
+from .modal_band import ModalBand
+from .modal_density_analysis import ModalDensityAnalysis
