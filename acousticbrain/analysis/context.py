@@ -21,5 +21,8 @@ class AnalysisContext:
     room_properties = None
 
     project = None
+
+    comparison = None
     
+
     

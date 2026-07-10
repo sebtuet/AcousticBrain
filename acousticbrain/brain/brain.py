@@ -57,7 +57,7 @@ class AcousticBrain:
             )
 
         #
-        # Contexte d'analyse
+        # Contexte
         #
 
         context = AnalysisContext(
@@ -84,12 +84,20 @@ class AcousticBrain:
         # Analyse SPL
         #
 
-        context.peaks = PeakDetector().detect(
-            measurement
+        context.peaks = (
+
+            PeakDetector().detect(
+                measurement
+            )
+
         )
 
-        context.dips = DipDetector().detect(
-            measurement
+        context.dips = (
+
+            DipDetector().detect(
+                measurement
+            )
+
         )
 
         context.bands = (
