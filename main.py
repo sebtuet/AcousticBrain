@@ -1,41 +1,15 @@
 from acousticbrain.brain import AcousticBrain
 
-from acousticbrain.importers import REWTxtImporter
+from acousticbrain.importers import ImportEngine
 
-from acousticbrain.models import (
-    Room,
-    Speaker,
-)
-
-from acousticbrain.project import (
-    Project,
-    Measurements,
-)
+from acousticbrain.models import Speaker
 
 from acousticbrain.report import ConsoleReporter
 
 
-#
-# Salle
-#
+project = ImportEngine().load_directory(
 
-room = Room(
-
-    name="Salle Home Cinema",
-
-    length=5.40,
-
-    width=4.10,
-
-    height=2.45,
-
-)
-
-project = Project(
-
-    name="Salle Home Cinema",
-
-    room=room,
+    "measurements"
 
 )
 
@@ -75,32 +49,9 @@ project.add_speaker(
 
 )
 
-#
-# Import des mesures
-#
-
-importer = REWTxtImporter()
-
-measurement = importer.load("LR.txt")
-
-project.add_measurement(
-
-    Measurements.STEREO,
-
-    measurement,
-
-)
-
-#
-# Analyse
-#
-
 brain = AcousticBrain()
 
 report = brain.analyze(project)
 
-#
-# Rapport
-#
-
 ConsoleReporter().print(report)
+
