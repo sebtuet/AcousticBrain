@@ -3,7 +3,11 @@ from acousticbrain.physics import (
     ModesCalculator,
     ModeMatcher,
 )
-from acousticbrain.analysis import ModalDensityAnalyzer, StereoAnalyzer
+from acousticbrain.analysis import (
+    ModalDensityAnalyzer,
+    PeakClassifier,
+    StereoAnalyzer,
+)
 from acousticbrain.project import Measurements
 
 
@@ -47,6 +51,13 @@ class PhysicsStage:
                 context.peaks,
                 context.room_modes,
             )
+        )
+
+        context.peak_classification = PeakClassifier().analyze(
+            context.peaks,
+            context.mode_matches,
+            context.room_modes,
+            context.sbir,
         )
 
         left_measurement = project.get_measurement(Measurements.LEFT)

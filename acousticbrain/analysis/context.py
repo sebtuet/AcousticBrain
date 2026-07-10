@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from acousticbrain.models import (
     Measurement,
     ModalDensityAnalysis,
+    PeakClassificationAnalysis,
     RoomProperties,
     SBIRAnalysis,
     StereoAnalysis,
@@ -35,6 +36,8 @@ class AnalysisContext:
     sbir: SBIRAnalysis | None = None
 
     modal_density: ModalDensityAnalysis | None = None
+
+    peak_classification: PeakClassificationAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 

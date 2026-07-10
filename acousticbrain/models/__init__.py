@@ -13,3 +13,6 @@ from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
 from .modal_band import ModalBand
 from .modal_density_analysis import ModalDensityAnalysis
+from .peak_classification_type import PeakClassificationType
+from .peak_classification import PeakClassification
+from .peak_classification_analysis import PeakClassificationAnalysis

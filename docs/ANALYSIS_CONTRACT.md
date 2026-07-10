@@ -29,6 +29,21 @@ Chaque `Analyzer` :
 - retourne une `Analysis`.
 
 Un analyzer ne redétecte jamais une feature déjà produite par un détecteur.
+Il peut en revanche consommer des `*Analysis` déjà calculées : le futur
+`GlobalSynthesizer` sera ainsi un analyseur de second niveau qui produira une
+`GlobalAnalysis`.
+
+## Diagnostic
+
+Chaque `Diagnostic` :
+
+- lit exclusivement les objets `*Analysis` disponibles dans le contexte ;
+- sélectionne, agrège et explique des preuves existantes ;
+- détermine l'impact, la confiance, les causes et les recommandations ;
+- ne crée ni ne recalcule jamais une preuve physique.
+
+Si un diagnostic a besoin d'inférer un fait physique, ce fait manque dans un
+analyzer et doit y être ajouté avant toute interprétation utilisateur.
 
 ## Workflow d'une fonctionnalité
 
@@ -37,7 +52,7 @@ Chaque fonctionnalité suit les étapes suivantes :
 1. Définir les modèles dans `models/` (`xxx_analysis.py` et, si nécessaire,
    `xxx_candidate.py`).
 2. Implémenter le moteur dans `analysis/xxx.py`.
-3. Intégrer l'analyse dans `AnalysisStage`.
+3. Intégrer l'analyse dans l'étape de pipeline appropriée.
 4. Interpréter les faits dans `diagnostics/xxx.py`.
 5. Présenter le diagnostic dans le rapport console.
 6. Ajouter des tests ciblés.
