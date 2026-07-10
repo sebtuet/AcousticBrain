@@ -16,6 +16,10 @@ class AnalysisContext:
 
     peaks: list = field(default_factory=list)
 
+    left_peaks: list = field(default_factory=list)
+
+    right_peaks: list = field(default_factory=list)
+
     dips: list = field(default_factory=list)
 
     bands: list = field(default_factory=list)

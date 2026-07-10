@@ -1,5 +1,3 @@
-from acousticbrain.analysis import StereoAnalyzer
-
 from acousticbrain.analyzers import (
     PeakDetector,
     DipDetector,
@@ -74,9 +72,5 @@ class AnalysisStage:
             )
         )
 
-        context.stereo = (
-            StereoAnalyzer().analyze(
-                left_peaks,
-                right_peaks,
-            )
-        )
+        context.left_peaks = left_peaks
+        context.right_peaks = right_peaks

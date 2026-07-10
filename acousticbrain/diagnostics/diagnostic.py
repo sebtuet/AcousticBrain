@@ -16,6 +16,12 @@ class Diagnostic:
 
     evidence_level: EvidenceLevel
 
+    score: float | None = None
+
+    observations: list[str] = field(default_factory=list)
+
+    conclusion: str | None = None
+
     causes: list[str] = field(default_factory=list)
 
     recommendations: list[str] = field(default_factory=list)

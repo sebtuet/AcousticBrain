@@ -3,6 +3,7 @@ from acousticbrain.diagnostics import (
     BassDiagnostic,
     RoomModeDiagnostic,
     DipDiagnostic,
+    StereoDiagnostic,
 )
 
 from acousticbrain.project import Measurements
@@ -30,6 +31,8 @@ class BrainPipeline:
             RoomModeDiagnostic(),
 
             DipDiagnostic(),
+
+            StereoDiagnostic(),
 
         ]
 

@@ -44,10 +44,30 @@ class ConsoleReporter:
             print(diagnostic.title)
             print()
 
-            print(diagnostic.message)
-            print()
+            if diagnostic.observations:
+
+                print("Observations")
+
+                for observation in diagnostic.observations:
+                    print(f" • {observation}")
+
+                print()
+
+            if diagnostic.conclusion:
+
+                print("Conclusion")
+                print()
+                print(diagnostic.conclusion)
+                print()
+
+            else:
+
+                print(diagnostic.message)
+                print()
 
             print(f"Gravité : {diagnostic.severity}")
+            if diagnostic.score is not None:
+                print(f"Score : {diagnostic.score:.0f} / 100")
             print(f"Confiance : {diagnostic.confidence}%")
             print(f"Niveau de preuve : {diagnostic.evidence_level.value}")
             print()

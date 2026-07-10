@@ -3,6 +3,8 @@ from acousticbrain.physics import (
     ModesCalculator,
     ModeMatcher,
 )
+from acousticbrain.analysis import StereoAnalyzer
+from acousticbrain.project import Measurements
 
 
 class PhysicsStage:
@@ -41,3 +43,15 @@ class PhysicsStage:
                 context.room_modes,
             )
         )
+
+        left_measurement = project.get_measurement(Measurements.LEFT)
+        right_measurement = project.get_measurement(Measurements.RIGHT)
+
+        if left_measurement is not None and right_measurement is not None:
+            context.stereo = StereoAnalyzer().analyze(
+                context.left_peaks,
+                context.right_peaks,
+                room_modes=context.room_modes,
+                left_measurement=left_measurement,
+                right_measurement=right_measurement,
+            )
