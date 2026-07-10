@@ -7,5 +7,3 @@ from .mode_match import ModeMatch
 from .evidence import EvidenceLevel
 from .room_properties import RoomProperties
 from .speaker import Speaker
-from .sbir_mode import SBIRMode
-from .comparison import FrequencyDifference
