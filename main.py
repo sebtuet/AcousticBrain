@@ -7,10 +7,17 @@ from acousticbrain.models import (
     Speaker,
 )
 
-from acousticbrain.project import Project
+from acousticbrain.project import (
+    Project,
+    Measurements,
+)
 
 from acousticbrain.report import ConsoleReporter
 
+
+#
+# Salle
+#
 
 room = Room(
 
@@ -69,21 +76,31 @@ project.add_speaker(
 )
 
 #
-# Mesure
+# Import des mesures
 #
 
-measurement = REWTxtImporter().load("LR.txt")
+importer = REWTxtImporter()
+
+measurement = importer.load("LR.txt")
 
 project.add_measurement(
 
-    "L+R",
+    Measurements.STEREO,
 
     measurement,
 
 )
 
+#
+# Analyse
+#
+
 brain = AcousticBrain()
 
 report = brain.analyze(project)
+
+#
+# Rapport
+#
 
 ConsoleReporter().print(report)

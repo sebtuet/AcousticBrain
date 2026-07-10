@@ -24,14 +24,27 @@ class Project:
         measurement: Measurement,
     ):
 
+        measurement.name = name
+
         self.measurements[name] = measurement
 
     def get_measurement(
         self,
         name: str,
-    ):
+    ) -> Measurement | None:
 
         return self.measurements.get(name)
+
+    def has_measurement(
+        self,
+        name: str,
+    ) -> bool:
+
+        return name in self.measurements
+
+    def list_measurements(self) -> list[str]:
+
+        return sorted(self.measurements.keys())
 
     def add_speaker(
         self,
@@ -43,10 +56,7 @@ class Project:
     def get_speaker(
         self,
         name: str,
-    ):
+    ) -> Speaker | None:
 
         return self.speakers.get(name)
-
-    def list_measurements(self):
-
-        return list(self.measurements.keys())
+        

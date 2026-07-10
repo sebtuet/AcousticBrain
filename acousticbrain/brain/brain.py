@@ -1,24 +1,30 @@
-from acousticbrain.report import Report
-
 from acousticbrain.analysis import AnalysisContext
 
-from acousticbrain.analyzers import PeakDetector
-from acousticbrain.classifiers import FrequencyBandClassifier
-
-
-from acousticbrain.physics import (
-    ModesCalculator,
-    ModeMatcher,
-    RoomAcoustics,
+from acousticbrain.analyzers import (
+    PeakDetector,
+    DipDetector,
 )
+
+from acousticbrain.classifiers import (
+    FrequencyBandClassifier,
+)
+
 from acousticbrain.diagnostics import (
     BassDiagnostic,
     RoomModeDiagnostic,
     DipDiagnostic,
-    SBIRDiagnostic,
 )
 
-from acousticbrain.analyzers import DipDetector
+from acousticbrain.physics import (
+    RoomAcoustics,
+    ModesCalculator,
+    ModeMatcher,
+)
+
+from acousticbrain.project import Measurements
+
+from acousticbrain.report import Report
+
 
 class AcousticBrain:
 
@@ -32,14 +38,27 @@ class AcousticBrain:
 
             DipDiagnostic(),
 
-            SBIRDiagnostic(),
-            
-
         ]
 
     def analyze(self, project):
 
-        measurement = project.get_measurement("L+R")
+        #
+        # Mesure principale
+        #
+
+        measurement = project.get_measurement(
+            Measurements.STEREO
+        )
+
+        if measurement is None:
+
+            raise ValueError(
+                "Aucune mesure stéréo n'a été trouvée."
+            )
+
+        #
+        # Contexte d'analyse
+        #
 
         context = AnalysisContext(
             measurement=measurement
@@ -48,37 +67,61 @@ class AcousticBrain:
         context.project = project
 
         #
-        # Calculs communs
+        # Salle
+        #
+
+        room = project.room
+
+        context.room_properties = (
+
+            RoomAcoustics().calculate(
+                room
+            )
+
+        )
+
+        #
+        # Analyse SPL
         #
 
         context.peaks = PeakDetector().detect(
             measurement
         )
 
-        context.bands = FrequencyBandClassifier().classify(
-            context.peaks
-        )
-
-        room = project.room
-
-        context.room_properties = RoomAcoustics().calculate(
-            room
-        )
-
-        context.room_modes = ModesCalculator().axial_modes(
-            room
-        )
-
-        context.mode_matches = ModeMatcher().match(
-
-            context.peaks,
-
-            context.room_modes,
-
-        )
-
         context.dips = DipDetector().detect(
             measurement
+        )
+
+        context.bands = (
+
+            FrequencyBandClassifier().classify(
+                context.peaks
+            )
+
+        )
+
+        #
+        # Modes propres
+        #
+
+        context.room_modes = (
+
+            ModesCalculator().axial_modes(
+                room
+            )
+
+        )
+
+        context.mode_matches = (
+
+            ModeMatcher().match(
+
+                context.peaks,
+
+                context.room_modes,
+
+            )
+
         )
 
         #
@@ -91,6 +134,16 @@ class AcousticBrain:
 
         )
 
+        report.room_properties = (
+
+            context.room_properties
+
+        )
+
+        #
+        # Diagnostics
+        #
+
         for diagnostic in self.diagnostics:
 
             report.add(
@@ -100,11 +153,5 @@ class AcousticBrain:
                 )
 
             )
-        
-        report.room_properties = (
 
-            context.room_properties
-
-        )
         return report
-
