@@ -19,6 +19,8 @@ from .builders.report import ReportBuilder
 
 from .stages.diagnostics import DiagnosticsStage
 
+from .stages.prioritization import PrioritizationStage
+
 from .builders.context import ContextBuilder
 
 
@@ -91,5 +93,7 @@ class BrainPipeline:
             context,
             report,
         )
+
+        PrioritizationStage().run(report)
 
         return report
