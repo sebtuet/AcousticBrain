@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
 
-from acousticbrain.models import Measurement
+from acousticbrain.models import Measurement, Room
 
 
 @dataclass
 class Project:
 
     name: str
+
+    room: Room
 
     measurements: dict[str, Measurement] = field(default_factory=dict)
 
@@ -28,4 +30,3 @@ class Project:
     def list_measurements(self):
 
         return list(self.measurements.keys())
-        

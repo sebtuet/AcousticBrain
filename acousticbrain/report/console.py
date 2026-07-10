@@ -12,6 +12,29 @@ class ConsoleReporter:
         print()
 
         print(f"Projet : {report.project_name}")
+        if hasattr(report, "room_properties"):
+
+            rp = report.room_properties
+
+            print()
+
+            print("Salle")
+
+            print(
+                f"Volume : {rp.volume:.2f} m³"
+            )
+
+            print(
+                f"Surface : {rp.floor_area:.2f} m²"
+            )
+
+            print(
+                f"Schroeder : "
+                f"{rp.schroeder_frequency:.1f} Hz"
+            )
+
+        print()
+
         print()
 
         for diagnostic in report.diagnostics:

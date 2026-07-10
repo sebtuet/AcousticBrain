@@ -7,3 +7,4 @@ from .room_mode import RoomMode
 from .mode_match import ModeMatch
 
 from .evidence import EvidenceLevel
+from .room_properties import RoomProperties

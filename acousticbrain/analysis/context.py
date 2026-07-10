@@ -18,4 +18,5 @@ class AnalysisContext:
 
     mode_matches: list = field(default_factory=list)
 
+    room_properties = None
     

@@ -5,13 +5,12 @@ from acousticbrain.analysis import AnalysisContext
 from acousticbrain.analyzers import PeakDetector
 from acousticbrain.classifiers import FrequencyBandClassifier
 
-from acousticbrain.models import Room
 
 from acousticbrain.physics import (
     ModesCalculator,
     ModeMatcher,
+    RoomAcoustics,
 )
-
 from acousticbrain.diagnostics import (
     BassDiagnostic,
     RoomModeDiagnostic,
@@ -55,14 +54,10 @@ class AcousticBrain:
             context.peaks
         )
 
-        room = Room(
+        room = project.room
 
-            length=5.40,
-
-            width=4.10,
-
-            height=2.45,
-
+        context.room_properties = RoomAcoustics().calculate(
+            room
         )
 
         context.room_modes = ModesCalculator().axial_modes(
@@ -100,6 +95,11 @@ class AcousticBrain:
                 )
 
             )
+        
+        report.room_properties = (
 
+            context.room_properties
+
+        )
         return report
 
