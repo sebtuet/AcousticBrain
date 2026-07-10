@@ -5,3 +5,4 @@ from .room_mode import RoomModeDiagnostic
 from .dip import DipDiagnostic
 from .stereo import StereoDiagnostic
 from .sbir import SBIRDiagnostic
+from .modal_density import ModalDensityDiagnostic

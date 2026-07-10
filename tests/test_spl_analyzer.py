@@ -6,7 +6,7 @@ def test_spl_analyzer():
 
     importer = REWTxtImporter()
 
-    measurement = importer.load("LR.txt")
+    measurement = importer.load("measurements/LR.txt")
 
     analyzer = SPLAnalyzer()
 

@@ -4,7 +4,7 @@ from acousticbrain.analyzers.peak_detector import PeakDetector
 
 def test_peak_detector():
 
-    measurement = REWTxtImporter().load("LR.txt")
+    measurement = REWTxtImporter().load("measurements/LR.txt")
 
     detector = PeakDetector()
 
