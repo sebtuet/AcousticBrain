@@ -1,3 +1,4 @@
+from acousticbrain.analysis import SBIRAnalyzer
 from acousticbrain.analyzers import (
     PeakDetector,
     DipDetector,
@@ -41,6 +42,16 @@ class AnalysisStage:
                 context.peaks
             )
         )
+
+        speaker = project.get_speaker("Left")
+
+        if speaker is not None:
+            context.sbir = SBIRAnalyzer().analyze(
+                measurement,
+                context.dips,
+                project.room,
+                speaker,
+            )
 
         #
         # Analyse stéréo

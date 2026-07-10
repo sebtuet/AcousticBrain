@@ -8,3 +8,6 @@ from .evidence import EvidenceLevel
 from .room_properties import RoomProperties
 from .speaker import Speaker
 from .stereo_analysis import StereoAnalysis
+from .reflection_surface import ReflectionSurface
+from .sbir_candidate import SBIRCandidate
+from .sbir_analysis import SBIRAnalysis

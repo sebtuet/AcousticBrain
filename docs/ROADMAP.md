@@ -1,31 +1,93 @@
-# Roadmap
+# AcousticBrain Roadmap
 
-## V0.1
+Cette roadmap décrit l'évolution métier du moteur. Toute PR doit respecter
+[ARCHITECTURE.md](ARCHITECTURE.md), [SCORING.md](SCORING.md) et
+[ANALYSIS_CONTRACT.md](ANALYSIS_CONTRACT.md).
 
-- Core
-- LLM
-- Configuration
+## ✅ PR-001 — Brain Pipeline
 
-## V0.2
+- **Inputs :** projet, mesure stéréo, salle.
+- **Outputs :** contexte d'analyse et rapport.
+- **Models :** `AnalysisContext`, `Report`.
+- **Diagnostics :** orchestration des diagnostics existants.
+- **Tests :** pipeline et import des mesures.
 
-- Planner
+## ✅ PR-002 — Stereo Analysis
 
-## V0.3
+- **Inputs :** pics gauche/droite, modes et mesures des canaux.
+- **Outputs :** faits de symétrie, modes communs et balances par bande.
+- **Models :** `StereoAnalysis`.
+- **Diagnostics :** aucun texte produit par l'analyzer.
+- **Tests :** appariement, tolérances et balances.
 
-- Premier Expert
+## ✅ PR-003 — Stereo Interpretation
 
-## V0.4
+- **Inputs :** `StereoAnalysis`.
+- **Outputs :** observations, conclusion, impact et recommandations.
+- **Models :** `Diagnostic` structuré.
+- **Diagnostics :** `StereoDiagnostic`.
+- **Tests :** scores, impacts et texte de conclusion.
 
-- Lecture REW
+## 🔄 PR-004 — SBIR Analysis
 
-## V0.5
+- **Inputs :** mesure, creux détectés, salle et enceinte.
+- **Outputs :** candidats de réflexion et meilleure correspondance.
+- **Models :** `ReflectionSurface`, `SBIRCandidate`, `SBIRAnalysis`.
+- **Diagnostics :** `SBIRDiagnostic` / « Réflexions précoces » à finaliser.
+- **Tests :** calcul des distances, délais et correspondances de creux.
 
-- Analyse SPL
+## 🔜 PR-005 — Modal Density
 
-## V0.6
+- **Inputs :** dimensions de salle et modes propres.
+- **Outputs :** densité modale et zones problématiques.
+- **Models :** `ModalAnalysis`.
+- **Diagnostics :** interprétation de la densité modale.
+- **Tests :** calcul de densité et seuils de fréquence.
 
-- Rapport
+## 🔜 PR-006 — Peak Classification
 
-## V1.0
+- **Inputs :** pics, creux et bandes fréquentielles.
+- **Outputs :** classification des phénomènes mesurés.
+- **Models :** `PeakAnalysis`.
+- **Diagnostics :** interprétation par famille de phénomène.
+- **Tests :** règles et classifications limites.
 
-Premier acousticien numérique.
+## 🔜 PR-007 — Confidence Engine
+
+- **Inputs :** preuves, correspondances et disponibilité des mesures.
+- **Outputs :** confiance normalisée de chaque analyse.
+- **Models :** données de preuve et de confiance.
+- **Diagnostics :** aucun recalcul local de confiance.
+- **Tests :** cohérence, données manquantes et seuils.
+
+## 🔜 PR-008 — Diagnostic Prioritization
+
+- **Inputs :** diagnostics structurés et impacts.
+- **Outputs :** liste de diagnostics ordonnée.
+- **Models :** priorité de diagnostic.
+- **Diagnostics :** aucun nouveau diagnostic métier.
+- **Tests :** ordre et égalités de priorité.
+
+## 🔜 PR-009 — Recommendation Engine
+
+- **Inputs :** diagnostics, causes et observations associées.
+- **Outputs :** recommandations fusionnées et priorisées.
+- **Models :** recommandation structurée.
+- **Diagnostics :** consolidation des recommandations locales.
+- **Tests :** déduplication, priorité et formulation.
+
+## 🔜 PR-010 — Global Acoustic Summary
+
+- **Inputs :** analyses et diagnostics de tous les domaines.
+- **Outputs :** synthèse acoustique globale et domaines prioritaires.
+- **Models :** résumé global.
+- **Diagnostics :** corrélation entre phénomènes liés.
+- **Tests :** agrégation de scores et liens inter-domaines.
+
+## 🔜 PR-011 — Explainability
+
+- **Inputs :** faits, preuves, règles et diagnostics.
+- **Outputs :** traçabilité complète d'une conclusion.
+- **Models :** explication structurée.
+- **Diagnostics :** justification visible des conclusions.
+- **Tests :** provenance des preuves et reproductibilité.
