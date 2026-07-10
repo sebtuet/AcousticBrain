@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from acousticbrain.models import (
     Measurement,
     RoomProperties,
+    SBIRAnalysis,
     StereoAnalysis,
 )
 
@@ -29,6 +30,8 @@ class AnalysisContext:
     mode_matches: list = field(default_factory=list)
 
     stereo: StereoAnalysis | None = None
+
+    sbir: SBIRAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 
