@@ -7,7 +7,7 @@ from acousticbrain.classifiers import FrequencyBandClassifier
 
 def test_band_classifier():
 
-    measurement = REWTxtImporter().load("LR.txt")
+    measurement = REWTxtImporter().load("measurements/LR.txt")
 
     peaks = PeakDetector().detect(measurement)
 

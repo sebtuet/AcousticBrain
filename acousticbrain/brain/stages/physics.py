@@ -3,7 +3,7 @@ from acousticbrain.physics import (
     ModesCalculator,
     ModeMatcher,
 )
-from acousticbrain.analysis import StereoAnalyzer
+from acousticbrain.analysis import ModalDensityAnalyzer, StereoAnalyzer
 from acousticbrain.project import Measurements
 
 
@@ -35,6 +35,11 @@ class PhysicsStage:
             ModesCalculator().axial_modes(
                 room
             )
+        )
+
+        context.modal_density = ModalDensityAnalyzer().analyze(
+            context.room_modes,
+            context.room_properties.schroeder_frequency,
         )
 
         context.mode_matches = (
