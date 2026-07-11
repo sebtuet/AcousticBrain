@@ -15,3 +15,6 @@ from .etc_reflection_correlation import ETCReflectionCorrelationEngine
 from .clarity import ClarityAnalyzer
 from .clarity_aggregator import ClarityAggregator
 from .clarity_correlation import ClarityCorrelationEngine
+from .spatial import SpatialAnalyzer
+from .spatial_interpretation import SpatialInterpretationEngine
+from .spatial_correlation import SpatialCorrelationEngine

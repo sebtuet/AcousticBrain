@@ -44,3 +44,17 @@ from .clarity_channel_analysis import ClarityChannelAnalysis
 from .clarity_analysis import ClarityAnalysis
 from .clarity_correlation import ClarityCorrelation
 from .clarity_correlation_analysis import ClarityCorrelationAnalysis
+from .spatial_measurement_type import SpatialMeasurementType
+from .spatial_band_analysis import SpatialBandAnalysis
+from .spatial_channel_pair_analysis import SpatialChannelPairAnalysis
+from .spatial_analysis import SpatialAnalysis
+from .spatial_interpretation_status import (
+    SpatialAlignmentStatus,
+    SpatialBalanceStatus,
+    SpatialCoherenceStatus,
+    SpatialStabilityStatus,
+)
+from .speaker_pair_spatial_interpretation import SpeakerPairSpatialInterpretation
+from .binaural_spatial_interpretation import BinauralSpatialInterpretation
+from .spatial_correlation import SpatialCorrelation
+from .spatial_correlation_analysis import SpatialCorrelationAnalysis
