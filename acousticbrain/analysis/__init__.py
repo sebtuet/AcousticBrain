@@ -9,3 +9,6 @@ from .traceability import TraceabilityEngine
 from .room_modes import RoomModesAnalyzer
 from .rt60 import RT60Analyzer
 from .rt60_aggregator import RT60Aggregator
+from .etc import ETCAnalyzer
+from .etc_aggregator import ETCAggregator
+from .etc_reflection_correlation import ETCReflectionCorrelationEngine

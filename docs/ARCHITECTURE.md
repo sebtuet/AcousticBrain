@@ -18,7 +18,8 @@ PhysicsStage
   └─ ConfidenceAnalysis
         ↓
 TemporalAnalysisStage
-  └─ RT60Analysis
+  ├─ RT60Analysis
+  └─ ETCAnalysis
         ↓
 GlobalSynthesisStage
   └─ GlobalAnalysis + GlobalCorrelation

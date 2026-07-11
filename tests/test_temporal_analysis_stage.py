@@ -1,6 +1,8 @@
 from acousticbrain.analysis import AnalysisContext
 from acousticbrain.brain.stages.temporal_analysis import TemporalAnalysisStage
 from acousticbrain.models import (
+    ETCAnalysis,
+    ETCChannelAnalysis,
     ImpulseChannel,
     ImpulseResponse,
     Measurement,
@@ -30,6 +32,22 @@ class RecordingAggregator:
         return self.result
 
 
+class RecordingETCAnalyzer(RecordingAnalyzer):
+    def analyze(self, impulse_response):
+        self.inputs.append(impulse_response)
+        return ETCChannelAnalysis(
+            channel=impulse_response.channel,
+            direct_sound_time_s=0.0,
+            direct_sound_index=0,
+        )
+
+
+class RecordingETCAggregator(RecordingAggregator):
+    def __init__(self):
+        self.input = None
+        self.result = ETCAnalysis()
+
+
 def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     project = Project(
         name="Reference",
@@ -50,8 +68,15 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
     analyzer = RecordingAnalyzer()
     aggregator = RecordingAggregator()
+    etc_analyzer = RecordingETCAnalyzer()
+    etc_aggregator = RecordingETCAggregator()
 
-    TemporalAnalysisStage(analyzer, aggregator).run(project, context)
+    TemporalAnalysisStage(
+        analyzer,
+        aggregator,
+        etc_analyzer,
+        etc_aggregator,
+    ).run(project, context)
 
     assert analyzer.inputs == [left, stereo]
     assert set(aggregator.input) == {
@@ -59,6 +84,12 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         ImpulseChannel.STEREO,
     }
     assert context.rt60_analysis is aggregator.result
+    assert etc_analyzer.inputs == [left, stereo]
+    assert set(etc_aggregator.input) == {
+        ImpulseChannel.LEFT,
+        ImpulseChannel.STEREO,
+    }
+    assert context.etc_analysis is etc_aggregator.result
 
 
 def test_project_stores_impulses_by_explicit_channel():
@@ -75,4 +106,3 @@ def test_project_stores_impulses_by_explicit_channel():
     project.add_impulse_response(impulse)
 
     assert project.get_impulse_response(ImpulseChannel.RIGHT) is impulse
-

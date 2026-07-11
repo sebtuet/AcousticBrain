@@ -212,6 +212,51 @@ Recommandations
  • Confirmer la correspondance avec une mesure dédiée
 
 ------------------------------------------------------------
+Réflexions temporelles précoces
+
+Observations
+ • Canaux ETC disponibles : 3.
+ • Événements G-D communs : 65 ; spécifiques gauche : 10 ; spécifiques droite : 8.
+ • Réflexions dominantes avant 20 ms : 51.
+ • Dominante STEREO à 4.42 ms : -8.1 dB, trajet supplémentaire 1.51 m, confiance 100 %.
+ • Dominante LEFT à 2.77 ms : -8.3 dB, trajet supplémentaire 0.95 m, confiance 100 %.
+ • Dominante LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
+ • Dominante RIGHT à 6.31 ms : -9.4 dB, trajet supplémentaire 2.17 m, confiance 100 %.
+ • Dominante STEREO à 2.79 ms : -9.5 dB, trajet supplémentaire 0.96 m, confiance 100 %.
+ • Corrélations ETC-SBIR fiables : 15.
+ • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.33 ms, théorique 4.78 ms, erreur 0.45 ms, confiance 87 %.
+ • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.83 ms, théorique 4.78 ms, erreur 0.05 ms, confiance 95 %.
+ • Surface candidate FLOOR sur LEFT : délai mesuré 5.60 ms, théorique 6.12 ms, erreur 0.52 ms, confiance 86 %.
+ • Surface candidate FLOOR sur LEFT : délai mesuré 6.40 ms, théorique 6.12 ms, erreur 0.27 ms, confiance 91 %.
+ • Surface candidate CEILING sur LEFT : délai mesuré 8.08 ms, théorique 8.16 ms, erreur 0.08 ms, confiance 94 %.
+ • Événements importants non expliqués : 40.
+ • Non expliqué LEFT à 2.77 ms : -8.3 dB, trajet supplémentaire 0.95 m, confiance 100 %.
+ • Non expliqué LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
+ • Non expliqué STEREO à 2.79 ms : -9.5 dB, trajet supplémentaire 0.96 m, confiance 100 %.
+ • Non expliqué STEREO à 14.58 ms : -10.2 dB, trajet supplémentaire 5.00 m, confiance 100 %.
+ • Non expliqué STEREO à 2.19 ms : -11.6 dB, trajet supplémentaire 0.75 m, confiance 100 %.
+
+Conclusion
+
+Des réflexions précoces dominantes restent sans explication structurée.
+
+Gravité : HIGH
+Score : 26 / 100
+Confiance : 91%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Événements temporels spécifiques à un canal
+ • Réflexion compatible avec la surface CEILING
+ • Réflexion compatible avec la surface FLOOR
+ • Réflexion compatible avec la surface FRONT_WALL
+ • Réflexions dominantes sans corrélation ETC-SBIR fiable
+
+Recommandations
+ • Comparer les conditions temporelles des canaux gauche et droit.
+ • Examiner les événements dominants non corrélés avant toute correction.
+
+------------------------------------------------------------
 Creux importants
 
 Creux principal à 367.0 Hz (prominence 17.7 dB)
