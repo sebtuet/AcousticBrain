@@ -83,6 +83,8 @@ modifie pas les connaissances physiques ou structurées.
 - toute valeur absente reste absente, sans connaissance inventée ;
 - les projections destinées au JSON ou à la console sont des consommateurs
   purs.
+- un consommateur ne dépend jamais d'un format historique lorsqu'une
+  `Analysis` équivalente existe.
 
 ## Rapport de référence
 

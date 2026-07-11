@@ -3,6 +3,8 @@ from .peak import Peak
 from .band import FrequencyBand
 from .room import Room
 from .room_mode import RoomMode
+from .room_mode_type import RoomModeType
+from .room_modes_analysis import RoomModesAnalysis
 from .mode_match import ModeMatch
 from .evidence import EvidenceLevel
 from .room_properties import RoomProperties

@@ -1,17 +1,26 @@
-from acousticbrain.models import ModalBand, ModalDensityAnalysis
+from acousticbrain.models import (
+    ModalBand,
+    ModalDensityAnalysis,
+    RoomModesAnalysis,
+    RoomModeType,
+)
 
 
 class ModalDensityAnalyzer:
     MINIMUM_FREQUENCY_HZ = 20.0
 
-    def analyze(self, room_modes, schroeder_frequency):
+    def analyze(
+        self,
+        room_modes_analysis: RoomModesAnalysis,
+        schroeder_frequency: float,
+    ) -> ModalDensityAnalysis:
         if schroeder_frequency <= self.MINIMUM_FREQUENCY_HZ:
             return ModalDensityAnalysis()
 
         modes = sorted(
             (
                 mode
-                for mode in room_modes
+                for mode in room_modes_analysis.modes
                 if self.MINIMUM_FREQUENCY_HZ <= mode.frequency <= schroeder_frequency
             ),
             key=lambda mode: mode.frequency,
@@ -23,6 +32,12 @@ class ModalDensityAnalyzer:
         return ModalDensityAnalysis(
             bands=bands,
             total_mode_count=len(modes),
+            axial_mode_count=self._count_type(modes, RoomModeType.AXIAL),
+            tangential_mode_count=self._count_type(
+                modes,
+                RoomModeType.TANGENTIAL,
+            ),
+            oblique_mode_count=self._count_type(modes, RoomModeType.OBLIQUE),
             average_spacing_hz=self._average(spacings),
             minimum_spacing_hz=min(spacings) if spacings else None,
             maximum_spacing_hz=max(spacings) if spacings else None,
@@ -102,3 +117,7 @@ class ModalDensityAnalyzer:
         if mode_count == 0:
             return 0.0
         return min(75.0, 50.0 + mode_count * 5.0)
+
+    @staticmethod
+    def _count_type(modes, mode_type):
+        return sum(mode.mode_type is mode_type for mode in modes)
