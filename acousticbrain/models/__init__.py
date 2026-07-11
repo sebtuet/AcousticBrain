@@ -37,3 +37,5 @@ from .rt60_band_difference import RT60BandDifference
 from .reflection_event import ReflectionEvent
 from .etc_channel_analysis import ETCChannelAnalysis
 from .etc_analysis import ETCAnalysis
+from .etc_reflection_correlation import ETCReflectionCorrelation
+from .etc_reflection_correlation_analysis import ETCReflectionCorrelationAnalysis

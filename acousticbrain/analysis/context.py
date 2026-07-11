@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 
 from acousticbrain.models import (
     ConfidenceAnalysis,
+    ETCAnalysis,
+    ETCReflectionCorrelationAnalysis,
     GlobalAnalysis,
     Measurement,
     ModalDensityAnalysis,
@@ -45,6 +47,12 @@ class AnalysisContext:
     modal_density: ModalDensityAnalysis | None = None
 
     rt60_analysis: RT60Analysis | None = None
+
+    etc_analysis: ETCAnalysis | None = None
+
+    etc_reflection_correlation_analysis: (
+        ETCReflectionCorrelationAnalysis | None
+    ) = None
 
     confidence_analysis: ConfidenceAnalysis | None = None
 

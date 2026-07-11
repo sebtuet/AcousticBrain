@@ -1,93 +1,132 @@
 # AcousticBrain Roadmap
 
-Cette roadmap décrit l'évolution métier du moteur. Toute PR doit respecter
-[ARCHITECTURE.md](ARCHITECTURE.md), [SCORING.md](SCORING.md) et
-[ANALYSIS_CONTRACT.md](ANALYSIS_CONTRACT.md).
+Cette roadmap présente les capacités du moteur plutôt que l'historique des PR.
+Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
+[SCORING.md](SCORING.md) et [ANALYSIS_CONTRACT.md](ANALYSIS_CONTRACT.md).
 
-## ✅ PR-001 — Brain Pipeline
+## ✅ Core Platform
 
-- **Inputs :** projet, mesure stéréo, salle.
-- **Outputs :** contexte d'analyse et rapport.
-- **Models :** `AnalysisContext`, `Report`.
-- **Diagnostics :** orchestration des diagnostics existants.
-- **Tests :** pipeline et import des mesures.
+- import des mesures SPL REW ;
+- import des réponses impulsionnelles REW ;
+- modèle `Project` ;
+- pipeline d'analyse déterministe ;
+- golden report de non-régression ;
+- `ConfidenceEngine` ;
+- `GlobalSynthesizer` ;
+- `RecommendationEngine` ;
+- `TraceabilityEngine` ;
+- priorisation structurée des diagnostics.
 
-## ✅ PR-002 — Stereo Analysis
+## ✅ Physics
 
-- **Inputs :** pics gauche/droite, modes et mesures des canaux.
-- **Outputs :** faits de symétrie, modes communs et balances par bande.
-- **Models :** `StereoAnalysis`.
-- **Diagnostics :** aucun texte produit par l'analyzer.
-- **Tests :** appariement, tolérances et balances.
+- détection des pics et creux ;
+- classification par bandes fréquentielles ;
+- propriétés géométriques de la salle ;
+- fréquence de Schroeder ;
+- modes propres complets :
+  - axiaux ;
+  - tangentiels ;
+  - obliques ;
+- correspondance entre pics et modes propres ;
+- densité modale complète.
 
-## ✅ PR-003 — Stereo Interpretation
+## ✅ Spatial Analysis
 
-- **Inputs :** `StereoAnalysis`.
-- **Outputs :** observations, conclusion, impact et recommandations.
-- **Models :** `Diagnostic` structuré.
-- **Diagnostics :** `StereoDiagnostic`.
-- **Tests :** scores, impacts et texte de conclusion.
+- analyse de symétrie stéréo ;
+- analyse SBIR ;
+- surfaces de réflexion structurées ;
+- correspondances entre phénomènes mesurés et géométrie disponible.
 
-## 🔄 PR-004 — SBIR Analysis
+## ✅ Temporal Analysis
 
-- **Inputs :** mesure, creux détectés, salle et enceinte.
-- **Outputs :** candidats de réflexion et meilleure correspondance.
-- **Models :** `ReflectionSurface`, `SBIRCandidate`, `SBIRAnalysis`.
-- **Diagnostics :** `SBIRDiagnostic` / « Réflexions précoces » à finaliser.
-- **Tests :** calcul des distances, délais et correspondances de creux.
+- RT60 :
+  - EDT ;
+  - T20 ;
+  - T30 ;
+  - filtrage en tiers d'octave ;
+  - agrégation multi-canal ;
+  - écarts gauche-droite qualifiés par leur confiance ;
+- ETC :
+  - détection du son direct ;
+  - détection des réflexions précoces ;
+  - agrégation multi-canal ;
+  - événements communs et spécifiques ;
+  - corrélations structurées ETC-SBIR.
 
-## 🔜 PR-005 — Modal Density
+## ✅ Current Diagnostics
 
-- **Inputs :** dimensions de salle et modes propres.
-- **Outputs :** densité modale et zones problématiques.
-- **Models :** `ModalAnalysis`.
-- **Diagnostics :** interprétation de la densité modale.
-- **Tests :** calcul de densité et seuils de fréquence.
+- réponse dans le grave ;
+- creux importants ;
+- stéréo ;
+- SBIR ;
+- modes propres complets ;
+- densité modale complète ;
+- confiance ;
+- RT60 ;
+- ETC et corrélations de réflexions précoces.
 
-## 🔜 PR-006 — Peak Classification
+Les diagnostics interprètent les connaissances existantes. Ils ne détectent
+pas de nouvelles features et ne recalculent aucune analyse.
 
-- **Inputs :** pics, creux et bandes fréquentielles.
-- **Outputs :** classification des phénomènes mesurés.
-- **Models :** `PeakAnalysis`.
-- **Diagnostics :** interprétation par famille de phénomène.
-- **Tests :** règles et classifications limites.
+## 🚧 Advanced Room Analysis
 
-## 🔜 PR-007 — Confidence Engine
+- classification physique complète des pics ;
+- flutter echo ;
+- validation par méthode des sources images ;
+- regroupement des réflexions ;
+- classement des réflexions ;
+- symétrie des réflexions ;
+- validation croisée ETC, SBIR et géométrie complète.
 
-- **Inputs :** preuves, correspondances et disponibilité des mesures.
-- **Outputs :** confiance normalisée de chaque analyse.
-- **Models :** données de preuve et de confiance.
-- **Diagnostics :** aucun recalcul local de confiance.
-- **Tests :** cohérence, données manquantes et seuils.
+## 🚧 Additional Acoustic Metrics
 
-## 🔜 PR-008 — Diagnostic Prioritization
+- clarté C50 et C80 ;
+- définition D50 ;
+- temps central Ts ;
+- IACC ;
+- analyse LEDE ;
+- diffusion ;
+- décroissance du grave.
 
-- **Inputs :** diagnostics structurés et impacts.
-- **Outputs :** liste de diagnostics ordonnée.
-- **Models :** priorité de diagnostic.
-- **Diagnostics :** aucun nouveau diagnostic métier.
-- **Tests :** ordre et égalités de priorité.
+Ces métriques devront être produites comme des `*Analysis` structurées avant
+toute interprétation ou présentation.
 
-## ✅ PR-009 — Recommendation Engine
+## 🚧 Recommendations
 
-- **Inputs :** analyses physiques structurées.
-- **Outputs :** recommandations fusionnées et priorisées.
-- **Models :** recommandation structurée.
-- **Diagnostics :** aucune dépendance aux diagnostics existants.
-- **Tests :** contrat, règles, déduplication, intégration et présentation.
+- recommandations temporelles ;
+- recommandations de traitement des réflexions ;
+- priorisation structurée des surfaces ;
+- stratégies de recommandation configurables ;
+- prise en compte explicite des nouvelles analyses RT60 et ETC.
 
-## 🔜 PR-010 — Global Acoustic Summary
+Les recommandations sont déduites des connaissances structurées, jamais des
+diagnostics ni de leurs textes.
 
-- **Inputs :** analyses physiques et structurées de tous les domaines.
-- **Outputs :** synthèse acoustique globale et domaines prioritaires.
-- **Models :** `GlobalAnalysis`, contributions et provenances par domaine.
-- **Diagnostics :** aucune dépendance aux diagnostics ni à leurs textes.
-- **Tests :** agrégation de scores et liens inter-domaines.
+## 🚧 Explainability Extensions
 
-## 🔄 PR-011 — Explainability
+- provenance RT60 et ETC dans `GlobalAnalysis` ;
+- recommandations temporelles dans `TraceabilityAnalysis` ;
+- export JSON complet du graphe de connaissance ;
+- navigation d'une action vers les preuves physiques sources.
 
-- **Inputs :** analyses globales, recommandations et confiance structurées.
-- **Outputs :** traçabilité complète d'une conclusion.
-- **Models :** `EvidenceReference`, `ExplanationLink`, `TraceabilityAnalysis`.
-- **Diagnostics :** aucune dépendance aux diagnostics ni à leurs textes.
-- **Tests :** provenance des preuves et reproductibilité.
+## 🚧 AI Layer — Optional
+
+Un LLM ne réalise jamais une mesure ou un calcul acoustique. Il peut uniquement
+consommer les connaissances déterministes déjà produites pour fournir :
+
+- un rapport en langage naturel ;
+- un résumé exécutif ;
+- des explications pédagogiques ;
+- un assistant interactif, notamment via Ollama.
+
+La logique métier reste indépendante de tout fournisseur de modèle.
+
+## Guiding Principles
+
+- Physics before interpretation.
+- Structured analyses before synthesis.
+- Structured knowledge before recommendations.
+- Recommendations derive from knowledge, never diagnostics.
+- Presentation and AI consume facts without recalculating them.
+- LLMs never replace deterministic acoustic calculations.
+- Missing evidence remains missing; no layer invents knowledge.
