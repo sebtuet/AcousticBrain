@@ -34,3 +34,6 @@ from .rt60_band_analysis import RT60BandAnalysis
 from .rt60_channel_analysis import RT60ChannelAnalysis
 from .rt60_analysis import RT60Analysis
 from .rt60_band_difference import RT60BandDifference
+from .reflection_event import ReflectionEvent
+from .etc_channel_analysis import ETCChannelAnalysis
+from .etc_analysis import ETCAnalysis
