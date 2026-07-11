@@ -4,6 +4,7 @@ from acousticbrain.diagnostics import (
     RoomModeDiagnostic,
     DipDiagnostic,
     ConfidenceDiagnostic,
+    ClarityDiagnostic,
     ETCDiagnostic,
     ModalDensityDiagnostic,
     RT60Diagnostic,
@@ -18,6 +19,7 @@ from .stages.analysis import AnalysisStage
 from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
 from .stages.etc_correlation import ETCCorrelationStage
+from .stages.clarity_correlation import ClarityCorrelationStage
 
 from .stages.recommendation import RecommendationStage
 from .stages.global_synthesis import GlobalSynthesisStage
@@ -54,6 +56,8 @@ class BrainPipeline:
             RT60Diagnostic(),
 
             ETCDiagnostic(),
+
+            ClarityDiagnostic(),
 
             ConfidenceDiagnostic(),
 
@@ -100,6 +104,10 @@ class BrainPipeline:
         )
 
         ETCCorrelationStage().run(
+            context,
+        )
+
+        ClarityCorrelationStage().run(
             context,
         )
 

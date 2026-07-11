@@ -1,6 +1,8 @@
 from acousticbrain.analysis import AnalysisContext
 from acousticbrain.brain.stages.temporal_analysis import TemporalAnalysisStage
 from acousticbrain.models import (
+    ClarityAnalysis,
+    ClarityChannelAnalysis,
     ETCAnalysis,
     ETCChannelAnalysis,
     ImpulseChannel,
@@ -48,6 +50,18 @@ class RecordingETCAggregator(RecordingAggregator):
         self.result = ETCAnalysis()
 
 
+class RecordingClarityAnalyzer(RecordingAnalyzer):
+    def analyze(self, impulse_response):
+        self.inputs.append(impulse_response)
+        return ClarityChannelAnalysis(channel=impulse_response.channel)
+
+
+class RecordingClarityAggregator(RecordingAggregator):
+    def __init__(self):
+        self.input = None
+        self.result = ClarityAnalysis()
+
+
 def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     project = Project(
         name="Reference",
@@ -70,12 +84,16 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     aggregator = RecordingAggregator()
     etc_analyzer = RecordingETCAnalyzer()
     etc_aggregator = RecordingETCAggregator()
+    clarity_analyzer = RecordingClarityAnalyzer()
+    clarity_aggregator = RecordingClarityAggregator()
 
     TemporalAnalysisStage(
         analyzer,
         aggregator,
         etc_analyzer,
         etc_aggregator,
+        clarity_analyzer,
+        clarity_aggregator,
     ).run(project, context)
 
     assert analyzer.inputs == [left, stereo]
@@ -90,6 +108,12 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         ImpulseChannel.STEREO,
     }
     assert context.etc_analysis is etc_aggregator.result
+    assert clarity_analyzer.inputs == [left, stereo]
+    assert set(clarity_aggregator.input) == {
+        ImpulseChannel.LEFT,
+        ImpulseChannel.STEREO,
+    }
+    assert context.clarity_analysis is clarity_aggregator.result
 
 
 def test_project_stores_impulses_by_explicit_channel():

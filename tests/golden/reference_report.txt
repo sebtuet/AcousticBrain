@@ -257,6 +257,39 @@ Recommandations
  • Examiner les événements dominants non corrélés avant toute correction.
 
 ------------------------------------------------------------
+Clarté et définition
+
+Observations
+ • Canaux de clarté disponibles : 3.
+ • Bandes de tiers d'octave communes : 24.
+ • Canal gauche : C50 12.9 dB, C80 18.4 dB, D50 95.1 %, Ts 0.015 s, confiance 94 %.
+ • Canal droit : C50 11.8 dB, C80 17.4 dB, D50 93.8 %, Ts 0.016 s, confiance 94 %.
+ • Canal L+R : C50 12.2 dB, C80 17.4 dB, D50 94.3 %, Ts 0.017 s, confiance 97 %.
+ • Écarts G-D disponibles : C50 24, C80 24, D50 24, Ts 24.
+ • Corrélations temporelles structurées : 3.
+ • Corrélation LOW_CLARITY_HIGH_RT60 sur 1 bande(s) : score 70, confiance 91 %.
+ • Corrélation LOW_CLARITY_DENSE_EARLY_REFLECTIONS sur 1 bande(s) : score 100, confiance 91 %.
+ • Corrélation HIGH_CENTER_TIME_LATE_DECAY sur 1 bande(s) : score 60, confiance 91 %.
+
+Conclusion
+
+Des corrélations temporelles structurées affectent les indicateurs de clarté.
+
+Gravité : HIGH
+Score : 40 / 100
+Confiance : 91%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Clarté faible associée à une décroissance RT60 longue
+ • Clarté faible associée à des réflexions précoces denses
+ • Temps central élevé associé à une énergie tardive persistante
+
+Recommandations
+ • Examiner les bandes où clarté et décroissance tardive sont corrélées.
+ • Examiner les réflexions précoces fortes dans les bandes concernées.
+
+------------------------------------------------------------
 Creux importants
 
 Creux principal à 367.0 Hz (prominence 17.7 dB)
