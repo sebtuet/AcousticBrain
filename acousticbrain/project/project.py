@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.models import (
+    ImpulseChannel,
+    ImpulseResponse,
     Measurement,
     Room,
     Speaker,
@@ -15,6 +17,10 @@ class Project:
     room: Room
 
     measurements: dict[str, Measurement] = field(default_factory=dict)
+
+    impulse_responses: dict[ImpulseChannel, ImpulseResponse] = field(
+        default_factory=dict
+    )
 
     speakers: dict[str, Speaker] = field(default_factory=dict)
 
@@ -46,6 +52,17 @@ class Project:
 
         return sorted(self.measurements.keys())
 
+    def add_impulse_response(self, impulse_response: ImpulseResponse):
+
+        self.impulse_responses[impulse_response.channel] = impulse_response
+
+    def get_impulse_response(
+        self,
+        channel: ImpulseChannel,
+    ) -> ImpulseResponse | None:
+
+        return self.impulse_responses.get(channel)
+
     def add_speaker(
         self,
         speaker: Speaker,
@@ -59,4 +76,3 @@ class Project:
     ) -> Speaker | None:
 
         return self.speakers.get(name)
-        

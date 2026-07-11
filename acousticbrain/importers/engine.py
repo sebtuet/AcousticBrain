@@ -5,8 +5,9 @@ from acousticbrain.project import (
     Measurements,
 )
 
-from acousticbrain.models import Room
+from acousticbrain.models import ImpulseChannel, Room
 
+from .rew_impulse import REWImpulseImporter
 from .rew_txt import REWTxtImporter
 
 
@@ -58,21 +59,25 @@ class ImportEngine:
 
         }
 
+        impulse_mapping = {
+            "impulse_left.txt": ImpulseChannel.LEFT,
+            "impulse_right.txt": ImpulseChannel.RIGHT,
+            "impulse_l+r.txt": ImpulseChannel.STEREO,
+        }
+
         for file in directory.iterdir():
 
             key = file.name.lower()
 
-            if key not in mapping:
-                continue
+            if key in mapping:
+                measurement = importer.load(file)
+                project.add_measurement(mapping[key], measurement)
 
-            measurement = importer.load(file)
-
-            project.add_measurement(
-
-                mapping[key],
-
-                measurement,
-
-            )
+            if key in impulse_mapping:
+                impulse = REWImpulseImporter().load(
+                    file,
+                    channel=impulse_mapping[key],
+                )
+                project.add_impulse_response(impulse)
 
         return project
