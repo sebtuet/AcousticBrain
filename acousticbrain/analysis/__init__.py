@@ -6,3 +6,4 @@ from .confidence import ConfidenceEngine
 from .recommendation import RecommendationEngine
 from .global_synthesizer import GlobalSynthesizer
 from .traceability import TraceabilityEngine
+from .room_modes import RoomModesAnalyzer

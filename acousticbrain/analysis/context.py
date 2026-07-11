@@ -6,6 +6,7 @@ from acousticbrain.models import (
     Measurement,
     ModalDensityAnalysis,
     RecommendationAnalysis,
+    RoomModesAnalysis,
     RoomProperties,
     SBIRAnalysis,
     StereoAnalysis,
@@ -31,6 +32,8 @@ class AnalysisContext:
     bands: list = field(default_factory=list)
 
     room_modes: list = field(default_factory=list)
+
+    room_modes_analysis: RoomModesAnalysis | None = None
 
     mode_matches: list = field(default_factory=list)
 

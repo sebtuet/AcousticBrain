@@ -1,4 +1,4 @@
-from acousticbrain.models import ModeMatch
+from acousticbrain.models import ModeMatch, RoomModesAnalysis
 
 
 class ModeMatcher:
@@ -6,7 +6,7 @@ class ModeMatcher:
     def match(
         self,
         peaks,
-        modes,
+        room_modes_analysis: RoomModesAnalysis,
         tolerance=2.0,
     ):
 
@@ -18,7 +18,7 @@ class ModeMatcher:
 
             best_error = None
 
-            for mode in modes:
+            for mode in room_modes_analysis.modes:
 
                 error = abs(
                     peak.frequency - mode.frequency

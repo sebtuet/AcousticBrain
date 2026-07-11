@@ -7,6 +7,9 @@ from .modal_band import ModalBand
 class ModalDensityAnalysis:
     bands: list[ModalBand] = field(default_factory=list)
     total_mode_count: int = 0
+    axial_mode_count: int = 0
+    tangential_mode_count: int = 0
+    oblique_mode_count: int = 0
     average_spacing_hz: float | None = None
     minimum_spacing_hz: float | None = None
     maximum_spacing_hz: float | None = None
