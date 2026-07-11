@@ -15,6 +15,8 @@ from .stages.analysis import AnalysisStage
 
 from .stages.physics import PhysicsStage
 
+from .stages.recommendation import RecommendationStage
+
 from .builders.report import ReportBuilder
 
 from .stages.diagnostics import DiagnosticsStage
@@ -79,6 +81,10 @@ class BrainPipeline:
 
         PhysicsStage().run(
             project,
+            context,
+        )
+
+        RecommendationStage().run(
             context,
         )
 

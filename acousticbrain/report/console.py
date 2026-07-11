@@ -37,6 +37,29 @@ class ConsoleReporter:
 
         print()
 
+        if report.recommendations:
+
+            print("Recommandations structurées")
+            print()
+
+            for recommendation in report.recommendations:
+                print(f" • {recommendation.code}")
+                print(f"   Action : {recommendation.action}")
+                print(f"   Cible : {recommendation.target}")
+                print(f"   Priorité : {recommendation.priority.name}")
+                print(f"   Confiance : {recommendation.confidence}%")
+                print(
+                    "   Provenance : "
+                    + ", ".join(recommendation.source_analyses)
+                )
+
+                if recommendation.parameters:
+                    print("   Paramètres :")
+                    for name, value in recommendation.parameters.items():
+                        print(f"    - {name} : {value}")
+
+                print()
+
         for diagnostic, is_secondary in self._diagnostics_to_render(report):
 
             print("-" * 60)

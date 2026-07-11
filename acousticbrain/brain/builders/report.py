@@ -1,4 +1,4 @@
-from acousticbrain.report import Report
+from acousticbrain.report import RecommendationPresenter, Report
 
 
 class ReportBuilder:
@@ -16,5 +16,6 @@ class ReportBuilder:
             context.room_properties
         )
 
+        report.recommendations = RecommendationPresenter().present(context)
+
         return report
-        

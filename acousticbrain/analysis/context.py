@@ -4,6 +4,7 @@ from acousticbrain.models import (
     ConfidenceAnalysis,
     Measurement,
     ModalDensityAnalysis,
+    RecommendationAnalysis,
     RoomProperties,
     SBIRAnalysis,
     StereoAnalysis,
@@ -38,6 +39,8 @@ class AnalysisContext:
     modal_density: ModalDensityAnalysis | None = None
 
     confidence_analysis: ConfidenceAnalysis | None = None
+
+    recommendation_analysis: RecommendationAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 
