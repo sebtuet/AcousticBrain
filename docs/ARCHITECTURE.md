@@ -1,27 +1,93 @@
-# Architecture
+# Architecture AcousticBrain
 
-AcousticBrain repose sur six composants.
+AcousticBrain transforme des mesures acoustiques en connaissances structurées,
+puis en présentations. Les couches métier ne dépendent ni de la console, ni
+d'un fournisseur de LLM.
 
-## Core
+## Pipeline
 
-Orchestration.
+```text
+Project / Measurement
+        ↓
+AnalysisStage
+        ↓
+PhysicsStage
+  ├─ StereoAnalysis
+  ├─ SBIRAnalysis
+  ├─ ModalDensityAnalysis
+  └─ ConfidenceAnalysis
+        ↓
+GlobalSynthesisStage
+  └─ GlobalAnalysis + GlobalCorrelation
+        ↓
+RecommendationStage
+  └─ RecommendationAnalysis
+        ↓
+TraceabilityStage
+  └─ TraceabilityAnalysis
+        ↓
+ReportBuilder
+        ↓
+DiagnosticsStage
+        ↓
+PrioritizationStage
+        ↓
+Report / ConsoleReporter
+```
 
-## Planner
+Chaque stage orchestre uniquement son moteur. Les règles de calcul, de
+corrélation, de recommandation et de traçabilité restent dans leurs moteurs
+respectifs.
 
-Décide quels experts consulter.
+## Couches de connaissance
 
-## Experts
+### 1. Analyses physiques
 
-Chaque expert possède un domaine précis.
+Les objets `*Analysis` contiennent des faits, mesures, scores et confiances.
+Ils ne produisent aucun texte utilisateur et ne dépendent pas des diagnostics.
 
-## Tools
+### 2. Synthèse globale
 
-Calculs physiques et DSP.
+`GlobalSynthesizer` croise les analyses physiques. `GlobalAnalysis` conserve
+les contributions par domaine, les priorités, les provenances et les
+`GlobalCorrelation` structurées.
 
-## Knowledge
+### 3. Actions
 
-Base documentaire.
+`RecommendationEngine` reçoit explicitement les analyses utiles et produit une
+`RecommendationAnalysis`. Les actions utilisent des codes stables, des cibles,
+des paramètres scalaires, une priorité, une confiance et leurs provenances.
 
-## LLM
+### 4. Explicabilité
 
-Dialogue avec l'utilisateur.
+`TraceabilityEngine` relie `GlobalAnalysis` et `RecommendationAnalysis` au
+moyen d'`EvidenceReference` et d'`ExplanationLink`. Une chaîne incomplète ne
+crée jamais de preuve ou de lien artificiel.
+
+## Diagnostics et présentation
+
+Les diagnostics interprètent les analyses pour l'utilisateur, sans être une
+source des moteurs de synthèse, de recommandation ou de traçabilité. Les
+présentateurs copient les connaissances structurées vers le rapport sans les
+trier, filtrer, dédupliquer ou recalculer.
+
+`PrioritizationStage` ordonne les diagnostics après leur production. Il ne
+modifie pas les connaissances physiques ou structurées.
+
+## Invariants
+
+- aucun moteur métier ne parse un texte de diagnostic ;
+- `AnalysisContext` transporte les résultats sans les interpréter ;
+- les dépendances entre moteurs sont explicites ;
+- les identifiants de recommandation, corrélation et explication sont stables ;
+- toute valeur absente reste absente, sans connaissance inventée ;
+- les projections destinées au JSON ou à la console sont des consommateurs
+  purs.
+
+## Rapport de référence
+
+Le jeu de mesures versionné dans `measurements/` alimente le test
+`tests/test_golden_report.py`. Sa sortie console complète est figée dans
+`tests/golden/reference_report.txt`. Toute modification intentionnelle du
+comportement visible doit mettre à jour le snapshot dans le même changement et
+être expliquée lors de la revue.

@@ -1,0 +1,264 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : measurements
+
+Salle
+Volume : 54.24 m³
+Surface : 22.14 m²
+Schroeder : 148.7 Hz
+
+
+Recommandations structurées
+
+ • CHECK_STEREO_PLACEMENT
+   Action : check_placement
+   Cible : stereo_speakers
+   Priorité : HIGH
+   Confiance : 79.16666666666667%
+   Provenance : StereoAnalysis
+   Paramètres :
+    - symmetry_score : 10.859575118098183
+    - maximum_balance_db : 3.119795597484284
+
+ • TEST_SPEAKER_DISTANCE
+   Action : test_distance
+   Cible : floor
+   Priorité : HIGH
+   Confiance : 79.16666666666667%
+   Provenance : SBIRAnalysis
+   Paramètres :
+    - current_distance_m : 1.05
+    - measured_frequency_hz : 75.497475
+
+Synthèse acoustique globale
+
+Score : 27.1 / 100
+Confiance : 79.2%
+Domaines prioritaires : SBIR, STEREO, MODAL_DENSITY
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis
+
+ • Domaine STEREO
+   Score : 10.9 / 100
+   Confiance : indisponible
+   Provenance : StereoAnalysis
+   Références d'action : CHECK_STEREO_PLACEMENT
+ • Domaine SBIR
+   Score : 7.6 / 100
+   Confiance : 92.4%
+   Provenance : SBIRAnalysis
+   Références d'action : TEST_SPEAKER_DISTANCE
+ • Domaine MODAL_DENSITY
+   Score : 62.8 / 100
+   Confiance : 75.0%
+   Provenance : ModalDensityAnalysis
+   Références d'action : MEASURE_MULTIPLE_POSITIONS
+
+ • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
+   Domaines : STEREO, SBIR
+   Score : 7.6 / 100
+   Provenances : StereoAnalysis, SBIRAnalysis
+
+Traçabilité
+
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, ConfidenceAnalysis
+
+ • Preuve evidence.stereo.score
+   Fait : stereo.score
+   Analyse : StereoAnalysis
+   Niveau : CALCULATED
+   Valeur : 10.859575118098183
+ • Preuve evidence.sbir.score
+   Fait : sbir.score
+   Analyse : SBIRAnalysis
+   Niveau : CALCULATED
+   Valeur : 7.554112244897951
+ • Preuve evidence.modal_density.score
+   Fait : modal_density.score
+   Analyse : ModalDensityAnalysis
+   Niveau : CALCULATED
+   Valeur : 62.826296998107445
+ • Preuve evidence.global.confidence
+   Fait : global.confidence
+   Analyse : ConfidenceAnalysis
+   Niveau : CALCULATED
+   Valeur : 79.16666666666667
+
+ • Lien explanation.correlation.stereo_sbir_placement_interaction
+   Faits : stereo.score, sbir.score
+   Preuves : evidence.stereo.score, evidence.sbir.score
+   Corrélations : STEREO_SBIR_PLACEMENT_INTERACTION
+ • Lien explanation.recommendation.check_stereo_placement
+   Faits : stereo.score
+   Preuves : evidence.stereo.score
+   Recommandations : CHECK_STEREO_PLACEMENT
+ • Lien explanation.recommendation.test_speaker_distance
+   Faits : sbir.score
+   Preuves : evidence.sbir.score
+   Recommandations : TEST_SPEAKER_DISTANCE
+ • Lien explanation.global.confidence
+   Faits : global.confidence
+   Preuves : evidence.global.confidence
+
+------------------------------------------------------------
+Modes propres
+
+Mode axial Longueur (ordre 2) à 63.49 Hz
+
+Gravité : HIGH
+Confiance : 98%
+Niveau de preuve : CONFIRMED
+
+Causes
+ • Correspondance avec le calcul théorique
+
+Recommandations
+ • Vérifier le placement du point d'écoute
+ • Ne pas corriger immédiatement avec un EQ
+
+------------------------------------------------------------
+Réponse dans le grave
+
+Pic dominant à 63.5 Hz (prominence 29.8 dB)
+
+Gravité : HIGH
+Confiance : 95%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Mode propre de la pièce
+ • Position d'écoute
+ • Interaction enceinte / mur
+
+Recommandations
+ • Mesurer chaque enceinte séparément
+ • Vérifier la position d'écoute
+
+------------------------------------------------------------
+Réflexions précoces
+
+Observations
+ • 4 surfaces réfléchissantes ont été évaluées.
+ • Un creux à 75.5 Hz (prominence 16.7 dB) correspond au sol.
+ • Distance estimée : 1.05 m.
+ • Délai de réflexion estimé : 6.1 ms.
+
+Conclusion
+
+Le creux observé vers 75 Hz est compatible avec une réflexion sur le sol situé à environ 1.05 m de l'enceinte.
+
+Gravité : HIGH
+Score : 8 / 100
+Confiance : 92%
+Niveau de preuve : CONFIRMED
+
+Causes
+ • Réflexion précoce compatible avec le sol
+ • Distance réduite entre l'enceinte et une paroi
+
+Recommandations
+ • Vérifier la distance entre l'enceinte et la paroi identifiée
+ • Tester un déplacement progressif de l'enceinte
+ • Confirmer la correspondance avec une mesure dédiée
+
+------------------------------------------------------------
+Creux importants
+
+Creux principal à 367.0 Hz (prominence 17.7 dB)
+
+Gravité : HIGH
+Confiance : 90%
+Niveau de preuve : OBSERVED
+
+Recommandations
+ • Identifier l'origine du creux
+ • Comparer les mesures gauche / droite
+ • Mesurer le subwoofer séparément
+
+------------------------------------------------------------
+Symétrie stéréo
+
+Observations
+ • Pics : 3 communs, 14 spécifiques à gauche, 18 spécifiques à droite.
+ • Modes axiaux : 2 communs, 2 spécifiques à gauche, 3 spécifiques à droite.
+ • Écart G-D grave : +3.1 dB.
+ • Écart G-D médium : -0.5 dB.
+ • Écart G-D aigu : +1.3 dB.
+
+Conclusion
+
+Asymétrie modérée principalement localisée dans le grave (+3.1 dB).
+
+Gravité : MEDIUM
+Score : 68 / 100
+Confiance : 90%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Placement asymétrique des enceintes
+ • Influence de la pièce sur un seul canal
+ • Différence de position ou de câblage d'une enceinte
+
+Recommandations
+ • Comparer les mesures gauche et droite
+ • Vérifier le positionnement des enceintes
+ • Contrôler la symétrie de la zone d'écoute
+
+------------------------------------------------------------
+Confiance de l'analyse
+
+Observations
+ • Preuves disponibles : 2 ; indisponibles : 1.
+ • Couverture des preuves : 67 %.
+ • Accord des confiances locales : 83 %.
+ • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
+ • sbir : 92/100 — Confiance locale disponible : 92.4/100.
+ • stereo : 0/100 — Confiance locale indisponible.
+ • coverage : 67/100 — 2/3 analyses fournissent une confiance locale.
+ • agreement : 83/100 — Dispersion des confiances locales : 17.4 point(s).
+
+Conclusion
+
+Les analyses sont exploitables, avec certaines limites de couverture ou d'accord.
+
+Gravité : MEDIUM
+Score : 79 / 100
+Confiance : 79%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Certaines analyses ou confiances locales sont indisponibles
+ • Les confiances locales présentent une dispersion
+
+Recommandations
+ • Compléter les analyses ou mesures indisponibles.
+ • Examiner les analyses dont la confiance locale est faible.
+
+------------------------------------------------------------
+Densité modale axiale
+
+Observations
+ • 9 modes axiaux sont présents sous la fréquence de Schroeder.
+ • Espacement modal moyen : 13.5 Hz (de 1.5 à 30.2 Hz).
+ • Cette analyse couvre les modes axiaux uniquement.
+
+Conclusion
+
+La distribution modale axiale présente des espacements irréguliers.
+
+Gravité : MEDIUM
+Score : 63 / 100
+Confiance : 75%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Dimensions de la pièce
+ • Répartition des modes axiaux sous la fréquence de Schroeder
+
+Recommandations
+ • Interpréter les pics et creux dans les zones modales identifiées
+ • Mesurer plusieurs positions d'écoute dans le grave
+ • Compléter ultérieurement avec les modes tangentiels et obliques
+
