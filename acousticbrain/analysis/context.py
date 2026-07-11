@@ -9,6 +9,7 @@ from acousticbrain.models import (
     RoomProperties,
     SBIRAnalysis,
     StereoAnalysis,
+    TraceabilityAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -44,6 +45,8 @@ class AnalysisContext:
     recommendation_analysis: RecommendationAnalysis | None = None
 
     global_analysis: GlobalAnalysis | None = None
+
+    traceability_analysis: TraceabilityAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 

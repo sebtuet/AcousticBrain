@@ -23,3 +23,6 @@ from .recommendation_priority import RecommendationPriority
 from .global_domain_analysis import GlobalDomainAnalysis
 from .global_correlation import GlobalCorrelation
 from .global_analysis import GlobalAnalysis
+from .evidence_reference import EvidenceReference, EvidenceValue
+from .explanation_link import ExplanationLink
+from .traceability_analysis import TraceabilityAnalysis

@@ -84,10 +84,10 @@ Cette roadmap décrit l'évolution métier du moteur. Toute PR doit respecter
 - **Diagnostics :** aucune dépendance aux diagnostics ni à leurs textes.
 - **Tests :** agrégation de scores et liens inter-domaines.
 
-## 🔜 PR-011 — Explainability
+## 🔄 PR-011 — Explainability
 
-- **Inputs :** faits, preuves, règles et diagnostics.
+- **Inputs :** analyses globales, recommandations et confiance structurées.
 - **Outputs :** traçabilité complète d'une conclusion.
-- **Models :** explication structurée.
-- **Diagnostics :** justification visible des conclusions.
+- **Models :** `EvidenceReference`, `ExplanationLink`, `TraceabilityAnalysis`.
+- **Diagnostics :** aucune dépendance aux diagnostics ni à leurs textes.
 - **Tests :** provenance des preuves et reproductibilité.

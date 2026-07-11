@@ -7,6 +7,8 @@ from .recommendation import PresentedRecommendation
 
 from .global_presenter import PresentedGlobalAnalysis
 
+from .traceability_presenter import PresentedTraceabilityAnalysis
+
 
 @dataclass
 class Report:
@@ -22,6 +24,8 @@ class Report:
     recommendations: list[PresentedRecommendation] = field(default_factory=list)
 
     global_analysis: PresentedGlobalAnalysis | None = None
+
+    traceability_analysis: PresentedTraceabilityAnalysis | None = None
 
     def add(self, diagnostic):
 

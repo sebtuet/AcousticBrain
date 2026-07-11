@@ -7,3 +7,9 @@ from .global_presenter import (
     PresentedGlobalCorrelation,
     PresentedGlobalDomain,
 )
+from .traceability_presenter import (
+    PresentedEvidenceReference,
+    PresentedExplanationLink,
+    PresentedTraceabilityAnalysis,
+    TraceabilityPresenter,
+)

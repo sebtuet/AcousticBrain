@@ -17,6 +17,7 @@ from .stages.physics import PhysicsStage
 
 from .stages.recommendation import RecommendationStage
 from .stages.global_synthesis import GlobalSynthesisStage
+from .stages.traceability import TraceabilityStage
 
 from .builders.report import ReportBuilder
 
@@ -90,6 +91,10 @@ class BrainPipeline:
         )
 
         RecommendationStage().run(
+            context,
+        )
+
+        TraceabilityStage().run(
             context,
         )
 
