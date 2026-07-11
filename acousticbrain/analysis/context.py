@@ -14,6 +14,10 @@ from acousticbrain.models import (
     RoomModesAnalysis,
     RoomProperties,
     SBIRAnalysis,
+    BinauralSpatialInterpretation,
+    SpatialAnalysis,
+    SpatialCorrelationAnalysis,
+    SpeakerPairSpatialInterpretation,
     StereoAnalysis,
     TraceabilityAnalysis,
 )
@@ -55,6 +59,16 @@ class AnalysisContext:
     clarity_analysis: ClarityAnalysis | None = None
 
     clarity_correlation_analysis: ClarityCorrelationAnalysis | None = None
+
+    spatial_analysis: SpatialAnalysis | None = None
+
+    spatial_interpretation: (
+        SpeakerPairSpatialInterpretation
+        | BinauralSpatialInterpretation
+        | None
+    ) = None
+
+    spatial_correlation_analysis: SpatialCorrelationAnalysis | None = None
 
     etc_reflection_correlation_analysis: (
         ETCReflectionCorrelationAnalysis | None

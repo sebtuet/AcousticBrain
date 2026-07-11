@@ -10,3 +10,4 @@ from .confidence import ConfidenceDiagnostic
 from .rt60 import RT60Diagnostic
 from .etc import ETCDiagnostic
 from .clarity import ClarityDiagnostic
+from .spatial import SpatialDiagnostic

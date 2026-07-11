@@ -333,6 +333,39 @@ Recommandations
  • Vérifier la répartition des anomalies par famille modale
 
 ------------------------------------------------------------
+Analyse spatiale de paire
+
+Observations
+ • Protocole : paire d'enceintes mesurée au même point.
+ • Symétrie de niveau : ASYMMETRIC.
+ • Alignement temporel relatif : OFFSET.
+ • Cohérence de paire : WEAK.
+ • Stabilité technique du centre : UNSTABLE.
+ • Différence de niveau large bande : +1.88 dB.
+ • Différence temporelle large bande : +0.250 ms.
+ • Corrélation croisée large bande : 0.424.
+ • Bandes les plus asymétriques : 315 Hz, 800 Hz, 125 Hz, 160 Hz, 200 Hz.
+ • Corrélations spatiales structurées : 2.
+ • Corrélation SPATIAL_LEVEL_STEREO_IMBALANCE : score 81, confiance 67 %.
+ • Corrélation SPATIAL_COHERENCE_CLARITY_ASYMMETRY : score 100, confiance 67 %.
+
+Conclusion
+
+La paire présente des asymétries techniques de niveau, de temps ou de cohérence.
+
+Gravité : HIGH
+Score : 40 / 100
+Confiance : 67%
+Niveau de preuve : CALCULATED
+
+Causes
+ • SPATIAL_LEVEL_STEREO_IMBALANCE
+ • SPATIAL_COHERENCE_CLARITY_ASYMMETRY
+
+Recommandations
+ • Examiner les bandes et analyses sources des corrélations spatiales.
+
+------------------------------------------------------------
 Symétrie stéréo
 
 Observations
