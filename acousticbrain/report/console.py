@@ -37,6 +37,46 @@ class ConsoleReporter:
 
         print()
 
+        traceability = report.traceability_analysis
+        if traceability is not None:
+
+            print("Traçabilité")
+            print()
+            print(
+                "Analyses sources : "
+                + (", ".join(traceability.source_analyses) or "aucune")
+            )
+            print()
+
+            for evidence in traceability.evidence_references:
+                print(f" • Preuve {evidence.code}")
+                print(f"   Fait : {evidence.fact_code}")
+                print(f"   Analyse : {evidence.source_analysis}")
+                print(f"   Niveau : {evidence.evidence_level}")
+                if evidence.value is not None:
+                    print(f"   Valeur : {evidence.value}")
+
+            if traceability.evidence_references:
+                print()
+
+            for link in traceability.links:
+                print(f" • Lien {link.code}")
+                print(f"   Faits : {', '.join(link.fact_codes)}")
+                print(f"   Preuves : {', '.join(link.evidence_codes)}")
+                if link.correlation_codes:
+                    print(
+                        "   Corrélations : "
+                        + ", ".join(link.correlation_codes)
+                    )
+                if link.recommendation_codes:
+                    print(
+                        "   Recommandations : "
+                        + ", ".join(link.recommendation_codes)
+                    )
+
+            if traceability.links:
+                print()
+
         for diagnostic in report.diagnostics:
 
             print("-" * 60)

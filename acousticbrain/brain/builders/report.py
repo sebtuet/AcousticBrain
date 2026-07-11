@@ -1,4 +1,4 @@
-from acousticbrain.report import Report
+from acousticbrain.report import Report, TraceabilityPresenter
 
 
 class ReportBuilder:
@@ -16,5 +16,6 @@ class ReportBuilder:
             context.room_properties
         )
 
+        report.traceability_analysis = TraceabilityPresenter().present(context)
+
         return report
-        

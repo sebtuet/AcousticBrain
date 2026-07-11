@@ -13,3 +13,6 @@ from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
 from .modal_band import ModalBand
 from .modal_density_analysis import ModalDensityAnalysis
+from .evidence_reference import EvidenceReference, EvidenceValue
+from .explanation_link import ExplanationLink
+from .traceability_analysis import TraceabilityAnalysis
