@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.models import (
+    ConfidenceAnalysis,
     Measurement,
     ModalDensityAnalysis,
     RoomProperties,
@@ -35,6 +36,8 @@ class AnalysisContext:
     sbir: SBIRAnalysis | None = None
 
     modal_density: ModalDensityAnalysis | None = None
+
+    confidence_analysis: ConfidenceAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 

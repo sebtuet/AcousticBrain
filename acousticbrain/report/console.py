@@ -12,7 +12,7 @@ class ConsoleReporter:
         print()
 
         print(f"Projet : {report.project_name}")
-        if hasattr(report, "room_properties"):
+        if report.room_properties is not None:
 
             rp = report.room_properties
 
@@ -37,11 +37,14 @@ class ConsoleReporter:
 
         print()
 
-        for diagnostic in report.diagnostics:
+        for diagnostic, is_secondary in self._diagnostics_to_render(report):
 
             print("-" * 60)
 
-            print(diagnostic.title)
+            title = diagnostic.title
+            if is_secondary:
+                title += " (secondaire)"
+            print(title)
             print()
 
             if diagnostic.observations:
@@ -89,3 +92,13 @@ class ConsoleReporter:
                     print(f" • {recommendation}")
 
                 print()
+
+    @staticmethod
+    def _diagnostics_to_render(report):
+        if report.diagnostic_priority is None:
+            return [(diagnostic, False) for diagnostic in report.diagnostics]
+
+        return [
+            (item.diagnostic, item.is_secondary)
+            for item in report.diagnostic_priority.prioritized_diagnostics
+        ]

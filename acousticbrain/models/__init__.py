@@ -13,3 +13,7 @@ from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
 from .modal_band import ModalBand
 from .modal_density_analysis import ModalDensityAnalysis
+from .confidence_factor import ConfidenceFactor
+from .confidence_analysis import ConfidenceAnalysis
+from .prioritized_diagnostic import PrioritizedDiagnostic
+from .diagnostic_priority_analysis import DiagnosticPriorityAnalysis

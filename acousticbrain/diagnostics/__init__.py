@@ -6,3 +6,4 @@ from .dip import DipDiagnostic
 from .stereo import StereoDiagnostic
 from .sbir import SBIRDiagnostic
 from .modal_density import ModalDensityDiagnostic
+from .confidence import ConfidenceDiagnostic

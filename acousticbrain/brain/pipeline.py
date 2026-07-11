@@ -3,6 +3,7 @@ from acousticbrain.diagnostics import (
     BassDiagnostic,
     RoomModeDiagnostic,
     DipDiagnostic,
+    ConfidenceDiagnostic,
     ModalDensityDiagnostic,
     SBIRDiagnostic,
     StereoDiagnostic,
@@ -17,6 +18,8 @@ from .stages.physics import PhysicsStage
 from .builders.report import ReportBuilder
 
 from .stages.diagnostics import DiagnosticsStage
+
+from .stages.prioritization import PrioritizationStage
 
 from .builders.context import ContextBuilder
 
@@ -39,6 +42,8 @@ class BrainPipeline:
             SBIRDiagnostic(),
 
             ModalDensityDiagnostic(),
+
+            ConfidenceDiagnostic(),
 
         ]
 
@@ -88,5 +93,7 @@ class BrainPipeline:
             context,
             report,
         )
+
+        PrioritizationStage().run(report)
 
         return report
