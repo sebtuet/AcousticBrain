@@ -4,13 +4,20 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from acousticbrain.models import (
+    ClarityCorrelationAnalysis,
+    ETCAnalysis,
+    ETCReflectionCorrelationAnalysis,
     ModalDensityAnalysis,
     Recommendation,
     RecommendationAnalysis,
     RecommendationPriority,
+    RT60Analysis,
     SBIRAnalysis,
+    SpatialAnalysis,
+    SpatialCorrelationAnalysis,
     StereoAnalysis,
 )
+from acousticbrain.knowledge_codes import RecommendationCode, SourceAnalysisCode
 
 if TYPE_CHECKING:
     from acousticbrain.models import ConfidenceAnalysis, PeakClassificationAnalysis
@@ -26,6 +33,14 @@ class RecommendationEngine:
         sbir: SBIRAnalysis | None = None,
         modal_density: ModalDensityAnalysis | None = None,
         peak_classification: PeakClassificationAnalysis | None = None,
+        rt60: RT60Analysis | None = None,
+        etc: ETCAnalysis | None = None,
+        spatial: SpatialAnalysis | None = None,
+        clarity_correlations: ClarityCorrelationAnalysis | None = None,
+        spatial_correlations: SpatialCorrelationAnalysis | None = None,
+        etc_reflection_correlations: (
+            ETCReflectionCorrelationAnalysis | None
+        ) = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> RecommendationAnalysis:
         recommendations: list[Recommendation] = []
@@ -38,6 +53,24 @@ class RecommendationEngine:
             recommendations.extend(self._from_modal_density(modal_density))
         if peak_classification is not None:
             recommendations.extend(self._from_peak_classification(peak_classification))
+        if rt60 is not None:
+            recommendations.extend(self._from_rt60(rt60))
+        if etc is not None:
+            recommendations.extend(self._from_etc_symmetry(etc))
+        if spatial is not None:
+            recommendations.extend(self._from_spatial(spatial))
+        if clarity_correlations is not None:
+            recommendations.extend(
+                self._from_clarity_correlations(clarity_correlations)
+            )
+        if spatial_correlations is not None:
+            recommendations.extend(
+                self._from_spatial_correlations(spatial_correlations)
+            )
+        if etc_reflection_correlations is not None:
+            recommendations.extend(
+                self._from_etc_reflections(etc_reflection_correlations)
+            )
 
         if confidence is not None:
             recommendations = [
@@ -48,6 +81,176 @@ class RecommendationEngine:
         return RecommendationAnalysis(
             recommendations=self._deduplicate(recommendations)
         )
+
+    @staticmethod
+    def _from_rt60(analysis: RT60Analysis) -> list[Recommendation]:
+        reliable = [
+            item
+            for item in analysis.left_right_band_differences
+            if item.confidence >= 70.0
+            and abs(item.difference_seconds) >= 0.2
+        ]
+        if not reliable:
+            return []
+        maximum = max(abs(item.difference_seconds) for item in reliable)
+        return [
+            Recommendation(
+                code=RecommendationCode.INVESTIGATE_RT60_CHANNEL_DIFFERENCES,
+                action="investigate",
+                target="rt60_channel_differences",
+                priority=(
+                    RecommendationPriority.HIGH
+                    if len(reliable) >= 3 or maximum >= 1.0
+                    else RecommendationPriority.MEDIUM
+                ),
+                confidence=min(item.confidence for item in reliable),
+                source_analyses=(SourceAnalysisCode.RT60,),
+                parameters={
+                    "reliable_band_count": len(reliable),
+                    "maximum_difference_s": maximum,
+                },
+            )
+        ]
+
+    @staticmethod
+    def _from_etc_symmetry(analysis: ETCAnalysis) -> list[Recommendation]:
+        difference = abs(
+            analysis.left_only_event_count - analysis.right_only_event_count
+        )
+        if difference < 3:
+            return []
+        return [
+            Recommendation(
+                code=RecommendationCode.CHECK_EARLY_REFLECTION_SYMMETRY,
+                action="check_symmetry",
+                target="early_reflections",
+                priority=RecommendationPriority.MEDIUM,
+                confidence=analysis.confidence,
+                source_analyses=(SourceAnalysisCode.ETC,),
+                parameters={
+                    "specific_event_count_difference": difference,
+                },
+            )
+        ]
+
+    @staticmethod
+    def _from_etc_reflections(
+        analysis: ETCReflectionCorrelationAnalysis,
+    ) -> list[Recommendation]:
+        important = [
+            event
+            for events in analysis.unmatched_events.values()
+            for event in events
+            if event.delay_ms <= 20.0 and event.relative_level_db >= -20.0
+        ]
+        if not important:
+            return []
+        return [
+            Recommendation(
+                code=RecommendationCode.TREAT_DOMINANT_EARLY_REFLECTIONS,
+                action="investigate_treatment",
+                target="dominant_early_reflections",
+                priority=(
+                    RecommendationPriority.HIGH
+                    if len(important) >= 3
+                    else RecommendationPriority.MEDIUM
+                ),
+                confidence=min(event.confidence for event in important),
+                source_analyses=(
+                    SourceAnalysisCode.ETC,
+                    SourceAnalysisCode.ETC_REFLECTION_CORRELATION,
+                ),
+                parameters={
+                    "important_unmatched_event_count": len(important),
+                    "maximum_relative_level_db": max(
+                        event.relative_level_db for event in important
+                    ),
+                },
+            )
+        ]
+
+    @staticmethod
+    def _from_spatial(analysis: SpatialAnalysis) -> list[Recommendation]:
+        pair = analysis.pair_analysis
+        if (
+            pair is None
+            or pair.broadband_time_difference_ms is None
+            or abs(pair.broadband_time_difference_ms) <= 0.2
+        ):
+            return []
+        return [
+            Recommendation(
+                code=RecommendationCode.VERIFY_TIME_ALIGNMENT,
+                action="verify_alignment",
+                target="speaker_pair",
+                priority=RecommendationPriority.MEDIUM,
+                confidence=analysis.confidence,
+                source_analyses=(SourceAnalysisCode.SPATIAL,),
+                parameters={
+                    "broadband_time_difference_ms": (
+                        pair.broadband_time_difference_ms
+                    ),
+                },
+            )
+        ]
+
+    @staticmethod
+    def _from_clarity_correlations(
+        analysis: ClarityCorrelationAnalysis,
+    ) -> list[Recommendation]:
+        supported = [
+            item
+            for item in analysis.correlations
+            if item.code == "CLARITY_ETC_CHANNEL_ASYMMETRY"
+        ]
+        if not supported:
+            return []
+        return [
+            Recommendation(
+                code=RecommendationCode.CHECK_EARLY_REFLECTION_SYMMETRY,
+                action="check_symmetry",
+                target="early_reflections",
+                priority=RecommendationPriority.HIGH,
+                confidence=min(item.confidence for item in supported),
+                source_analyses=(
+                    SourceAnalysisCode.CLARITY,
+                    SourceAnalysisCode.ETC,
+                    SourceAnalysisCode.CLARITY_CORRELATION,
+                ),
+                parameters={
+                    "supporting_correlation_count": len(supported),
+                },
+            )
+        ]
+
+    @staticmethod
+    def _from_spatial_correlations(
+        analysis: SpatialCorrelationAnalysis,
+    ) -> list[Recommendation]:
+        supported = [
+            item
+            for item in analysis.correlations
+            if item.code == "SPATIAL_TIME_ETC_CHANNEL_IMBALANCE"
+        ]
+        if not supported:
+            return []
+        return [
+            Recommendation(
+                code=RecommendationCode.VERIFY_TIME_ALIGNMENT,
+                action="verify_alignment",
+                target="speaker_pair",
+                priority=RecommendationPriority.HIGH,
+                confidence=min(item.confidence for item in supported),
+                source_analyses=(
+                    SourceAnalysisCode.SPATIAL,
+                    SourceAnalysisCode.ETC,
+                    SourceAnalysisCode.SPATIAL_CORRELATION,
+                ),
+                parameters={
+                    "supporting_correlation_count": len(supported),
+                },
+            )
+        ]
 
     @staticmethod
     def _from_stereo(analysis: StereoAnalysis) -> list[Recommendation]:
@@ -184,6 +387,8 @@ class RecommendationEngine:
             for name, value in recommendation.parameters.items():
                 parameters.setdefault(name, value)
 
+            # Plusieurs preuves ne créent pas une confiance artificielle :
+            # la fusion conserve la confiance locale la plus forte.
             by_code[recommendation.code] = replace(
                 existing,
                 priority=max(existing.priority, recommendation.priority),

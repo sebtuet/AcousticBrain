@@ -3,11 +3,21 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from acousticbrain.models import (
+    BinauralSpatialInterpretation,
+    ClarityAnalysis,
+    ClarityCorrelationAnalysis,
+    ETCAnalysis,
+    ETCReflectionCorrelationAnalysis,
     EvidenceLevel,
     EvidenceReference,
     ExplanationLink,
+    RT60Analysis,
+    SpatialAnalysis,
+    SpatialCorrelationAnalysis,
+    SpeakerPairSpatialInterpretation,
     TraceabilityAnalysis,
 )
+from acousticbrain.knowledge_codes import FactCode, SourceAnalysisCode
 
 if TYPE_CHECKING:
     from acousticbrain.models import (
@@ -20,11 +30,32 @@ if TYPE_CHECKING:
 class TraceabilityEngine:
     """Construit un graphe explicable à partir de connaissances structurées."""
 
+    CLARITY_THRESHOLDS = (
+        ("left_right_c50_differences_db", 2.0),
+        ("left_right_c80_differences_db", 2.0),
+        ("left_right_d50_differences_percent", 15.0),
+        ("left_right_ts_differences_s", 0.02),
+    )
+
     def analyze(
         self,
         *,
         global_analysis: GlobalAnalysis,
         recommendation_analysis: RecommendationAnalysis,
+        rt60: RT60Analysis | None = None,
+        etc: ETCAnalysis | None = None,
+        clarity: ClarityAnalysis | None = None,
+        spatial: SpatialAnalysis | None = None,
+        spatial_interpretation: (
+            SpeakerPairSpatialInterpretation
+            | BinauralSpatialInterpretation
+            | None
+        ) = None,
+        clarity_correlations: ClarityCorrelationAnalysis | None = None,
+        spatial_correlations: SpatialCorrelationAnalysis | None = None,
+        etc_reflection_correlations: (
+            ETCReflectionCorrelationAnalysis | None
+        ) = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
@@ -38,6 +69,20 @@ class TraceabilityEngine:
             for domain in global_analysis.domains
         }
         evidence_references = list(domain_evidence.values())
+        physical_evidence = self._physical_evidence(
+            rt60=rt60,
+            etc=etc,
+            clarity=clarity,
+            spatial=spatial,
+            spatial_interpretation=spatial_interpretation,
+            clarity_correlations=clarity_correlations,
+            spatial_correlations=spatial_correlations,
+            etc_reflection_correlations=etc_reflection_correlations,
+        )
+        evidence_references.extend(physical_evidence)
+        domain_evidence.update(
+            {item.source_analysis: item for item in physical_evidence}
+        )
         links = self._correlation_links(global_analysis, domain_evidence)
         links.extend(
             self._recommendation_links(
@@ -76,6 +121,7 @@ class TraceabilityEngine:
                     "RecommendationAnalysis",
                     *global_analysis.source_analyses,
                     *recommendation_sources,
+                    *(item.source_analysis for item in physical_evidence),
                     *(("ConfidenceAnalysis",) if confidence is not None else ()),
                 )
             )
@@ -85,6 +131,119 @@ class TraceabilityEngine:
             evidence_references=evidence_references,
             links=links,
             source_analyses=sources,
+        )
+
+    @classmethod
+    def _physical_evidence(
+        cls,
+        *,
+        rt60,
+        etc,
+        clarity,
+        spatial,
+        spatial_interpretation,
+        clarity_correlations,
+        spatial_correlations,
+        etc_reflection_correlations,
+    ):
+        evidence = []
+        if rt60 is not None:
+            reliable_count = sum(
+                item.confidence >= 70.0
+                and abs(item.difference_seconds) >= 0.2
+                for item in rt60.left_right_band_differences
+            )
+            evidence.append(
+                cls._evidence(
+                    "evidence.rt60.reliable_difference_count",
+                    SourceAnalysisCode.RT60,
+                    FactCode.RT60_RELIABLE_DIFFERENCE_COUNT,
+                    reliable_count,
+                )
+            )
+        if etc is not None:
+            specific_count = (
+                etc.left_only_event_count + etc.right_only_event_count
+            )
+            evidence.append(
+                cls._evidence(
+                    "evidence.etc.channel_specific_event_count",
+                    SourceAnalysisCode.ETC,
+                    FactCode.ETC_CHANNEL_SPECIFIC_EVENT_COUNT,
+                    specific_count,
+                )
+            )
+        if clarity is not None:
+            centers = {
+                center
+                for attribute, threshold in cls.CLARITY_THRESHOLDS
+                for center, difference in getattr(clarity, attribute).items()
+                if abs(difference) >= threshold
+            }
+            evidence.append(
+                cls._evidence(
+                    "evidence.clarity.channel_asymmetry_count",
+                    SourceAnalysisCode.CLARITY,
+                    FactCode.CLARITY_CHANNEL_ASYMMETRY_COUNT,
+                    len(centers),
+                )
+            )
+        if spatial is not None and spatial_interpretation is not None:
+            stability = getattr(
+                spatial_interpretation,
+                "technical_center_stability",
+                None,
+            )
+            evidence.append(
+                cls._evidence(
+                    "evidence.spatial.technical_center_stability",
+                    SourceAnalysisCode.SPATIAL,
+                    FactCode.SPATIAL_TECHNICAL_CENTER_STABILITY,
+                    getattr(stability, "value", "BINAURAL"),
+                )
+            )
+        if clarity_correlations is not None:
+            evidence.append(
+                cls._evidence(
+                    "evidence.clarity.correlation_count",
+                    SourceAnalysisCode.CLARITY_CORRELATION,
+                    FactCode.CLARITY_CORRELATION_COUNT,
+                    len(clarity_correlations.correlations),
+                )
+            )
+        if spatial_correlations is not None:
+            evidence.append(
+                cls._evidence(
+                    "evidence.spatial.correlation_count",
+                    SourceAnalysisCode.SPATIAL_CORRELATION,
+                    FactCode.SPATIAL_CORRELATION_COUNT,
+                    len(spatial_correlations.correlations),
+                )
+            )
+        if etc_reflection_correlations is not None:
+            unmatched_count = sum(
+                event.delay_ms <= 20.0 and event.relative_level_db >= -20.0
+                for events in etc_reflection_correlations.unmatched_events.values()
+                for event in events
+            )
+            evidence.append(
+                cls._evidence(
+                    "evidence.etc_reflection.dominant_unmatched_event_count",
+                    SourceAnalysisCode.ETC_REFLECTION_CORRELATION,
+                    FactCode.ETC_REFLECTION_DOMINANT_UNMATCHED_EVENT_COUNT,
+                    unmatched_count,
+                )
+            )
+        return evidence
+
+    @staticmethod
+    def _evidence(code, source, fact, value):
+        return EvidenceReference(
+            code=code,
+            source_analysis=source,
+            fact_code=fact,
+            evidence_level=EvidenceLevel.CALCULATED,
+            value=value,
         )
 
     @classmethod

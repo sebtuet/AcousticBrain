@@ -26,6 +26,14 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
     assert engine.inputs == {
         "global_analysis": context.global_analysis,
         "recommendation_analysis": context.recommendation_analysis,
+        "rt60": None,
+        "etc": None,
+        "clarity": None,
+        "spatial": None,
+        "spatial_interpretation": None,
+        "clarity_correlations": None,
+        "spatial_correlations": None,
+        "etc_reflection_correlations": None,
         "confidence": context.confidence_analysis,
     }
 
