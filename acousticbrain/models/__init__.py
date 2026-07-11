@@ -13,3 +13,6 @@ from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
 from .modal_band import ModalBand
 from .modal_density_analysis import ModalDensityAnalysis
+from .global_domain_analysis import GlobalDomainAnalysis
+from .global_correlation import GlobalCorrelation
+from .global_analysis import GlobalAnalysis
