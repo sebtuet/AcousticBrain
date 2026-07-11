@@ -1,4 +1,4 @@
-from acousticbrain.report import RecommendationPresenter, Report
+from acousticbrain.report import GlobalPresenter, RecommendationPresenter, Report
 
 
 class ReportBuilder:
@@ -17,5 +17,6 @@ class ReportBuilder:
         )
 
         report.recommendations = RecommendationPresenter().present(context)
+        report.global_analysis = GlobalPresenter().present(context)
 
         return report

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from acousticbrain.models import (
     ConfidenceAnalysis,
+    GlobalAnalysis,
     Measurement,
     ModalDensityAnalysis,
     RecommendationAnalysis,
@@ -41,6 +42,8 @@ class AnalysisContext:
     confidence_analysis: ConfidenceAnalysis | None = None
 
     recommendation_analysis: RecommendationAnalysis | None = None
+
+    global_analysis: GlobalAnalysis | None = None
 
     room_properties: RoomProperties | None = None
 

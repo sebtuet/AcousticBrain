@@ -68,20 +68,20 @@ Cette roadmap décrit l'évolution métier du moteur. Toute PR doit respecter
 - **Diagnostics :** aucun nouveau diagnostic métier.
 - **Tests :** ordre et égalités de priorité.
 
-## 🔜 PR-009 — Recommendation Engine
+## ✅ PR-009 — Recommendation Engine
 
-- **Inputs :** diagnostics, causes et observations associées.
+- **Inputs :** analyses physiques structurées.
 - **Outputs :** recommandations fusionnées et priorisées.
 - **Models :** recommandation structurée.
-- **Diagnostics :** consolidation des recommandations locales.
-- **Tests :** déduplication, priorité et formulation.
+- **Diagnostics :** aucune dépendance aux diagnostics existants.
+- **Tests :** contrat, règles, déduplication, intégration et présentation.
 
 ## 🔜 PR-010 — Global Acoustic Summary
 
-- **Inputs :** analyses et diagnostics de tous les domaines.
+- **Inputs :** analyses physiques et structurées de tous les domaines.
 - **Outputs :** synthèse acoustique globale et domaines prioritaires.
-- **Models :** résumé global.
-- **Diagnostics :** corrélation entre phénomènes liés.
+- **Models :** `GlobalAnalysis`, contributions et provenances par domaine.
+- **Diagnostics :** aucune dépendance aux diagnostics ni à leurs textes.
 - **Tests :** agrégation de scores et liens inter-domaines.
 
 ## 🔜 PR-011 — Explainability

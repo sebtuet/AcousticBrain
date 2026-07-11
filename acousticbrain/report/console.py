@@ -60,6 +60,65 @@ class ConsoleReporter:
 
                 print()
 
+        global_analysis = report.global_analysis
+        if global_analysis is not None:
+
+            print("Synthèse acoustique globale")
+            print()
+
+            score = (
+                f"{global_analysis.score:.1f} / 100"
+                if global_analysis.score is not None
+                else "indisponible"
+            )
+            confidence = (
+                f"{global_analysis.confidence:.1f}%"
+                if global_analysis.confidence is not None
+                else "indisponible"
+            )
+            print(f"Score : {score}")
+            print(f"Confiance : {confidence}")
+            print(
+                "Domaines prioritaires : "
+                + (", ".join(global_analysis.priority_domains) or "aucun")
+            )
+            print(
+                "Analyses sources : "
+                + (", ".join(global_analysis.source_analyses) or "aucune")
+            )
+            print()
+
+            for domain in global_analysis.domains:
+                domain_confidence = (
+                    f"{domain.confidence:.1f}%"
+                    if domain.confidence is not None
+                    else "indisponible"
+                )
+                print(f" • Domaine {domain.code}")
+                print(f"   Score : {domain.score:.1f} / 100")
+                print(f"   Confiance : {domain_confidence}")
+                print(f"   Provenance : {domain.source_analysis}")
+                if domain.recommendation_codes:
+                    print(
+                        "   Références d'action : "
+                        + ", ".join(domain.recommendation_codes)
+                    )
+
+            if global_analysis.domains:
+                print()
+
+            for correlation in global_analysis.correlations:
+                print(f" • Corrélation {correlation.code}")
+                print(f"   Domaines : {', '.join(correlation.domain_codes)}")
+                print(f"   Score : {correlation.score:.1f} / 100")
+                print(
+                    "   Provenances : "
+                    + ", ".join(correlation.source_analyses)
+                )
+
+            if global_analysis.correlations:
+                print()
+
         for diagnostic, is_secondary in self._diagnostics_to_render(report):
 
             print("-" * 60)

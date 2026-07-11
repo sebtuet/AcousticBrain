@@ -20,3 +20,6 @@ from .diagnostic_priority_analysis import DiagnosticPriorityAnalysis
 from .recommendation import Recommendation, RecommendationParameter
 from .recommendation_analysis import RecommendationAnalysis
 from .recommendation_priority import RecommendationPriority
+from .global_domain_analysis import GlobalDomainAnalysis
+from .global_correlation import GlobalCorrelation
+from .global_analysis import GlobalAnalysis

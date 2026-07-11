@@ -5,6 +5,8 @@ from acousticbrain.models import DiagnosticPriorityAnalysis
 
 from .recommendation import PresentedRecommendation
 
+from .global_presenter import PresentedGlobalAnalysis
+
 
 @dataclass
 class Report:
@@ -18,6 +20,8 @@ class Report:
     diagnostic_priority: DiagnosticPriorityAnalysis | None = None
 
     recommendations: list[PresentedRecommendation] = field(default_factory=list)
+
+    global_analysis: PresentedGlobalAnalysis | None = None
 
     def add(self, diagnostic):
 
