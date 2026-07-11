@@ -13,3 +13,6 @@ from .sbir_candidate import SBIRCandidate
 from .sbir_analysis import SBIRAnalysis
 from .modal_band import ModalBand
 from .modal_density_analysis import ModalDensityAnalysis
+from .recommendation import Recommendation, RecommendationParameter
+from .recommendation_analysis import RecommendationAnalysis
+from .recommendation_priority import RecommendationPriority

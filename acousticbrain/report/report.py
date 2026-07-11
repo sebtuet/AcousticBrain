@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 
 from acousticbrain.diagnostics import Diagnostic
 
+from .recommendation import PresentedRecommendation
+
 
 @dataclass
 class Report:
@@ -12,8 +14,8 @@ class Report:
 
     diagnostics: list[Diagnostic] = field(default_factory=list)
 
+    recommendations: list[PresentedRecommendation] = field(default_factory=list)
+
     def add(self, diagnostic):
 
         self.diagnostics.append(diagnostic)
-
-        
