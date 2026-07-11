@@ -9,13 +9,19 @@ Chaque `Analysis` :
 - est une `dataclass` ;
 - ne contient aucun texte destiné à l'utilisateur ;
 - contient uniquement des faits, mesures et correspondances ;
-- produit un `score` entre `0` et `100` ;
+- peut produire un `score` dérivé entre `0` et `100` lorsque ce concept
+  appartient réellement à son domaine ;
 - produit une `confidence` entre `0` et `100` ;
 - est sérialisable ;
 - ne dépend pas des diagnostics ni de la présentation.
 
 Les conventions de score, impact et confiance sont définies dans
 [SCORING.md](SCORING.md).
+
+Une analyse physique factuelle n'acquiert jamais un score artificiel pour les
+besoins de la synthèse globale. Le synthétiseur peut dériver un score de
+domaine à partir de faits structurés et de règles explicites sans modifier
+l'analyse source.
 
 ## Analyzer
 

@@ -3,13 +3,26 @@ from enum import Enum
 
 from acousticbrain.analysis import RecommendationEngine
 from acousticbrain.models import (
+    ClarityCorrelation,
+    ClarityCorrelationAnalysis,
+    ETCAnalysis,
+    ETCReflectionCorrelationAnalysis,
+    ImpulseChannel,
     ModalBand,
     ModalDensityAnalysis,
     Peak,
     RecommendationPriority,
     ReflectionSurface,
+    ReflectionEvent,
     SBIRAnalysis,
     SBIRCandidate,
+    RT60Analysis,
+    RT60BandDifference,
+    SpatialAnalysis,
+    SpatialChannelPairAnalysis,
+    SpatialCorrelation,
+    SpatialCorrelationAnalysis,
+    SpatialMeasurementType,
     StereoAnalysis,
 )
 
@@ -126,5 +139,142 @@ def test_global_confidence_never_creates_a_recommendation():
 
 def test_returns_only_an_empty_recommendation_analysis_without_useful_facts():
     result = RecommendationEngine().analyze(stereo=StereoAnalysis())
+
+    assert result.recommendations == []
+
+
+def test_recommends_investigating_reliable_rt60_channel_differences():
+    differences = [
+        RT60BandDifference(
+            center_frequency_hz=frequency,
+            difference_seconds=difference,
+            left_rt60_seconds=0.8,
+            right_rt60_seconds=0.4,
+            confidence=confidence,
+            left_estimate="T30",
+            right_estimate="T30",
+        )
+        for frequency, difference, confidence in (
+            (63.0, 0.4, 80.0),
+            (125.0, 1.2, 75.0),
+            (250.0, 0.3, 85.0),
+            (500.0, 2.0, 60.0),
+        )
+    ]
+
+    recommendation = RecommendationEngine().analyze(
+        rt60=RT60Analysis(left_right_band_differences=differences)
+    ).recommendations[0]
+
+    assert recommendation.code == "INVESTIGATE_RT60_CHANNEL_DIFFERENCES"
+    assert recommendation.priority is RecommendationPriority.HIGH
+    assert recommendation.confidence == 75.0
+    assert recommendation.parameters == {
+        "reliable_band_count": 3,
+        "maximum_difference_s": 1.2,
+    }
+    assert recommendation.source_analyses == ("RT60Analysis",)
+
+
+def test_recommends_treating_only_dominant_unmatched_early_reflections():
+    dominant = ReflectionEvent(10.0, -12.0, 0.01, 10, 3.4, 88.0)
+    late = ReflectionEvent(30.0, -10.0, 0.03, 30, 10.0, 95.0)
+    weak = ReflectionEvent(10.0, -30.0, 0.01, 10, 3.4, 95.0)
+    analysis = ETCReflectionCorrelationAnalysis(
+        unmatched_events={ImpulseChannel.LEFT: [dominant, late, weak]}
+    )
+
+    recommendation = RecommendationEngine().analyze(
+        etc_reflection_correlations=analysis
+    ).recommendations[0]
+
+    assert recommendation.code == "TREAT_DOMINANT_EARLY_REFLECTIONS"
+    assert recommendation.parameters["important_unmatched_event_count"] == 1
+    assert recommendation.confidence == 88.0
+    assert recommendation.source_analyses == (
+        "ETCAnalysis",
+        "ETCReflectionCorrelationAnalysis",
+    )
+
+
+def test_merges_early_reflection_symmetry_support_and_strongest_properties():
+    etc = ETCAnalysis(
+        left_only_event_count=8,
+        right_only_event_count=2,
+        confidence=75.0,
+    )
+    correlations = ClarityCorrelationAnalysis(
+        correlations=[
+            ClarityCorrelation(
+                code="CLARITY_ETC_CHANNEL_ASYMMETRY",
+                center_frequencies_hz=(1000.0,),
+                confidence=85.0,
+            )
+        ]
+    )
+
+    recommendations = RecommendationEngine().analyze(
+        etc=etc,
+        clarity_correlations=correlations,
+    ).recommendations
+
+    assert len(recommendations) == 1
+    recommendation = recommendations[0]
+    assert recommendation.code == "CHECK_EARLY_REFLECTION_SYMMETRY"
+    assert recommendation.priority is RecommendationPriority.HIGH
+    assert recommendation.confidence == 85.0
+    assert recommendation.source_analyses == (
+        "ETCAnalysis",
+        "ClarityAnalysis",
+        "ClarityCorrelationAnalysis",
+    )
+
+
+def test_merges_time_alignment_support_without_duplicating_the_action():
+    pair = SpatialChannelPairAnalysis(
+        measurement_type=SpatialMeasurementType.SPEAKER_CHANNEL_PAIR,
+        broadband_time_difference_ms=0.4,
+        confidence=70.0,
+    )
+    spatial = SpatialAnalysis(
+        pair_analysis=pair,
+        source_measurement_type=SpatialMeasurementType.SPEAKER_CHANNEL_PAIR,
+        confidence=70.0,
+    )
+    correlations = SpatialCorrelationAnalysis(
+        correlations=[
+            SpatialCorrelation(
+                code="SPATIAL_TIME_ETC_CHANNEL_IMBALANCE",
+                confidence=82.0,
+            )
+        ]
+    )
+
+    recommendations = RecommendationEngine().analyze(
+        spatial=spatial,
+        spatial_correlations=correlations,
+    ).recommendations
+
+    assert len(recommendations) == 1
+    recommendation = recommendations[0]
+    assert recommendation.code == "VERIFY_TIME_ALIGNMENT"
+    assert recommendation.priority is RecommendationPriority.HIGH
+    assert recommendation.confidence == 82.0
+    assert recommendation.source_analyses == (
+        "SpatialAnalysis",
+        "ETCAnalysis",
+        "SpatialCorrelationAnalysis",
+    )
+
+
+def test_new_analyses_without_required_facts_create_no_action():
+    result = RecommendationEngine().analyze(
+        rt60=RT60Analysis(),
+        etc=ETCAnalysis(),
+        spatial=SpatialAnalysis(),
+        clarity_correlations=ClarityCorrelationAnalysis(),
+        spatial_correlations=SpatialCorrelationAnalysis(),
+        etc_reflection_correlations=ETCReflectionCorrelationAnalysis(),
+    )
 
     assert result.recommendations == []

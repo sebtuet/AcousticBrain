@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 
 from acousticbrain.analysis import TraceabilityEngine
 from acousticbrain.models import EvidenceLevel
@@ -146,4 +147,160 @@ def test_returns_an_empty_graph_when_inputs_contain_no_facts():
     assert result.source_analyses == (
         "GlobalAnalysis",
         "RecommendationAnalysis",
+    )
+
+
+def expanded_inputs():
+    global_analysis = GlobalAnalysis(
+        domains=[
+            Domain("RT60", 60.0, "RT60Analysis"),
+            Domain("ETC", 40.0, "ETCAnalysis"),
+            Domain("CLARITY", 50.0, "ClarityAnalysis"),
+            Domain("SPATIAL", 40.0, "SpatialAnalysis"),
+        ],
+        correlations=[
+            Correlation(
+                "RT60_CLARITY_DECAY_INTERACTION",
+                (
+                    "RT60Analysis",
+                    "ClarityAnalysis",
+                    "ClarityCorrelationAnalysis",
+                ),
+            )
+        ],
+        source_analyses=(
+            "RT60Analysis",
+            "ETCAnalysis",
+            "ClarityAnalysis",
+            "SpatialAnalysis",
+        ),
+    )
+    recommendations = RecommendationAnalysis(
+        [
+            Recommendation(
+                "INVESTIGATE_RT60_CHANNEL_DIFFERENCES",
+                ("RT60Analysis",),
+            ),
+            Recommendation(
+                "TREAT_DOMINANT_EARLY_REFLECTIONS",
+                ("ETCAnalysis", "ETCReflectionCorrelationAnalysis"),
+            ),
+            Recommendation(
+                "CHECK_EARLY_REFLECTION_SYMMETRY",
+                (
+                    "ETCAnalysis",
+                    "ClarityAnalysis",
+                    "ClarityCorrelationAnalysis",
+                ),
+            ),
+            Recommendation(
+                "VERIFY_TIME_ALIGNMENT",
+                (
+                    "SpatialAnalysis",
+                    "ETCAnalysis",
+                    "SpatialCorrelationAnalysis",
+                ),
+            ),
+        ]
+    )
+    rt60 = SimpleNamespace(
+        left_right_band_differences=[
+            SimpleNamespace(confidence=80.0, difference_seconds=0.4),
+            SimpleNamespace(confidence=60.0, difference_seconds=2.0),
+        ]
+    )
+    etc = SimpleNamespace(left_only_event_count=8, right_only_event_count=2)
+    clarity = SimpleNamespace(
+        left_right_c50_differences_db={1000.0: 3.0},
+        left_right_c80_differences_db={},
+        left_right_d50_differences_percent={},
+        left_right_ts_differences_s={},
+    )
+    spatial = SimpleNamespace()
+    spatial_interpretation = SimpleNamespace(
+        technical_center_stability=SimpleNamespace(value="UNSTABLE")
+    )
+    clarity_correlations = SimpleNamespace(correlations=[object(), object()])
+    spatial_correlations = SimpleNamespace(correlations=[object()])
+    event = SimpleNamespace(delay_ms=10.0, relative_level_db=-10.0)
+    etc_reflections = SimpleNamespace(unmatched_events={"LEFT": [event] * 3})
+    return (
+        global_analysis,
+        recommendations,
+        rt60,
+        etc,
+        clarity,
+        spatial,
+        spatial_interpretation,
+        clarity_correlations,
+        spatial_correlations,
+        etc_reflections,
+    )
+
+
+def test_links_new_recommendations_and_global_correlation_to_atomic_evidence():
+    inputs = expanded_inputs()
+
+    result = TraceabilityEngine().analyze(
+        global_analysis=inputs[0],
+        recommendation_analysis=inputs[1],
+        rt60=inputs[2],
+        etc=inputs[3],
+        clarity=inputs[4],
+        spatial=inputs[5],
+        spatial_interpretation=inputs[6],
+        clarity_correlations=inputs[7],
+        spatial_correlations=inputs[8],
+        etc_reflection_correlations=inputs[9],
+    )
+
+    evidence = {item.code: item for item in result.evidence_references}
+    assert evidence["evidence.rt60.reliable_difference_count"].value == 1
+    assert evidence["evidence.etc.channel_specific_event_count"].value == 10
+    assert evidence["evidence.clarity.channel_asymmetry_count"].value == 1
+    assert evidence["evidence.spatial.technical_center_stability"].value == "UNSTABLE"
+    assert evidence["evidence.clarity.correlation_count"].value == 2
+    assert evidence["evidence.spatial.correlation_count"].value == 1
+    assert evidence[
+        "evidence.etc_reflection.dominant_unmatched_event_count"
+    ].value == 3
+    recommendation_codes = {
+        link.recommendation_codes[0]
+        for link in result.links
+        if link.recommendation_codes
+    }
+    assert recommendation_codes == {
+        "INVESTIGATE_RT60_CHANNEL_DIFFERENCES",
+        "TREAT_DOMINANT_EARLY_REFLECTIONS",
+        "CHECK_EARLY_REFLECTION_SYMMETRY",
+        "VERIFY_TIME_ALIGNMENT",
+    }
+    correlation_link = next(
+        link
+        for link in result.links
+        if link.correlation_codes
+        == ("RT60_CLARITY_DECAY_INTERACTION",)
+    )
+    assert "evidence.clarity.correlation_count" in correlation_link.evidence_codes
+
+
+def test_keeps_new_recommendation_chain_absent_when_one_source_is_missing():
+    inputs = expanded_inputs()
+
+    result = TraceabilityEngine().analyze(
+        global_analysis=inputs[0],
+        recommendation_analysis=inputs[1],
+        rt60=inputs[2],
+        etc=inputs[3],
+        clarity=inputs[4],
+        spatial=inputs[5],
+        spatial_interpretation=inputs[6],
+        clarity_correlations=inputs[7],
+        spatial_correlations=None,
+        etc_reflection_correlations=inputs[9],
+    )
+
+    assert all(
+        link.recommendation_codes != ("VERIFY_TIME_ALIGNMENT",)
+        for link in result.links
     )

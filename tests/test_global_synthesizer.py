@@ -1,7 +1,21 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.analysis import GlobalSynthesizer
-from acousticbrain.models import ModalDensityAnalysis
+from acousticbrain.models import (
+    ClarityAnalysis,
+    ClarityCorrelation,
+    ClarityCorrelationAnalysis,
+    ETCAnalysis,
+    ETCReflectionCorrelationAnalysis,
+    ImpulseChannel,
+    ModalDensityAnalysis,
+    RT60Analysis,
+    SpatialAnalysis,
+    SpatialChannelPairAnalysis,
+    SpatialCorrelation,
+    SpatialCorrelationAnalysis,
+    SpatialMeasurementType,
+)
 
 
 @dataclass
@@ -130,3 +144,159 @@ def test_returns_an_explicit_empty_result_without_available_domains():
     assert result.correlations == []
     assert result.priority_domains == ()
     assert result.source_analyses == ()
+
+
+def new_analyses():
+    rt60 = RT60Analysis(
+        broadband_rt60_seconds=0.35,
+        interchannel_homogeneity=80.0,
+        confidence=94.0,
+    )
+    etc = ETCAnalysis(
+        available_channels=[ImpulseChannel.LEFT],
+        common_event_count=10,
+        left_only_event_count=2,
+        confidence=90.0,
+    )
+    etc_correlations = ETCReflectionCorrelationAnalysis(
+        evaluated_event_count=10,
+        matched_event_count=5,
+        confidence=80.0,
+    )
+    clarity = ClarityAnalysis(confidence=88.0)
+    clarity_correlations = ClarityCorrelationAnalysis(
+        correlations=[
+            ClarityCorrelation(
+                code="LOW_CLARITY_HIGH_RT60",
+                center_frequencies_hz=(1000.0,),
+            ),
+            ClarityCorrelation(
+                code="LOW_CLARITY_DENSE_EARLY_REFLECTIONS",
+                center_frequencies_hz=(1000.0,),
+            ),
+        ]
+    )
+    pair = SpatialChannelPairAnalysis(
+        measurement_type=SpatialMeasurementType.SPEAKER_CHANNEL_PAIR
+    )
+    spatial = SpatialAnalysis(
+        pair_analysis=pair,
+        source_measurement_type=SpatialMeasurementType.SPEAKER_CHANNEL_PAIR,
+        confidence=70.0,
+    )
+    spatial_correlations = SpatialCorrelationAnalysis(
+        correlations=[
+            SpatialCorrelation(code="SPATIAL_LEVEL_STEREO_IMBALANCE"),
+            SpatialCorrelation(code="SPATIAL_TIME_ETC_CHANNEL_IMBALANCE"),
+        ]
+    )
+    return (
+        rt60,
+        etc,
+        etc_correlations,
+        clarity,
+        clarity_correlations,
+        spatial,
+        spatial_correlations,
+    )
+
+
+def test_derives_four_new_domain_scores_from_structured_facts():
+    (
+        rt60,
+        etc,
+        etc_correlations,
+        clarity,
+        clarity_correlations,
+        spatial,
+        spatial_correlations,
+    ) = new_analyses()
+
+    result = GlobalSynthesizer().synthesize(
+        rt60=rt60,
+        etc=etc,
+        clarity=clarity,
+        spatial=spatial,
+        clarity_correlations=clarity_correlations,
+        spatial_correlations=spatial_correlations,
+        etc_reflection_correlations=etc_correlations,
+    )
+
+    domains = {domain.code: domain for domain in result.domains}
+    assert domains["RT60"].score == 94.0
+    assert round(domains["ETC"].score, 2) == 62.27
+    assert domains["CLARITY"].score == 60.0
+    assert domains["SPATIAL"].score == 40.0
+    assert domains["RT60"].confidence == 94.0
+    assert domains["ETC"].confidence == 80.0
+    assert all(not domain.recommendation_codes for domain in domains.values())
+
+
+def test_omits_new_domains_when_required_facts_are_missing():
+    result = GlobalSynthesizer().synthesize(
+        rt60=RT60Analysis(confidence=90.0),
+        etc=ETCAnalysis(confidence=90.0),
+        clarity=ClarityAnalysis(confidence=90.0),
+        spatial=SpatialAnalysis(confidence=90.0),
+    )
+
+    assert result.domains == []
+
+
+def test_builds_four_global_correlations_from_lower_structured_correlations():
+    (
+        rt60,
+        etc,
+        etc_correlations,
+        clarity,
+        clarity_correlations,
+        spatial,
+        spatial_correlations,
+    ) = new_analyses()
+
+    result = GlobalSynthesizer().synthesize(
+        stereo=StereoAnalysis(symmetry_score=50.0),
+        rt60=rt60,
+        etc=etc,
+        clarity=clarity,
+        spatial=spatial,
+        clarity_correlations=clarity_correlations,
+        spatial_correlations=spatial_correlations,
+        etc_reflection_correlations=etc_correlations,
+    )
+
+    assert [item.code for item in result.correlations] == [
+        "ETC_SPATIAL_ASYMMETRY",
+        "RT60_CLARITY_DECAY_INTERACTION",
+        "ETC_CLARITY_EARLY_ENERGY_INTERACTION",
+        "SPATIAL_STEREO_ALIGNMENT",
+    ]
+    assert result.correlations[0].source_analyses == (
+        "ETCAnalysis",
+        "SpatialAnalysis",
+        "SpatialCorrelationAnalysis",
+    )
+
+
+def test_does_not_create_new_global_correlation_from_domain_scores_alone():
+    (
+        rt60,
+        etc,
+        etc_correlations,
+        clarity,
+        _,
+        spatial,
+        _,
+    ) = new_analyses()
+
+    result = GlobalSynthesizer().synthesize(
+        rt60=rt60,
+        etc=etc,
+        clarity=clarity,
+        spatial=spatial,
+        clarity_correlations=ClarityCorrelationAnalysis(),
+        spatial_correlations=SpatialCorrelationAnalysis(),
+        etc_reflection_correlations=etc_correlations,
+    )
+
+    assert result.correlations == []

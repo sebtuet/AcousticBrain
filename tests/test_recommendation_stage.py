@@ -26,5 +26,11 @@ def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
         "sbir": None,
         "modal_density": None,
         "peak_classification": None,
+        "rt60": None,
+        "etc": None,
+        "spatial": None,
+        "clarity_correlations": None,
+        "spatial_correlations": None,
+        "etc_reflection_correlations": None,
         "confidence": context.confidence_analysis,
     }

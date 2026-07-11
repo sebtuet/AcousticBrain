@@ -17,7 +17,7 @@ Recommandations structurées
    Action : check_placement
    Cible : stereo_speakers
    Priorité : HIGH
-   Confiance : 79.16666666666667%
+   Confiance : 80.28215260082952%
    Provenance : StereoAnalysis
    Paramètres :
     - symmetry_score : 10.859575118098183
@@ -27,7 +27,7 @@ Recommandations structurées
    Action : test_distance
    Cible : floor
    Priorité : HIGH
-   Confiance : 79.16666666666667%
+   Confiance : 80.28215260082952%
    Provenance : SBIRAnalysis
    Paramètres :
     - current_distance_m : 1.05
@@ -43,12 +43,41 @@ Recommandations structurées
     - sparse_band_count : 1
     - dense_band_count : 1
 
+ • INVESTIGATE_RT60_CHANNEL_DIFFERENCES
+   Action : investigate
+   Cible : rt60_channel_differences
+   Priorité : HIGH
+   Confiance : 76.99799690584875%
+   Provenance : RT60Analysis
+   Paramètres :
+    - reliable_band_count : 3
+    - maximum_difference_s : 0.39779267619356373
+
+ • VERIFY_TIME_ALIGNMENT
+   Action : verify_alignment
+   Cible : speaker_pair
+   Priorité : MEDIUM
+   Confiance : 66.9611156343777%
+   Provenance : SpatialAnalysis
+   Paramètres :
+    - broadband_time_difference_ms : 0.24999999999986144
+
+ • TREAT_DOMINANT_EARLY_REFLECTIONS
+   Action : investigate_treatment
+   Cible : dominant_early_reflections
+   Priorité : HIGH
+   Confiance : 72.09830883131441%
+   Provenance : ETCAnalysis, ETCReflectionCorrelationAnalysis
+   Paramètres :
+    - important_unmatched_event_count : 40
+    - maximum_relative_level_db : -8.317272596377485
+
 Synthèse acoustique globale
 
-Score : 17.4 / 100
-Confiance : 79.2%
-Domaines prioritaires : SBIR, STEREO, MODAL_DENSITY
-Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis
+Score : 36.2 / 100
+Confiance : 80.3%
+Domaines prioritaires : SBIR, STEREO, ETC, MODAL_DENSITY, CLARITY, SPATIAL
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis
 
  • Domaine STEREO
    Score : 10.9 / 100
@@ -65,15 +94,47 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis
    Confiance : 75.0%
    Provenance : ModalDensityAnalysis
    Références d'action : MEASURE_MULTIPLE_POSITIONS
+ • Domaine RT60
+   Score : 89.9 / 100
+   Confiance : 93.6%
+   Provenance : RT60Analysis
+ • Domaine ETC
+   Score : 31.1 / 100
+   Confiance : 90.6%
+   Provenance : ETCAnalysis
+ • Domaine CLARITY
+   Score : 40.0 / 100
+   Confiance : 67.2%
+   Provenance : ClarityAnalysis
+ • Domaine SPATIAL
+   Score : 40.0 / 100
+   Confiance : 67.0%
+   Provenance : SpatialAnalysis
 
  • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
    Domaines : STEREO, SBIR
    Score : 7.6 / 100
    Provenances : StereoAnalysis, SBIRAnalysis
+ • Corrélation ETC_SPATIAL_ASYMMETRY
+   Domaines : ETC, SPATIAL
+   Score : 31.1 / 100
+   Provenances : ETCAnalysis, SpatialAnalysis, SpatialCorrelationAnalysis
+ • Corrélation RT60_CLARITY_DECAY_INTERACTION
+   Domaines : RT60, CLARITY
+   Score : 40.0 / 100
+   Provenances : RT60Analysis, ClarityAnalysis, ClarityCorrelationAnalysis
+ • Corrélation ETC_CLARITY_EARLY_ENERGY_INTERACTION
+   Domaines : ETC, CLARITY
+   Score : 31.1 / 100
+   Provenances : ETCAnalysis, ClarityAnalysis, ClarityCorrelationAnalysis
+ • Corrélation SPATIAL_STEREO_ALIGNMENT
+   Domaines : SPATIAL, STEREO
+   Score : 10.9 / 100
+   Provenances : SpatialAnalysis, StereoAnalysis, SpatialCorrelationAnalysis
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, ConfidenceAnalysis
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, ETCReflectionCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
 
  • Preuve evidence.stereo.score
    Fait : stereo.score
@@ -90,16 +151,87 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : ModalDensityAnalysis
    Niveau : CALCULATED
    Valeur : 33.790772017612454
+ • Preuve evidence.rt60.score
+   Fait : rt60.score
+   Analyse : RT60Analysis
+   Niveau : CALCULATED
+   Valeur : 89.87388056861487
+ • Preuve evidence.etc.score
+   Fait : etc.score
+   Analyse : ETCAnalysis
+   Niveau : CALCULATED
+   Valeur : 31.059871530723548
+ • Preuve evidence.clarity.score
+   Fait : clarity.score
+   Analyse : ClarityAnalysis
+   Niveau : CALCULATED
+   Valeur : 40.0
+ • Preuve evidence.spatial.score
+   Fait : spatial.score
+   Analyse : SpatialAnalysis
+   Niveau : CALCULATED
+   Valeur : 40.0
+ • Preuve evidence.rt60.reliable_difference_count
+   Fait : rt60.reliable_difference_count
+   Analyse : RT60Analysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.etc.channel_specific_event_count
+   Fait : etc.channel_specific_event_count
+   Analyse : ETCAnalysis
+   Niveau : CALCULATED
+   Valeur : 18
+ • Preuve evidence.clarity.channel_asymmetry_count
+   Fait : clarity.channel_asymmetry_count
+   Analyse : ClarityAnalysis
+   Niveau : CALCULATED
+   Valeur : 17
+ • Preuve evidence.spatial.technical_center_stability
+   Fait : spatial.technical_center_stability
+   Analyse : SpatialAnalysis
+   Niveau : CALCULATED
+   Valeur : UNSTABLE
+ • Preuve evidence.clarity.correlation_count
+   Fait : clarity.correlation_count
+   Analyse : ClarityCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.spatial.correlation_count
+   Fait : spatial.correlation_count
+   Analyse : SpatialCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 2
+ • Preuve evidence.etc_reflection.dominant_unmatched_event_count
+   Fait : etc_reflection.dominant_unmatched_event_count
+   Analyse : ETCReflectionCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 40
  • Preuve evidence.global.confidence
    Fait : global.confidence
    Analyse : ConfidenceAnalysis
    Niveau : CALCULATED
-   Valeur : 79.16666666666667
+   Valeur : 80.28215260082952
 
  • Lien explanation.correlation.stereo_sbir_placement_interaction
    Faits : stereo.score, sbir.score
    Preuves : evidence.stereo.score, evidence.sbir.score
    Corrélations : STEREO_SBIR_PLACEMENT_INTERACTION
+ • Lien explanation.correlation.etc_spatial_asymmetry
+   Faits : etc.channel_specific_event_count, spatial.technical_center_stability, spatial.correlation_count
+   Preuves : evidence.etc.channel_specific_event_count, evidence.spatial.technical_center_stability, evidence.spatial.correlation_count
+   Corrélations : ETC_SPATIAL_ASYMMETRY
+ • Lien explanation.correlation.rt60_clarity_decay_interaction
+   Faits : rt60.reliable_difference_count, clarity.channel_asymmetry_count, clarity.correlation_count
+   Preuves : evidence.rt60.reliable_difference_count, evidence.clarity.channel_asymmetry_count, evidence.clarity.correlation_count
+   Corrélations : RT60_CLARITY_DECAY_INTERACTION
+ • Lien explanation.correlation.etc_clarity_early_energy_interaction
+   Faits : etc.channel_specific_event_count, clarity.channel_asymmetry_count, clarity.correlation_count
+   Preuves : evidence.etc.channel_specific_event_count, evidence.clarity.channel_asymmetry_count, evidence.clarity.correlation_count
+   Corrélations : ETC_CLARITY_EARLY_ENERGY_INTERACTION
+ • Lien explanation.correlation.spatial_stereo_alignment
+   Faits : spatial.technical_center_stability, stereo.score, spatial.correlation_count
+   Preuves : evidence.spatial.technical_center_stability, evidence.stereo.score, evidence.spatial.correlation_count
+   Corrélations : SPATIAL_STEREO_ALIGNMENT
  • Lien explanation.recommendation.check_stereo_placement
    Faits : stereo.score
    Preuves : evidence.stereo.score
@@ -112,6 +244,18 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : modal_density.score
    Preuves : evidence.modal_density.score
    Recommandations : MEASURE_MULTIPLE_POSITIONS
+ • Lien explanation.recommendation.investigate_rt60_channel_differences
+   Faits : rt60.reliable_difference_count
+   Preuves : evidence.rt60.reliable_difference_count
+   Recommandations : INVESTIGATE_RT60_CHANNEL_DIFFERENCES
+ • Lien explanation.recommendation.verify_time_alignment
+   Faits : spatial.technical_center_stability
+   Preuves : evidence.spatial.technical_center_stability
+   Recommandations : VERIFY_TIME_ALIGNMENT
+ • Lien explanation.recommendation.treat_dominant_early_reflections
+   Faits : etc.channel_specific_event_count, etc_reflection.dominant_unmatched_event_count
+   Preuves : evidence.etc.channel_specific_event_count, evidence.etc_reflection.dominant_unmatched_event_count
+   Recommandations : TREAT_DOMINANT_EARLY_REFLECTIONS
  • Lien explanation.global.confidence
    Faits : global.confidence
    Preuves : evidence.global.confidence
@@ -398,22 +542,26 @@ Recommandations
 Confiance de l'analyse
 
 Observations
- • Preuves disponibles : 2 ; indisponibles : 1.
- • Couverture des preuves : 67 %.
- • Accord des confiances locales : 83 %.
+ • Preuves disponibles : 6 ; indisponibles : 1.
+ • Couverture des preuves : 86 %.
+ • Accord des confiances locales : 73 %.
  • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
  • sbir : 92/100 — Confiance locale disponible : 92.4/100.
  • stereo : 0/100 — Confiance locale indisponible.
- • coverage : 67/100 — 2/3 analyses fournissent une confiance locale.
- • agreement : 83/100 — Dispersion des confiances locales : 17.4 point(s).
+ • rt60 : 94/100 — Confiance locale disponible : 93.6/100.
+ • etc : 91/100 — Confiance locale disponible : 91.1/100.
+ • clarity : 67/100 — Confiance locale disponible : 67.2/100.
+ • spatial : 67/100 — Confiance locale disponible : 67.0/100.
+ • coverage : 86/100 — 6/7 analyses fournissent une confiance locale.
+ • agreement : 73/100 — Dispersion des confiances locales : 26.7 point(s).
 
 Conclusion
 
 Les analyses sont exploitables, avec certaines limites de couverture ou d'accord.
 
 Gravité : MEDIUM
-Score : 79 / 100
-Confiance : 79%
+Score : 80 / 100
+Confiance : 80%
 Niveau de preuve : CALCULATED
 
 Causes

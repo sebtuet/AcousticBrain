@@ -11,5 +11,15 @@ class TraceabilityStage:
         context.traceability_analysis = self.engine.analyze(
             global_analysis=context.global_analysis,
             recommendation_analysis=context.recommendation_analysis,
+            rt60=context.rt60_analysis,
+            etc=context.etc_analysis,
+            clarity=context.clarity_analysis,
+            spatial=context.spatial_analysis,
+            spatial_interpretation=context.spatial_interpretation,
+            clarity_correlations=context.clarity_correlation_analysis,
+            spatial_correlations=context.spatial_correlation_analysis,
+            etc_reflection_correlations=(
+                context.etc_reflection_correlation_analysis
+            ),
             confidence=getattr(context, "confidence_analysis", None),
         )

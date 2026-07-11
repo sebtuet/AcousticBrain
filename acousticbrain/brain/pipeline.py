@@ -20,6 +20,7 @@ from .stages.analysis import AnalysisStage
 from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
 from .stages.spatial_analysis import SpatialAnalysisStage
+from .stages.confidence import ConfidenceStage
 from .stages.etc_correlation import ETCCorrelationStage
 from .stages.clarity_correlation import ClarityCorrelationStage
 from .stages.spatial_interpretation import SpatialInterpretationStage
@@ -110,6 +111,10 @@ class BrainPipeline:
 
         SpatialAnalysisStage().run(
             project,
+            context,
+        )
+
+        ConfidenceStage().run(
             context,
         )
 

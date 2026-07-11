@@ -3,7 +3,6 @@ from acousticbrain.physics import (
     ModeMatcher,
 )
 from acousticbrain.analysis import (
-    ConfidenceEngine,
     ModalDensityAnalyzer,
     RoomModesAnalyzer,
     StereoAnalyzer,
@@ -71,11 +70,3 @@ class PhysicsStage:
                 left_measurement=left_measurement,
                 right_measurement=right_measurement,
             )
-
-        context.confidence_analysis = ConfidenceEngine().analyze(
-            {
-                "modal_density": context.modal_density,
-                "sbir": context.sbir,
-                "stereo": context.stereo,
-            }
-        )

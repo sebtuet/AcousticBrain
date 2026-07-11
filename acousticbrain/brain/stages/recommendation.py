@@ -13,5 +13,13 @@ class RecommendationStage:
             sbir=context.sbir,
             modal_density=context.modal_density,
             peak_classification=getattr(context, "peak_classification", None),
+            rt60=context.rt60_analysis,
+            etc=context.etc_analysis,
+            spatial=context.spatial_analysis,
+            clarity_correlations=context.clarity_correlation_analysis,
+            spatial_correlations=context.spatial_correlation_analysis,
+            etc_reflection_correlations=(
+                context.etc_reflection_correlation_analysis
+            ),
             confidence=getattr(context, "confidence_analysis", None),
         )

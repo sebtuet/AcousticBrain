@@ -28,6 +28,13 @@ def test_global_synthesis_stage_stores_result_from_explicit_analyses():
         "sbir": None,
         "modal_density": None,
         "peak_classification": context.peak_classification,
+        "rt60": None,
+        "etc": None,
+        "clarity": None,
+        "spatial": None,
+        "clarity_correlations": None,
+        "spatial_correlations": None,
+        "etc_reflection_correlations": None,
         "confidence": context.confidence_analysis,
     }
 
@@ -44,5 +51,12 @@ def test_global_synthesis_stage_contains_no_fallback_business_rules():
         "sbir": None,
         "modal_density": None,
         "peak_classification": None,
+        "rt60": None,
+        "etc": None,
+        "clarity": None,
+        "spatial": None,
+        "clarity_correlations": None,
+        "spatial_correlations": None,
+        "etc_reflection_correlations": None,
         "confidence": None,
     }
