@@ -79,3 +79,10 @@ recalculé.
 La plage indicative de 0,2 à 0,4 seconde suit les conditions d'écoute de
 référence EBU Tech 3276. Le score combine cette durée déjà calculée et
 l'homogénéité intercanal. La confiance est recopiée depuis `RT60Analysis`.
+
+Les écarts gauche-droite sont structurés avec la confiance et la méthode de
+chaque canal. Le diagnostic ne retient pour son score que les bandes dont la
+confiance minimale atteint 70 %, et considère un écart comme significatif à
+partir de 0,20 seconde. Trois écarts fiables significatifs, ou un écart fiable
+d'au moins une seconde, imposent une gravité haute. Les grands écarts moins
+fiables restent visibles mais sont explicitement exclus du score.

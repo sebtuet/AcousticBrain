@@ -43,7 +43,7 @@ def test_aggregates_only_common_available_bands_and_channel_differences():
     )
     right = channel(
         ImpulseChannel.RIGHT,
-        [band(1000.0, 0.5)],
+        [band(1000.0, 0.5, confidence=80.0)],
         broadband=0.4,
         confidence=80.0,
     )
@@ -66,6 +66,12 @@ def test_aggregates_only_common_available_bands_and_channel_differences():
     assert result.left_right_band_differences_seconds == {
         1000.0: pytest.approx(-0.1)
     }
+    difference = result.left_right_band_differences[0]
+    assert difference.center_frequency_hz == 1000.0
+    assert difference.difference_seconds == pytest.approx(-0.1)
+    assert difference.confidence == 80.0
+    assert difference.left_estimate == "T30"
+    assert difference.right_estimate == "T30"
     assert result.interchannel_homogeneity == pytest.approx(77.7777778)
     assert result.broadband_rt60_seconds == pytest.approx(0.45)
     assert result.confidence == pytest.approx(42.5)
@@ -92,4 +98,3 @@ def test_rejects_a_channel_key_that_does_not_match_the_analysis():
 
     with pytest.raises(ValueError, match="channel key"):
         RT60Aggregator().aggregate({ImpulseChannel.RIGHT: left})
-

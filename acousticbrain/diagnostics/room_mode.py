@@ -1,4 +1,4 @@
-from acousticbrain.models import EvidenceLevel
+from acousticbrain.models import EvidenceLevel, RoomModeType
 
 from .base import DiagnosticBase
 from .diagnostic import Diagnostic
@@ -39,11 +39,7 @@ class RoomModeDiagnostic(DiagnosticBase):
 
             evidence_level=EvidenceLevel.CONFIRMED,
 
-            message=(
-                f"Mode axial {best.mode.axis} "
-                f"(ordre {best.mode.order}) "
-                f"à {best.peak.frequency:.2f} Hz"
-            ),
+            message=self._message(best),
 
             causes=[
                 "Correspondance avec le calcul théorique"
@@ -54,4 +50,22 @@ class RoomModeDiagnostic(DiagnosticBase):
                 "Ne pas corriger immédiatement avec un EQ",
             ],
 
+        )
+
+    @staticmethod
+    def _message(match):
+        mode = match.mode
+        mode_label = {
+            RoomModeType.AXIAL: "axial",
+            RoomModeType.TANGENTIAL: "tangentiel",
+            RoomModeType.OBLIQUE: "oblique",
+        }[mode.mode_type]
+        modal_order = (
+            f"ordre {mode.order}"
+            if mode.mode_type is RoomModeType.AXIAL
+            else f"indices ({mode.order_x}, {mode.order_y}, {mode.order_z})"
+        )
+        return (
+            f"Mode {mode_label} {mode.axis} "
+            f"({modal_order}) à {match.peak.frequency:.2f} Hz"
         )

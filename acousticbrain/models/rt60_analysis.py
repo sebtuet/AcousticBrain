@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from .rt60_band_analysis import RT60BandAnalysis
 from .rt60_channel_analysis import RT60ChannelAnalysis
 from .impulse_channel import ImpulseChannel
+from .rt60_band_difference import RT60BandDifference
 
 
 @dataclass
@@ -15,6 +16,9 @@ class RT60Analysis:
     common_center_frequencies_hz: tuple[float, ...] = ()
     left_right_band_differences_seconds: dict[float, float] = field(
         default_factory=dict
+    )
+    left_right_band_differences: list[RT60BandDifference] = field(
+        default_factory=list
     )
     interchannel_homogeneity: float | None = None
     broadband_rt60_seconds: float | None = None

@@ -10,20 +10,26 @@ class ModalDensityDiagnostic(DiagnosticBase):
 
         if analysis is None or analysis.total_mode_count == 0:
             return Diagnostic(
-                title="Densité modale axiale",
+                title="Densité modale",
                 severity="INFO",
                 confidence=0,
                 evidence_level=EvidenceLevel.CALCULATED,
-                message="Aucun mode axial exploitable sous la fréquence de Schroeder.",
+                message="Aucun mode exploitable sous la fréquence de Schroeder.",
             )
 
         observations = [
             (
-                f"{analysis.total_mode_count} modes axiaux sont présents sous la "
+                f"{analysis.total_mode_count} modes sont présents sous la "
                 "fréquence de Schroeder."
             ),
+            (
+                "Répartition : "
+                f"{analysis.axial_mode_count} axiaux, "
+                f"{analysis.tangential_mode_count} tangentiels, "
+                f"{analysis.oblique_mode_count} obliques."
+            ),
             self._spacing_observation(analysis),
-            "Cette analyse couvre les modes axiaux uniquement.",
+            "Cette analyse couvre les trois familles modales.",
         ]
         observations.extend(
             self._band_observation(band, "concentration")
@@ -38,7 +44,7 @@ class ModalDensityDiagnostic(DiagnosticBase):
         conclusion = self._conclusion(analysis.score, analysis.dense_bands, analysis.sparse_bands)
 
         return Diagnostic(
-            title="Densité modale axiale",
+            title="Densité modale",
             severity=severity,
             score=analysis.score,
             confidence=round(analysis.confidence),
@@ -48,12 +54,12 @@ class ModalDensityDiagnostic(DiagnosticBase):
             conclusion=conclusion,
             causes=[
                 "Dimensions de la pièce",
-                "Répartition des modes axiaux sous la fréquence de Schroeder",
+                "Répartition des modes propres sous la fréquence de Schroeder",
             ],
             recommendations=[
                 "Interpréter les pics et creux dans les zones modales identifiées",
                 "Mesurer plusieurs positions d'écoute dans le grave",
-                "Compléter ultérieurement avec les modes tangentiels et obliques",
+                "Vérifier la répartition des anomalies par famille modale",
             ],
         )
 
@@ -61,7 +67,7 @@ class ModalDensityDiagnostic(DiagnosticBase):
     def _spacing_observation(analysis):
         if analysis.average_spacing_hz is None:
             return (
-                "Un seul mode axial est disponible : l'espacement modal ne peut "
+                "Un seul mode est disponible : l'espacement modal ne peut "
                 "pas encore être calculé."
             )
 
@@ -94,7 +100,7 @@ class ModalDensityDiagnostic(DiagnosticBase):
     @staticmethod
     def _conclusion(score, dense_bands, sparse_bands):
         if score >= 85:
-            return "La distribution modale axiale est globalement régulière."
+            return "La distribution modale est globalement régulière."
 
         details = []
         if dense_bands:
@@ -103,4 +109,4 @@ class ModalDensityDiagnostic(DiagnosticBase):
             details.append("des zones modales clairsemées")
 
         phenomenon = " et ".join(details) or "des espacements irréguliers"
-        return f"La distribution modale axiale présente {phenomenon}."
+        return f"La distribution modale présente {phenomenon}."

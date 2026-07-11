@@ -119,7 +119,7 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
 ------------------------------------------------------------
 Modes propres
 
-Mode axial Largeur / Hauteur (ordre 2) à 109.11 Hz
+Mode tangentiel Largeur / Hauteur (indices (0, 2, 1)) à 109.11 Hz
 
 Gravité : HIGH
 Confiance : 98%
@@ -149,6 +149,40 @@ Causes
 Recommandations
  • Mesurer chaque enceinte séparément
  • Vérifier la position d'écoute
+
+------------------------------------------------------------
+Réverbération RT60
+
+Observations
+ • Canaux analysés : 3.
+ • Bandes de tiers d'octave communes : 24.
+ • RT60 large bande agrégé : 0.348 s.
+ • Étendue intercanal large bande : 0.346 à 0.352 s.
+ • Homogénéité intercanal : 66 %.
+ • Écarts G-D fiables significatifs : 3.
+ • Écart G-D fiable à 63 Hz : -0.398 s (confiance 77 %, méthodes T30/T30).
+ • Écart G-D fiable à 200 Hz : +0.214 s (confiance 98 %, méthodes T30/T30).
+ • Écart G-D fiable à 315 Hz : -0.374 s (confiance 86 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 100 Hz : +1.396 s (confiance 62 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 125 Hz : +3.224 s (confiance 37 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 250 Hz : +3.168 s (confiance 55 %, méthodes T30/T30).
+
+Conclusion
+
+La moyenne est maîtrisée, mais plusieurs bandes présentent des écarts intercanaux importants et fiables.
+
+Gravité : HIGH
+Score : 40 / 100
+Confiance : 94%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Décroissances différentes selon les canaux
+ • Écarts RT60 fiables dans certaines bandes
+
+Recommandations
+ • Comparer le placement et les surfaces réfléchissantes des deux canaux.
+ • Examiner séparément les bandes présentant des écarts G-D fiables.
 
 ------------------------------------------------------------
 Réflexions précoces
@@ -192,18 +226,19 @@ Recommandations
  • Mesurer le subwoofer séparément
 
 ------------------------------------------------------------
-Densité modale axiale
+Densité modale
 
 Observations
- • 34 modes axiaux sont présents sous la fréquence de Schroeder.
+ • 34 modes sont présents sous la fréquence de Schroeder.
+ • Répartition : 9 axiaux, 18 tangentiels, 7 obliques.
  • Espacement modal moyen : 3.5 Hz (de 0.1 à 11.0 Hz).
- • Cette analyse couvre les modes axiaux uniquement.
+ • Cette analyse couvre les trois familles modales.
  • Entre 100 et 149 Hz, 21 modes forment une concentration, espacement moyen 2.2 Hz.
  • Entre 20 et 50 Hz, 2 modes forment une zone clairsemée, espacement moyen 10.1 Hz.
 
 Conclusion
 
-La distribution modale axiale présente des concentrations de modes et des zones modales clairsemées.
+La distribution modale présente des concentrations de modes et des zones modales clairsemées.
 
 Gravité : HIGH
 Score : 34 / 100
@@ -212,12 +247,12 @@ Niveau de preuve : CALCULATED
 
 Causes
  • Dimensions de la pièce
- • Répartition des modes axiaux sous la fréquence de Schroeder
+ • Répartition des modes propres sous la fréquence de Schroeder
 
 Recommandations
  • Interpréter les pics et creux dans les zones modales identifiées
  • Mesurer plusieurs positions d'écoute dans le grave
- • Compléter ultérieurement avec les modes tangentiels et obliques
+ • Vérifier la répartition des anomalies par famille modale
 
 ------------------------------------------------------------
 Symétrie stéréo
@@ -277,53 +312,4 @@ Causes
 Recommandations
  • Compléter les analyses ou mesures indisponibles.
  • Examiner les analyses dont la confiance locale est faible.
-
-------------------------------------------------------------
-Réverbération RT60
-
-Observations
- • Canaux analysés : 3.
- • Bandes de tiers d'octave communes : 24.
- • RT60 large bande agrégé : 0.348 s.
- • Étendue intercanal large bande : 0.346 à 0.352 s.
- • Homogénéité intercanal : 66 %.
- • Écart G-D à 50 Hz : -0.095 s.
- • Écart G-D à 63 Hz : -0.398 s.
- • Écart G-D à 80 Hz : +0.084 s.
- • Écart G-D à 100 Hz : +1.396 s.
- • Écart G-D à 125 Hz : +3.224 s.
- • Écart G-D à 160 Hz : -0.185 s.
- • Écart G-D à 200 Hz : +0.214 s.
- • Écart G-D à 250 Hz : +3.168 s.
- • Écart G-D à 315 Hz : -0.374 s.
- • Écart G-D à 400 Hz : -0.002 s.
- • Écart G-D à 500 Hz : +0.047 s.
- • Écart G-D à 630 Hz : +0.068 s.
- • Écart G-D à 800 Hz : -0.025 s.
- • Écart G-D à 1000 Hz : -0.012 s.
- • Écart G-D à 1250 Hz : -0.004 s.
- • Écart G-D à 1600 Hz : +0.029 s.
- • Écart G-D à 2000 Hz : -0.006 s.
- • Écart G-D à 2500 Hz : -0.001 s.
- • Écart G-D à 3150 Hz : +0.014 s.
- • Écart G-D à 4000 Hz : -0.018 s.
- • Écart G-D à 5000 Hz : -0.007 s.
- • Écart G-D à 6300 Hz : +0.006 s.
- • Écart G-D à 8000 Hz : -0.002 s.
- • Écart G-D à 10000 Hz : -0.001 s.
-
-Conclusion
-
-La durée et l'homogénéité de la réverbération sont maîtrisées.
-
-Gravité : LOW
-Score : 90 / 100
-Confiance : 94%
-Niveau de preuve : CALCULATED
-
-Causes
- • Décroissances différentes selon les canaux
-
-Recommandations
- • Comparer le placement et les surfaces réfléchissantes des deux canaux.
 

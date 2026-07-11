@@ -4,6 +4,7 @@ from acousticbrain.models import (
     ImpulseChannel,
     RT60Analysis,
     RT60BandAnalysis,
+    RT60BandDifference,
     RT60ChannelAnalysis,
 )
 
@@ -40,6 +41,9 @@ class RT60Aggregator:
             aggregate_bands=aggregate_bands,
             common_center_frequencies_hz=common_centers,
             left_right_band_differences_seconds=self._left_right_differences(
+                channel_analyses
+            ),
+            left_right_band_differences=self._left_right_difference_facts(
                 channel_analyses
             ),
             interchannel_homogeneity=self._homogeneity(band_maps, common_centers),
@@ -115,6 +119,34 @@ class RT60Aggregator:
             for center in sorted(set(left_bands).intersection(right_bands))
         }
 
+    @classmethod
+    def _left_right_difference_facts(cls, channel_analyses):
+        left = channel_analyses.get(ImpulseChannel.LEFT)
+        right = channel_analyses.get(ImpulseChannel.RIGHT)
+        if left is None or right is None:
+            return []
+
+        left_bands = cls._available_bands(left)
+        right_bands = cls._available_bands(right)
+        return [
+            RT60BandDifference(
+                center_frequency_hz=center,
+                difference_seconds=(
+                    left_bands[center].rt60_seconds
+                    - right_bands[center].rt60_seconds
+                ),
+                left_rt60_seconds=left_bands[center].rt60_seconds,
+                right_rt60_seconds=right_bands[center].rt60_seconds,
+                confidence=min(
+                    left_bands[center].confidence,
+                    right_bands[center].confidence,
+                ),
+                left_estimate=left_bands[center].selected_estimate,
+                right_estimate=right_bands[center].selected_estimate,
+            )
+            for center in sorted(set(left_bands).intersection(right_bands))
+        ]
+
     @staticmethod
     def _homogeneity(band_maps, common_centers):
         if len(band_maps) < 2 or not common_centers:
@@ -137,4 +169,3 @@ class RT60Aggregator:
         union = set().union(*(set(band_map) for band_map in band_maps))
         coverage = len(common_centers) / len(union) if union else 0.0
         return fmean(analysis.confidence for analysis in analyses) * coverage
-
