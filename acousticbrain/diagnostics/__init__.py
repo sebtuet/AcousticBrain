@@ -9,3 +9,4 @@ from .modal_density import ModalDensityDiagnostic
 from .confidence import ConfidenceDiagnostic
 from .rt60 import RT60Diagnostic
 from .etc import ETCDiagnostic
+from .clarity import ClarityDiagnostic

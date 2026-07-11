@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.models import (
+    ClarityAnalysis,
+    ClarityCorrelationAnalysis,
     ConfidenceAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
@@ -49,6 +51,10 @@ class AnalysisContext:
     rt60_analysis: RT60Analysis | None = None
 
     etc_analysis: ETCAnalysis | None = None
+
+    clarity_analysis: ClarityAnalysis | None = None
+
+    clarity_correlation_analysis: ClarityCorrelationAnalysis | None = None
 
     etc_reflection_correlation_analysis: (
         ETCReflectionCorrelationAnalysis | None
