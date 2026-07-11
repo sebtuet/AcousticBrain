@@ -93,3 +93,6 @@ def test_directory_import_loads_reference_impulse_channels():
         ImpulseChannel.RIGHT,
         ImpulseChannel.STEREO,
     }
+    assert project.room.length == 5.84
+    assert project.room.width == 5.51
+    assert project.room.height == 2.60

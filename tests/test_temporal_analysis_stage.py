@@ -3,6 +3,8 @@ from acousticbrain.brain.stages.temporal_analysis import TemporalAnalysisStage
 from acousticbrain.models import (
     ClarityAnalysis,
     ClarityChannelAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantChannelAnalysis,
     ETCAnalysis,
     ETCChannelAnalysis,
     ImpulseChannel,
@@ -62,6 +64,20 @@ class RecordingClarityAggregator(RecordingAggregator):
         self.result = ClarityAnalysis()
 
 
+class RecordingDirectReverberantAnalyzer(RecordingAnalyzer):
+    def analyze(self, impulse_response):
+        self.inputs.append(impulse_response)
+        return DirectReverberantChannelAnalysis(
+            channel=impulse_response.channel
+        )
+
+
+class RecordingDirectReverberantAggregator(RecordingAggregator):
+    def __init__(self):
+        self.input = None
+        self.result = DirectReverberantAnalysis()
+
+
 def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     project = Project(
         name="Reference",
@@ -86,6 +102,8 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     etc_aggregator = RecordingETCAggregator()
     clarity_analyzer = RecordingClarityAnalyzer()
     clarity_aggregator = RecordingClarityAggregator()
+    direct_reverberant_analyzer = RecordingDirectReverberantAnalyzer()
+    direct_reverberant_aggregator = RecordingDirectReverberantAggregator()
 
     TemporalAnalysisStage(
         analyzer,
@@ -94,6 +112,8 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         etc_aggregator,
         clarity_analyzer,
         clarity_aggregator,
+        direct_reverberant_analyzer,
+        direct_reverberant_aggregator,
     ).run(project, context)
 
     assert analyzer.inputs == [left, stereo]
@@ -114,6 +134,15 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         ImpulseChannel.STEREO,
     }
     assert context.clarity_analysis is clarity_aggregator.result
+    assert direct_reverberant_analyzer.inputs == [left, stereo]
+    assert set(direct_reverberant_aggregator.input) == {
+        ImpulseChannel.LEFT,
+        ImpulseChannel.STEREO,
+    }
+    assert (
+        context.direct_reverberant_analysis
+        is direct_reverberant_aggregator.result
+    )
 
 
 def test_project_stores_impulses_by_explicit_channel():

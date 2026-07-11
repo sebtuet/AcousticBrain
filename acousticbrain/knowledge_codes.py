@@ -3,6 +3,7 @@ class GlobalDomainCode:
     ETC = "ETC"
     CLARITY = "CLARITY"
     SPATIAL = "SPATIAL"
+    DIRECT_REVERBERANT = "DIRECT_REVERBERANT"
 
 
 class SourceAnalysisCode:
@@ -13,6 +14,10 @@ class SourceAnalysisCode:
     CLARITY_CORRELATION = "ClarityCorrelationAnalysis"
     SPATIAL_CORRELATION = "SpatialCorrelationAnalysis"
     ETC_REFLECTION_CORRELATION = "ETCReflectionCorrelationAnalysis"
+    DIRECT_REVERBERANT = "DirectReverberantAnalysis"
+    DIRECT_REVERBERANT_CORRELATION = (
+        "DirectReverberantCorrelationAnalysis"
+    )
 
 
 class GlobalCorrelationCode:
@@ -22,6 +27,9 @@ class GlobalCorrelationCode:
         "ETC_CLARITY_EARLY_ENERGY_INTERACTION"
     )
     SPATIAL_STEREO_ALIGNMENT = "SPATIAL_STEREO_ALIGNMENT"
+    LOW_DRR_DECAY_INTERACTION = "LOW_DRR_DECAY_INTERACTION"
+    DRR_EARLY_REFLECTION_INTERACTION = "DRR_EARLY_REFLECTION_INTERACTION"
+    DRR_SPATIAL_ASYMMETRY = "DRR_SPATIAL_ASYMMETRY"
 
 
 class RecommendationCode:
@@ -31,6 +39,13 @@ class RecommendationCode:
     )
     TREAT_DOMINANT_EARLY_REFLECTIONS = "TREAT_DOMINANT_EARLY_REFLECTIONS"
     VERIFY_TIME_ALIGNMENT = "VERIFY_TIME_ALIGNMENT"
+    IMPROVE_DIRECT_SOUND_DOMINANCE = "IMPROVE_DIRECT_SOUND_DOMINANCE"
+    INVESTIGATE_DRR_CHANNEL_DIFFERENCES = (
+        "INVESTIGATE_DRR_CHANNEL_DIFFERENCES"
+    )
+    REDUCE_DOMINANT_EARLY_REFLECTIONS = (
+        "REDUCE_DOMINANT_EARLY_REFLECTIONS"
+    )
 
 
 class FactCode:
@@ -47,3 +62,8 @@ class FactCode:
         "spatial.technical_center_stability"
     )
     SPATIAL_CORRELATION_COUNT = "spatial.correlation_count"
+    DRR_BROADBAND_DB = "direct_reverberant.broadband_drr_db"
+    DRR_ASYMMETRIC_BAND_COUNT = (
+        "direct_reverberant.asymmetric_band_count"
+    )
+    DRR_CORRELATION_COUNT = "direct_reverberant.correlation_count"

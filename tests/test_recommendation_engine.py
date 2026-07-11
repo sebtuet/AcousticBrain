@@ -7,6 +7,9 @@ from acousticbrain.models import (
     ClarityCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelation,
+    DirectReverberantCorrelationAnalysis,
     ImpulseChannel,
     ModalBand,
     ModalDensityAnalysis,
@@ -278,3 +281,40 @@ def test_new_analyses_without_required_facts_create_no_action():
     )
 
     assert result.recommendations == []
+
+
+def test_creates_and_deduplicates_drr_actions_from_facts_and_correlations():
+    drr = DirectReverberantAnalysis(
+        broadband_direct_to_reverberant_db=-2.0,
+        left_right_direct_to_reverberant_differences_db={1000.0: 4.0},
+        confidence=75.0,
+    )
+    correlations = DirectReverberantCorrelationAnalysis(
+        correlations=[
+            DirectReverberantCorrelation(
+                code="LOW_DRR_DOMINANT_EARLY_REFLECTIONS",
+                confidence=85.0,
+            )
+        ]
+    )
+
+    recommendations = RecommendationEngine().analyze(
+        direct_reverberant=drr,
+        direct_reverberant_correlations=correlations,
+    ).recommendations
+
+    assert {item.code for item in recommendations} == {
+        "IMPROVE_DIRECT_SOUND_DOMINANCE",
+        "INVESTIGATE_DRR_CHANNEL_DIFFERENCES",
+        "REDUCE_DOMINANT_EARLY_REFLECTIONS",
+    }
+    improve = next(
+        item
+        for item in recommendations
+        if item.code == "IMPROVE_DIRECT_SOUND_DOMINANCE"
+    )
+    assert improve.confidence == 85.0
+    assert improve.source_analyses == (
+        "DirectReverberantAnalysis",
+        "DirectReverberantCorrelationAnalysis",
+    )

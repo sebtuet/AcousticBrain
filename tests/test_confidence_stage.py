@@ -22,6 +22,7 @@ def test_stage_maps_all_physical_analyses_explicitly():
     context.etc_analysis = object()
     context.clarity_analysis = object()
     context.spatial_analysis = object()
+    context.direct_reverberant_analysis = object()
     engine = RecordingEngine()
 
     ConfidenceStage(engine).run(context)
@@ -34,5 +35,6 @@ def test_stage_maps_all_physical_analyses_explicitly():
         "etc": context.etc_analysis,
         "clarity": context.clarity_analysis,
         "spatial": context.spatial_analysis,
+        "direct_reverberant": context.direct_reverberant_analysis,
     }
     assert context.confidence_analysis is engine.result

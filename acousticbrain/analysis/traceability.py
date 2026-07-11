@@ -6,6 +6,8 @@ from acousticbrain.models import (
     BinauralSpatialInterpretation,
     ClarityAnalysis,
     ClarityCorrelationAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
     EvidenceLevel,
@@ -56,6 +58,10 @@ class TraceabilityEngine:
         etc_reflection_correlations: (
             ETCReflectionCorrelationAnalysis | None
         ) = None,
+        direct_reverberant: DirectReverberantAnalysis | None = None,
+        direct_reverberant_correlations: (
+            DirectReverberantCorrelationAnalysis | None
+        ) = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
@@ -78,6 +84,10 @@ class TraceabilityEngine:
             clarity_correlations=clarity_correlations,
             spatial_correlations=spatial_correlations,
             etc_reflection_correlations=etc_reflection_correlations,
+            direct_reverberant=direct_reverberant,
+            direct_reverberant_correlations=(
+                direct_reverberant_correlations
+            ),
         )
         evidence_references.extend(physical_evidence)
         domain_evidence.update(
@@ -89,6 +99,7 @@ class TraceabilityEngine:
                 global_analysis,
                 recommendation_analysis,
                 domain_evidence,
+                evidence_references,
             )
         )
 
@@ -145,6 +156,8 @@ class TraceabilityEngine:
         clarity_correlations,
         spatial_correlations,
         etc_reflection_correlations,
+        direct_reverberant,
+        direct_reverberant_correlations,
     ):
         evidence = []
         if rt60 is not None:
@@ -234,6 +247,35 @@ class TraceabilityEngine:
                     unmatched_count,
                 )
             )
+        if direct_reverberant is not None:
+            evidence.extend(
+                [
+                    cls._evidence(
+                        "evidence.direct_reverberant.asymmetric_band_count",
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                        FactCode.DRR_ASYMMETRIC_BAND_COUNT,
+                        sum(
+                            abs(value) >= 3.0
+                            for value in direct_reverberant.left_right_direct_to_reverberant_differences_db.values()
+                        ),
+                    ),
+                    cls._evidence(
+                        "evidence.direct_reverberant.broadband_drr_db",
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                        FactCode.DRR_BROADBAND_DB,
+                        direct_reverberant.broadband_direct_to_reverberant_db,
+                    ),
+                ]
+            )
+        if direct_reverberant_correlations is not None:
+            evidence.append(
+                cls._evidence(
+                    "evidence.direct_reverberant.correlation_count",
+                    SourceAnalysisCode.DIRECT_REVERBERANT_CORRELATION,
+                    FactCode.DRR_CORRELATION_COUNT,
+                    len(direct_reverberant_correlations.correlations),
+                )
+            )
         return evidence
 
     @staticmethod
@@ -274,13 +316,26 @@ class TraceabilityEngine:
         global_analysis,
         recommendation_analysis,
         domain_evidence,
+        evidence_references,
     ):
         links = []
+        evidence_by_code = {
+            item.code: item for item in evidence_references
+        }
         for recommendation in recommendation_analysis.recommendations:
+            recommendation_evidence = dict(domain_evidence)
+            if recommendation.code == "INVESTIGATE_DRR_CHANNEL_DIFFERENCES":
+                asymmetric = evidence_by_code.get(
+                    "evidence.direct_reverberant.asymmetric_band_count"
+                )
+                if asymmetric is not None:
+                    recommendation_evidence[
+                        SourceAnalysisCode.DIRECT_REVERBERANT
+                    ] = asymmetric
             evidence = [
-                domain_evidence[source]
+                recommendation_evidence[source]
                 for source in recommendation.source_analyses
-                if source in domain_evidence
+                if source in recommendation_evidence
             ]
             if (
                 not evidence

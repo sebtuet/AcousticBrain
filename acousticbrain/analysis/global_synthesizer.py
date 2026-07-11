@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from acousticbrain.models import (
     ClarityAnalysis,
     ClarityCorrelationAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
     GlobalAnalysis,
@@ -37,6 +39,7 @@ class GlobalSynthesizer:
     RT60_EXCESS_RANGE_S = 0.6
     CLARITY_CORRELATION_PENALTY = 20.0
     SPATIAL_CORRELATION_PENALTY = 30.0
+    DRR_CORRELATION_PENALTY = 20.0
 
     def synthesize(
         self,
@@ -54,6 +57,10 @@ class GlobalSynthesizer:
         etc_reflection_correlations: (
             ETCReflectionCorrelationAnalysis | None
         ) = None,
+        direct_reverberant: DirectReverberantAnalysis | None = None,
+        direct_reverberant_correlations: (
+            DirectReverberantCorrelationAnalysis | None
+        ) = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> GlobalAnalysis:
         domains = self._domains(
@@ -68,6 +75,10 @@ class GlobalSynthesizer:
             clarity_correlations=clarity_correlations,
             spatial_correlations=spatial_correlations,
             etc_reflection_correlations=etc_reflection_correlations,
+            direct_reverberant=direct_reverberant,
+            direct_reverberant_correlations=(
+                direct_reverberant_correlations
+            ),
         )
         local_confidences = [
             domain.confidence
@@ -88,6 +99,7 @@ class GlobalSynthesizer:
                 peak_classification,
                 clarity_correlations,
                 spatial_correlations,
+                direct_reverberant_correlations,
             ),
             priority_domains=tuple(
                 domain.code
@@ -112,6 +124,10 @@ class GlobalSynthesizer:
         clarity_correlations: ClarityCorrelationAnalysis | None,
         spatial_correlations: SpatialCorrelationAnalysis | None,
         etc_reflection_correlations: ETCReflectionCorrelationAnalysis | None,
+        direct_reverberant: DirectReverberantAnalysis | None,
+        direct_reverberant_correlations: (
+            DirectReverberantCorrelationAnalysis | None
+        ),
     ) -> list[GlobalDomainAnalysis]:
         domains: list[GlobalDomainAnalysis] = []
 
@@ -208,7 +224,39 @@ class GlobalSynthesizer:
         if spatial_domain is not None:
             domains.append(spatial_domain)
 
+        drr_domain = cls._direct_reverberant_domain(
+            direct_reverberant,
+            direct_reverberant_correlations,
+        )
+        if drr_domain is not None:
+            domains.append(drr_domain)
+
         return domains
+
+    @classmethod
+    def _direct_reverberant_domain(cls, analysis, correlations):
+        if (
+            analysis is None
+            or analysis.broadband_direct_to_reverberant_db is None
+            or correlations is None
+        ):
+            return None
+        base_score = 50.0 + (
+            50.0 * analysis.broadband_direct_to_reverberant_db / 6.0
+        )
+        adverse_count = sum(
+            item.code != "FAVORABLE_DRR_HIGH_CLARITY"
+            for item in correlations.correlations
+        )
+        score = base_score - (
+            cls.DRR_CORRELATION_PENALTY * adverse_count
+        )
+        return GlobalDomainAnalysis(
+            code=GlobalDomainCode.DIRECT_REVERBERANT,
+            score=min(100.0, max(0.0, score)),
+            confidence=analysis.confidence,
+            source_analysis=SourceAnalysisCode.DIRECT_REVERBERANT,
+        )
 
     @classmethod
     def _rt60_domain(cls, analysis):
@@ -298,6 +346,9 @@ class GlobalSynthesizer:
         peak_classification: PeakClassificationAnalysis | None,
         clarity_correlations: ClarityCorrelationAnalysis | None,
         spatial_correlations: SpatialCorrelationAnalysis | None,
+        direct_reverberant_correlations: (
+            DirectReverberantCorrelationAnalysis | None
+        ),
     ) -> list[GlobalCorrelation]:
         by_code = {domain.code: domain for domain in domains}
         correlations: list[GlobalCorrelation] = []
@@ -336,6 +387,7 @@ class GlobalSynthesizer:
             by_code,
             clarity_correlations,
             spatial_correlations,
+            direct_reverberant_correlations,
         )
 
         return correlations
@@ -347,9 +399,11 @@ class GlobalSynthesizer:
         domains,
         clarity_correlations,
         spatial_correlations,
+        direct_reverberant_correlations,
     ):
         clarity_codes = cls._codes(clarity_correlations)
         spatial_codes = cls._codes(spatial_correlations)
+        drr_codes = cls._codes(direct_reverberant_correlations)
         rules = (
             (
                 GlobalCorrelationCode.ETC_SPATIAL_ASYMMETRY,
@@ -402,6 +456,38 @@ class GlobalSynthesizer:
                         first,
                         second,
                         extra_sources=(correlation_source,),
+                    )
+                )
+
+        drr_rules = (
+            (
+                GlobalCorrelationCode.LOW_DRR_DECAY_INTERACTION,
+                GlobalDomainCode.RT60,
+                "LOW_DRR_HIGH_RT60" in drr_codes,
+            ),
+            (
+                GlobalCorrelationCode.DRR_EARLY_REFLECTION_INTERACTION,
+                GlobalDomainCode.ETC,
+                "LOW_DRR_DOMINANT_EARLY_REFLECTIONS" in drr_codes,
+            ),
+            (
+                GlobalCorrelationCode.DRR_SPATIAL_ASYMMETRY,
+                GlobalDomainCode.SPATIAL,
+                "DRR_SPATIAL_CHANNEL_ASYMMETRY" in drr_codes,
+            ),
+        )
+        drr_domain = domains.get(GlobalDomainCode.DIRECT_REVERBERANT)
+        for code, other_code, supported in drr_rules:
+            other = domains.get(other_code)
+            if supported and drr_domain is not None and other is not None:
+                result.append(
+                    cls._correlation(
+                        code,
+                        drr_domain,
+                        other,
+                        extra_sources=(
+                            SourceAnalysisCode.DIRECT_REVERBERANT_CORRELATION,
+                        ),
                     )
                 )
 
