@@ -11,3 +11,4 @@ from .rt60 import RT60Diagnostic
 from .etc import ETCDiagnostic
 from .clarity import ClarityDiagnostic
 from .spatial import SpatialDiagnostic
+from .direct_reverberant import DirectReverberantDiagnostic

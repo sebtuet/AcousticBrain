@@ -1,6 +1,8 @@
 from acousticbrain.analysis import (
     ClarityAggregator,
     ClarityAnalyzer,
+    DirectReverberantAggregator,
+    DirectReverberantAnalyzer,
     ETCAggregator,
     ETCAnalyzer,
     RT60Aggregator,
@@ -19,6 +21,8 @@ class TemporalAnalysisStage:
         etc_aggregator=None,
         clarity_analyzer=None,
         clarity_aggregator=None,
+        direct_reverberant_analyzer=None,
+        direct_reverberant_aggregator=None,
     ):
         self.analyzer = analyzer or RT60Analyzer()
         self.aggregator = aggregator or RT60Aggregator()
@@ -26,6 +30,12 @@ class TemporalAnalysisStage:
         self.etc_aggregator = etc_aggregator or ETCAggregator()
         self.clarity_analyzer = clarity_analyzer or ClarityAnalyzer()
         self.clarity_aggregator = clarity_aggregator or ClarityAggregator()
+        self.direct_reverberant_analyzer = (
+            direct_reverberant_analyzer or DirectReverberantAnalyzer()
+        )
+        self.direct_reverberant_aggregator = (
+            direct_reverberant_aggregator or DirectReverberantAggregator()
+        )
 
     def run(self, project, context):
         channel_analyses = {
@@ -46,4 +56,15 @@ class TemporalAnalysisStage:
         }
         context.clarity_analysis = self.clarity_aggregator.aggregate(
             clarity_channel_analyses
+        )
+        direct_reverberant_channel_analyses = {
+            channel: self.direct_reverberant_analyzer.analyze(
+                impulse_response
+            )
+            for channel, impulse_response in project.impulse_responses.items()
+        }
+        context.direct_reverberant_analysis = (
+            self.direct_reverberant_aggregator.aggregate(
+                direct_reverberant_channel_analyses
+            )
         )

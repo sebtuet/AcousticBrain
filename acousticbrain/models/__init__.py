@@ -58,3 +58,13 @@ from .speaker_pair_spatial_interpretation import SpeakerPairSpatialInterpretatio
 from .binaural_spatial_interpretation import BinauralSpatialInterpretation
 from .spatial_correlation import SpatialCorrelation
 from .spatial_correlation_analysis import SpatialCorrelationAnalysis
+from .energy_window_analysis import EnergyWindowAnalysis
+from .direct_reverberant_band_analysis import DirectReverberantBandAnalysis
+from .direct_reverberant_channel_analysis import (
+    DirectReverberantChannelAnalysis,
+)
+from .direct_reverberant_analysis import DirectReverberantAnalysis
+from .direct_reverberant_correlation import DirectReverberantCorrelation
+from .direct_reverberant_correlation_analysis import (
+    DirectReverberantCorrelationAnalysis,
+)

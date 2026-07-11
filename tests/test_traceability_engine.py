@@ -304,3 +304,53 @@ def test_keeps_new_recommendation_chain_absent_when_one_source_is_missing():
         link.recommendation_codes != ("VERIFY_TIME_ALIGNMENT",)
         for link in result.links
     )
+
+
+def test_links_drr_recommendation_to_physical_and_correlation_evidence():
+    global_analysis = GlobalAnalysis(
+        domains=[
+            Domain(
+                "DIRECT_REVERBERANT",
+                30.0,
+                "DirectReverberantAnalysis",
+            )
+        ],
+        source_analyses=("DirectReverberantAnalysis",),
+    )
+    recommendations = RecommendationAnalysis(
+        [
+            Recommendation(
+                "IMPROVE_DIRECT_SOUND_DOMINANCE",
+                (
+                    "DirectReverberantAnalysis",
+                    "DirectReverberantCorrelationAnalysis",
+                ),
+            )
+        ]
+    )
+    drr = SimpleNamespace(
+        broadband_direct_to_reverberant_db=-2.0,
+        left_right_direct_to_reverberant_differences_db={1000.0: 4.0},
+    )
+    correlations = SimpleNamespace(correlations=[object(), object()])
+
+    result = TraceabilityEngine().analyze(
+        global_analysis=global_analysis,
+        recommendation_analysis=recommendations,
+        direct_reverberant=drr,
+        direct_reverberant_correlations=correlations,
+    )
+
+    evidence_codes = {item.code for item in result.evidence_references}
+    assert "evidence.direct_reverberant.broadband_drr_db" in evidence_codes
+    assert "evidence.direct_reverberant.correlation_count" in evidence_codes
+    link = next(
+        item
+        for item in result.links
+        if item.recommendation_codes
+        == ("IMPROVE_DIRECT_SOUND_DOMINANCE",)
+    )
+    assert link.evidence_codes == (
+        "evidence.direct_reverberant.broadband_drr_db",
+        "evidence.direct_reverberant.correlation_count",
+    )

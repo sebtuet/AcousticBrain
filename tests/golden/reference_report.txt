@@ -6,9 +6,9 @@ ACOUSTICBRAIN REPORT
 Projet : measurements
 
 Salle
-Volume : 54.24 m³
-Surface : 22.14 m²
-Schroeder : 148.7 Hz
+Volume : 83.66 m³
+Surface : 32.18 m²
+Schroeder : 119.8 Hz
 
 
 Recommandations structurées
@@ -17,7 +17,7 @@ Recommandations structurées
    Action : check_placement
    Cible : stereo_speakers
    Priorité : HIGH
-   Confiance : 80.28215260082952%
+   Confiance : 81.39252041564417%
    Provenance : StereoAnalysis
    Paramètres :
     - symmetry_score : 10.859575118098183
@@ -27,7 +27,7 @@ Recommandations structurées
    Action : test_distance
    Cible : floor
    Priorité : HIGH
-   Confiance : 80.28215260082952%
+   Confiance : 81.39252041564417%
    Provenance : SBIRAnalysis
    Paramètres :
     - current_distance_m : 1.05
@@ -41,7 +41,7 @@ Recommandations structurées
    Provenance : ModalDensityAnalysis
    Paramètres :
     - sparse_band_count : 1
-    - dense_band_count : 1
+    - dense_band_count : 0
 
  • INVESTIGATE_RT60_CHANNEL_DIFFERENCES
    Action : investigate
@@ -72,12 +72,40 @@ Recommandations structurées
     - important_unmatched_event_count : 40
     - maximum_relative_level_db : -8.317272596377485
 
+ • INVESTIGATE_DRR_CHANNEL_DIFFERENCES
+   Action : investigate
+   Cible : drr_channel_differences
+   Priorité : HIGH
+   Confiance : 81.39252041564417%
+   Provenance : DirectReverberantAnalysis
+   Paramètres :
+    - significant_band_count : 8
+    - maximum_difference_db : 19.588749412457744
+
+ • IMPROVE_DIRECT_SOUND_DOMINANCE
+   Action : improve_dominance
+   Cible : direct_sound
+   Priorité : HIGH
+   Confiance : 81.39252041564417%
+   Provenance : DirectReverberantAnalysis, DirectReverberantCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 2
+
+ • REDUCE_DOMINANT_EARLY_REFLECTIONS
+   Action : reduce
+   Cible : dominant_early_reflections
+   Priorité : HIGH
+   Confiance : 81.39252041564417%
+   Provenance : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 1
+
 Synthèse acoustique globale
 
-Score : 36.2 / 100
-Confiance : 80.3%
-Domaines prioritaires : SBIR, STEREO, ETC, MODAL_DENSITY, CLARITY, SPATIAL
-Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis
+Score : 31.7 / 100
+Confiance : 81.4%
+Domaines prioritaires : DIRECT_REVERBERANT, SBIR, STEREO, ETC, MODAL_DENSITY, CLARITY, SPATIAL
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis
 
  • Domaine STEREO
    Score : 10.9 / 100
@@ -90,7 +118,7 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Provenance : SBIRAnalysis
    Références d'action : TEST_SPEAKER_DISTANCE
  • Domaine MODAL_DENSITY
-   Score : 33.8 / 100
+   Score : 32.7 / 100
    Confiance : 75.0%
    Provenance : ModalDensityAnalysis
    Références d'action : MEASURE_MULTIPLE_POSITIONS
@@ -99,8 +127,8 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Confiance : 93.6%
    Provenance : RT60Analysis
  • Domaine ETC
-   Score : 31.1 / 100
-   Confiance : 90.6%
+   Score : 31.4 / 100
+   Confiance : 89.4%
    Provenance : ETCAnalysis
  • Domaine CLARITY
    Score : 40.0 / 100
@@ -110,6 +138,10 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Score : 40.0 / 100
    Confiance : 67.0%
    Provenance : SpatialAnalysis
+ • Domaine DIRECT_REVERBERANT
+   Score : 1.5 / 100
+   Confiance : 94.9%
+   Provenance : DirectReverberantAnalysis
 
  • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
    Domaines : STEREO, SBIR
@@ -117,7 +149,7 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Provenances : StereoAnalysis, SBIRAnalysis
  • Corrélation ETC_SPATIAL_ASYMMETRY
    Domaines : ETC, SPATIAL
-   Score : 31.1 / 100
+   Score : 31.4 / 100
    Provenances : ETCAnalysis, SpatialAnalysis, SpatialCorrelationAnalysis
  • Corrélation RT60_CLARITY_DECAY_INTERACTION
    Domaines : RT60, CLARITY
@@ -125,16 +157,28 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Provenances : RT60Analysis, ClarityAnalysis, ClarityCorrelationAnalysis
  • Corrélation ETC_CLARITY_EARLY_ENERGY_INTERACTION
    Domaines : ETC, CLARITY
-   Score : 31.1 / 100
+   Score : 31.4 / 100
    Provenances : ETCAnalysis, ClarityAnalysis, ClarityCorrelationAnalysis
  • Corrélation SPATIAL_STEREO_ALIGNMENT
    Domaines : SPATIAL, STEREO
    Score : 10.9 / 100
    Provenances : SpatialAnalysis, StereoAnalysis, SpatialCorrelationAnalysis
+ • Corrélation LOW_DRR_DECAY_INTERACTION
+   Domaines : DIRECT_REVERBERANT, RT60
+   Score : 1.5 / 100
+   Provenances : DirectReverberantAnalysis, RT60Analysis, DirectReverberantCorrelationAnalysis
+ • Corrélation DRR_EARLY_REFLECTION_INTERACTION
+   Domaines : DIRECT_REVERBERANT, ETC
+   Score : 1.5 / 100
+   Provenances : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
+ • Corrélation DRR_SPATIAL_ASYMMETRY
+   Domaines : DIRECT_REVERBERANT, SPATIAL
+   Score : 1.5 / 100
+   Provenances : DirectReverberantAnalysis, SpatialAnalysis, DirectReverberantCorrelationAnalysis
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, ETCReflectionCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
 
  • Preuve evidence.stereo.score
    Fait : stereo.score
@@ -150,7 +194,7 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Fait : modal_density.score
    Analyse : ModalDensityAnalysis
    Niveau : CALCULATED
-   Valeur : 33.790772017612454
+   Valeur : 32.660201128438295
  • Preuve evidence.rt60.score
    Fait : rt60.score
    Analyse : RT60Analysis
@@ -160,7 +204,7 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Fait : etc.score
    Analyse : ETCAnalysis
    Niveau : CALCULATED
-   Valeur : 31.059871530723548
+   Valeur : 31.37377287601503
  • Preuve evidence.clarity.score
    Fait : clarity.score
    Analyse : ClarityAnalysis
@@ -171,6 +215,11 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : SpatialAnalysis
    Niveau : CALCULATED
    Valeur : 40.0
+ • Preuve evidence.direct_reverberant.score
+   Fait : direct_reverberant.score
+   Analyse : DirectReverberantAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.4950406516885835
  • Preuve evidence.rt60.reliable_difference_count
    Fait : rt60.reliable_difference_count
    Analyse : RT60Analysis
@@ -206,11 +255,26 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : ETCReflectionCorrelationAnalysis
    Niveau : CALCULATED
    Valeur : 40
+ • Preuve evidence.direct_reverberant.asymmetric_band_count
+   Fait : direct_reverberant.asymmetric_band_count
+   Analyse : DirectReverberantAnalysis
+   Niveau : CALCULATED
+   Valeur : 8
+ • Preuve evidence.direct_reverberant.broadband_drr_db
+   Fait : direct_reverberant.broadband_drr_db
+   Analyse : DirectReverberantAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.37940487820263
+ • Preuve evidence.direct_reverberant.correlation_count
+   Fait : direct_reverberant.correlation_count
+   Analyse : DirectReverberantCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 4
  • Preuve evidence.global.confidence
    Fait : global.confidence
    Analyse : ConfidenceAnalysis
    Niveau : CALCULATED
-   Valeur : 80.28215260082952
+   Valeur : 81.39252041564417
 
  • Lien explanation.correlation.stereo_sbir_placement_interaction
    Faits : stereo.score, sbir.score
@@ -232,6 +296,18 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : spatial.technical_center_stability, stereo.score, spatial.correlation_count
    Preuves : evidence.spatial.technical_center_stability, evidence.stereo.score, evidence.spatial.correlation_count
    Corrélations : SPATIAL_STEREO_ALIGNMENT
+ • Lien explanation.correlation.low_drr_decay_interaction
+   Faits : direct_reverberant.broadband_drr_db, rt60.reliable_difference_count, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.rt60.reliable_difference_count, evidence.direct_reverberant.correlation_count
+   Corrélations : LOW_DRR_DECAY_INTERACTION
+ • Lien explanation.correlation.drr_early_reflection_interaction
+   Faits : direct_reverberant.broadband_drr_db, etc.channel_specific_event_count, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.etc.channel_specific_event_count, evidence.direct_reverberant.correlation_count
+   Corrélations : DRR_EARLY_REFLECTION_INTERACTION
+ • Lien explanation.correlation.drr_spatial_asymmetry
+   Faits : direct_reverberant.broadband_drr_db, spatial.technical_center_stability, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.spatial.technical_center_stability, evidence.direct_reverberant.correlation_count
+   Corrélations : DRR_SPATIAL_ASYMMETRY
  • Lien explanation.recommendation.check_stereo_placement
    Faits : stereo.score
    Preuves : evidence.stereo.score
@@ -256,25 +332,22 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : etc.channel_specific_event_count, etc_reflection.dominant_unmatched_event_count
    Preuves : evidence.etc.channel_specific_event_count, evidence.etc_reflection.dominant_unmatched_event_count
    Recommandations : TREAT_DOMINANT_EARLY_REFLECTIONS
+ • Lien explanation.recommendation.investigate_drr_channel_differences
+   Faits : direct_reverberant.asymmetric_band_count
+   Preuves : evidence.direct_reverberant.asymmetric_band_count
+   Recommandations : INVESTIGATE_DRR_CHANNEL_DIFFERENCES
+ • Lien explanation.recommendation.improve_direct_sound_dominance
+   Faits : direct_reverberant.broadband_drr_db, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.direct_reverberant.correlation_count
+   Recommandations : IMPROVE_DIRECT_SOUND_DOMINANCE
+ • Lien explanation.recommendation.reduce_dominant_early_reflections
+   Faits : direct_reverberant.broadband_drr_db, etc.channel_specific_event_count, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.etc.channel_specific_event_count, evidence.direct_reverberant.correlation_count
+   Corrélations : DRR_EARLY_REFLECTION_INTERACTION
+   Recommandations : REDUCE_DOMINANT_EARLY_REFLECTIONS
  • Lien explanation.global.confidence
    Faits : global.confidence
    Preuves : evidence.global.confidence
-
-------------------------------------------------------------
-Modes propres
-
-Mode tangentiel Largeur / Hauteur (indices (0, 2, 1)) à 109.11 Hz
-
-Gravité : HIGH
-Confiance : 98%
-Niveau de preuve : CONFIRMED
-
-Causes
- • Correspondance avec le calcul théorique
-
-Recommandations
- • Vérifier le placement du point d'écoute
- • Ne pas corriger immédiatement avec un EQ
 
 ------------------------------------------------------------
 Réponse dans le grave
@@ -293,6 +366,49 @@ Causes
 Recommandations
  • Mesurer chaque enceinte séparément
  • Vérifier la position d'écoute
+
+------------------------------------------------------------
+Rapport direct / réverbéré
+
+Observations
+ • Canaux D/R disponibles : 3.
+ • Bandes communes exploitables : 24.
+ • D/R large bande agrégé : +1.38 dB.
+ • Canal LEFT : D/R +1.47 dB, confiance 94 %.
+ • Canal RIGHT : D/R +0.60 dB, confiance 93 %.
+ • Canal STEREO : D/R +2.07 dB, confiance 97 %.
+ • Écarts G-D D/R significatifs : 8.
+ • Écart D/R G-D à 50 Hz : +5.85 dB.
+ • Écart D/R G-D à 63 Hz : +19.59 dB.
+ • Écart D/R G-D à 100 Hz : -4.52 dB.
+ • Écart D/R G-D à 125 Hz : +8.65 dB.
+ • Écart D/R G-D à 160 Hz : -7.90 dB.
+ • Écart D/R G-D à 250 Hz : +9.42 dB.
+ • Écart D/R G-D à 1250 Hz : +6.45 dB.
+ • Écart D/R G-D à 4000 Hz : +3.51 dB.
+ • Corrélations D/R structurées : 4.
+ • Corrélation LOW_DRR_HIGH_RT60 : score 100, confiance 82 %.
+ • Corrélation LOW_DRR_DOMINANT_EARLY_REFLECTIONS : score 100, confiance 91 %.
+ • Corrélation DRR_SPATIAL_CHANNEL_ASYMMETRY : score 81, confiance 67 %.
+ • Corrélation FAVORABLE_DRR_HIGH_CLARITY : score 60, confiance 100 %.
+
+Conclusion
+
+Le rapport D/R large bande est favorable, avec des interactions locales structurées.
+
+Gravité : HIGH
+Score : 31 / 100
+Confiance : 95%
+Niveau de preuve : CALCULATED
+
+Causes
+ • LOW_DRR_HIGH_RT60
+ • LOW_DRR_DOMINANT_EARLY_REFLECTIONS
+ • DRR_SPATIAL_CHANNEL_ASYMMETRY
+ • FAVORABLE_DRR_HIGH_CLARITY
+
+Recommandations
+ • Examiner les interactions D/R locales avant toute modification.
 
 ------------------------------------------------------------
 Réverbération RT60
@@ -356,6 +472,22 @@ Recommandations
  • Confirmer la correspondance avec une mesure dédiée
 
 ------------------------------------------------------------
+Modes propres
+
+Mode tangentiel Longueur / Hauteur (indices (2, 0, 1)) à 88.49 Hz
+
+Gravité : HIGH
+Confiance : 91%
+Niveau de preuve : CONFIRMED
+
+Causes
+ • Correspondance avec le calcul théorique
+
+Recommandations
+ • Vérifier le placement du point d'écoute
+ • Ne pas corriger immédiatement avec un EQ
+
+------------------------------------------------------------
 Réflexions temporelles précoces
 
 Observations
@@ -367,12 +499,12 @@ Observations
  • Dominante LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
  • Dominante RIGHT à 6.31 ms : -9.4 dB, trajet supplémentaire 2.17 m, confiance 100 %.
  • Dominante STEREO à 2.79 ms : -9.5 dB, trajet supplémentaire 0.96 m, confiance 100 %.
- • Corrélations ETC-SBIR fiables : 15.
+ • Corrélations ETC-SBIR fiables : 16.
  • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.33 ms, théorique 4.78 ms, erreur 0.45 ms, confiance 87 %.
  • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.83 ms, théorique 4.78 ms, erreur 0.05 ms, confiance 95 %.
  • Surface candidate FLOOR sur LEFT : délai mesuré 5.60 ms, théorique 6.12 ms, erreur 0.52 ms, confiance 86 %.
  • Surface candidate FLOOR sur LEFT : délai mesuré 6.40 ms, théorique 6.12 ms, erreur 0.27 ms, confiance 91 %.
- • Surface candidate CEILING sur LEFT : délai mesuré 8.08 ms, théorique 8.16 ms, erreur 0.08 ms, confiance 94 %.
+ • Surface candidate CEILING sur LEFT : délai mesuré 8.94 ms, théorique 9.04 ms, erreur 0.10 ms, confiance 92 %.
  • Événements importants non expliqués : 40.
  • Non expliqué LEFT à 2.77 ms : -8.3 dB, trajet supplémentaire 0.95 m, confiance 100 %.
  • Non expliqué LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
@@ -451,19 +583,18 @@ Recommandations
 Densité modale
 
 Observations
- • 34 modes sont présents sous la fréquence de Schroeder.
- • Répartition : 9 axiaux, 18 tangentiels, 7 obliques.
- • Espacement modal moyen : 3.5 Hz (de 0.1 à 11.0 Hz).
+ • 28 modes sont présents sous la fréquence de Schroeder.
+ • Répartition : 8 axiaux, 14 tangentiels, 6 obliques.
+ • Espacement modal moyen : 3.3 Hz (de 0.0 à 15.9 Hz).
  • Cette analyse couvre les trois familles modales.
- • Entre 100 et 149 Hz, 21 modes forment une concentration, espacement moyen 2.2 Hz.
- • Entre 20 et 50 Hz, 2 modes forment une zone clairsemée, espacement moyen 10.1 Hz.
+ • Entre 20 et 50 Hz, 3 modes forment une zone clairsemée, espacement moyen 6.7 Hz.
 
 Conclusion
 
-La distribution modale présente des concentrations de modes et des zones modales clairsemées.
+La distribution modale présente des zones modales clairsemées.
 
 Gravité : HIGH
-Score : 34 / 100
+Score : 33 / 100
 Confiance : 75%
 Niveau de preuve : CALCULATED
 
@@ -514,7 +645,7 @@ Symétrie stéréo
 
 Observations
  • Pics : 3 communs, 14 spécifiques à gauche, 18 spécifiques à droite.
- • Modes axiaux : 2 communs, 2 spécifiques à gauche, 3 spécifiques à droite.
+ • Modes axiaux : 0 communs, 2 spécifiques à gauche, 2 spécifiques à droite.
  • Écart G-D grave : +3.1 dB.
  • Écart G-D médium : -0.5 dB.
  • Écart G-D aigu : +1.3 dB.
@@ -524,7 +655,7 @@ Conclusion
 Asymétrie modérée principalement localisée dans le grave (+3.1 dB).
 
 Gravité : MEDIUM
-Score : 68 / 100
+Score : 70 / 100
 Confiance : 90%
 Niveau de preuve : OBSERVED
 
@@ -542,9 +673,9 @@ Recommandations
 Confiance de l'analyse
 
 Observations
- • Preuves disponibles : 6 ; indisponibles : 1.
- • Couverture des preuves : 86 %.
- • Accord des confiances locales : 73 %.
+ • Preuves disponibles : 7 ; indisponibles : 1.
+ • Couverture des preuves : 88 %.
+ • Accord des confiances locales : 72 %.
  • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
  • sbir : 92/100 — Confiance locale disponible : 92.4/100.
  • stereo : 0/100 — Confiance locale indisponible.
@@ -552,16 +683,17 @@ Observations
  • etc : 91/100 — Confiance locale disponible : 91.1/100.
  • clarity : 67/100 — Confiance locale disponible : 67.2/100.
  • spatial : 67/100 — Confiance locale disponible : 67.0/100.
- • coverage : 86/100 — 6/7 analyses fournissent une confiance locale.
- • agreement : 73/100 — Dispersion des confiances locales : 26.7 point(s).
+ • direct_reverberant : 95/100 — Confiance locale disponible : 94.9/100.
+ • coverage : 88/100 — 7/8 analyses fournissent une confiance locale.
+ • agreement : 72/100 — Dispersion des confiances locales : 28.0 point(s).
 
 Conclusion
 
 Les analyses sont exploitables, avec certaines limites de couverture ou d'accord.
 
 Gravité : MEDIUM
-Score : 80 / 100
-Confiance : 80%
+Score : 81 / 100
+Confiance : 81%
 Niveau de preuve : CALCULATED
 
 Causes

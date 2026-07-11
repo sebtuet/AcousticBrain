@@ -6,6 +6,7 @@ from acousticbrain.diagnostics import (
     ConfidenceDiagnostic,
     ClarityDiagnostic,
     SpatialDiagnostic,
+    DirectReverberantDiagnostic,
     ETCDiagnostic,
     ModalDensityDiagnostic,
     RT60Diagnostic,
@@ -20,6 +21,9 @@ from .stages.analysis import AnalysisStage
 from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
 from .stages.spatial_analysis import SpatialAnalysisStage
+from .stages.direct_reverberant_correlation import (
+    DirectReverberantCorrelationStage,
+)
 from .stages.confidence import ConfidenceStage
 from .stages.etc_correlation import ETCCorrelationStage
 from .stages.clarity_correlation import ClarityCorrelationStage
@@ -64,6 +68,8 @@ class BrainPipeline:
             ClarityDiagnostic(),
 
             SpatialDiagnostic(),
+
+            DirectReverberantDiagnostic(),
 
             ConfidenceDiagnostic(),
 
@@ -111,6 +117,10 @@ class BrainPipeline:
 
         SpatialAnalysisStage().run(
             project,
+            context,
+        )
+
+        DirectReverberantCorrelationStage().run(
             context,
         )
 

@@ -17,5 +17,6 @@ class ConfidenceStage:
                 "etc": context.etc_analysis,
                 "clarity": context.clarity_analysis,
                 "spatial": context.spatial_analysis,
+                "direct_reverberant": context.direct_reverberant_analysis,
             }
         )

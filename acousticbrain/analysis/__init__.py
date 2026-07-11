@@ -18,3 +18,8 @@ from .clarity_correlation import ClarityCorrelationEngine
 from .spatial import SpatialAnalyzer
 from .spatial_interpretation import SpatialInterpretationEngine
 from .spatial_correlation import SpatialCorrelationEngine
+from .direct_reverberant import DirectReverberantAnalyzer
+from .direct_reverberant_aggregator import DirectReverberantAggregator
+from .direct_reverberant_correlation import (
+    DirectReverberantCorrelationEngine,
+)

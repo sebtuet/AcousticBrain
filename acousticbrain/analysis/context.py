@@ -5,6 +5,8 @@ from acousticbrain.models import (
     ClarityCorrelationAnalysis,
     ConfidenceAnalysis,
     ETCAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelationAnalysis,
     ETCReflectionCorrelationAnalysis,
     GlobalAnalysis,
     Measurement,
@@ -57,6 +59,12 @@ class AnalysisContext:
     etc_analysis: ETCAnalysis | None = None
 
     clarity_analysis: ClarityAnalysis | None = None
+
+    direct_reverberant_analysis: DirectReverberantAnalysis | None = None
+
+    direct_reverberant_correlation_analysis: (
+        DirectReverberantCorrelationAnalysis | None
+    ) = None
 
     clarity_correlation_analysis: ClarityCorrelationAnalysis | None = None
 

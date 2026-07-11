@@ -21,5 +21,9 @@ class TraceabilityStage:
             etc_reflection_correlations=(
                 context.etc_reflection_correlation_analysis
             ),
+            direct_reverberant=context.direct_reverberant_analysis,
+            direct_reverberant_correlations=(
+                context.direct_reverberant_correlation_analysis
+            ),
             confidence=getattr(context, "confidence_analysis", None),
         )

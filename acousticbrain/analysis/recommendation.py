@@ -7,6 +7,8 @@ from acousticbrain.models import (
     ClarityCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelationAnalysis,
     ModalDensityAnalysis,
     Recommendation,
     RecommendationAnalysis,
@@ -41,6 +43,10 @@ class RecommendationEngine:
         etc_reflection_correlations: (
             ETCReflectionCorrelationAnalysis | None
         ) = None,
+        direct_reverberant: DirectReverberantAnalysis | None = None,
+        direct_reverberant_correlations: (
+            DirectReverberantCorrelationAnalysis | None
+        ) = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> RecommendationAnalysis:
         recommendations: list[Recommendation] = []
@@ -71,6 +77,16 @@ class RecommendationEngine:
             recommendations.extend(
                 self._from_etc_reflections(etc_reflection_correlations)
             )
+        if direct_reverberant is not None:
+            recommendations.extend(
+                self._from_direct_reverberant(direct_reverberant)
+            )
+        if direct_reverberant_correlations is not None:
+            recommendations.extend(
+                self._from_direct_reverberant_correlations(
+                    direct_reverberant_correlations
+                )
+            )
 
         if confidence is not None:
             recommendations = [
@@ -81,6 +97,118 @@ class RecommendationEngine:
         return RecommendationAnalysis(
             recommendations=self._deduplicate(recommendations)
         )
+
+    @staticmethod
+    def _from_direct_reverberant(
+        analysis: DirectReverberantAnalysis,
+    ) -> list[Recommendation]:
+        recommendations = []
+        broadband = analysis.broadband_direct_to_reverberant_db
+        if broadband is not None and broadband < 0.0:
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.IMPROVE_DIRECT_SOUND_DOMINANCE,
+                    action="improve_dominance",
+                    target="direct_sound",
+                    priority=RecommendationPriority.HIGH,
+                    confidence=analysis.confidence,
+                    source_analyses=(
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                    ),
+                    parameters={"broadband_drr_db": broadband},
+                )
+            )
+        significant = {
+            center: difference
+            for center, difference in (
+                analysis.left_right_direct_to_reverberant_differences_db.items()
+            )
+            if abs(difference) >= 3.0
+        }
+        if significant:
+            recommendations.append(
+                Recommendation(
+                    code=(
+                        RecommendationCode.INVESTIGATE_DRR_CHANNEL_DIFFERENCES
+                    ),
+                    action="investigate",
+                    target="drr_channel_differences",
+                    priority=(
+                        RecommendationPriority.HIGH
+                        if len(significant) >= 3
+                        else RecommendationPriority.MEDIUM
+                    ),
+                    confidence=analysis.confidence,
+                    source_analyses=(
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                    ),
+                    parameters={
+                        "significant_band_count": len(significant),
+                        "maximum_difference_db": max(
+                            abs(value) for value in significant.values()
+                        ),
+                    },
+                )
+            )
+        return recommendations
+
+    @staticmethod
+    def _from_direct_reverberant_correlations(analysis):
+        codes = {item.code for item in analysis.correlations}
+        recommendations = []
+        if codes & {
+            "LOW_DRR_HIGH_RT60",
+            "LOW_DRR_DOMINANT_EARLY_REFLECTIONS",
+        }:
+            supported = [
+                item
+                for item in analysis.correlations
+                if item.code
+                in {
+                    "LOW_DRR_HIGH_RT60",
+                    "LOW_DRR_DOMINANT_EARLY_REFLECTIONS",
+                }
+            ]
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.IMPROVE_DIRECT_SOUND_DOMINANCE,
+                    action="improve_dominance",
+                    target="direct_sound",
+                    priority=RecommendationPriority.HIGH,
+                    confidence=max(item.confidence for item in supported),
+                    source_analyses=(
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                        SourceAnalysisCode.DIRECT_REVERBERANT_CORRELATION,
+                    ),
+                    parameters={
+                        "supporting_correlation_count": len(supported)
+                    },
+                )
+            )
+        dominant = [
+            item
+            for item in analysis.correlations
+            if item.code == "LOW_DRR_DOMINANT_EARLY_REFLECTIONS"
+        ]
+        if dominant:
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.REDUCE_DOMINANT_EARLY_REFLECTIONS,
+                    action="reduce",
+                    target="dominant_early_reflections",
+                    priority=RecommendationPriority.HIGH,
+                    confidence=max(item.confidence for item in dominant),
+                    source_analyses=(
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                        SourceAnalysisCode.ETC,
+                        SourceAnalysisCode.DIRECT_REVERBERANT_CORRELATION,
+                    ),
+                    parameters={
+                        "supporting_correlation_count": len(dominant)
+                    },
+                )
+            )
+        return recommendations
 
     @staticmethod
     def _from_rt60(analysis: RT60Analysis) -> list[Recommendation]:

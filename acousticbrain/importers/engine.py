@@ -27,11 +27,11 @@ class ImportEngine:
 
             name="Unknown Room",
 
-            length=5.40,
+            length=5.84,
 
-            width=4.10,
+            width=5.51,
 
-            height=2.45,
+            height=2.60,
 
         )
 

@@ -5,6 +5,9 @@ from acousticbrain.models import (
     ClarityAnalysis,
     ClarityCorrelation,
     ClarityCorrelationAnalysis,
+    DirectReverberantAnalysis,
+    DirectReverberantCorrelation,
+    DirectReverberantCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
     ImpulseChannel,
@@ -300,3 +303,54 @@ def test_does_not_create_new_global_correlation_from_domain_scores_alone():
     )
 
     assert result.correlations == []
+
+
+def test_adds_drr_domain_and_three_supported_global_correlations():
+    (
+        rt60,
+        etc,
+        etc_correlations,
+        clarity,
+        clarity_correlations,
+        spatial,
+        spatial_correlations,
+    ) = new_analyses()
+    drr = DirectReverberantAnalysis(
+        broadband_direct_to_reverberant_db=-2.0,
+        confidence=82.0,
+    )
+    drr_correlations = DirectReverberantCorrelationAnalysis(
+        correlations=[
+            DirectReverberantCorrelation(code="LOW_DRR_HIGH_RT60"),
+            DirectReverberantCorrelation(
+                code="LOW_DRR_DOMINANT_EARLY_REFLECTIONS"
+            ),
+            DirectReverberantCorrelation(
+                code="DRR_SPATIAL_CHANNEL_ASYMMETRY"
+            ),
+        ]
+    )
+
+    result = GlobalSynthesizer().synthesize(
+        rt60=rt60,
+        etc=etc,
+        clarity=clarity,
+        spatial=spatial,
+        clarity_correlations=clarity_correlations,
+        spatial_correlations=spatial_correlations,
+        etc_reflection_correlations=etc_correlations,
+        direct_reverberant=drr,
+        direct_reverberant_correlations=drr_correlations,
+    )
+
+    domain = next(
+        item for item in result.domains if item.code == "DIRECT_REVERBERANT"
+    )
+    assert domain.score == 0.0
+    assert domain.confidence == 82.0
+    codes = {item.code for item in result.correlations}
+    assert {
+        "LOW_DRR_DECAY_INTERACTION",
+        "DRR_EARLY_REFLECTION_INTERACTION",
+        "DRR_SPATIAL_ASYMMETRY",
+    }.issubset(codes)

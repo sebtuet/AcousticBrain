@@ -32,5 +32,7 @@ def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
         "clarity_correlations": None,
         "spatial_correlations": None,
         "etc_reflection_correlations": None,
+        "direct_reverberant": None,
+        "direct_reverberant_correlations": None,
         "confidence": context.confidence_analysis,
     }
