@@ -7,3 +7,5 @@ from .recommendation import RecommendationEngine
 from .global_synthesizer import GlobalSynthesizer
 from .traceability import TraceabilityEngine
 from .room_modes import RoomModesAnalyzer
+from .rt60 import RT60Analyzer
+from .rt60_aggregator import RT60Aggregator

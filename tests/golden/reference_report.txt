@@ -278,3 +278,52 @@ Recommandations
  • Compléter les analyses ou mesures indisponibles.
  • Examiner les analyses dont la confiance locale est faible.
 
+------------------------------------------------------------
+Réverbération RT60
+
+Observations
+ • Canaux analysés : 3.
+ • Bandes de tiers d'octave communes : 24.
+ • RT60 large bande agrégé : 0.348 s.
+ • Étendue intercanal large bande : 0.346 à 0.352 s.
+ • Homogénéité intercanal : 66 %.
+ • Écart G-D à 50 Hz : -0.095 s.
+ • Écart G-D à 63 Hz : -0.398 s.
+ • Écart G-D à 80 Hz : +0.084 s.
+ • Écart G-D à 100 Hz : +1.396 s.
+ • Écart G-D à 125 Hz : +3.224 s.
+ • Écart G-D à 160 Hz : -0.185 s.
+ • Écart G-D à 200 Hz : +0.214 s.
+ • Écart G-D à 250 Hz : +3.168 s.
+ • Écart G-D à 315 Hz : -0.374 s.
+ • Écart G-D à 400 Hz : -0.002 s.
+ • Écart G-D à 500 Hz : +0.047 s.
+ • Écart G-D à 630 Hz : +0.068 s.
+ • Écart G-D à 800 Hz : -0.025 s.
+ • Écart G-D à 1000 Hz : -0.012 s.
+ • Écart G-D à 1250 Hz : -0.004 s.
+ • Écart G-D à 1600 Hz : +0.029 s.
+ • Écart G-D à 2000 Hz : -0.006 s.
+ • Écart G-D à 2500 Hz : -0.001 s.
+ • Écart G-D à 3150 Hz : +0.014 s.
+ • Écart G-D à 4000 Hz : -0.018 s.
+ • Écart G-D à 5000 Hz : -0.007 s.
+ • Écart G-D à 6300 Hz : +0.006 s.
+ • Écart G-D à 8000 Hz : -0.002 s.
+ • Écart G-D à 10000 Hz : -0.001 s.
+
+Conclusion
+
+La durée et l'homogénéité de la réverbération sont maîtrisées.
+
+Gravité : LOW
+Score : 90 / 100
+Confiance : 94%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Décroissances différentes selon les canaux
+
+Recommandations
+ • Comparer le placement et les surfaces réfléchissantes des deux canaux.
+

@@ -17,6 +17,9 @@ PhysicsStage
   ├─ ModalDensityAnalysis
   └─ ConfidenceAnalysis
         ↓
+TemporalAnalysisStage
+  └─ RT60Analysis
+        ↓
 GlobalSynthesisStage
   └─ GlobalAnalysis + GlobalCorrelation
         ↓
@@ -45,6 +48,8 @@ respectifs.
 
 Les objets `*Analysis` contiennent des faits, mesures, scores et confiances.
 Ils ne produisent aucun texte utilisateur et ne dépendent pas des diagnostics.
+Les connaissances temporelles comme `RT60Analysis` sont orchestrées dans un
+stage distinct des calculs géométriques et spectraux de `PhysicsStage`.
 
 ### 2. Synthèse globale
 

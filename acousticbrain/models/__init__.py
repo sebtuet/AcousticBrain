@@ -28,3 +28,8 @@ from .global_analysis import GlobalAnalysis
 from .evidence_reference import EvidenceReference, EvidenceValue
 from .explanation_link import ExplanationLink
 from .traceability_analysis import TraceabilityAnalysis
+from .impulse_channel import ImpulseChannel
+from .impulse_response import ImpulseResponse
+from .rt60_band_analysis import RT60BandAnalysis
+from .rt60_channel_analysis import RT60ChannelAnalysis
+from .rt60_analysis import RT60Analysis

@@ -6,6 +6,7 @@ from acousticbrain.models import (
     Measurement,
     ModalDensityAnalysis,
     RecommendationAnalysis,
+    RT60Analysis,
     RoomModesAnalysis,
     RoomProperties,
     SBIRAnalysis,
@@ -42,6 +43,8 @@ class AnalysisContext:
     sbir: SBIRAnalysis | None = None
 
     modal_density: ModalDensityAnalysis | None = None
+
+    rt60_analysis: RT60Analysis | None = None
 
     confidence_analysis: ConfidenceAnalysis | None = None
 
