@@ -2,6 +2,24 @@ from .measurement import Measurement
 from .peak import Peak
 from .band import FrequencyBand
 from .room import Room
+from .room_dimensions import RoomDimensions
+from .speaker_position import SpeakerPosition
+from .listening_position import ListeningPosition
+from .room_opening_surface import RoomOpeningSurface
+from .room_opening import RoomOpening
+from .room_description import RoomDescription
+from .room_description_validation_error import (
+    RoomDescriptionEntityType,
+    RoomDescriptionValidationCode,
+    RoomDescriptionValidationError,
+)
+from .room_description_validation_result import RoomDescriptionValidationResult
+from .room_description_persistence import (
+    RoomDescriptionLoadResult,
+    RoomDescriptionPersistenceError,
+    RoomDescriptionPersistenceErrorCode,
+    RoomDescriptionPersistenceException,
+)
 from .room_mode import RoomMode
 from .room_mode_type import RoomModeType
 from .room_modes_analysis import RoomModesAnalysis

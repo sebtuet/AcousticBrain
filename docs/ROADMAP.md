@@ -17,6 +17,16 @@ Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 - `TraceabilityEngine` ;
 - priorisation structurée des diagnostics.
 
+## ✅ Digital Room Description
+
+- description utilisateur indépendante des mesures ;
+- dimensions, enceintes, positions d'écoute et ouvertures typées ;
+- validation géométrique relationnelle structurée ;
+- persistance JSON versionnée ;
+- interface locale découplée du domaine ;
+- chargement optionnel et explicite dans `Project` ;
+- adaptateur historique disponible sans branchement automatique.
+
 ## ✅ Physics
 
 - détection des pics et creux ;
