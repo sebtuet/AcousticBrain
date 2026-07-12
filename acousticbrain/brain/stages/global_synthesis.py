@@ -26,5 +26,7 @@ class GlobalSynthesisStage:
             direct_reverberant_correlations=(
                 context.direct_reverberant_correlation_analysis
             ),
+            bass_decay=context.bass_decay_analysis,
+            bass_decay_correlations=context.bass_decay_correlation_analysis,
             confidence=getattr(context, "confidence_analysis", None),
         )

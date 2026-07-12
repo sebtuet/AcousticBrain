@@ -4,6 +4,8 @@ from statistics import fmean
 from typing import TYPE_CHECKING
 
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayCorrelationAnalysis,
     ClarityAnalysis,
     ClarityCorrelationAnalysis,
     DirectReverberantAnalysis,
@@ -61,6 +63,8 @@ class GlobalSynthesizer:
         direct_reverberant_correlations: (
             DirectReverberantCorrelationAnalysis | None
         ) = None,
+        bass_decay: BassDecayAnalysis | None = None,
+        bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> GlobalAnalysis:
         domains = self._domains(
@@ -79,6 +83,8 @@ class GlobalSynthesizer:
             direct_reverberant_correlations=(
                 direct_reverberant_correlations
             ),
+            bass_decay=bass_decay,
+            bass_decay_correlations=bass_decay_correlations,
         )
         local_confidences = [
             domain.confidence
@@ -100,6 +106,7 @@ class GlobalSynthesizer:
                 clarity_correlations,
                 spatial_correlations,
                 direct_reverberant_correlations,
+                bass_decay_correlations,
             ),
             priority_domains=tuple(
                 domain.code
@@ -128,6 +135,8 @@ class GlobalSynthesizer:
         direct_reverberant_correlations: (
             DirectReverberantCorrelationAnalysis | None
         ),
+        bass_decay: BassDecayAnalysis | None,
+        bass_decay_correlations: BassDecayCorrelationAnalysis | None,
     ) -> list[GlobalDomainAnalysis]:
         domains: list[GlobalDomainAnalysis] = []
 
@@ -231,7 +240,35 @@ class GlobalSynthesizer:
         if drr_domain is not None:
             domains.append(drr_domain)
 
+        bass_decay_domain = cls._bass_decay_domain(bass_decay)
+        if bass_decay_domain is not None:
+            domains.append(bass_decay_domain)
+
         return domains
+
+    @staticmethod
+    def _bass_decay_domain(analysis):
+        if analysis is None:
+            return None
+        times = [
+            band.estimated_decay_time_seconds
+            for band in analysis.aggregate_bands
+            if band.estimated_decay_time_seconds is not None
+        ]
+        if not times:
+            return None
+        maximum = max(times)
+        duration_score = min(
+            100.0,
+            max(0.0, 100.0 * (2.0 - maximum) / 1.2),
+        )
+        score = 0.7 * duration_score + 0.3 * analysis.coverage
+        return GlobalDomainAnalysis(
+            code=GlobalDomainCode.BASS_DECAY,
+            score=min(100.0, max(0.0, score)),
+            confidence=analysis.confidence,
+            source_analysis=SourceAnalysisCode.BASS_DECAY,
+        )
 
     @classmethod
     def _direct_reverberant_domain(cls, analysis, correlations):
@@ -357,6 +394,7 @@ class GlobalSynthesizer:
         direct_reverberant_correlations: (
             DirectReverberantCorrelationAnalysis | None
         ),
+        bass_decay_correlations: BassDecayCorrelationAnalysis | None,
     ) -> list[GlobalCorrelation]:
         by_code = {domain.code: domain for domain in domains}
         correlations: list[GlobalCorrelation] = []
@@ -396,6 +434,7 @@ class GlobalSynthesizer:
             clarity_correlations,
             spatial_correlations,
             direct_reverberant_correlations,
+            bass_decay_correlations,
         )
 
         return correlations
@@ -408,10 +447,12 @@ class GlobalSynthesizer:
         clarity_correlations,
         spatial_correlations,
         direct_reverberant_correlations,
+        bass_decay_correlations,
     ):
         clarity_codes = cls._codes(clarity_correlations)
         spatial_codes = cls._codes(spatial_correlations)
         drr_codes = cls._codes(direct_reverberant_correlations)
+        bass_decay_codes = cls._codes(bass_decay_correlations)
         rules = (
             (
                 GlobalCorrelationCode.ETC_SPATIAL_ASYMMETRY,
@@ -464,6 +505,42 @@ class GlobalSynthesizer:
                         first,
                         second,
                         extra_sources=(correlation_source,),
+                    )
+                )
+
+        bass_decay_rules = (
+            (
+                GlobalCorrelationCode.BASS_DECAY_MODAL_INTERACTION,
+                "MODAL_DENSITY",
+                "SLOW_DECAY_MODAL_INTERACTION",
+            ),
+            (
+                GlobalCorrelationCode.BASS_DECAY_RT60_INTERACTION,
+                GlobalDomainCode.RT60,
+                "SLOW_DECAY_RT60_INTERACTION",
+            ),
+            (
+                GlobalCorrelationCode.BASS_DECAY_DRR_INTERACTION,
+                GlobalDomainCode.DIRECT_REVERBERANT,
+                "LOW_DRR_LONG_BASS_DECAY",
+            ),
+        )
+        bass_decay_domain = domains.get(GlobalDomainCode.BASS_DECAY)
+        for code, second_code, supporting_code in bass_decay_rules:
+            second = domains.get(second_code)
+            if (
+                supporting_code in bass_decay_codes
+                and bass_decay_domain is not None
+                and second is not None
+            ):
+                result.append(
+                    cls._correlation(
+                        code,
+                        bass_decay_domain,
+                        second,
+                        extra_sources=(
+                            SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                        ),
                     )
                 )
 

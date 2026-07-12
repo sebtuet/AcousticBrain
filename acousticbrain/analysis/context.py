@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayCorrelationAnalysis,
     ClarityAnalysis,
     ClarityCorrelationAnalysis,
     ConfidenceAnalysis,
@@ -61,6 +63,10 @@ class AnalysisContext:
     clarity_analysis: ClarityAnalysis | None = None
 
     direct_reverberant_analysis: DirectReverberantAnalysis | None = None
+
+    bass_decay_analysis: BassDecayAnalysis | None = None
+
+    bass_decay_correlation_analysis: BassDecayCorrelationAnalysis | None = None
 
     direct_reverberant_correlation_analysis: (
         DirectReverberantCorrelationAnalysis | None

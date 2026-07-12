@@ -36,6 +36,8 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
         "etc_reflection_correlations": None,
         "direct_reverberant": None,
         "direct_reverberant_correlations": None,
+        "bass_decay": None,
+        "bass_decay_correlations": None,
         "confidence": context.confidence_analysis,
     }
 

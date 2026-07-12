@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayCorrelationAnalysis,
     BinauralSpatialInterpretation,
     ClarityAnalysis,
     ClarityCorrelationAnalysis,
@@ -62,6 +64,8 @@ class TraceabilityEngine:
         direct_reverberant_correlations: (
             DirectReverberantCorrelationAnalysis | None
         ) = None,
+        bass_decay: BassDecayAnalysis | None = None,
+        bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
@@ -88,6 +92,8 @@ class TraceabilityEngine:
             direct_reverberant_correlations=(
                 direct_reverberant_correlations
             ),
+            bass_decay=bass_decay,
+            bass_decay_correlations=bass_decay_correlations,
         )
         evidence_references.extend(physical_evidence)
         for item in physical_evidence:
@@ -165,6 +171,8 @@ class TraceabilityEngine:
         etc_reflection_correlations,
         direct_reverberant,
         direct_reverberant_correlations,
+        bass_decay,
+        bass_decay_correlations,
     ):
         evidence = []
         if rt60 is not None:
@@ -297,6 +305,47 @@ class TraceabilityEngine:
                     len(direct_reverberant_correlations.correlations),
                 )
             )
+        if bass_decay is not None:
+            times = [
+                band.estimated_decay_time_seconds
+                for band in bass_decay.aggregate_bands
+                if band.estimated_decay_time_seconds is not None
+            ]
+            significant_count = sum(
+                abs(item.difference_seconds) >= 0.25
+                for item in bass_decay.left_right_band_differences
+            )
+            evidence.extend(
+                [
+                    cls._evidence(
+                        "evidence.bass_decay.maximum_decay_time",
+                        SourceAnalysisCode.BASS_DECAY,
+                        FactCode.BASS_DECAY_MAXIMUM_DECAY_TIME,
+                        max(times) if times else None,
+                    ),
+                    cls._evidence(
+                        "evidence.bass_decay.usable_band_count",
+                        SourceAnalysisCode.BASS_DECAY,
+                        FactCode.BASS_DECAY_USABLE_BAND_COUNT,
+                        len(times),
+                    ),
+                    cls._evidence(
+                        "evidence.bass_decay.significant_difference_count",
+                        SourceAnalysisCode.BASS_DECAY,
+                        FactCode.BASS_DECAY_SIGNIFICANT_DIFFERENCE_COUNT,
+                        significant_count,
+                    ),
+                ]
+            )
+        if bass_decay_correlations is not None:
+            evidence.append(
+                cls._evidence(
+                    "evidence.bass_decay.correlation_count",
+                    SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                    FactCode.BASS_DECAY_CORRELATION_COUNT,
+                    len(bass_decay_correlations.correlations),
+                )
+            )
         return evidence
 
     @staticmethod
@@ -367,6 +416,14 @@ class TraceabilityEngine:
                 )
                 if reliable is not None:
                     recommendation_evidence[SourceAnalysisCode.RT60] = reliable
+            if recommendation.code == "COMPARE_BASS_DECAY_CHANNELS":
+                differences = evidence_by_code.get(
+                    "evidence.bass_decay.significant_difference_count"
+                )
+                if differences is not None:
+                    recommendation_evidence[
+                        SourceAnalysisCode.BASS_DECAY
+                    ] = differences
             evidence = [
                 recommendation_evidence[source]
                 for source in recommendation.source_analyses

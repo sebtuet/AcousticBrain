@@ -23,3 +23,6 @@ from .direct_reverberant_aggregator import DirectReverberantAggregator
 from .direct_reverberant_correlation import (
     DirectReverberantCorrelationEngine,
 )
+from .bass_decay import BassDecayAnalyzer
+from .bass_decay_aggregator import BassDecayAggregator
+from .bass_decay_correlation import BassDecayCorrelationEngine

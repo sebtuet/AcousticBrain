@@ -1,4 +1,6 @@
 from acousticbrain.analysis import (
+    BassDecayAggregator,
+    BassDecayAnalyzer,
     ClarityAggregator,
     ClarityAnalyzer,
     DirectReverberantAggregator,
@@ -23,6 +25,8 @@ class TemporalAnalysisStage:
         clarity_aggregator=None,
         direct_reverberant_analyzer=None,
         direct_reverberant_aggregator=None,
+        bass_decay_analyzer=None,
+        bass_decay_aggregator=None,
     ):
         self.analyzer = analyzer or RT60Analyzer()
         self.aggregator = aggregator or RT60Aggregator()
@@ -35,6 +39,10 @@ class TemporalAnalysisStage:
         )
         self.direct_reverberant_aggregator = (
             direct_reverberant_aggregator or DirectReverberantAggregator()
+        )
+        self.bass_decay_analyzer = bass_decay_analyzer or BassDecayAnalyzer()
+        self.bass_decay_aggregator = (
+            bass_decay_aggregator or BassDecayAggregator()
         )
 
     def run(self, project, context):
@@ -67,4 +75,11 @@ class TemporalAnalysisStage:
             self.direct_reverberant_aggregator.aggregate(
                 direct_reverberant_channel_analyses
             )
+        )
+        bass_decay_channel_analyses = {
+            channel: self.bass_decay_analyzer.analyze(impulse_response)
+            for channel, impulse_response in project.impulse_responses.items()
+        }
+        context.bass_decay_analysis = self.bass_decay_aggregator.aggregate(
+            bass_decay_channel_analyses
         )

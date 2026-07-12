@@ -3,6 +3,9 @@ from enum import Enum
 
 from acousticbrain.analysis import RecommendationEngine
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayCorrelation,
+    BassDecayCorrelationAnalysis,
     ClarityCorrelation,
     ClarityCorrelationAnalysis,
     ETCAnalysis,
@@ -318,3 +321,45 @@ def test_creates_and_deduplicates_drr_actions_from_facts_and_correlations():
         "DirectReverberantAnalysis",
         "DirectReverberantCorrelationAnalysis",
     )
+
+
+def test_creates_stable_bass_decay_actions_from_structured_correlations():
+    bass = BassDecayAnalysis(confidence=84.0)
+    correlations = BassDecayCorrelationAnalysis(
+        correlations=[
+            BassDecayCorrelation(
+                code="SLOW_DECAY_MODAL_INTERACTION",
+                source_metrics={
+                    "maximum_decay_time_s": 1.2,
+                    "matched_mode_count": 2.0,
+                },
+                confidence=82.0,
+            ),
+            BassDecayCorrelation(
+                code="ASYMMETRIC_BASS_DECAY",
+                source_metrics={
+                    "asymmetric_band_count": 2.0,
+                    "maximum_left_right_difference_s": 0.4,
+                },
+                confidence=78.0,
+            ),
+        ]
+    )
+
+    result = RecommendationEngine().analyze(
+        bass_decay=bass,
+        bass_decay_correlations=correlations,
+    )
+
+    assert [item.code for item in result.recommendations] == [
+        "INVESTIGATE_LONG_BASS_DECAY",
+        "CHECK_MODAL_EXCITATION",
+        "COMPARE_BASS_DECAY_CHANNELS",
+    ]
+    assert result.recommendations[0].parameters == {
+        "supporting_correlation_count": 1,
+        "maximum_decay_time_s": 1.2,
+    }
+    assert result.recommendations[2].parameters[
+        "maximum_difference_s"
+    ] == 0.4
