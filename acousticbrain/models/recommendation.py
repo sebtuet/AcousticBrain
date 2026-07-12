@@ -17,3 +17,5 @@ class Recommendation:
     confidence: float
     source_analyses: tuple[str, ...]
     parameters: dict[str, RecommendationParameter] = field(default_factory=dict)
+    hypothesis_codes: tuple[str, ...] = ()
+    verification_action: bool = False

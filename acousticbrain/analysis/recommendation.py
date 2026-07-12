@@ -23,6 +23,8 @@ from acousticbrain.models import (
     SpatialAnalysis,
     SpatialCorrelationAnalysis,
     StereoAnalysis,
+    AcousticReasoningAnalysis,
+    HypothesisStatus,
 )
 from acousticbrain.knowledge_codes import RecommendationCode, SourceAnalysisCode
 
@@ -57,6 +59,7 @@ class RecommendationEngine:
         confidence: ConfidenceAnalysis | None = None,
         measurement_quality: MeasurementQualityAnalysis | None = None,
         measurement_readiness: MeasurementReadinessAnalysis | None = None,
+        acoustic_reasoning: AcousticReasoningAnalysis | None = None,
     ) -> RecommendationAnalysis:
         recommendations: list[Recommendation] = []
 
@@ -107,6 +110,8 @@ class RecommendationEngine:
                     measurement_readiness,
                 )
             )
+        if acoustic_reasoning is not None:
+            recommendations.extend(self._from_reasoning(acoustic_reasoning))
 
         if confidence is not None:
             recommendations = [
@@ -117,6 +122,58 @@ class RecommendationEngine:
         return RecommendationAnalysis(
             recommendations=self._deduplicate(recommendations)
         )
+
+    @staticmethod
+    def _from_reasoning(analysis):
+        recommendations = []
+        for hypothesis in analysis.hypotheses:
+            evidence_by_fact = {
+                item.fact_code: item
+                for collection in (
+                    hypothesis.supporting_evidence,
+                    hypothesis.counter_evidence,
+                    hypothesis.context_evidence,
+                )
+                for item in collection
+            }
+            for action in hypothesis.verification_actions:
+                if (
+                    action.definitive
+                    and hypothesis.status is not HypothesisStatus.SUPPORTED
+                ):
+                    continue
+                evidence = [
+                    evidence_by_fact.get(fact)
+                    for fact in action.evidence_fact_codes
+                ]
+                if not evidence or any(item is None for item in evidence):
+                    continue
+                sources = tuple(
+                    dict.fromkeys(item.source_analysis for item in evidence)
+                )
+                parameters = dict(action.parameters)
+                parameters.update(
+                    {
+                        "hypothesis_code": hypothesis.code.value,
+                        "hypothesis_status": hypothesis.status.value,
+                        "support_score": hypothesis.support_score,
+                        "verification_action": True,
+                    }
+                )
+                recommendations.append(
+                    Recommendation(
+                        code=action.code,
+                        action=action.action_type.value.lower(),
+                        target=action.target,
+                        priority=action.priority,
+                        confidence=min(action.confidence, hypothesis.confidence),
+                        source_analyses=sources,
+                        parameters=parameters,
+                        hypothesis_codes=(hypothesis.code.value,),
+                        verification_action=True,
+                    )
+                )
+        return recommendations
 
     @staticmethod
     def _from_measurement_quality(quality, readiness):
@@ -713,6 +770,16 @@ class RecommendationEngine:
                     )
                 ),
                 parameters=parameters,
+                hypothesis_codes=tuple(
+                    dict.fromkeys(
+                        existing.hypothesis_codes
+                        + recommendation.hypothesis_codes
+                    )
+                ),
+                verification_action=(
+                    existing.verification_action
+                    or recommendation.verification_action
+                ),
             )
 
         return list(by_code.values())

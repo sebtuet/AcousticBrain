@@ -28,6 +28,7 @@ from acousticbrain.models import (
     SpeakerPairSpatialInterpretation,
     StereoAnalysis,
     TraceabilityAnalysis,
+    AcousticReasoningAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -99,6 +100,8 @@ class AnalysisContext:
     confidence_analysis: ConfidenceAnalysis | None = None
 
     recommendation_analysis: RecommendationAnalysis | None = None
+
+    acoustic_reasoning_analysis: AcousticReasoningAnalysis | None = None
 
     global_analysis: GlobalAnalysis | None = None
 

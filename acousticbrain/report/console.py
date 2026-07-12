@@ -89,6 +89,13 @@ class ConsoleReporter:
                     "   Provenance : "
                     + ", ".join(recommendation.source_analyses)
                 )
+                if recommendation.hypothesis_codes:
+                    print(
+                        "   Hypothèses : "
+                        + ", ".join(recommendation.hypothesis_codes)
+                    )
+                if recommendation.verification_action:
+                    print("   Nature : vérification")
 
                 if recommendation.parameters:
                     print("   Paramètres :")
