@@ -30,3 +30,7 @@ from .measurement_quality import MeasurementQualityAnalyzer
 from .measurement_set_quality import MeasurementSetQualityAnalyzer
 from .measurement_quality_aggregator import MeasurementQualityAggregator
 from .measurement_readiness import MeasurementReadinessEngine
+from .room_geometry_builder import (
+    RoomGeometryBuildException,
+    RoomGeometryBuilder,
+)

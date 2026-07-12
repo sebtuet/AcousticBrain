@@ -30,4 +30,6 @@ class TraceabilityStage:
             confidence=getattr(context, "confidence_analysis", None),
             measurement_quality=context.measurement_quality_analysis,
             measurement_readiness=context.measurement_readiness_analysis,
+            room_geometry=context.room_geometry,
+            room_geometry_comparison=context.room_geometry_comparison,
         )

@@ -19,6 +19,8 @@ from acousticbrain.models import (
     RT60Analysis,
     RoomModesAnalysis,
     RoomProperties,
+    RoomGeometry,
+    RoomGeometryComparison,
     SBIRAnalysis,
     BinauralSpatialInterpretation,
     SpatialAnalysis,
@@ -103,6 +105,10 @@ class AnalysisContext:
     traceability_analysis: TraceabilityAnalysis | None = None
 
     room_properties: RoomProperties | None = None
+
+    room_geometry: RoomGeometry | None = None
+
+    room_geometry_comparison: RoomGeometryComparison | None = None
 
     project: Project | None = None
 

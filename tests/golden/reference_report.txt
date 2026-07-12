@@ -10,6 +10,14 @@ Volume : 83.66 m³
 Surface : 32.18 m²
 Schroeder : 119.8 Hz
 
+Géométrie
+Source : LEGACY_ROOM
+Modèle : RECTANGULAR
+Version : 1
+Dimensions : 5.84 × 5.51 × 2.60 m
+Complétude : 60 %
+Compatibilité des sources : SINGLE_SOURCE
+
 
 Recommandations structurées
 
@@ -239,8 +247,8 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, MeasurementReadinessAnalysis, ConfidenceAnalysis
-Preuves disponibles : 99
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, MeasurementReadinessAnalysis, RoomGeometry, ConfidenceAnalysis
+Preuves disponibles : 107
 Liens explicatifs : 22
 
 ------------------------------------------------------------

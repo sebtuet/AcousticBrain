@@ -3,13 +3,15 @@ from acousticbrain.models import (
     Room,
     RoomModeType,
 )
-from acousticbrain.analysis import RoomModesAnalyzer
+from acousticbrain.analysis import RoomGeometryBuilder, RoomModesAnalyzer
 from acousticbrain.physics import ModeMatcher
 
 
 def test_matches_peaks_against_all_mode_families():
     modes = RoomModesAnalyzer().analyze(
-        Room(name="Room", length=5.4, width=4.1, height=2.45),
+        RoomGeometryBuilder().from_legacy_room(
+            Room(name="Room", length=5.4, width=4.1, height=2.45)
+        ),
         minimum_frequency_hz=0.0,
         maximum_frequency_hz=150.0,
         maximum_order=2,

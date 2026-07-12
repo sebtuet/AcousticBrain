@@ -36,6 +36,26 @@ class ConsoleReporter:
                 f"{rp.schroeder_frequency:.1f} Hz"
             )
 
+        geometry = report.room_geometry
+        if geometry is not None:
+            print()
+            print("Géométrie")
+            print(f"Source : {geometry.source}")
+            print(f"Modèle : {geometry.model}")
+            print(f"Version : {geometry.model_version}")
+            print(
+                "Dimensions : "
+                f"{geometry.length_m:.2f} × {geometry.width_m:.2f} × "
+                f"{geometry.height_m:.2f} m"
+            )
+            print(f"Complétude : {geometry.completeness:.0f} %")
+            print(f"Compatibilité des sources : {geometry.comparison_status}")
+            if geometry.differing_fields:
+                print(
+                    "Avertissement : RoomDescription et Room legacy divergent "
+                    "sur " + ", ".join(geometry.differing_fields)
+                )
+
         print()
 
         print()

@@ -24,6 +24,7 @@ from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
 from .stages.measurement_quality import MeasurementQualityStage
 from .stages.measurement_readiness import MeasurementReadinessStage
+from .stages.room_geometry import RoomGeometryStage
 from .stages.spatial_analysis import SpatialAnalysisStage
 from .stages.direct_reverberant_correlation import (
     DirectReverberantCorrelationStage,
@@ -107,6 +108,11 @@ class BrainPipeline:
         context = ContextBuilder().build(
         project,
         measurement,
+        )
+
+        RoomGeometryStage().run(
+            project,
+            context,
         )
 
         MeasurementQualityStage().run(

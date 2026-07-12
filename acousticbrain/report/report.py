@@ -8,6 +8,7 @@ from .recommendation import PresentedRecommendation
 from .global_presenter import PresentedGlobalAnalysis
 
 from .traceability_presenter import PresentedTraceabilityAnalysis
+from .room_geometry_presenter import PresentedRoomGeometry
 
 
 @dataclass
@@ -26,6 +27,8 @@ class Report:
     global_analysis: PresentedGlobalAnalysis | None = None
 
     traceability_analysis: PresentedTraceabilityAnalysis | None = None
+
+    room_geometry: PresentedRoomGeometry | None = None
 
     def add(self, diagnostic):
 

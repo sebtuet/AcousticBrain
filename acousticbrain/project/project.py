@@ -6,6 +6,8 @@ from acousticbrain.models import (
     Measurement,
     Room,
     RoomDescription,
+    RoomGeometry,
+    RoomGeometryComparison,
     Speaker,
 )
 
@@ -26,6 +28,10 @@ class Project:
     speakers: dict[str, Speaker] = field(default_factory=dict)
 
     room_description: RoomDescription | None = None
+
+    room_geometry: RoomGeometry | None = None
+
+    room_geometry_comparison: RoomGeometryComparison | None = None
 
     def add_measurement(
         self,
