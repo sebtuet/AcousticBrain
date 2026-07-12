@@ -159,7 +159,29 @@ def test_detects_inconsistent_response_length_interval_timing_and_peak_value():
     assert issue.observed_metrics["observed_sample_count"] == 500
     assert issue.observed_metrics["sample_interval_relative_error"] == 1.0
     assert issue.observed_metrics["start_offset_error_samples"] == 10.0
-    assert issue.observed_metrics["peak_value_relative_error"] == 0.5
+    assert issue.observed_metrics["peak_value_relative_error"] == 1.0
+
+
+def test_compares_peak_magnitude_only_for_the_same_signal_stage():
+    from acousticbrain.models import PeakValueConvention
+
+    source = clean_impulse()
+    source.samples[source.peak_index] = -0.8
+    source.peak_value = 0.8
+
+    same_stage = MeasurementQualityAnalyzer().analyze(source)
+    assert not any(
+        issue.code is MeasurementQualityIssueCode.INCONSISTENT_MEASUREMENT_METADATA
+        for issue in same_stage.issues
+    )
+
+    source.peak_value = 0.001
+    source.peak_value_convention = PeakValueConvention.BEFORE_NORMALIZATION
+    before_normalization = MeasurementQualityAnalyzer().analyze(source)
+    assert not any(
+        issue.code is MeasurementQualityIssueCode.INCONSISTENT_MEASUREMENT_METADATA
+        for issue in before_normalization.issues
+    )
 
 
 def test_invalid_sample_rate_is_reported_without_creating_replacement_duration():

@@ -25,3 +25,13 @@ class Diagnostic:
     causes: list[str] = field(default_factory=list)
 
     recommendations: list[str] = field(default_factory=list)
+
+    analysis_family: str | None = None
+
+    readiness_status: str | None = None
+
+    provisional: bool = False
+
+    validity: str | None = None
+
+    score_label: str = "Score"

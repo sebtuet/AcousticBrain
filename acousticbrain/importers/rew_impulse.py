@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from acousticbrain.models import ImpulseChannel, ImpulseResponse
+from acousticbrain.models import ImpulseChannel, ImpulseResponse, PeakValueConvention
 
 
 class REWImpulseImporter:
@@ -63,6 +63,7 @@ class REWImpulseImporter:
             response_length=int(metadata["response_length"]),
             sample_interval_s=sample_interval_s,
             start_time_s=float(metadata["start_time_s"]),
+            peak_value_convention=PeakValueConvention.BEFORE_NORMALIZATION,
         )
 
     @classmethod

@@ -263,3 +263,23 @@ faits manquants et règles appliquées.
 Il ne possède pas de score acoustique : sa sévérité décrit seulement l'état
 technique des preuves et ses recommandations portent uniquement sur la reprise
 ou la complétion des mesures.
+
+### Corrective de restitution et convention REW
+
+La métadonnée REW `Peak value before normalisation` décrit le signal avant
+normalisation, alors que les échantillons exportés appartiennent à l'IR
+normalisée. `PeakValueConvention.BEFORE_NORMALIZATION` rend cette différence
+explicite. Le moteur ne compare jamais directement ces deux amplitudes. Pour
+`SAMPLE_VALUE`, la comparaison porte sur les grandeurs absolues et utilise la
+valeur déclarée comme dénominateur protégé ; le signe du pic ne crée donc pas
+une fausse incohérence.
+
+Tant que la readiness ne contrôle pas l'orchestration, un diagnostic acoustique
+associé à une famille `BLOCKED` est marqué `calculé à titre provisoire`, avec
+une validité technique non garantie. Sa confiance interne ne lève pas le
+blocage. `ConfidenceDiagnostic` restitue séparément confiance des calculs et
+readiness des mesures.
+
+La console affiche par défaut une synthèse de traçabilité (sources, nombres de
+preuves et de liens). L'intégralité du graphe reste disponible avec
+`ConsoleReporter(detailed_traceability=True)`.

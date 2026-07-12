@@ -3,6 +3,9 @@ from .report import Report
 
 class ConsoleReporter:
 
+    def __init__(self, *, detailed_traceability=False):
+        self.detailed_traceability = detailed_traceability
+
     def print(self, report: Report):
 
         print()
@@ -86,6 +89,17 @@ class ConsoleReporter:
                 "Analyses sources : "
                 + (", ".join(global_analysis.source_analyses) or "aucune")
             )
+            blocked_families = [
+                family for family, status in global_analysis.readiness_statuses
+                if status == "BLOCKED"
+            ]
+            if blocked_families:
+                print(
+                    "Avertissement : résultats calculés à titre provisoire "
+                    "pour les familles BLOCKED : "
+                    + ", ".join(blocked_families)
+                )
+                print("Validité technique : non garantie pour ces familles")
             print()
 
             for domain in global_analysis.domains:
@@ -138,9 +152,15 @@ class ConsoleReporter:
                 "Analyses sources : "
                 + (", ".join(traceability.source_analyses) or "aucune")
             )
+            print(f"Preuves disponibles : {len(traceability.evidence_references)}")
+            print(f"Liens explicatifs : {len(traceability.links)}")
             print()
 
-            for evidence in traceability.evidence_references:
+            for evidence in (
+                traceability.evidence_references
+                if self.detailed_traceability
+                else ()
+            ):
                 print(f" • Preuve {evidence.code}")
                 print(f"   Fait : {evidence.fact_code}")
                 print(f"   Analyse : {evidence.source_analysis}")
@@ -148,10 +168,10 @@ class ConsoleReporter:
                 if evidence.value is not None:
                     print(f"   Valeur : {evidence.value}")
 
-            if traceability.evidence_references:
+            if self.detailed_traceability and traceability.evidence_references:
                 print()
 
-            for link in traceability.links:
+            for link in traceability.links if self.detailed_traceability else ():
                 print(f" • Lien {link.code}")
                 print(f"   Faits : {', '.join(link.fact_codes)}")
                 print(f"   Preuves : {', '.join(link.evidence_codes)}")
@@ -166,7 +186,7 @@ class ConsoleReporter:
                         + ", ".join(link.recommendation_codes)
                     )
 
-            if traceability.links:
+            if self.detailed_traceability and traceability.links:
                 print()
 
         for diagnostic, is_secondary in self._diagnostics_to_render(report):
@@ -201,8 +221,14 @@ class ConsoleReporter:
                 print()
 
             print(f"Gravité : {diagnostic.severity}")
+            if diagnostic.analysis_family is not None:
+                print(f"Famille : {diagnostic.analysis_family}")
+                print(f"Readiness : {diagnostic.readiness_status}")
+                if diagnostic.provisional:
+                    print("Statut du résultat : calculé à titre provisoire")
+                print(f"Validité : {diagnostic.validity}")
             if diagnostic.score is not None:
-                print(f"Score : {diagnostic.score:.0f} / 100")
+                print(f"{diagnostic.score_label} : {diagnostic.score:.0f} / 100")
             print(f"Confiance : {diagnostic.confidence}%")
             print(f"Niveau de preuve : {diagnostic.evidence_level.value}")
             print()

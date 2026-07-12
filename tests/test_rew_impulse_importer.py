@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from acousticbrain.importers import ImportEngine, REWImpulseImporter
-from acousticbrain.models import ImpulseChannel, ImpulseResponse
+from acousticbrain.models import ImpulseChannel, ImpulseResponse, PeakValueConvention
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "impulse_minimal.txt"
@@ -20,6 +20,7 @@ def test_imports_rew_metadata_and_exact_raw_samples():
     assert impulse.source_id == "Minimal impulse"
     assert impulse.peak_value == 0.75
     assert impulse.peak_index == 2
+    assert impulse.peak_value_convention is PeakValueConvention.BEFORE_NORMALIZATION
     assert impulse.response_length == 5
     assert impulse.sample_interval_s == 2.0833333333333333e-5
     assert impulse.sample_rate_hz == 48_000.0

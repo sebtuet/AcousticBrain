@@ -100,7 +100,7 @@ def test_console_preserves_stable_graph_identifiers(capsys):
         {"volume": 1.0, "floor_area": 1.0, "schroeder_frequency": 100.0},
     )()
 
-    ConsoleReporter().print(report)
+    ConsoleReporter(detailed_traceability=True).print(report)
     output = capsys.readouterr().out
 
     assert "Preuve evidence.sbir.score" in output
