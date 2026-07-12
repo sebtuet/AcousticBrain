@@ -358,3 +358,56 @@ def test_links_drr_recommendation_to_physical_and_correlation_evidence():
         "evidence.direct_reverberant.broadband_drr_db",
         "evidence.direct_reverberant.correlation_count",
     )
+
+
+def test_traces_bass_decay_domain_and_four_separate_physical_facts():
+    global_analysis = GlobalAnalysis(
+        domains=[Domain("BASS_DECAY", 55.0, "BassDecayAnalysis")],
+        source_analyses=("BassDecayAnalysis",),
+    )
+    recommendations = RecommendationAnalysis(
+        [
+            Recommendation(
+                "COMPARE_BASS_DECAY_CHANNELS",
+                ("BassDecayAnalysis", "BassDecayCorrelationAnalysis"),
+            )
+        ]
+    )
+    bass = SimpleNamespace(
+        aggregate_bands=[
+            SimpleNamespace(estimated_decay_time_seconds=1.2),
+            SimpleNamespace(estimated_decay_time_seconds=0.9),
+        ],
+        left_right_band_differences=[
+            SimpleNamespace(difference_seconds=0.3),
+            SimpleNamespace(difference_seconds=0.1),
+        ],
+    )
+    correlations = SimpleNamespace(correlations=[object(), object()])
+
+    result = TraceabilityEngine().analyze(
+        global_analysis=global_analysis,
+        recommendation_analysis=recommendations,
+        bass_decay=bass,
+        bass_decay_correlations=correlations,
+    )
+
+    evidence = {item.code: item for item in result.evidence_references}
+    domain = evidence["evidence.global.domain.bass_decay.score"]
+    assert domain.source_analysis == "GlobalAnalysis"
+    assert domain.fact_code == "global.domain.bass_decay.score"
+    assert evidence["evidence.bass_decay.usable_band_count"].value == 2
+    assert evidence["evidence.bass_decay.maximum_decay_time"].value == 1.2
+    assert evidence[
+        "evidence.bass_decay.significant_difference_count"
+    ].value == 1
+    assert evidence["evidence.bass_decay.correlation_count"].value == 2
+    link = next(
+        item
+        for item in result.links
+        if item.recommendation_codes == ("COMPARE_BASS_DECAY_CHANNELS",)
+    )
+    assert link.evidence_codes == (
+        "evidence.bass_decay.significant_difference_count",
+        "evidence.bass_decay.correlation_count",
+    )

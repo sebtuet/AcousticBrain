@@ -1,4 +1,5 @@
 class GlobalDomainCode:
+    BASS_DECAY = "BASS_DECAY"
     RT60 = "RT60"
     ETC = "ETC"
     CLARITY = "CLARITY"
@@ -8,6 +9,8 @@ class GlobalDomainCode:
 
 class SourceAnalysisCode:
     GLOBAL = "GlobalAnalysis"
+    BASS_DECAY = "BassDecayAnalysis"
+    BASS_DECAY_CORRELATION = "BassDecayCorrelationAnalysis"
     RT60 = "RT60Analysis"
     ETC = "ETCAnalysis"
     CLARITY = "ClarityAnalysis"
@@ -22,6 +25,9 @@ class SourceAnalysisCode:
 
 
 class GlobalCorrelationCode:
+    BASS_DECAY_MODAL_INTERACTION = "BASS_DECAY_MODAL_INTERACTION"
+    BASS_DECAY_RT60_INTERACTION = "BASS_DECAY_RT60_INTERACTION"
+    BASS_DECAY_DRR_INTERACTION = "BASS_DECAY_DRR_INTERACTION"
     ETC_SPATIAL_ASYMMETRY = "ETC_SPATIAL_ASYMMETRY"
     RT60_CLARITY_DECAY_INTERACTION = "RT60_CLARITY_DECAY_INTERACTION"
     ETC_CLARITY_EARLY_ENERGY_INTERACTION = (
@@ -34,6 +40,9 @@ class GlobalCorrelationCode:
 
 
 class RecommendationCode:
+    INVESTIGATE_LONG_BASS_DECAY = "INVESTIGATE_LONG_BASS_DECAY"
+    CHECK_MODAL_EXCITATION = "CHECK_MODAL_EXCITATION"
+    COMPARE_BASS_DECAY_CHANNELS = "COMPARE_BASS_DECAY_CHANNELS"
     CHECK_EARLY_REFLECTION_SYMMETRY = "CHECK_EARLY_REFLECTION_SYMMETRY"
     INVESTIGATE_RT60_CHANNEL_DIFFERENCES = (
         "INVESTIGATE_RT60_CHANNEL_DIFFERENCES"
@@ -52,6 +61,12 @@ class RecommendationCode:
 
 
 class FactCode:
+    BASS_DECAY_USABLE_BAND_COUNT = "bass_decay.usable_band_count"
+    BASS_DECAY_MAXIMUM_DECAY_TIME = "bass_decay.maximum_decay_time"
+    BASS_DECAY_SIGNIFICANT_DIFFERENCE_COUNT = (
+        "bass_decay.significant_difference_count"
+    )
+    BASS_DECAY_CORRELATION_COUNT = "bass_decay.correlation_count"
     RT60_BROADBAND_MEAN = "rt60.broadband_mean"
     RT60_INTERCHANNEL_HOMOGENEITY = "rt60.interchannel_homogeneity"
     RT60_RELIABLE_DIFFERENCE_COUNT = "rt60.reliable_difference_count"

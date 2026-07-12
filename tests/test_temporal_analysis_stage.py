@@ -1,6 +1,8 @@
 from acousticbrain.analysis import AnalysisContext
 from acousticbrain.brain.stages.temporal_analysis import TemporalAnalysisStage
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayChannelAnalysis,
     ClarityAnalysis,
     ClarityChannelAnalysis,
     DirectReverberantAnalysis,
@@ -78,6 +80,18 @@ class RecordingDirectReverberantAggregator(RecordingAggregator):
         self.result = DirectReverberantAnalysis()
 
 
+class RecordingBassDecayAnalyzer(RecordingAnalyzer):
+    def analyze(self, impulse_response):
+        self.inputs.append(impulse_response)
+        return BassDecayChannelAnalysis(channel=impulse_response.channel)
+
+
+class RecordingBassDecayAggregator(RecordingAggregator):
+    def __init__(self):
+        self.input = None
+        self.result = BassDecayAnalysis()
+
+
 def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     project = Project(
         name="Reference",
@@ -104,6 +118,8 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
     clarity_aggregator = RecordingClarityAggregator()
     direct_reverberant_analyzer = RecordingDirectReverberantAnalyzer()
     direct_reverberant_aggregator = RecordingDirectReverberantAggregator()
+    bass_decay_analyzer = RecordingBassDecayAnalyzer()
+    bass_decay_aggregator = RecordingBassDecayAggregator()
 
     TemporalAnalysisStage(
         analyzer,
@@ -114,6 +130,8 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         clarity_aggregator,
         direct_reverberant_analyzer,
         direct_reverberant_aggregator,
+        bass_decay_analyzer,
+        bass_decay_aggregator,
     ).run(project, context)
 
     assert analyzer.inputs == [left, stereo]
@@ -143,6 +161,12 @@ def test_temporal_stage_analyzes_each_imported_channel_and_stores_aggregation():
         context.direct_reverberant_analysis
         is direct_reverberant_aggregator.result
     )
+    assert bass_decay_analyzer.inputs == [left, stereo]
+    assert set(bass_decay_aggregator.input) == {
+        ImpulseChannel.LEFT,
+        ImpulseChannel.STEREO,
+    }
+    assert context.bass_decay_analysis is bass_decay_aggregator.result
 
 
 def test_project_stores_impulses_by_explicit_channel():

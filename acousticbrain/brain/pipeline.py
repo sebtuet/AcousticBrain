@@ -7,6 +7,7 @@ from acousticbrain.diagnostics import (
     ClarityDiagnostic,
     SpatialDiagnostic,
     DirectReverberantDiagnostic,
+    BassDecayDiagnostic,
     ETCDiagnostic,
     ModalDensityDiagnostic,
     RT60Diagnostic,
@@ -24,6 +25,7 @@ from .stages.spatial_analysis import SpatialAnalysisStage
 from .stages.direct_reverberant_correlation import (
     DirectReverberantCorrelationStage,
 )
+from .stages.bass_decay_correlation import BassDecayCorrelationStage
 from .stages.confidence import ConfidenceStage
 from .stages.etc_correlation import ETCCorrelationStage
 from .stages.clarity_correlation import ClarityCorrelationStage
@@ -50,6 +52,8 @@ class BrainPipeline:
         self.diagnostics = [
 
             BassDiagnostic(),
+
+            BassDecayDiagnostic(),
 
             RoomModeDiagnostic(),
 
@@ -121,6 +125,10 @@ class BrainPipeline:
         )
 
         DirectReverberantCorrelationStage().run(
+            context,
+        )
+
+        BassDecayCorrelationStage().run(
             context,
         )
 

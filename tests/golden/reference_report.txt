@@ -17,7 +17,7 @@ Recommandations structurées
    Action : check_placement
    Cible : stereo_speakers
    Priorité : HIGH
-   Confiance : 81.39252041564417%
+   Confiance : 80.84812800586789%
    Provenance : StereoAnalysis
    Paramètres :
     - symmetry_score : 10.859575118098183
@@ -27,7 +27,7 @@ Recommandations structurées
    Action : test_distance
    Cible : floor
    Priorité : HIGH
-   Confiance : 81.39252041564417%
+   Confiance : 80.84812800586789%
    Provenance : SBIRAnalysis
    Paramètres :
     - current_distance_m : 1.05
@@ -76,7 +76,7 @@ Recommandations structurées
    Action : investigate
    Cible : drr_channel_differences
    Priorité : HIGH
-   Confiance : 81.39252041564417%
+   Confiance : 80.84812800586789%
    Provenance : DirectReverberantAnalysis
    Paramètres :
     - significant_band_count : 8
@@ -86,7 +86,7 @@ Recommandations structurées
    Action : improve_dominance
    Cible : direct_sound
    Priorité : HIGH
-   Confiance : 81.39252041564417%
+   Confiance : 80.84812800586789%
    Provenance : DirectReverberantAnalysis, DirectReverberantCorrelationAnalysis
    Paramètres :
     - supporting_correlation_count : 2
@@ -95,17 +95,46 @@ Recommandations structurées
    Action : apply_treatment
    Cible : dominant_early_reflections
    Priorité : HIGH
-   Confiance : 81.39252041564417%
+   Confiance : 80.84812800586789%
    Provenance : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
    Paramètres :
     - supporting_correlation_count : 1
 
+ • INVESTIGATE_LONG_BASS_DECAY
+   Action : investigate
+   Cible : bass_decay_bands
+   Priorité : HIGH
+   Confiance : 68.76092420757861%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 1
+    - maximum_decay_time_s : 3.437316781130287
+
+ • CHECK_MODAL_EXCITATION
+   Action : check
+   Cible : modal_excitation
+   Priorité : HIGH
+   Confiance : 68.76092420757861%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - matched_mode_count : 3.0
+
+ • COMPARE_BASS_DECAY_CHANNELS
+   Action : compare
+   Cible : bass_decay_channels
+   Priorité : MEDIUM
+   Confiance : 52.374489853810466%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - significant_band_count : 4
+    - maximum_difference_s : 3.37351347785648
+
 Synthèse acoustique globale
 
-Score : 35.7 / 100
-Confiance : 81.4%
-Domaines prioritaires : SBIR, STEREO, ETC, MODAL_DENSITY, DIRECT_REVERBERANT, CLARITY, SPATIAL
-Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis
+Score : 34.5 / 100
+Confiance : 80.8%
+Domaines prioritaires : SBIR, STEREO, BASS_DECAY, ETC, MODAL_DENSITY, DIRECT_REVERBERANT, CLARITY, SPATIAL
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis
 
  • Domaine STEREO
    Score : 10.9 / 100
@@ -142,6 +171,10 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Score : 33.4 / 100
    Confiance : 94.9%
    Provenance : DirectReverberantAnalysis
+ • Domaine BASS_DECAY
+   Score : 24.5 / 100
+   Confiance : 68.8%
+   Provenance : BassDecayAnalysis
 
  • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
    Domaines : STEREO, SBIR
@@ -163,6 +196,10 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Domaines : SPATIAL, STEREO
    Score : 10.9 / 100
    Provenances : SpatialAnalysis, StereoAnalysis, SpatialCorrelationAnalysis
+ • Corrélation BASS_DECAY_MODAL_INTERACTION
+   Domaines : BASS_DECAY, MODAL_DENSITY
+   Score : 24.5 / 100
+   Provenances : BassDecayAnalysis, ModalDensityAnalysis, BassDecayCorrelationAnalysis
  • Corrélation LOW_DRR_DECAY_INTERACTION
    Domaines : DIRECT_REVERBERANT, RT60
    Score : 33.4 / 100
@@ -178,7 +215,7 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
 
  • Preuve evidence.global.domain.stereo.score
    Fait : global.domain.stereo.score
@@ -220,6 +257,11 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 33.35416324372591
+ • Preuve evidence.global.domain.bass_decay.score
+   Fait : global.domain.bass_decay.score
+   Analyse : GlobalAnalysis
+   Niveau : CALCULATED
+   Valeur : 24.545454545454543
  • Preuve evidence.rt60.broadband_mean
    Fait : rt60.broadband_mean
    Analyse : RT60Analysis
@@ -280,11 +322,31 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : DirectReverberantCorrelationAnalysis
    Niveau : CALCULATED
    Valeur : 4
+ • Preuve evidence.bass_decay.maximum_decay_time
+   Fait : bass_decay.maximum_decay_time
+   Analyse : BassDecayAnalysis
+   Niveau : CALCULATED
+   Valeur : 3.437316781130287
+ • Preuve evidence.bass_decay.usable_band_count
+   Fait : bass_decay.usable_band_count
+   Analyse : BassDecayAnalysis
+   Niveau : CALCULATED
+   Valeur : 9
+ • Preuve evidence.bass_decay.significant_difference_count
+   Fait : bass_decay.significant_difference_count
+   Analyse : BassDecayAnalysis
+   Niveau : CALCULATED
+   Valeur : 4
+ • Preuve evidence.bass_decay.correlation_count
+   Fait : bass_decay.correlation_count
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 2
  • Preuve evidence.global.confidence
    Fait : global.confidence
    Analyse : ConfidenceAnalysis
    Niveau : CALCULATED
-   Valeur : 81.39252041564417
+   Valeur : 80.84812800586789
 
  • Lien explanation.correlation.stereo_sbir_placement_interaction
    Faits : global.domain.stereo.score, global.domain.sbir.score
@@ -306,6 +368,10 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : spatial.technical_center_stability, global.domain.stereo.score, spatial.correlation_count
    Preuves : evidence.spatial.technical_center_stability, evidence.global.domain.stereo.score, evidence.spatial.correlation_count
    Corrélations : SPATIAL_STEREO_ALIGNMENT
+ • Lien explanation.correlation.bass_decay_modal_interaction
+   Faits : bass_decay.maximum_decay_time, global.domain.modal_density.score, bass_decay.correlation_count
+   Preuves : evidence.bass_decay.maximum_decay_time, evidence.global.domain.modal_density.score, evidence.bass_decay.correlation_count
+   Corrélations : BASS_DECAY_MODAL_INTERACTION
  • Lien explanation.correlation.low_drr_decay_interaction
    Faits : direct_reverberant.broadband_drr_db, rt60.broadband_mean, direct_reverberant.correlation_count
    Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.rt60.broadband_mean, evidence.direct_reverberant.correlation_count
@@ -355,6 +421,18 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.etc.channel_specific_event_count, evidence.direct_reverberant.correlation_count
    Corrélations : DRR_EARLY_REFLECTION_INTERACTION
    Recommandations : APPLY_EARLY_REFLECTION_TREATMENT
+ • Lien explanation.recommendation.investigate_long_bass_decay
+   Faits : bass_decay.maximum_decay_time, bass_decay.correlation_count
+   Preuves : evidence.bass_decay.maximum_decay_time, evidence.bass_decay.correlation_count
+   Recommandations : INVESTIGATE_LONG_BASS_DECAY
+ • Lien explanation.recommendation.check_modal_excitation
+   Faits : bass_decay.maximum_decay_time, bass_decay.correlation_count
+   Preuves : evidence.bass_decay.maximum_decay_time, evidence.bass_decay.correlation_count
+   Recommandations : CHECK_MODAL_EXCITATION
+ • Lien explanation.recommendation.compare_bass_decay_channels
+   Faits : bass_decay.significant_difference_count, bass_decay.correlation_count
+   Preuves : evidence.bass_decay.significant_difference_count, evidence.bass_decay.correlation_count
+   Recommandations : COMPARE_BASS_DECAY_CHANNELS
  • Lien explanation.global.confidence
    Faits : global.confidence
    Preuves : evidence.global.confidence
@@ -617,6 +695,46 @@ Recommandations
  • Vérifier la répartition des anomalies par famille modale
 
 ------------------------------------------------------------
+Décroissance dans le grave
+
+Observations
+ • Canaux Bass Decay disponibles : 3.
+ • Bandes communes exploitables : 9.
+ • Couverture Bass Decay : 82 %.
+ • Temps de décroissance maximal : 3.437 s.
+ • Écarts G-D Bass Decay significatifs : 4.
+ • Corrélations Bass Decay structurées : 2.
+ • Bande 31.5 Hz : 3.437 s, confiance 68 %.
+ • Bande 40.0 Hz : 1.820 s, confiance 86 %.
+ • Bande 50.0 Hz : 0.582 s, confiance 94 %.
+ • Bande 63.0 Hz : 0.701 s, confiance 92 %.
+ • Bande 80.0 Hz : 0.505 s, confiance 83 %.
+ • Bande 100.0 Hz : 0.549 s, confiance 89 %.
+ • Bande 125.0 Hz : 0.430 s, confiance 86 %.
+ • Bande 160.0 Hz : 0.332 s, confiance 83 %.
+ • Bande 200.0 Hz : 0.432 s, confiance 83 %.
+ • Corrélation SLOW_DECAY_MODAL_INTERACTION : score 88, confiance 75 %.
+ • Corrélation ASYMMETRIC_BASS_DECAY : score 100, confiance 52 %.
+
+Conclusion
+
+La décroissance basse fréquence présente des persistances structurées et des asymétries intercanales.
+
+Gravité : HIGH
+Score : 25 / 100
+Confiance : 69%
+Niveau de preuve : CALCULATED
+
+Causes
+ • SLOW_DECAY_MODAL_INTERACTION
+ • ASYMMETRIC_BASS_DECAY
+
+Recommandations
+ • Examiner les bandes de décroissance longue avant toute correction.
+ • Vérifier l'excitation modale aux fréquences concernées.
+ • Comparer les décroissances des canaux gauche et droit.
+
+------------------------------------------------------------
 Analyse spatiale de paire
 
 Observations
@@ -682,8 +800,8 @@ Recommandations
 Confiance de l'analyse
 
 Observations
- • Preuves disponibles : 7 ; indisponibles : 1.
- • Couverture des preuves : 88 %.
+ • Preuves disponibles : 8 ; indisponibles : 1.
+ • Couverture des preuves : 89 %.
  • Accord des confiances locales : 72 %.
  • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
  • sbir : 92/100 — Confiance locale disponible : 92.4/100.
@@ -693,7 +811,8 @@ Observations
  • clarity : 67/100 — Confiance locale disponible : 67.2/100.
  • spatial : 67/100 — Confiance locale disponible : 67.0/100.
  • direct_reverberant : 95/100 — Confiance locale disponible : 94.9/100.
- • coverage : 88/100 — 7/8 analyses fournissent une confiance locale.
+ • bass_decay : 69/100 — Confiance locale disponible : 68.8/100.
+ • coverage : 89/100 — 8/9 analyses fournissent une confiance locale.
  • agreement : 72/100 — Dispersion des confiances locales : 28.0 point(s).
 
 Conclusion

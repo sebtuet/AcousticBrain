@@ -36,5 +36,6 @@ def test_stage_maps_all_physical_analyses_explicitly():
         "clarity": context.clarity_analysis,
         "spatial": context.spatial_analysis,
         "direct_reverberant": context.direct_reverberant_analysis,
+        "bass_decay": context.bass_decay_analysis,
     }
     assert context.confidence_analysis is engine.result

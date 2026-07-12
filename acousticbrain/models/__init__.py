@@ -68,3 +68,10 @@ from .direct_reverberant_correlation import DirectReverberantCorrelation
 from .direct_reverberant_correlation_analysis import (
     DirectReverberantCorrelationAnalysis,
 )
+from .decay_usability import DecayUsability
+from .bass_decay_band_analysis import BassDecayBandAnalysis
+from .bass_decay_channel_analysis import BassDecayChannelAnalysis
+from .bass_decay_band_difference import BassDecayBandDifference
+from .bass_decay_analysis import BassDecayAnalysis
+from .bass_decay_correlation import BassDecayCorrelation
+from .bass_decay_correlation_analysis import BassDecayCorrelationAnalysis

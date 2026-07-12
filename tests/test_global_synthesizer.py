@@ -1,7 +1,14 @@
 from dataclasses import dataclass, field
 
+import pytest
+
 from acousticbrain.analysis import GlobalSynthesizer
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayBandAnalysis,
+    BassDecayCorrelation,
+    BassDecayCorrelationAnalysis,
+    DecayUsability,
     ClarityAnalysis,
     ClarityCorrelation,
     ClarityCorrelationAnalysis,
@@ -382,3 +389,42 @@ def test_drr_domain_aggregates_only_adverse_correlations_without_count_collapse(
 
     # Base large bande 61,5, pénalité moyenne défavorable plafonnée à 30.
     assert result.domains[0].score == 40.5
+
+
+def test_adds_bass_decay_domain_and_only_supported_global_correlations():
+    band = BassDecayBandAnalysis(
+        63.0, 56.0, 71.0, -5.0, -25.0, 20.0, 0.4,
+        -50.0, 1.2, -45.0, 20.0, -0.98, 80.0,
+        "CHANNEL_MEAN", DecayUsability.USABLE,
+    )
+    bass = BassDecayAnalysis(
+        aggregate_bands=[band], coverage=50.0, confidence=80.0
+    )
+    correlations = BassDecayCorrelationAnalysis(
+        correlations=[
+            BassDecayCorrelation(code="SLOW_DECAY_RT60_INTERACTION")
+        ]
+    )
+    rt60 = RT60Analysis(
+        broadband_rt60_seconds=0.35,
+        interchannel_homogeneity=80.0,
+        confidence=90.0,
+    )
+
+    result = GlobalSynthesizer().synthesize(
+        bass_decay=bass,
+        bass_decay_correlations=correlations,
+        rt60=rt60,
+    )
+
+    domain = next(item for item in result.domains if item.code == "BASS_DECAY")
+    assert domain.score == pytest.approx(61.6666667)
+    assert domain.source_analysis == "BassDecayAnalysis"
+    assert [item.code for item in result.correlations] == [
+        "BASS_DECAY_RT60_INTERACTION"
+    ]
+    assert result.correlations[0].source_analyses == (
+        "BassDecayAnalysis",
+        "RT60Analysis",
+        "BassDecayCorrelationAnalysis",
+    )

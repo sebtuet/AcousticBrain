@@ -4,6 +4,8 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from acousticbrain.models import (
+    BassDecayAnalysis,
+    BassDecayCorrelationAnalysis,
     ClarityCorrelationAnalysis,
     ETCAnalysis,
     ETCReflectionCorrelationAnalysis,
@@ -47,6 +49,8 @@ class RecommendationEngine:
         direct_reverberant_correlations: (
             DirectReverberantCorrelationAnalysis | None
         ) = None,
+        bass_decay: BassDecayAnalysis | None = None,
+        bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
     ) -> RecommendationAnalysis:
         recommendations: list[Recommendation] = []
@@ -87,6 +91,10 @@ class RecommendationEngine:
                     direct_reverberant_correlations
                 )
             )
+        if bass_decay is not None and bass_decay_correlations is not None:
+            recommendations.extend(
+                self._from_bass_decay(bass_decay, bass_decay_correlations)
+            )
 
         if confidence is not None:
             recommendations = [
@@ -97,6 +105,89 @@ class RecommendationEngine:
         return RecommendationAnalysis(
             recommendations=self._deduplicate(recommendations)
         )
+
+    @staticmethod
+    def _from_bass_decay(analysis, correlations):
+        by_code = {item.code: item for item in correlations.correlations}
+        recommendations = []
+        long_codes = {
+            "SLOW_DECAY_MODAL_INTERACTION",
+            "SLOW_DECAY_RT60_INTERACTION",
+            "LOW_DRR_LONG_BASS_DECAY",
+        }
+        long_items = [
+            item for code, item in by_code.items() if code in long_codes
+        ]
+        if long_items:
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.INVESTIGATE_LONG_BASS_DECAY,
+                    action="investigate",
+                    target="bass_decay_bands",
+                    priority=RecommendationPriority.HIGH,
+                    confidence=min(
+                        analysis.confidence,
+                        max(item.confidence for item in long_items),
+                    ),
+                    source_analyses=(
+                        SourceAnalysisCode.BASS_DECAY,
+                        SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                    ),
+                    parameters={
+                        "supporting_correlation_count": len(long_items),
+                        "maximum_decay_time_s": max(
+                            item.source_metrics["maximum_decay_time_s"]
+                            for item in long_items
+                        ),
+                    },
+                )
+            )
+        modal = by_code.get("SLOW_DECAY_MODAL_INTERACTION")
+        if modal is not None:
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.CHECK_MODAL_EXCITATION,
+                    action="check",
+                    target="modal_excitation",
+                    priority=RecommendationPriority.HIGH,
+                    confidence=min(analysis.confidence, modal.confidence),
+                    source_analyses=(
+                        SourceAnalysisCode.BASS_DECAY,
+                        SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                    ),
+                    parameters={
+                        "matched_mode_count": modal.source_metrics[
+                            "matched_mode_count"
+                        ],
+                    },
+                )
+            )
+        asymmetric = by_code.get("ASYMMETRIC_BASS_DECAY")
+        if asymmetric is not None:
+            recommendations.append(
+                Recommendation(
+                    code=RecommendationCode.COMPARE_BASS_DECAY_CHANNELS,
+                    action="compare",
+                    target="bass_decay_channels",
+                    priority=RecommendationPriority.MEDIUM,
+                    confidence=min(analysis.confidence, asymmetric.confidence),
+                    source_analyses=(
+                        SourceAnalysisCode.BASS_DECAY,
+                        SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                    ),
+                    parameters={
+                        "significant_band_count": int(
+                            asymmetric.source_metrics[
+                                "asymmetric_band_count"
+                            ]
+                        ),
+                        "maximum_difference_s": asymmetric.source_metrics[
+                            "maximum_left_right_difference_s"
+                        ],
+                    },
+                )
+            )
+        return recommendations
 
     @staticmethod
     def _from_direct_reverberant(
