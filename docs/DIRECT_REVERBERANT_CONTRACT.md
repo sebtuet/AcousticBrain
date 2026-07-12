@@ -53,3 +53,9 @@ Les codes initiaux sont `LOW_DRR_HIGH_RT60`,
 `FAVORABLE_DRR_HIGH_CLARITY`. Chaque corrélation conserve ses bandes, métriques
 sources, analyses sources, score de correspondance, confiance et fondements
 techniques. Elle ne contient aucun texte utilisateur ni recommandation.
+
+`FAVORABLE_DRR_HIGH_CLARITY` est une observation favorable de traçabilité :
+elle est exclue des causes négatives et des pénalités. Le score de domaine part
+de la qualité D/R large bande, puis applique une pénalité plafonnée fondée sur
+la sévérité moyenne des seules corrélations défavorables ; leur accumulation ne
+peut donc pas écraser mécaniquement le résultat large bande.

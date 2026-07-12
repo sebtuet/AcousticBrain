@@ -346,7 +346,7 @@ def test_adds_drr_domain_and_three_supported_global_correlations():
     domain = next(
         item for item in result.domains if item.code == "DIRECT_REVERBERANT"
     )
-    assert domain.score == 0.0
+    assert round(domain.score, 2) == 33.33
     assert domain.confidence == 82.0
     codes = {item.code for item in result.correlations}
     assert {
@@ -354,3 +354,31 @@ def test_adds_drr_domain_and_three_supported_global_correlations():
         "DRR_EARLY_REFLECTION_INTERACTION",
         "DRR_SPATIAL_ASYMMETRY",
     }.issubset(codes)
+
+
+def test_drr_domain_aggregates_only_adverse_correlations_without_count_collapse():
+    drr = DirectReverberantAnalysis(
+        broadband_direct_to_reverberant_db=1.38,
+        confidence=90.0,
+    )
+    correlations = DirectReverberantCorrelationAnalysis(
+        correlations=[
+            DirectReverberantCorrelation(
+                code="LOW_DRR_HIGH_RT60", score=80.0
+            ),
+            DirectReverberantCorrelation(
+                code="DRR_SPATIAL_CHANNEL_ASYMMETRY", score=60.0
+            ),
+            DirectReverberantCorrelation(
+                code="FAVORABLE_DRR_HIGH_CLARITY", score=100.0
+            ),
+        ]
+    )
+
+    result = GlobalSynthesizer().synthesize(
+        direct_reverberant=drr,
+        direct_reverberant_correlations=correlations,
+    )
+
+    # Base large bande 61,5, pénalité moyenne défavorable plafonnée à 30.
+    assert result.domains[0].score == 40.5

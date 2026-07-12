@@ -39,7 +39,7 @@ class GlobalSynthesizer:
     RT60_EXCESS_RANGE_S = 0.6
     CLARITY_CORRELATION_PENALTY = 20.0
     SPATIAL_CORRELATION_PENALTY = 30.0
-    DRR_CORRELATION_PENALTY = 20.0
+    DRR_MAXIMUM_CORRELATION_PENALTY = 30.0
 
     def synthesize(
         self,
@@ -244,13 +244,21 @@ class GlobalSynthesizer:
         base_score = 50.0 + (
             50.0 * analysis.broadband_direct_to_reverberant_db / 6.0
         )
-        adverse_count = sum(
-            item.code != "FAVORABLE_DRR_HIGH_CLARITY"
+        adverse = [
+            item
             for item in correlations.correlations
+            if item.code != "FAVORABLE_DRR_HIGH_CLARITY"
+        ]
+        # Les corrélations locales nuancent la qualité large bande sans pouvoir
+        # l'écraser par leur seul nombre. Leur score exprime ici leur sévérité.
+        correlation_penalty = (
+            cls.DRR_MAXIMUM_CORRELATION_PENALTY
+            * fmean(item.score for item in adverse)
+            / 100.0
+            if adverse
+            else 0.0
         )
-        score = base_score - (
-            cls.DRR_CORRELATION_PENALTY * adverse_count
-        )
+        score = base_score - correlation_penalty
         return GlobalDomainAnalysis(
             code=GlobalDomainCode.DIRECT_REVERBERANT,
             score=min(100.0, max(0.0, score)),

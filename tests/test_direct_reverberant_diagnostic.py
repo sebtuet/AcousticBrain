@@ -52,3 +52,33 @@ def test_handles_absent_analysis_explicitly():
 
     assert diagnostic.severity == "INFO"
     assert diagnostic.score is None
+
+
+def test_keeps_favorable_correlation_as_observation_not_negative_cause():
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.direct_reverberant_analysis = DirectReverberantAnalysis(
+        broadband_direct_to_reverberant_db=1.38,
+        confidence=90.0,
+    )
+    context.direct_reverberant_correlation_analysis = (
+        DirectReverberantCorrelationAnalysis(
+            correlations=[
+                DirectReverberantCorrelation(
+                    code="LOW_DRR_HIGH_RT60", score=80.0
+                ),
+                DirectReverberantCorrelation(
+                    code="FAVORABLE_DRR_HIGH_CLARITY", score=100.0
+                ),
+            ]
+        )
+    )
+
+    diagnostic = DirectReverberantDiagnostic().analyze(context)
+
+    assert diagnostic.score == 41.5
+    assert diagnostic.causes == ["LOW_DRR_HIGH_RT60"]
+    assert any(
+        "FAVORABLE_DRR_HIGH_CLARITY" in item
+        for item in diagnostic.observations
+    )
+    assert "large bande est favorable" in diagnostic.conclusion

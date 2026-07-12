@@ -43,7 +43,8 @@ Les actions initiales sont :
 
 - `CHECK_EARLY_REFLECTION_SYMMETRY` ;
 - `INVESTIGATE_RT60_CHANNEL_DIFFERENCES` ;
-- `TREAT_DOMINANT_EARLY_REFLECTIONS` ;
+- `INVESTIGATE_DOMINANT_EARLY_REFLECTIONS` pour identifier les événements non appariés ;
+- `APPLY_EARLY_REFLECTION_TREATMENT` lorsque la corrélation D/R–ETC établit la cause ;
 - `VERIFY_TIME_ALIGNMENT`.
 
 ## Invariants

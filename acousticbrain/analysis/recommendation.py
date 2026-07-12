@@ -193,8 +193,8 @@ class RecommendationEngine:
         if dominant:
             recommendations.append(
                 Recommendation(
-                    code=RecommendationCode.REDUCE_DOMINANT_EARLY_REFLECTIONS,
-                    action="reduce",
+                    code=RecommendationCode.APPLY_EARLY_REFLECTION_TREATMENT,
+                    action="apply_treatment",
                     target="dominant_early_reflections",
                     priority=RecommendationPriority.HIGH,
                     confidence=max(item.confidence for item in dominant),
@@ -275,8 +275,8 @@ class RecommendationEngine:
             return []
         return [
             Recommendation(
-                code=RecommendationCode.TREAT_DOMINANT_EARLY_REFLECTIONS,
-                action="investigate_treatment",
+                code=RecommendationCode.INVESTIGATE_DOMINANT_EARLY_REFLECTIONS,
+                action="investigate",
                 target="dominant_early_reflections",
                 priority=(
                     RecommendationPriority.HIGH

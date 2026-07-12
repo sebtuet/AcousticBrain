@@ -191,7 +191,7 @@ def test_recommends_treating_only_dominant_unmatched_early_reflections():
         etc_reflection_correlations=analysis
     ).recommendations[0]
 
-    assert recommendation.code == "TREAT_DOMINANT_EARLY_REFLECTIONS"
+    assert recommendation.code == "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS"
     assert recommendation.parameters["important_unmatched_event_count"] == 1
     assert recommendation.confidence == 88.0
     assert recommendation.source_analyses == (
@@ -306,7 +306,7 @@ def test_creates_and_deduplicates_drr_actions_from_facts_and_correlations():
     assert {item.code for item in recommendations} == {
         "IMPROVE_DIRECT_SOUND_DOMINANCE",
         "INVESTIGATE_DRR_CHANNEL_DIFFERENCES",
-        "REDUCE_DOMINANT_EARLY_REFLECTIONS",
+        "APPLY_EARLY_REFLECTION_TREATMENT",
     }
     improve = next(
         item

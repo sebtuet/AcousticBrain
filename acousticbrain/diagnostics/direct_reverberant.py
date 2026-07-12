@@ -36,7 +36,7 @@ class DirectReverberantDiagnostic(DiagnosticBase):
             message=conclusion,
             observations=self._observations(analysis, items),
             conclusion=conclusion,
-            causes=[item.code for item in items],
+            causes=[item.code for item in self._adverse_correlations(items)],
             recommendations=self._recommendations(analysis, items),
         )
 
@@ -44,11 +44,21 @@ class DirectReverberantDiagnostic(DiagnosticBase):
     def _score(cls, analysis, correlations):
         broadband = analysis.broadband_direct_to_reverberant_db
         base = min(100.0, max(0.0, 50.0 + 50.0 * broadband / 6.0))
-        adverse_count = sum(
-            item.code != "FAVORABLE_DRR_HIGH_CLARITY"
-            for item in correlations
+        adverse = cls._adverse_correlations(correlations)
+        penalty = (
+            25.0 * sum(item.score for item in adverse) / len(adverse) / 100.0
+            if adverse
+            else 0.0
         )
-        return max(0.0, base - 10.0 * adverse_count)
+        return max(0.0, base - penalty)
+
+    @staticmethod
+    def _adverse_correlations(correlations):
+        return [
+            item
+            for item in correlations
+            if item.code != "FAVORABLE_DRR_HIGH_CLARITY"
+        ]
 
     @staticmethod
     def _severity(score):
@@ -102,8 +112,12 @@ class DirectReverberantDiagnostic(DiagnosticBase):
     def _conclusion(cls, analysis, correlations):
         if analysis.broadband_direct_to_reverberant_db < cls.LOW_DRR_DB:
             return "L'énergie réverbérée domine l'énergie directe sur l'agrégat large bande."
-        if correlations:
-            return "Le rapport D/R large bande est favorable, avec des interactions locales structurées."
+        if cls._adverse_correlations(correlations):
+            return (
+                "Le rapport D/R large bande est favorable, mais plusieurs bandes "
+                "présentent de fortes asymétries intercanales et des interactions "
+                "défavorables avec la décroissance et les réflexions précoces."
+            )
         return "L'énergie directe domine l'énergie réverbérée sur les faits disponibles."
 
     @classmethod

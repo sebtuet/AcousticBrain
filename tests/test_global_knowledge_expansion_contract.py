@@ -37,7 +37,7 @@ def test_existing_global_contract_represents_all_new_domains():
             (
                 GlobalDomainCode.ETC,
                 SourceAnalysisCode.ETC,
-                RecommendationCode.TREAT_DOMINANT_EARLY_REFLECTIONS,
+                RecommendationCode.INVESTIGATE_DOMINANT_EARLY_REFLECTIONS,
                 40.0,
                 91.0,
             ),

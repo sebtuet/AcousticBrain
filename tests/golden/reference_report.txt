@@ -62,8 +62,8 @@ Recommandations structurées
    Paramètres :
     - broadband_time_difference_ms : 0.24999999999986144
 
- • TREAT_DOMINANT_EARLY_REFLECTIONS
-   Action : investigate_treatment
+ • INVESTIGATE_DOMINANT_EARLY_REFLECTIONS
+   Action : investigate
    Cible : dominant_early_reflections
    Priorité : HIGH
    Confiance : 72.09830883131441%
@@ -91,8 +91,8 @@ Recommandations structurées
    Paramètres :
     - supporting_correlation_count : 2
 
- • REDUCE_DOMINANT_EARLY_REFLECTIONS
-   Action : reduce
+ • APPLY_EARLY_REFLECTION_TREATMENT
+   Action : apply_treatment
    Cible : dominant_early_reflections
    Priorité : HIGH
    Confiance : 81.39252041564417%
@@ -102,9 +102,9 @@ Recommandations structurées
 
 Synthèse acoustique globale
 
-Score : 31.7 / 100
+Score : 35.7 / 100
 Confiance : 81.4%
-Domaines prioritaires : DIRECT_REVERBERANT, SBIR, STEREO, ETC, MODAL_DENSITY, CLARITY, SPATIAL
+Domaines prioritaires : SBIR, STEREO, ETC, MODAL_DENSITY, DIRECT_REVERBERANT, CLARITY, SPATIAL
 Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis
 
  • Domaine STEREO
@@ -139,7 +139,7 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Confiance : 67.0%
    Provenance : SpatialAnalysis
  • Domaine DIRECT_REVERBERANT
-   Score : 1.5 / 100
+   Score : 33.4 / 100
    Confiance : 94.9%
    Provenance : DirectReverberantAnalysis
 
@@ -165,66 +165,76 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
    Provenances : SpatialAnalysis, StereoAnalysis, SpatialCorrelationAnalysis
  • Corrélation LOW_DRR_DECAY_INTERACTION
    Domaines : DIRECT_REVERBERANT, RT60
-   Score : 1.5 / 100
+   Score : 33.4 / 100
    Provenances : DirectReverberantAnalysis, RT60Analysis, DirectReverberantCorrelationAnalysis
  • Corrélation DRR_EARLY_REFLECTION_INTERACTION
    Domaines : DIRECT_REVERBERANT, ETC
-   Score : 1.5 / 100
+   Score : 31.4 / 100
    Provenances : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
  • Corrélation DRR_SPATIAL_ASYMMETRY
    Domaines : DIRECT_REVERBERANT, SPATIAL
-   Score : 1.5 / 100
+   Score : 33.4 / 100
    Provenances : DirectReverberantAnalysis, SpatialAnalysis, DirectReverberantCorrelationAnalysis
 
 Traçabilité
 
 Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
 
- • Preuve evidence.stereo.score
-   Fait : stereo.score
-   Analyse : StereoAnalysis
+ • Preuve evidence.global.domain.stereo.score
+   Fait : global.domain.stereo.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 10.859575118098183
- • Preuve evidence.sbir.score
-   Fait : sbir.score
-   Analyse : SBIRAnalysis
+ • Preuve evidence.global.domain.sbir.score
+   Fait : global.domain.sbir.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 7.554112244897951
- • Preuve evidence.modal_density.score
-   Fait : modal_density.score
-   Analyse : ModalDensityAnalysis
+ • Preuve evidence.global.domain.modal_density.score
+   Fait : global.domain.modal_density.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 32.660201128438295
- • Preuve evidence.rt60.score
-   Fait : rt60.score
-   Analyse : RT60Analysis
+ • Preuve evidence.global.domain.rt60.score
+   Fait : global.domain.rt60.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 89.87388056861487
- • Preuve evidence.etc.score
-   Fait : etc.score
-   Analyse : ETCAnalysis
+ • Preuve evidence.global.domain.etc.score
+   Fait : global.domain.etc.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 31.37377287601503
- • Preuve evidence.clarity.score
-   Fait : clarity.score
-   Analyse : ClarityAnalysis
+ • Preuve evidence.global.domain.clarity.score
+   Fait : global.domain.clarity.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 40.0
- • Preuve evidence.spatial.score
-   Fait : spatial.score
-   Analyse : SpatialAnalysis
+ • Preuve evidence.global.domain.spatial.score
+   Fait : global.domain.spatial.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 40.0
- • Preuve evidence.direct_reverberant.score
-   Fait : direct_reverberant.score
-   Analyse : DirectReverberantAnalysis
+ • Preuve evidence.global.domain.direct_reverberant.score
+   Fait : global.domain.direct_reverberant.score
+   Analyse : GlobalAnalysis
    Niveau : CALCULATED
-   Valeur : 1.4950406516885835
+   Valeur : 33.35416324372591
+ • Preuve evidence.rt60.broadband_mean
+   Fait : rt60.broadband_mean
+   Analyse : RT60Analysis
+   Niveau : CALCULATED
+   Valeur : 0.34819931549774613
  • Preuve evidence.rt60.reliable_difference_count
    Fait : rt60.reliable_difference_count
    Analyse : RT60Analysis
    Niveau : CALCULATED
    Valeur : 3
+ • Preuve evidence.rt60.interchannel_homogeneity
+   Fait : rt60.interchannel_homogeneity
+   Analyse : RT60Analysis
+   Niveau : CALCULATED
+   Valeur : 66.24626856204956
  • Preuve evidence.etc.channel_specific_event_count
    Fait : etc.channel_specific_event_count
    Analyse : ETCAnalysis
@@ -255,16 +265,16 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : ETCReflectionCorrelationAnalysis
    Niveau : CALCULATED
    Valeur : 40
- • Preuve evidence.direct_reverberant.asymmetric_band_count
-   Fait : direct_reverberant.asymmetric_band_count
-   Analyse : DirectReverberantAnalysis
-   Niveau : CALCULATED
-   Valeur : 8
  • Preuve evidence.direct_reverberant.broadband_drr_db
    Fait : direct_reverberant.broadband_drr_db
    Analyse : DirectReverberantAnalysis
    Niveau : CALCULATED
    Valeur : 1.37940487820263
+ • Preuve evidence.direct_reverberant.asymmetric_band_count
+   Fait : direct_reverberant.asymmetric_band_count
+   Analyse : DirectReverberantAnalysis
+   Niveau : CALCULATED
+   Valeur : 8
  • Preuve evidence.direct_reverberant.correlation_count
    Fait : direct_reverberant.correlation_count
    Analyse : DirectReverberantCorrelationAnalysis
@@ -277,28 +287,28 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Valeur : 81.39252041564417
 
  • Lien explanation.correlation.stereo_sbir_placement_interaction
-   Faits : stereo.score, sbir.score
-   Preuves : evidence.stereo.score, evidence.sbir.score
+   Faits : global.domain.stereo.score, global.domain.sbir.score
+   Preuves : evidence.global.domain.stereo.score, evidence.global.domain.sbir.score
    Corrélations : STEREO_SBIR_PLACEMENT_INTERACTION
  • Lien explanation.correlation.etc_spatial_asymmetry
    Faits : etc.channel_specific_event_count, spatial.technical_center_stability, spatial.correlation_count
    Preuves : evidence.etc.channel_specific_event_count, evidence.spatial.technical_center_stability, evidence.spatial.correlation_count
    Corrélations : ETC_SPATIAL_ASYMMETRY
  • Lien explanation.correlation.rt60_clarity_decay_interaction
-   Faits : rt60.reliable_difference_count, clarity.channel_asymmetry_count, clarity.correlation_count
-   Preuves : evidence.rt60.reliable_difference_count, evidence.clarity.channel_asymmetry_count, evidence.clarity.correlation_count
+   Faits : rt60.broadband_mean, clarity.channel_asymmetry_count, clarity.correlation_count
+   Preuves : evidence.rt60.broadband_mean, evidence.clarity.channel_asymmetry_count, evidence.clarity.correlation_count
    Corrélations : RT60_CLARITY_DECAY_INTERACTION
  • Lien explanation.correlation.etc_clarity_early_energy_interaction
    Faits : etc.channel_specific_event_count, clarity.channel_asymmetry_count, clarity.correlation_count
    Preuves : evidence.etc.channel_specific_event_count, evidence.clarity.channel_asymmetry_count, evidence.clarity.correlation_count
    Corrélations : ETC_CLARITY_EARLY_ENERGY_INTERACTION
  • Lien explanation.correlation.spatial_stereo_alignment
-   Faits : spatial.technical_center_stability, stereo.score, spatial.correlation_count
-   Preuves : evidence.spatial.technical_center_stability, evidence.stereo.score, evidence.spatial.correlation_count
+   Faits : spatial.technical_center_stability, global.domain.stereo.score, spatial.correlation_count
+   Preuves : evidence.spatial.technical_center_stability, evidence.global.domain.stereo.score, evidence.spatial.correlation_count
    Corrélations : SPATIAL_STEREO_ALIGNMENT
  • Lien explanation.correlation.low_drr_decay_interaction
-   Faits : direct_reverberant.broadband_drr_db, rt60.reliable_difference_count, direct_reverberant.correlation_count
-   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.rt60.reliable_difference_count, evidence.direct_reverberant.correlation_count
+   Faits : direct_reverberant.broadband_drr_db, rt60.broadband_mean, direct_reverberant.correlation_count
+   Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.rt60.broadband_mean, evidence.direct_reverberant.correlation_count
    Corrélations : LOW_DRR_DECAY_INTERACTION
  • Lien explanation.correlation.drr_early_reflection_interaction
    Faits : direct_reverberant.broadband_drr_db, etc.channel_specific_event_count, direct_reverberant.correlation_count
@@ -309,16 +319,16 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.spatial.technical_center_stability, evidence.direct_reverberant.correlation_count
    Corrélations : DRR_SPATIAL_ASYMMETRY
  • Lien explanation.recommendation.check_stereo_placement
-   Faits : stereo.score
-   Preuves : evidence.stereo.score
+   Faits : global.domain.stereo.score
+   Preuves : evidence.global.domain.stereo.score
    Recommandations : CHECK_STEREO_PLACEMENT
  • Lien explanation.recommendation.test_speaker_distance
-   Faits : sbir.score
-   Preuves : evidence.sbir.score
+   Faits : global.domain.sbir.score
+   Preuves : evidence.global.domain.sbir.score
    Recommandations : TEST_SPEAKER_DISTANCE
  • Lien explanation.recommendation.measure_multiple_positions
-   Faits : modal_density.score
-   Preuves : evidence.modal_density.score
+   Faits : global.domain.modal_density.score
+   Preuves : evidence.global.domain.modal_density.score
    Recommandations : MEASURE_MULTIPLE_POSITIONS
  • Lien explanation.recommendation.investigate_rt60_channel_differences
    Faits : rt60.reliable_difference_count
@@ -328,10 +338,10 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : spatial.technical_center_stability
    Preuves : evidence.spatial.technical_center_stability
    Recommandations : VERIFY_TIME_ALIGNMENT
- • Lien explanation.recommendation.treat_dominant_early_reflections
+ • Lien explanation.recommendation.investigate_dominant_early_reflections
    Faits : etc.channel_specific_event_count, etc_reflection.dominant_unmatched_event_count
    Preuves : evidence.etc.channel_specific_event_count, evidence.etc_reflection.dominant_unmatched_event_count
-   Recommandations : TREAT_DOMINANT_EARLY_REFLECTIONS
+   Recommandations : INVESTIGATE_DOMINANT_EARLY_REFLECTIONS
  • Lien explanation.recommendation.investigate_drr_channel_differences
    Faits : direct_reverberant.asymmetric_band_count
    Preuves : evidence.direct_reverberant.asymmetric_band_count
@@ -340,11 +350,11 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : direct_reverberant.broadband_drr_db, direct_reverberant.correlation_count
    Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.direct_reverberant.correlation_count
    Recommandations : IMPROVE_DIRECT_SOUND_DOMINANCE
- • Lien explanation.recommendation.reduce_dominant_early_reflections
+ • Lien explanation.recommendation.apply_early_reflection_treatment
    Faits : direct_reverberant.broadband_drr_db, etc.channel_specific_event_count, direct_reverberant.correlation_count
    Preuves : evidence.direct_reverberant.broadband_drr_db, evidence.etc.channel_specific_event_count, evidence.direct_reverberant.correlation_count
    Corrélations : DRR_EARLY_REFLECTION_INTERACTION
-   Recommandations : REDUCE_DOMINANT_EARLY_REFLECTIONS
+   Recommandations : APPLY_EARLY_REFLECTION_TREATMENT
  • Lien explanation.global.confidence
    Faits : global.confidence
    Preuves : evidence.global.confidence
@@ -394,10 +404,10 @@ Observations
 
 Conclusion
 
-Le rapport D/R large bande est favorable, avec des interactions locales structurées.
+Le rapport D/R large bande est favorable, mais plusieurs bandes présentent de fortes asymétries intercanales et des interactions défavorables avec la décroissance et les réflexions précoces.
 
 Gravité : HIGH
-Score : 31 / 100
+Score : 38 / 100
 Confiance : 95%
 Niveau de preuve : CALCULATED
 
@@ -405,7 +415,6 @@ Causes
  • LOW_DRR_HIGH_RT60
  • LOW_DRR_DOMINANT_EARLY_REFLECTIONS
  • DRR_SPATIAL_CHANNEL_ASYMMETRY
- • FAVORABLE_DRR_HIGH_CLARITY
 
 Recommandations
  • Examiner les interactions D/R locales avant toute modification.

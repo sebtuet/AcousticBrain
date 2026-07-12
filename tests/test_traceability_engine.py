@@ -75,10 +75,11 @@ def test_builds_deterministic_evidence_from_existing_global_domains():
     )
 
     assert [item.code for item in result.evidence_references] == [
-        "evidence.stereo.score",
-        "evidence.sbir.score",
+        "evidence.global.domain.stereo.score",
+        "evidence.global.domain.sbir.score",
     ]
-    assert result.evidence_references[0].fact_code == "stereo.score"
+    assert result.evidence_references[0].fact_code == "global.domain.stereo.score"
+    assert result.evidence_references[0].source_analysis == "GlobalAnalysis"
     assert result.evidence_references[0].value == 50.0
     assert result.evidence_references[0].evidence_level is EvidenceLevel.CALCULATED
 
@@ -97,10 +98,13 @@ def test_links_recommendation_to_physical_evidence_and_correlation():
     )
 
     assert link.code == "explanation.recommendation.test_speaker_distance"
-    assert link.fact_codes == ("stereo.score", "sbir.score")
+    assert link.fact_codes == (
+        "global.domain.stereo.score",
+        "global.domain.sbir.score",
+    )
     assert link.evidence_codes == (
-        "evidence.stereo.score",
-        "evidence.sbir.score",
+        "evidence.global.domain.stereo.score",
+        "evidence.global.domain.sbir.score",
     )
     assert link.correlation_codes == (
         "STEREO_SBIR_PLACEMENT_INTERACTION",
@@ -182,7 +186,7 @@ def expanded_inputs():
                 ("RT60Analysis",),
             ),
             Recommendation(
-                "TREAT_DOMINANT_EARLY_REFLECTIONS",
+                "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS",
                 ("ETCAnalysis", "ETCReflectionCorrelationAnalysis"),
             ),
             Recommendation(
@@ -271,7 +275,7 @@ def test_links_new_recommendations_and_global_correlation_to_atomic_evidence():
     }
     assert recommendation_codes == {
         "INVESTIGATE_RT60_CHANNEL_DIFFERENCES",
-        "TREAT_DOMINANT_EARLY_REFLECTIONS",
+        "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS",
         "CHECK_EARLY_REFLECTION_SYMMETRY",
         "VERIFY_TIME_ALIGNMENT",
     }

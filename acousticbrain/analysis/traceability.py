@@ -67,7 +67,7 @@ class TraceabilityEngine:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
                 code=self._evidence_code(domain.code),
-                source_analysis=domain.source_analysis,
+                source_analysis=SourceAnalysisCode.GLOBAL,
                 fact_code=self._fact_code(domain.code),
                 evidence_level=EvidenceLevel.CALCULATED,
                 value=domain.score,
@@ -90,9 +90,16 @@ class TraceabilityEngine:
             ),
         )
         evidence_references.extend(physical_evidence)
-        domain_evidence.update(
-            {item.source_analysis: item for item in physical_evidence}
-        )
+        for item in physical_evidence:
+            # La première preuve déclarée est le fait physique principal du
+            # domaine ; les liens spécialisés peuvent sélectionner un fait
+            # plus précis dans _recommendation_links.
+            current = domain_evidence.get(item.source_analysis)
+            if (
+                current is None
+                or current.source_analysis == SourceAnalysisCode.GLOBAL
+            ):
+                domain_evidence[item.source_analysis] = item
         links = self._correlation_links(global_analysis, domain_evidence)
         links.extend(
             self._recommendation_links(
@@ -166,13 +173,27 @@ class TraceabilityEngine:
                 and abs(item.difference_seconds) >= 0.2
                 for item in rt60.left_right_band_differences
             )
-            evidence.append(
-                cls._evidence(
-                    "evidence.rt60.reliable_difference_count",
-                    SourceAnalysisCode.RT60,
-                    FactCode.RT60_RELIABLE_DIFFERENCE_COUNT,
-                    reliable_count,
-                )
+            evidence.extend(
+                [
+                    cls._evidence(
+                        "evidence.rt60.broadband_mean",
+                        SourceAnalysisCode.RT60,
+                        FactCode.RT60_BROADBAND_MEAN,
+                        getattr(rt60, "broadband_rt60_seconds", None),
+                    ),
+                    cls._evidence(
+                        "evidence.rt60.reliable_difference_count",
+                        SourceAnalysisCode.RT60,
+                        FactCode.RT60_RELIABLE_DIFFERENCE_COUNT,
+                        reliable_count,
+                    ),
+                    cls._evidence(
+                        "evidence.rt60.interchannel_homogeneity",
+                        SourceAnalysisCode.RT60,
+                        FactCode.RT60_INTERCHANNEL_HOMOGENEITY,
+                        getattr(rt60, "interchannel_homogeneity", None),
+                    ),
+                ]
             )
         if etc is not None:
             specific_count = (
@@ -251,6 +272,12 @@ class TraceabilityEngine:
             evidence.extend(
                 [
                     cls._evidence(
+                        "evidence.direct_reverberant.broadband_drr_db",
+                        SourceAnalysisCode.DIRECT_REVERBERANT,
+                        FactCode.DRR_BROADBAND_DB,
+                        direct_reverberant.broadband_direct_to_reverberant_db,
+                    ),
+                    cls._evidence(
                         "evidence.direct_reverberant.asymmetric_band_count",
                         SourceAnalysisCode.DIRECT_REVERBERANT,
                         FactCode.DRR_ASYMMETRIC_BAND_COUNT,
@@ -258,12 +285,6 @@ class TraceabilityEngine:
                             abs(value) >= 3.0
                             for value in direct_reverberant.left_right_direct_to_reverberant_differences_db.values()
                         ),
-                    ),
-                    cls._evidence(
-                        "evidence.direct_reverberant.broadband_drr_db",
-                        SourceAnalysisCode.DIRECT_REVERBERANT,
-                        FactCode.DRR_BROADBAND_DB,
-                        direct_reverberant.broadband_direct_to_reverberant_db,
                     ),
                 ]
             )
@@ -332,6 +353,20 @@ class TraceabilityEngine:
                     recommendation_evidence[
                         SourceAnalysisCode.DIRECT_REVERBERANT
                     ] = asymmetric
+            if recommendation.code == "IMPROVE_DIRECT_SOUND_DOMINANCE":
+                broadband = evidence_by_code.get(
+                    "evidence.direct_reverberant.broadband_drr_db"
+                )
+                if broadband is not None:
+                    recommendation_evidence[
+                        SourceAnalysisCode.DIRECT_REVERBERANT
+                    ] = broadband
+            if recommendation.code == "INVESTIGATE_RT60_CHANNEL_DIFFERENCES":
+                reliable = evidence_by_code.get(
+                    "evidence.rt60.reliable_difference_count"
+                )
+                if reliable is not None:
+                    recommendation_evidence[SourceAnalysisCode.RT60] = reliable
             evidence = [
                 recommendation_evidence[source]
                 for source in recommendation.source_analyses
@@ -365,8 +400,8 @@ class TraceabilityEngine:
 
     @staticmethod
     def _evidence_code(domain_code: str) -> str:
-        return f"evidence.{domain_code.lower()}.score"
+        return f"evidence.global.domain.{domain_code.lower()}.score"
 
     @staticmethod
     def _fact_code(domain_code: str) -> str:
-        return f"{domain_code.lower()}.score"
+        return f"global.domain.{domain_code.lower()}.score"
