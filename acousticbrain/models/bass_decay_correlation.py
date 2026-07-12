@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from .bass_decay_modal_match import BassDecayModalMatch
+
 
 @dataclass(frozen=True)
 class BassDecayCorrelation:
@@ -7,11 +9,12 @@ class BassDecayCorrelation:
 
     code: str
     center_frequencies_hz: tuple[float, ...] = ()
-    source_metrics: dict[str, float] = field(default_factory=dict)
+    source_metrics: dict[str, float | int] = field(default_factory=dict)
     source_analyses: tuple[str, ...] = ()
     score: float = 0.0
     confidence: float = 0.0
     technical_basis_codes: tuple[str, ...] = ()
+    modal_matches: tuple[BassDecayModalMatch, ...] = ()
 
     def __post_init__(self):
         if not 0.0 <= self.score <= 100.0:

@@ -156,9 +156,9 @@ class RecommendationEngine:
                         SourceAnalysisCode.BASS_DECAY_CORRELATION,
                     ),
                     parameters={
-                        "matched_mode_count": modal.source_metrics[
-                            "matched_mode_count"
-                        ],
+                        "matched_mode_count": int(
+                            modal.source_metrics["matched_mode_count"]
+                        ),
                     },
                 )
             )

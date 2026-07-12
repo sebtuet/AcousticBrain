@@ -146,8 +146,8 @@ def test_modal_correlation_uses_band_bounds_and_modal_density_facts():
     assert correlation.center_frequencies_hz == (63.0,)
     assert correlation.source_metrics == {
         "maximum_decay_time_s": 1.2,
-        "matched_mode_count": 1.0,
-        "maximum_local_mode_count": 1.0,
+        "matched_mode_count": 1,
+        "maximum_local_mode_count": 1,
     }
     assert correlation.source_analyses == (
         "BassDecayAnalysis",
@@ -156,6 +156,12 @@ def test_modal_correlation_uses_band_bounds_and_modal_density_facts():
     )
     assert correlation.confidence == 84.0
     assert 0.0 <= correlation.score <= 100.0
+    match = correlation.modal_matches[0]
+    assert match.band_center_frequency_hz == 63.0
+    assert match.mode_frequency_hz == 63.5
+    assert match.mode_type.value == "AXIAL"
+    assert (match.order_x, match.order_y, match.order_z) == (1, 0, 0)
+    assert match.frequency_error_hz == 0.5
 
 
 def test_modal_correlation_requires_a_matching_density_band():

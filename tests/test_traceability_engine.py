@@ -370,7 +370,11 @@ def test_traces_bass_decay_domain_and_four_separate_physical_facts():
             Recommendation(
                 "COMPARE_BASS_DECAY_CHANNELS",
                 ("BassDecayAnalysis", "BassDecayCorrelationAnalysis"),
-            )
+            ),
+            Recommendation(
+                "CHECK_MODAL_EXCITATION",
+                ("BassDecayAnalysis", "BassDecayCorrelationAnalysis"),
+            ),
         ]
     )
     bass = SimpleNamespace(
@@ -383,7 +387,24 @@ def test_traces_bass_decay_domain_and_four_separate_physical_facts():
             SimpleNamespace(difference_seconds=0.1),
         ],
     )
-    correlations = SimpleNamespace(correlations=[object(), object()])
+    modal_match = SimpleNamespace(
+        band_center_frequency_hz=31.5,
+        mode_frequency_hz=32.1,
+        mode_type=SimpleNamespace(value="AXIAL"),
+        order_x=1,
+        order_y=0,
+        order_z=0,
+        frequency_error_hz=0.6,
+    )
+    correlations = SimpleNamespace(
+        correlations=[
+            SimpleNamespace(
+                code="SLOW_DECAY_MODAL_INTERACTION",
+                modal_matches=(modal_match,),
+            ),
+            object(),
+        ]
+    )
 
     result = TraceabilityEngine().analyze(
         global_analysis=global_analysis,
@@ -402,6 +423,13 @@ def test_traces_bass_decay_domain_and_four_separate_physical_facts():
         "evidence.bass_decay.significant_difference_count"
     ].value == 1
     assert evidence["evidence.bass_decay.correlation_count"].value == 2
+    assert evidence["evidence.bass_decay.modal_match.count"].value == 1
+    assert evidence[
+        "evidence.bass_decay.modal_match.31_5hz.0.mode_frequency"
+    ].value == 32.1
+    assert evidence[
+        "evidence.bass_decay.modal_match.31_5hz.0.mode_type"
+    ].value == "AXIAL"
     link = next(
         item
         for item in result.links
@@ -410,4 +438,14 @@ def test_traces_bass_decay_domain_and_four_separate_physical_facts():
     assert link.evidence_codes == (
         "evidence.bass_decay.significant_difference_count",
         "evidence.bass_decay.correlation_count",
+    )
+    modal_link = next(
+        item
+        for item in result.links
+        if item.recommendation_codes == ("CHECK_MODAL_EXCITATION",)
+    )
+    assert "evidence.bass_decay.modal_match.count" in modal_link.evidence_codes
+    assert (
+        "evidence.bass_decay.modal_match.31_5hz.0.frequency_error"
+        in modal_link.evidence_codes
     )

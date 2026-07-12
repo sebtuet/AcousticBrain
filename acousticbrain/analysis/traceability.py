@@ -346,7 +346,59 @@ class TraceabilityEngine:
                     len(bass_decay_correlations.correlations),
                 )
             )
+            modal_matches = [
+                match
+                for correlation in bass_decay_correlations.correlations
+                if getattr(correlation, "code", None)
+                == "SLOW_DECAY_MODAL_INTERACTION"
+                for match in getattr(correlation, "modal_matches", ())
+            ]
+            if modal_matches:
+                evidence.append(
+                    cls._evidence(
+                        "evidence.bass_decay.modal_match.count",
+                        SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                        FactCode.BASS_DECAY_MODAL_MATCH_COUNT,
+                        len(modal_matches),
+                    )
+                )
+                evidence.extend(cls._modal_match_evidence(modal_matches))
         return evidence
+
+    @classmethod
+    def _modal_match_evidence(cls, matches):
+        evidence = []
+        per_band_indices = {}
+        for match in matches:
+            band_code = cls._frequency_code(
+                match.band_center_frequency_hz
+            )
+            index = per_band_indices.get(band_code, 0)
+            per_band_indices[band_code] = index + 1
+            prefix = f"bass_decay.modal_match.{band_code}.{index}"
+            values = (
+                ("band_center_frequency", match.band_center_frequency_hz),
+                ("mode_frequency", match.mode_frequency_hz),
+                ("mode_type", match.mode_type.value),
+                ("order_x", match.order_x),
+                ("order_y", match.order_y),
+                ("order_z", match.order_z),
+                ("frequency_error", match.frequency_error_hz),
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.{prefix}.{name}",
+                    SourceAnalysisCode.BASS_DECAY_CORRELATION,
+                    f"{prefix}.{name}",
+                    value,
+                )
+                for name, value in values
+            )
+        return evidence
+
+    @staticmethod
+    def _frequency_code(frequency):
+        return f"{frequency:g}".replace(".", "_") + "hz"
 
     @staticmethod
     def _evidence(code, source, fact, value):
@@ -424,6 +476,14 @@ class TraceabilityEngine:
                     recommendation_evidence[
                         SourceAnalysisCode.BASS_DECAY
                     ] = differences
+            if recommendation.code == "CHECK_MODAL_EXCITATION":
+                modal_count = evidence_by_code.get(
+                    "evidence.bass_decay.modal_match.count"
+                )
+                if modal_count is not None:
+                    recommendation_evidence[
+                        SourceAnalysisCode.BASS_DECAY_CORRELATION
+                    ] = modal_count
             evidence = [
                 recommendation_evidence[source]
                 for source in recommendation.source_analyses
@@ -434,6 +494,17 @@ class TraceabilityEngine:
                 or len(evidence) != len(recommendation.source_analyses)
             ):
                 continue
+
+            if recommendation.code == "CHECK_MODAL_EXCITATION":
+                evidence.extend(
+                    item
+                    for item in evidence_references
+                    if item.code.startswith(
+                        "evidence.bass_decay.modal_match."
+                    )
+                    and item.code
+                    != "evidence.bass_decay.modal_match.count"
+                )
 
             recommendation_sources = set(recommendation.source_analyses)
             correlation_codes = tuple(

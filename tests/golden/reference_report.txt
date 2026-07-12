@@ -117,7 +117,7 @@ Recommandations structurées
    Confiance : 68.76092420757861%
    Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
    Paramètres :
-    - matched_mode_count : 3.0
+    - matched_mode_count : 3
 
  • COMPARE_BASS_DECAY_CHANNELS
    Action : compare
@@ -342,6 +342,116 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : BassDecayCorrelationAnalysis
    Niveau : CALCULATED
    Valeur : 2
+ • Preuve evidence.bass_decay.modal_match.count
+   Fait : bass_decay.modal_match.count
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.band_center_frequency
+   Fait : bass_decay.modal_match.31_5hz.0.band_center_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 31.5
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.mode_frequency
+   Fait : bass_decay.modal_match.31_5hz.0.mode_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 29.366438356164384
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.mode_type
+   Fait : bass_decay.modal_match.31_5hz.0.mode_type
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : AXIAL
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.order_x
+   Fait : bass_decay.modal_match.31_5hz.0.order_x
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.order_y
+   Fait : bass_decay.modal_match.31_5hz.0.order_y
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.order_z
+   Fait : bass_decay.modal_match.31_5hz.0.order_z
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0
+ • Preuve evidence.bass_decay.modal_match.31_5hz.0.frequency_error
+   Fait : bass_decay.modal_match.31_5hz.0.frequency_error
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 2.133561643835616
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.band_center_frequency
+   Fait : bass_decay.modal_match.31_5hz.1.band_center_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 31.5
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.mode_frequency
+   Fait : bass_decay.modal_match.31_5hz.1.mode_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 31.125226860254084
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.mode_type
+   Fait : bass_decay.modal_match.31_5hz.1.mode_type
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : AXIAL
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.order_x
+   Fait : bass_decay.modal_match.31_5hz.1.order_x
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.order_y
+   Fait : bass_decay.modal_match.31_5hz.1.order_y
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.order_z
+   Fait : bass_decay.modal_match.31_5hz.1.order_z
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0
+ • Preuve evidence.bass_decay.modal_match.31_5hz.1.frequency_error
+   Fait : bass_decay.modal_match.31_5hz.1.frequency_error
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0.37477313974591553
+ • Preuve evidence.bass_decay.modal_match.40hz.0.band_center_frequency
+   Fait : bass_decay.modal_match.40hz.0.band_center_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 40.0
+ • Preuve evidence.bass_decay.modal_match.40hz.0.mode_frequency
+   Fait : bass_decay.modal_match.40hz.0.mode_frequency
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 42.79214237250438
+ • Preuve evidence.bass_decay.modal_match.40hz.0.mode_type
+   Fait : bass_decay.modal_match.40hz.0.mode_type
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : TANGENTIAL
+ • Preuve evidence.bass_decay.modal_match.40hz.0.order_x
+   Fait : bass_decay.modal_match.40hz.0.order_x
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.bass_decay.modal_match.40hz.0.order_y
+   Fait : bass_decay.modal_match.40hz.0.order_y
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.bass_decay.modal_match.40hz.0.order_z
+   Fait : bass_decay.modal_match.40hz.0.order_z
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 0
+ • Preuve evidence.bass_decay.modal_match.40hz.0.frequency_error
+   Fait : bass_decay.modal_match.40hz.0.frequency_error
+   Analyse : BassDecayCorrelationAnalysis
+   Niveau : CALCULATED
+   Valeur : 2.7921423725043795
  • Preuve evidence.global.confidence
    Fait : global.confidence
    Analyse : ConfidenceAnalysis
@@ -426,8 +536,8 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Preuves : evidence.bass_decay.maximum_decay_time, evidence.bass_decay.correlation_count
    Recommandations : INVESTIGATE_LONG_BASS_DECAY
  • Lien explanation.recommendation.check_modal_excitation
-   Faits : bass_decay.maximum_decay_time, bass_decay.correlation_count
-   Preuves : evidence.bass_decay.maximum_decay_time, evidence.bass_decay.correlation_count
+   Faits : bass_decay.maximum_decay_time, bass_decay.modal_match.count, bass_decay.modal_match.31_5hz.0.band_center_frequency, bass_decay.modal_match.31_5hz.0.mode_frequency, bass_decay.modal_match.31_5hz.0.mode_type, bass_decay.modal_match.31_5hz.0.order_x, bass_decay.modal_match.31_5hz.0.order_y, bass_decay.modal_match.31_5hz.0.order_z, bass_decay.modal_match.31_5hz.0.frequency_error, bass_decay.modal_match.31_5hz.1.band_center_frequency, bass_decay.modal_match.31_5hz.1.mode_frequency, bass_decay.modal_match.31_5hz.1.mode_type, bass_decay.modal_match.31_5hz.1.order_x, bass_decay.modal_match.31_5hz.1.order_y, bass_decay.modal_match.31_5hz.1.order_z, bass_decay.modal_match.31_5hz.1.frequency_error, bass_decay.modal_match.40hz.0.band_center_frequency, bass_decay.modal_match.40hz.0.mode_frequency, bass_decay.modal_match.40hz.0.mode_type, bass_decay.modal_match.40hz.0.order_x, bass_decay.modal_match.40hz.0.order_y, bass_decay.modal_match.40hz.0.order_z, bass_decay.modal_match.40hz.0.frequency_error
+   Preuves : evidence.bass_decay.maximum_decay_time, evidence.bass_decay.modal_match.count, evidence.bass_decay.modal_match.31_5hz.0.band_center_frequency, evidence.bass_decay.modal_match.31_5hz.0.mode_frequency, evidence.bass_decay.modal_match.31_5hz.0.mode_type, evidence.bass_decay.modal_match.31_5hz.0.order_x, evidence.bass_decay.modal_match.31_5hz.0.order_y, evidence.bass_decay.modal_match.31_5hz.0.order_z, evidence.bass_decay.modal_match.31_5hz.0.frequency_error, evidence.bass_decay.modal_match.31_5hz.1.band_center_frequency, evidence.bass_decay.modal_match.31_5hz.1.mode_frequency, evidence.bass_decay.modal_match.31_5hz.1.mode_type, evidence.bass_decay.modal_match.31_5hz.1.order_x, evidence.bass_decay.modal_match.31_5hz.1.order_y, evidence.bass_decay.modal_match.31_5hz.1.order_z, evidence.bass_decay.modal_match.31_5hz.1.frequency_error, evidence.bass_decay.modal_match.40hz.0.band_center_frequency, evidence.bass_decay.modal_match.40hz.0.mode_frequency, evidence.bass_decay.modal_match.40hz.0.mode_type, evidence.bass_decay.modal_match.40hz.0.order_x, evidence.bass_decay.modal_match.40hz.0.order_y, evidence.bass_decay.modal_match.40hz.0.order_z, evidence.bass_decay.modal_match.40hz.0.frequency_error
    Recommandations : CHECK_MODAL_EXCITATION
  • Lien explanation.recommendation.compare_bass_decay_channels
    Faits : bass_decay.significant_difference_count, bass_decay.correlation_count

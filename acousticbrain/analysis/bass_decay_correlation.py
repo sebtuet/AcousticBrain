@@ -4,6 +4,7 @@ from acousticbrain.models import (
     BassDecayAnalysis,
     BassDecayCorrelation,
     BassDecayCorrelationAnalysis,
+    BassDecayModalMatch,
     DirectReverberantAnalysis,
     ModalDensityAnalysis,
     RoomModesAnalysis,
@@ -60,7 +61,7 @@ class BassDecayCorrelationEngine:
         slow = cls._slow_bands(bass_decay)
         matched = {
             center: [
-                mode.frequency
+                mode
                 for mode in room_modes.modes
                 if band.minimum_frequency_hz
                 <= mode.frequency
@@ -69,9 +70,9 @@ class BassDecayCorrelationEngine:
             for center, band in slow.items()
         }
         matched = {
-            center: frequencies
-            for center, frequencies in matched.items()
-            if frequencies
+            center: modes
+            for center, modes in matched.items()
+            if modes
             and any(
                 modal_band.minimum_hz <= center <= modal_band.maximum_hz
                 for modal_band in modal_density.bands
@@ -80,6 +81,28 @@ class BassDecayCorrelationEngine:
         if not matched:
             return None
         centers = tuple(sorted(matched))
+        modal_matches = tuple(
+            BassDecayModalMatch(
+                band_center_frequency_hz=center,
+                mode_frequency_hz=mode.frequency,
+                mode_type=mode.mode_type,
+                order_x=mode.order_x,
+                order_y=mode.order_y,
+                order_z=mode.order_z,
+                frequency_error_hz=abs(mode.frequency - center),
+            )
+            for center in centers
+            for mode in sorted(
+                matched[center],
+                key=lambda item: (
+                    item.frequency,
+                    item.mode_type.value,
+                    item.order_x,
+                    item.order_y,
+                    item.order_z,
+                ),
+            )
+        )
         maximum_decay = max(
             slow[center].estimated_decay_time_seconds for center in centers
         )
@@ -94,14 +117,10 @@ class BassDecayCorrelationEngine:
             center_frequencies_hz=centers,
             source_metrics={
                 "maximum_decay_time_s": maximum_decay,
-                "matched_mode_count": float(
-                    sum(len(frequencies) for frequencies in matched.values())
-                ),
-                "maximum_local_mode_count": float(
-                    max(
-                        (band.mode_count for band in modal_bands),
-                        default=0,
-                    )
+                "matched_mode_count": len(modal_matches),
+                "maximum_local_mode_count": max(
+                    (band.mode_count for band in modal_bands),
+                    default=0,
                 ),
             },
             source_analyses=(
@@ -111,7 +130,7 @@ class BassDecayCorrelationEngine:
             ),
             score=cls._paired_score(
                 maximum_decay / cls.LONG_BASS_DECAY_SECONDS - 1.0,
-                sum(len(frequencies) for frequencies in matched.values())
+                len(modal_matches)
                 / len(centers)
                 - 1.0,
             ),
@@ -125,6 +144,7 @@ class BassDecayCorrelationEngine:
                 "ROOM_MODE_WITHIN_DECAY_BAND",
                 "MODAL_DENSITY_BAND_AVAILABLE",
             ),
+            modal_matches=modal_matches,
         )
 
     @classmethod

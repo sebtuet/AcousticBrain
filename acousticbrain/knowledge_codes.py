@@ -67,6 +67,7 @@ class FactCode:
         "bass_decay.significant_difference_count"
     )
     BASS_DECAY_CORRELATION_COUNT = "bass_decay.correlation_count"
+    BASS_DECAY_MODAL_MATCH_COUNT = "bass_decay.modal_match.count"
     RT60_BROADBAND_MEAN = "rt60.broadband_mean"
     RT60_INTERCHANNEL_HOMOGENEITY = "rt60.interchannel_homogeneity"
     RT60_RELIABLE_DIFFERENCE_COUNT = "rt60.reliable_difference_count"
