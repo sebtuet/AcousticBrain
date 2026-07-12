@@ -10,3 +10,5 @@ class ExplanationLink:
     evidence_codes: tuple[str, ...]
     correlation_codes: tuple[str, ...] = ()
     recommendation_codes: tuple[str, ...] = ()
+    hypothesis_codes: tuple[str, ...] = ()
+    action_codes: tuple[str, ...] = ()

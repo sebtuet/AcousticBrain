@@ -24,6 +24,7 @@ from acousticbrain.models import (
     MeasurementReadinessAnalysis,
     RoomGeometry,
     RoomGeometryComparison,
+    AcousticReasoningAnalysis,
 )
 from acousticbrain.knowledge_codes import FactCode, SourceAnalysisCode
 
@@ -75,6 +76,7 @@ class TraceabilityEngine:
         measurement_readiness: MeasurementReadinessAnalysis | None = None,
         room_geometry: RoomGeometry | None = None,
         room_geometry_comparison: RoomGeometryComparison | None = None,
+        acoustic_reasoning: AcousticReasoningAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -127,6 +129,13 @@ class TraceabilityEngine:
                 evidence_references,
             )
         )
+        if acoustic_reasoning is not None:
+            reasoning_evidence, reasoning_links = self._reasoning_graph(
+                acoustic_reasoning,
+                recommendation_analysis,
+            )
+            evidence_references.extend(reasoning_evidence)
+            links.extend(reasoning_links)
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -158,6 +167,12 @@ class TraceabilityEngine:
                     *global_analysis.source_analyses,
                     *recommendation_sources,
                     *(item.source_analysis for item in physical_evidence),
+                    *(("AcousticReasoningAnalysis",) if acoustic_reasoning is not None else ()),
+                    *(
+                        acoustic_reasoning.source_analyses
+                        if acoustic_reasoning is not None
+                        else ()
+                    ),
                     *(("ConfidenceAnalysis",) if confidence is not None else ()),
                 )
             )
@@ -168,6 +183,77 @@ class TraceabilityEngine:
             links=links,
             source_analyses=sources,
         )
+
+    @staticmethod
+    def _reasoning_graph(analysis, recommendation_analysis):
+        evidence_references = []
+        links = []
+        recommendation_codes = {
+            item.code for item in recommendation_analysis.recommendations
+        }
+        for hypothesis in analysis.hypotheses:
+            evidence = tuple(
+                item
+                for collection in (
+                    hypothesis.supporting_evidence,
+                    hypothesis.counter_evidence,
+                    hypothesis.context_evidence,
+                )
+                for item in collection
+            )
+            references = tuple(
+                EvidenceReference(
+                    code=f"evidence.reasoning.{item.code.lower()}",
+                    source_analysis=item.source_analysis,
+                    fact_code=item.fact_code,
+                    evidence_level=EvidenceLevel.CALCULATED,
+                    value=item.value,
+                )
+                for item in evidence
+            )
+            evidence_references.extend(references)
+            links.append(
+                ExplanationLink(
+                    code=f"explanation.hypothesis.{hypothesis.code.value.lower()}",
+                    fact_codes=tuple(item.fact_code for item in evidence),
+                    evidence_codes=tuple(item.code for item in references),
+                    correlation_codes=tuple(
+                        dict.fromkeys(
+                            code
+                            for item in evidence
+                            for code in item.correlation_codes
+                        )
+                    ),
+                    hypothesis_codes=(hypothesis.code.value,),
+                )
+            )
+            by_fact = {
+                item.fact_code: reference
+                for item, reference in zip(evidence, references)
+            }
+            for action in hypothesis.verification_actions:
+                action_evidence = tuple(
+                    by_fact[fact]
+                    for fact in action.evidence_fact_codes
+                    if fact in by_fact
+                )
+                if len(action_evidence) != len(action.evidence_fact_codes):
+                    continue
+                links.append(
+                    ExplanationLink(
+                        code=f"explanation.action.{action.code.lower()}",
+                        fact_codes=action.evidence_fact_codes,
+                        evidence_codes=tuple(
+                            item.code for item in action_evidence
+                        ),
+                        recommendation_codes=(action.code,)
+                        if action.code in recommendation_codes
+                        else (),
+                        hypothesis_codes=(hypothesis.code.value,),
+                        action_codes=(action.code,),
+                    )
+                )
+        return evidence_references, links
 
     @classmethod
     def _physical_evidence(

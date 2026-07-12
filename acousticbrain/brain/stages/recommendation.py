@@ -30,4 +30,5 @@ class RecommendationStage:
             confidence=getattr(context, "confidence_analysis", None),
             measurement_quality=context.measurement_quality_analysis,
             measurement_readiness=context.measurement_readiness_analysis,
+            acoustic_reasoning=context.acoustic_reasoning_analysis,
         )

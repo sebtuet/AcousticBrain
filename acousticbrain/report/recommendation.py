@@ -14,6 +14,8 @@ class PresentedRecommendation:
     confidence: float
     source_analyses: tuple[str, ...]
     parameters: dict[str, RecommendationParameter] = field(default_factory=dict)
+    hypothesis_codes: tuple[str, ...] = ()
+    verification_action: bool = False
 
 
 class RecommendationPresenter:
@@ -33,6 +35,8 @@ class RecommendationPresenter:
                 confidence=recommendation.confidence,
                 source_analyses=recommendation.source_analyses,
                 parameters=dict(recommendation.parameters),
+                hypothesis_codes=recommendation.hypothesis_codes,
+                verification_action=recommendation.verification_action,
             )
             for recommendation in analysis.recommendations
         ]

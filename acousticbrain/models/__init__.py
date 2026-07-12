@@ -142,3 +142,13 @@ from .measurement_readiness_status import (
 )
 from .analysis_readiness import AnalysisReadiness
 from .measurement_readiness_analysis import MeasurementReadinessAnalysis
+from .reasoning_codes import (
+    EvidenceRole,
+    HypothesisCode,
+    HypothesisStatus,
+    VerificationActionType,
+)
+from .reasoning_evidence import MissingReasoningFact, ReasoningEvidence
+from .verification_action import VerificationAction
+from .acoustic_hypothesis import AcousticHypothesis
+from .acoustic_reasoning_analysis import AcousticReasoningAnalysis

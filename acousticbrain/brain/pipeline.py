@@ -9,6 +9,7 @@ from acousticbrain.diagnostics import (
     DirectReverberantDiagnostic,
     BassDecayDiagnostic,
     MeasurementQualityDiagnostic,
+    AcousticReasoningDiagnostic,
     ETCDiagnostic,
     ModalDensityDiagnostic,
     RT60Diagnostic,
@@ -38,6 +39,7 @@ from .stages.spatial_interpretation import SpatialInterpretationStage
 from .stages.recommendation import RecommendationStage
 from .stages.global_synthesis import GlobalSynthesisStage
 from .stages.traceability import TraceabilityStage
+from .stages.acoustic_reasoning import AcousticReasoningStage
 
 from .builders.report import ReportBuilder
 
@@ -80,6 +82,8 @@ class BrainPipeline:
             SpatialDiagnostic(),
 
             DirectReverberantDiagnostic(),
+
+            AcousticReasoningDiagnostic(),
 
             ConfidenceDiagnostic(),
 
@@ -165,6 +169,10 @@ class BrainPipeline:
         )
 
         SpatialInterpretationStage().run(
+            context,
+        )
+
+        AcousticReasoningStage().run(
             context,
         )
 

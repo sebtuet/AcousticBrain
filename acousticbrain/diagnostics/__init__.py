@@ -14,3 +14,4 @@ from .spatial import SpatialDiagnostic
 from .direct_reverberant import DirectReverberantDiagnostic
 from .bass_decay import BassDecayDiagnostic
 from .measurement_quality import MeasurementQualityDiagnostic
+from .acoustic_reasoning import AcousticReasoningDiagnostic

@@ -42,8 +42,9 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
         "measurement_quality": context.measurement_quality_analysis,
         "measurement_readiness": context.measurement_readiness_analysis,
         "room_geometry": context.room_geometry,
-        "room_geometry_comparison": context.room_geometry_comparison,
-    }
+            "room_geometry_comparison": context.room_geometry_comparison,
+            "acoustic_reasoning": context.acoustic_reasoning_analysis,
+        }
 
 
 def test_traceability_stage_delegates_without_building_identifiers_or_links():

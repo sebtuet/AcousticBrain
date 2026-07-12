@@ -34,3 +34,4 @@ from .room_geometry_builder import (
     RoomGeometryBuildException,
     RoomGeometryBuilder,
 )
+from .acoustic_reasoning import AcousticReasoningEngine

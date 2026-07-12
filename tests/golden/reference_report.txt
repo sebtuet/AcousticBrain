@@ -139,6 +139,65 @@ Recommandations structurées
     - significant_band_count : 4
     - maximum_difference_s : 3.37351347785648
 
+ • VERIFY_SPEAKER_ROOM_ASYMMETRY
+   Action : compare
+   Cible : left_right_measurements_and_placement
+   Priorité : HIGH
+   Confiance : 62.751026047867704%
+   Provenance : StereoAnalysis, SpatialCorrelationAnalysis, DirectReverberantAnalysis, BassDecayAnalysis
+   Hypothèses : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 81.56767617134894
+    - verification_action : True
+
+ • VERIFY_MODAL_BASS_PERSISTENCE
+   Action : measure
+   Cible : bass_decay_at_multiple_positions
+   Priorité : HIGH
+   Confiance : 72.92030806919287%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Hypothèses : MODAL_BASS_PERSISTENCE
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : MODAL_BASS_PERSISTENCE
+    - hypothesis_status : SUPPORTED
+    - support_score : 93.75
+    - verification_action : True
+
+ • VERIFY_DOMINANT_EARLY_REFLECTION
+   Action : temporary_mask
+   Cible : candidate_early_reflection_surface
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis
+   Hypothèses : DOMINANT_EARLY_REFLECTION_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : DOMINANT_EARLY_REFLECTION_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 100.0
+    - verification_action : True
+
+ • VERIFY_SBIR_PLACEMENT
+   Action : temporary_move
+   Cible : speaker_distance_to_candidate_surface
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : SBIRAnalysis, ETCReflectionCorrelationAnalysis
+   Hypothèses : SBIR_PLACEMENT_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - surface : FLOOR
+    - measured_frequency_hz : 75.497475
+    - current_distance_m : 1.05
+    - hypothesis_code : SBIR_PLACEMENT_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 96.22294387755102
+    - verification_action : True
+
 Synthèse acoustique globale
 
 Score : 34.5 / 100
@@ -249,9 +308,9 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, MeasurementReadinessAnalysis, RoomGeometry, ConfidenceAnalysis
-Preuves disponibles : 107
-Liens explicatifs : 22
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, SpatialCorrelationAnalysis, ClarityCorrelationAnalysis, MeasurementReadinessAnalysis, RoomGeometry, AcousticReasoningAnalysis, ConfidenceAnalysis
+Preuves disponibles : 125
+Liens explicatifs : 34
 
 ------------------------------------------------------------
 Réponse dans le grave
@@ -505,6 +564,35 @@ Recommandations
  • Identifier l'origine du creux
  • Comparer les mesures gauche / droite
  • Mesurer le subwoofer séparément
+
+------------------------------------------------------------
+Raisonnement acoustique déterministe
+
+Observations
+ • ASYMMETRIC_SPEAKER_ROOM_INTERACTION : SUPPORTED, support 82/100, confiance 63 %, preuves 5, contre-preuves 1, faits manquants 1.
+ • MODAL_BASS_PERSISTENCE : SUPPORTED, support 94/100, confiance 73 %, preuves 2, contre-preuves 0, faits manquants 0.
+ • DOMINANT_EARLY_REFLECTION_INTERACTION : SUPPORTED, support 100/100, confiance 91 %, preuves 2, contre-preuves 0, faits manquants 0.
+ • SBIR_PLACEMENT_INTERACTION : SUPPORTED, support 96/100, confiance 94 %, preuves 2, contre-preuves 0, faits manquants 0.
+
+Conclusion
+
+Des hypothèses acoustiques sont soutenues par des chaînes de preuves structurées.
+
+Gravité : HIGH
+Confiance : 80%
+Niveau de preuve : CALCULATED
+
+Causes
+ • ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+ • MODAL_BASS_PERSISTENCE
+ • DOMINANT_EARLY_REFLECTION_INTERACTION
+ • SBIR_PLACEMENT_INTERACTION
+
+Recommandations
+ • VERIFY_SPEAKER_ROOM_ASYMMETRY — left_right_measurements_and_placement.
+ • VERIFY_MODAL_BASS_PERSISTENCE — bass_decay_at_multiple_positions.
+ • VERIFY_DOMINANT_EARLY_REFLECTION — candidate_early_reflection_surface.
+ • VERIFY_SBIR_PLACEMENT — speaker_distance_to_candidate_surface.
 
 ------------------------------------------------------------
 Densité modale
