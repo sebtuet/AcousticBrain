@@ -13,7 +13,11 @@ from acousticbrain.models import (
     MeasurementReadinessAnalysis,
     MeasurementReadinessStatus,
     ModalDensityAnalysis,
+    RT60Analysis,
 )
+from acousticbrain.brain.stages.diagnostics import DiagnosticsStage
+from acousticbrain.diagnostics import RT60Diagnostic
+from acousticbrain.report import Report
 
 
 def clipping_issue():
@@ -101,3 +105,27 @@ def test_measurement_diagnostic_has_no_acoustic_score():
     assert diagnostic.score is None
     assert diagnostic.severity == "HIGH"
     assert "RT60_BLOCKED" in diagnostic.causes
+
+
+def test_calculated_result_is_marked_provisional_when_family_is_blocked():
+    _, readiness = analyses()
+    context = type(
+        "Context",
+        (),
+        {
+            "measurement_readiness_analysis": readiness,
+            "rt60_analysis": RT60Analysis(
+                broadband_rt60_seconds=0.3,
+                confidence=95.0,
+            ),
+        },
+    )()
+    report = Report(project_name="test")
+
+    DiagnosticsStage([RT60Diagnostic()]).run(context, report)
+
+    diagnostic = report.diagnostics[0]
+    assert diagnostic.confidence == 95
+    assert diagnostic.readiness_status == "BLOCKED"
+    assert diagnostic.provisional
+    assert diagnostic.validity == "Validité technique non garantie"

@@ -19,7 +19,16 @@ class ConfidenceDiagnostic(DiagnosticBase):
                 message="Analyse de confiance indisponible.",
             )
 
-        conclusion = self._conclusion(analysis.score)
+        readiness = getattr(context, "measurement_readiness_analysis", None)
+        blocked = [
+            item.family.value for item in getattr(readiness, "analyses", ())
+            if item.status.value == "BLOCKED"
+        ]
+        reserved = [
+            item.family.value for item in getattr(readiness, "analyses", ())
+            if item.status.value == "AVAILABLE_WITH_RESERVATIONS"
+        ]
+        conclusion = self._conclusion(analysis.score, blocked, reserved)
 
         return Diagnostic(
             title="Confiance de l'analyse",
@@ -28,14 +37,15 @@ class ConfidenceDiagnostic(DiagnosticBase):
             confidence=round(analysis.score),
             evidence_level=EvidenceLevel.CALCULATED,
             message=conclusion,
-            observations=self._observations(analysis),
+            observations=self._observations(analysis, blocked, reserved),
             conclusion=conclusion,
             causes=self._causes(analysis),
             recommendations=self._recommendations(analysis),
+            score_label="Confiance interne agrégée",
         )
 
     @staticmethod
-    def _observations(analysis):
+    def _observations(analysis, blocked=(), reserved=()):
         observations = [
             (
                 f"Preuves disponibles : {analysis.available_evidence_count} ; "
@@ -51,6 +61,11 @@ class ConfidenceDiagnostic(DiagnosticBase):
             )
             for factor in analysis.factors
         )
+        observations.append(
+            "Readiness des mesures : "
+            + (f"{len(blocked)} famille(s) bloquée(s)" if blocked else f"{len(reserved)} famille(s) avec réserves" if reserved else "toutes les familles disponibles")
+            + "."
+        )
         return observations
 
     @staticmethod
@@ -62,7 +77,18 @@ class ConfidenceDiagnostic(DiagnosticBase):
         return "HIGH"
 
     @staticmethod
-    def _conclusion(score):
+    def _conclusion(score, blocked=(), reserved=()):
+        if blocked:
+            return (
+                "La confiance des calculs internes est distincte de la readiness : "
+                f"{', '.join(blocked)} sont bloquées. Les résultats associés "
+                "restent provisoires jusqu'à correction des données d'entrée."
+            )
+        if reserved:
+            return (
+                "Les calculs internes sont exploitables, mais certaines familles "
+                "restent disponibles avec des réserves de mesure."
+            )
         if score >= 85:
             return "Les preuves disponibles soutiennent fortement les analyses."
         if score >= 60:

@@ -28,6 +28,7 @@ class PresentedGlobalAnalysis:
     correlations: list[PresentedGlobalCorrelation] = field(default_factory=list)
     priority_domains: tuple[str, ...] = ()
     source_analyses: tuple[str, ...] = ()
+    readiness_statuses: tuple[tuple[str, str], ...] = ()
 
 
 class GlobalPresenter:
@@ -66,4 +67,12 @@ class GlobalPresenter:
             ],
             priority_domains=analysis.priority_domains,
             source_analyses=analysis.source_analyses,
+            readiness_statuses=tuple(
+                (item.family.value, item.status.value)
+                for item in getattr(
+                    context.measurement_readiness_analysis,
+                    "analyses",
+                    (),
+                )
+            ),
         )

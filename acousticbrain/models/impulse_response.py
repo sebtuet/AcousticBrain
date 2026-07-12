@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from .impulse_channel import ImpulseChannel
+from .peak_value_convention import PeakValueConvention
 
 
 @dataclass
@@ -17,3 +18,4 @@ class ImpulseResponse:
     response_length: int | None = None
     sample_interval_s: float | None = None
     start_time_s: float | None = None
+    peak_value_convention: PeakValueConvention = PeakValueConvention.SAMPLE_VALUE

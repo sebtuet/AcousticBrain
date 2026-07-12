@@ -7,6 +7,7 @@ from acousticbrain.models import (
     MeasurementQualityIssueCode,
     MeasurementQualityScope,
     MeasurementQualityTechnicalSeverity,
+    PeakValueConvention,
 )
 
 
@@ -346,11 +347,16 @@ class MeasurementQualityAnalyzer:
             or not isfinite(impulse_response.peak_value)
         ):
             metrics["invalid_peak_value"] = True
-        elif peak_is_valid and impulse_response.peak_value is not None:
+        elif (
+            peak_is_valid
+            and impulse_response.peak_value is not None
+            and impulse_response.peak_value_convention
+            is PeakValueConvention.SAMPLE_VALUE
+        ):
             observed_peak = samples[impulse_response.peak_index]
-            denominator = max(abs(observed_peak), 1e-12)
+            denominator = max(abs(impulse_response.peak_value), 1e-12)
             relative_error = abs(
-                impulse_response.peak_value - observed_peak
+                abs(impulse_response.peak_value) - abs(observed_peak)
             ) / denominator
             if relative_error > cls.PEAK_VALUE_RELATIVE_TOLERANCE:
                 metrics["peak_value_relative_error"] = relative_error
