@@ -19,5 +19,7 @@ class ConfidenceStage:
                 "spatial": context.spatial_analysis,
                 "direct_reverberant": context.direct_reverberant_analysis,
                 "bass_decay": context.bass_decay_analysis,
+                "measurement_quality": context.measurement_quality_analysis,
+                "measurement_readiness": context.measurement_readiness_analysis,
             }
         )

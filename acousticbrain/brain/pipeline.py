@@ -8,6 +8,7 @@ from acousticbrain.diagnostics import (
     SpatialDiagnostic,
     DirectReverberantDiagnostic,
     BassDecayDiagnostic,
+    MeasurementQualityDiagnostic,
     ETCDiagnostic,
     ModalDensityDiagnostic,
     RT60Diagnostic,
@@ -21,6 +22,8 @@ from .stages.analysis import AnalysisStage
 
 from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
+from .stages.measurement_quality import MeasurementQualityStage
+from .stages.measurement_readiness import MeasurementReadinessStage
 from .stages.spatial_analysis import SpatialAnalysisStage
 from .stages.direct_reverberant_correlation import (
     DirectReverberantCorrelationStage,
@@ -50,6 +53,8 @@ class BrainPipeline:
     def __init__(self):
 
         self.diagnostics = [
+
+            MeasurementQualityDiagnostic(),
 
             BassDiagnostic(),
 
@@ -102,6 +107,15 @@ class BrainPipeline:
         context = ContextBuilder().build(
         project,
         measurement,
+        )
+
+        MeasurementQualityStage().run(
+            project,
+            context,
+        )
+
+        MeasurementReadinessStage().run(
+            context,
         )
         
         AnalysisStage().run(

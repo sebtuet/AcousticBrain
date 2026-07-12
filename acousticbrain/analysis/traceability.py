@@ -20,6 +20,8 @@ from acousticbrain.models import (
     SpatialCorrelationAnalysis,
     SpeakerPairSpatialInterpretation,
     TraceabilityAnalysis,
+    MeasurementQualityAnalysis,
+    MeasurementReadinessAnalysis,
 )
 from acousticbrain.knowledge_codes import FactCode, SourceAnalysisCode
 
@@ -67,6 +69,8 @@ class TraceabilityEngine:
         bass_decay: BassDecayAnalysis | None = None,
         bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
+        measurement_quality: MeasurementQualityAnalysis | None = None,
+        measurement_readiness: MeasurementReadinessAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -94,6 +98,8 @@ class TraceabilityEngine:
             ),
             bass_decay=bass_decay,
             bass_decay_correlations=bass_decay_correlations,
+            measurement_quality=measurement_quality,
+            measurement_readiness=measurement_readiness,
         )
         evidence_references.extend(physical_evidence)
         for item in physical_evidence:
@@ -173,6 +179,8 @@ class TraceabilityEngine:
         direct_reverberant_correlations,
         bass_decay,
         bass_decay_correlations,
+        measurement_quality,
+        measurement_readiness,
     ):
         evidence = []
         if rt60 is not None:
@@ -363,6 +371,82 @@ class TraceabilityEngine:
                     )
                 )
                 evidence.extend(cls._modal_match_evidence(modal_matches))
+        if measurement_quality is not None:
+            evidence.extend(cls._measurement_quality_evidence(measurement_quality))
+        if measurement_readiness is not None:
+            evidence.extend(cls._measurement_readiness_evidence(measurement_readiness))
+        return evidence
+
+    @classmethod
+    def _measurement_quality_evidence(cls, analysis):
+        issues = [
+            issue
+            for channel in analysis.channel_qualities
+            for issue in channel.issues
+        ]
+        if analysis.measurement_set_quality is not None:
+            issues.extend(analysis.measurement_set_quality.issues)
+        evidence = [
+            cls._evidence(
+                "evidence.measurement_quality.issue_count",
+                SourceAnalysisCode.MEASUREMENT_QUALITY,
+                "measurement_quality.issue_count",
+                len(issues),
+            )
+        ]
+        for index, issue in enumerate(issues):
+            prefix = f"measurement_quality.issue.{index}"
+            values = [
+                ("code", issue.code.value),
+                ("scope", issue.scope.value),
+                ("confidence", issue.confidence),
+            ]
+            if issue.channel is not None:
+                values.append(("channel", issue.channel.value))
+            if issue.severity is not None:
+                values.append(("severity", issue.severity.value))
+            values.extend(
+                (f"metric.{name}", value)
+                for name, value in sorted(issue.observed_metrics.items())
+            )
+            values.extend(
+                (f"threshold.{name}", value)
+                for name, value in sorted(issue.applied_thresholds.items())
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.{prefix}.{name}",
+                    SourceAnalysisCode.MEASUREMENT_QUALITY,
+                    f"{prefix}.{name}",
+                    value,
+                )
+                for name, value in values
+            )
+        return evidence
+
+    @classmethod
+    def _measurement_readiness_evidence(cls, analysis):
+        evidence = []
+        for item in analysis.analyses:
+            prefix = f"measurement_readiness.{item.family.value.lower()}"
+            values = (
+                ("status", item.status.value),
+                ("blocking_issue_count", len(item.blocking_issues)),
+                ("non_blocking_issue_count", len(item.non_blocking_issues)),
+                ("required_channels", ",".join(channel.value for channel in item.required_channels) or "NONE"),
+                ("missing_facts", ",".join(item.missing_facts) or "NONE"),
+                ("confidence", item.confidence),
+                ("applied_rules", ",".join(item.applied_rule_codes) or "NONE"),
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.{prefix}.{name}",
+                    SourceAnalysisCode.MEASUREMENT_READINESS,
+                    f"{prefix}.{name}",
+                    value,
+                )
+                for name, value in values
+            )
         return evidence
 
     @classmethod
@@ -505,6 +589,17 @@ class TraceabilityEngine:
                     and item.code
                     != "evidence.bass_decay.modal_match.count"
                 )
+            if recommendation.code in {
+                "RETAKE_CLIPPED_MEASUREMENT",
+                "IMPROVE_SIGNAL_TO_NOISE",
+                "FIX_CHANNEL_TIMING",
+                "COMPLETE_REQUIRED_CHANNELS",
+                "CHECK_MEASUREMENT_METADATA",
+            }:
+                evidence = [
+                    item for item in evidence_references
+                    if item.source_analysis in recommendation.source_analyses
+                ]
 
             recommendation_sources = set(recommendation.source_analyses)
             correlation_codes = tuple(

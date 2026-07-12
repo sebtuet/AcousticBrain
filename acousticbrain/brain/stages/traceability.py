@@ -28,4 +28,6 @@ class TraceabilityStage:
             bass_decay=context.bass_decay_analysis,
             bass_decay_correlations=context.bass_decay_correlation_analysis,
             confidence=getattr(context, "confidence_analysis", None),
+            measurement_quality=context.measurement_quality_analysis,
+            measurement_readiness=context.measurement_readiness_analysis,
         )

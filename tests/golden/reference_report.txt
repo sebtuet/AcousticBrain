@@ -17,7 +17,7 @@ Recommandations structurées
    Action : check_placement
    Cible : stereo_speakers
    Priorité : HIGH
-   Confiance : 80.84812800586789%
+   Confiance : 81.96496325809022%
    Provenance : StereoAnalysis
    Paramètres :
     - symmetry_score : 10.859575118098183
@@ -27,7 +27,7 @@ Recommandations structurées
    Action : test_distance
    Cible : floor
    Priorité : HIGH
-   Confiance : 80.84812800586789%
+   Confiance : 81.96496325809022%
    Provenance : SBIRAnalysis
    Paramètres :
     - current_distance_m : 1.05
@@ -76,7 +76,7 @@ Recommandations structurées
    Action : investigate
    Cible : drr_channel_differences
    Priorité : HIGH
-   Confiance : 80.84812800586789%
+   Confiance : 81.96496325809022%
    Provenance : DirectReverberantAnalysis
    Paramètres :
     - significant_band_count : 8
@@ -86,7 +86,7 @@ Recommandations structurées
    Action : improve_dominance
    Cible : direct_sound
    Priorité : HIGH
-   Confiance : 80.84812800586789%
+   Confiance : 81.96496325809022%
    Provenance : DirectReverberantAnalysis, DirectReverberantCorrelationAnalysis
    Paramètres :
     - supporting_correlation_count : 2
@@ -95,7 +95,7 @@ Recommandations structurées
    Action : apply_treatment
    Cible : dominant_early_reflections
    Priorité : HIGH
-   Confiance : 80.84812800586789%
+   Confiance : 81.96496325809022%
    Provenance : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
    Paramètres :
     - supporting_correlation_count : 1
@@ -129,52 +129,87 @@ Recommandations structurées
     - significant_band_count : 4
     - maximum_difference_s : 3.37351347785648
 
+ • CHECK_MEASUREMENT_METADATA
+   Action : check
+   Cible : measurement_metadata
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : MeasurementQualityAnalysis, MeasurementReadinessAnalysis
+   Paramètres :
+    - issue_count : 4
+    - blocked_family_count : 7
+    - affected_channels : LEFT,RIGHT,STEREO
+
 Synthèse acoustique globale
 
 Score : 34.5 / 100
-Confiance : 80.8%
+Confiance : 82.0%
 Domaines prioritaires : SBIR, STEREO, BASS_DECAY, ETC, MODAL_DENSITY, DIRECT_REVERBERANT, CLARITY, SPATIAL
-Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis
 
  • Domaine STEREO
-   Score : 10.9 / 100
+   Score acoustique : 10.9 / 100
    Confiance : indisponible
    Provenance : StereoAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
    Références d'action : CHECK_STEREO_PLACEMENT
  • Domaine SBIR
-   Score : 7.6 / 100
+   Score acoustique : 7.6 / 100
    Confiance : 92.4%
    Provenance : SBIRAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
    Références d'action : TEST_SPEAKER_DISTANCE
  • Domaine MODAL_DENSITY
-   Score : 32.7 / 100
+   Score acoustique : 32.7 / 100
    Confiance : 75.0%
    Provenance : ModalDensityAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
    Références d'action : MEASURE_MULTIPLE_POSITIONS
  • Domaine RT60
-   Score : 89.9 / 100
+   Score acoustique : 89.9 / 100
    Confiance : 93.6%
    Provenance : RT60Analysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
  • Domaine ETC
-   Score : 31.4 / 100
+   Score acoustique : 31.4 / 100
    Confiance : 89.4%
    Provenance : ETCAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
  • Domaine CLARITY
-   Score : 40.0 / 100
+   Score acoustique : 40.0 / 100
    Confiance : 67.2%
    Provenance : ClarityAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
  • Domaine SPATIAL
-   Score : 40.0 / 100
+   Score acoustique : 40.0 / 100
    Confiance : 67.0%
    Provenance : SpatialAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
  • Domaine DIRECT_REVERBERANT
-   Score : 33.4 / 100
+   Score acoustique : 33.4 / 100
    Confiance : 94.9%
    Provenance : DirectReverberantAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
  • Domaine BASS_DECAY
-   Score : 24.5 / 100
+   Score acoustique : 24.5 / 100
    Confiance : 68.8%
    Provenance : BassDecayAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine MEASUREMENT_QUALITY
+   Score technique de disponibilité : 0.0 / 100
+   Confiance : 100.0%
+   Provenance : MeasurementQualityAnalysis
+   Nature : MEASUREMENT_QUALITY
+   Contribution au score acoustique : non
 
  • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
    Domaines : STEREO, SBIR
@@ -215,7 +250,7 @@ Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analy
 
 Traçabilité
 
-Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, MeasurementReadinessAnalysis, ClarityCorrelationAnalysis, SpatialCorrelationAnalysis, ConfidenceAnalysis
 
  • Preuve evidence.global.domain.stereo.score
    Fait : global.domain.stereo.score
@@ -262,6 +297,11 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : GlobalAnalysis
    Niveau : CALCULATED
    Valeur : 24.545454545454543
+ • Preuve evidence.global.domain.measurement_quality.score
+   Fait : global.domain.measurement_quality.score
+   Analyse : GlobalAnalysis
+   Niveau : CALCULATED
+   Valeur : 0.0
  • Preuve evidence.rt60.broadband_mean
    Fait : rt60.broadband_mean
    Analyse : RT60Analysis
@@ -452,11 +492,426 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Analyse : BassDecayCorrelationAnalysis
    Niveau : CALCULATED
    Valeur : 2.7921423725043795
+ • Preuve evidence.measurement_quality.issue_count
+   Fait : measurement_quality.issue_count
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 4
+ • Preuve evidence.measurement_quality.issue.0.code
+   Fait : measurement_quality.issue.0.code
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : INCONSISTENT_MEASUREMENT_METADATA
+ • Preuve evidence.measurement_quality.issue.0.scope
+   Fait : measurement_quality.issue.0.scope
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : CHANNEL
+ • Preuve evidence.measurement_quality.issue.0.confidence
+   Fait : measurement_quality.issue.0.confidence
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_quality.issue.0.channel
+   Fait : measurement_quality.issue.0.channel
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : LEFT
+ • Preuve evidence.measurement_quality.issue.0.severity
+   Fait : measurement_quality.issue.0.severity
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : ERROR
+ • Preuve evidence.measurement_quality.issue.0.metric.peak_value_relative_error
+   Fait : measurement_quality.issue.0.metric.peak_value_relative_error
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.0009309346205555
+ • Preuve evidence.measurement_quality.issue.0.threshold.peak_value_relative_tolerance
+   Fait : measurement_quality.issue.0.threshold.peak_value_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 0.001
+ • Preuve evidence.measurement_quality.issue.0.threshold.sample_interval_relative_tolerance
+   Fait : measurement_quality.issue.0.threshold.sample_interval_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1e-06
+ • Preuve evidence.measurement_quality.issue.0.threshold.timing_tolerance_samples
+   Fait : measurement_quality.issue.0.threshold.timing_tolerance_samples
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.0
+ • Preuve evidence.measurement_quality.issue.1.code
+   Fait : measurement_quality.issue.1.code
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : INCONSISTENT_MEASUREMENT_METADATA
+ • Preuve evidence.measurement_quality.issue.1.scope
+   Fait : measurement_quality.issue.1.scope
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : CHANNEL
+ • Preuve evidence.measurement_quality.issue.1.confidence
+   Fait : measurement_quality.issue.1.confidence
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_quality.issue.1.channel
+   Fait : measurement_quality.issue.1.channel
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : RIGHT
+ • Preuve evidence.measurement_quality.issue.1.severity
+   Fait : measurement_quality.issue.1.severity
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : ERROR
+ • Preuve evidence.measurement_quality.issue.1.metric.peak_value_relative_error
+   Fait : measurement_quality.issue.1.metric.peak_value_relative_error
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.0009846485918388
+ • Preuve evidence.measurement_quality.issue.1.threshold.peak_value_relative_tolerance
+   Fait : measurement_quality.issue.1.threshold.peak_value_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 0.001
+ • Preuve evidence.measurement_quality.issue.1.threshold.sample_interval_relative_tolerance
+   Fait : measurement_quality.issue.1.threshold.sample_interval_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1e-06
+ • Preuve evidence.measurement_quality.issue.1.threshold.timing_tolerance_samples
+   Fait : measurement_quality.issue.1.threshold.timing_tolerance_samples
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.0
+ • Preuve evidence.measurement_quality.issue.2.code
+   Fait : measurement_quality.issue.2.code
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : INCONSISTENT_MEASUREMENT_METADATA
+ • Preuve evidence.measurement_quality.issue.2.scope
+   Fait : measurement_quality.issue.2.scope
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : CHANNEL
+ • Preuve evidence.measurement_quality.issue.2.confidence
+   Fait : measurement_quality.issue.2.confidence
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_quality.issue.2.channel
+   Fait : measurement_quality.issue.2.channel
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : STEREO
+ • Preuve evidence.measurement_quality.issue.2.severity
+   Fait : measurement_quality.issue.2.severity
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : ERROR
+ • Preuve evidence.measurement_quality.issue.2.metric.peak_value_relative_error
+   Fait : measurement_quality.issue.2.metric.peak_value_relative_error
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.000987169914879
+ • Preuve evidence.measurement_quality.issue.2.threshold.peak_value_relative_tolerance
+   Fait : measurement_quality.issue.2.threshold.peak_value_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 0.001
+ • Preuve evidence.measurement_quality.issue.2.threshold.sample_interval_relative_tolerance
+   Fait : measurement_quality.issue.2.threshold.sample_interval_relative_tolerance
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1e-06
+ • Preuve evidence.measurement_quality.issue.2.threshold.timing_tolerance_samples
+   Fait : measurement_quality.issue.2.threshold.timing_tolerance_samples
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 1.0
+ • Preuve evidence.measurement_quality.issue.3.code
+   Fait : measurement_quality.issue.3.code
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : INCONSISTENT_MEASUREMENT_METADATA
+ • Preuve evidence.measurement_quality.issue.3.scope
+   Fait : measurement_quality.issue.3.scope
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : MEASUREMENT_SET
+ • Preuve evidence.measurement_quality.issue.3.confidence
+   Fait : measurement_quality.issue.3.confidence
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_quality.issue.3.severity
+   Fait : measurement_quality.issue.3.severity
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : ERROR
+ • Preuve evidence.measurement_quality.issue.3.metric.inconsistent_channel_count
+   Fait : measurement_quality.issue.3.metric.inconsistent_channel_count
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_quality.issue.3.metric.inconsistent_channels
+   Fait : measurement_quality.issue.3.metric.inconsistent_channels
+   Analyse : MeasurementQualityAnalysis
+   Niveau : CALCULATED
+   Valeur : LEFT,RIGHT,STEREO
+ • Preuve evidence.measurement_readiness.frequency.status
+   Fait : measurement_readiness.frequency.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.frequency.blocking_issue_count
+   Fait : measurement_readiness.frequency.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.frequency.non_blocking_issue_count
+   Fait : measurement_readiness.frequency.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.frequency.required_channels
+   Fait : measurement_readiness.frequency.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.frequency.missing_facts
+   Fait : measurement_readiness.frequency.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.frequency.confidence
+   Fait : measurement_readiness.frequency.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.frequency.applied_rules
+   Fait : measurement_readiness.frequency.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA
+ • Preuve evidence.measurement_readiness.rt60.status
+   Fait : measurement_readiness.rt60.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.rt60.blocking_issue_count
+   Fait : measurement_readiness.rt60.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.rt60.non_blocking_issue_count
+   Fait : measurement_readiness.rt60.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.rt60.required_channels
+   Fait : measurement_readiness.rt60.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.rt60.missing_facts
+   Fait : measurement_readiness.rt60.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.rt60.confidence
+   Fait : measurement_readiness.rt60.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.rt60.applied_rules
+   Fait : measurement_readiness.rt60.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INSUFFICIENT_DYNAMIC_RANGE,BLOCK_INSUFFICIENT_IR_DURATION,BLOCK_INVALID_DIRECT_PEAK
+ • Preuve evidence.measurement_readiness.etc.status
+   Fait : measurement_readiness.etc.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.etc.blocking_issue_count
+   Fait : measurement_readiness.etc.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.etc.non_blocking_issue_count
+   Fait : measurement_readiness.etc.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.etc.required_channels
+   Fait : measurement_readiness.etc.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.etc.missing_facts
+   Fait : measurement_readiness.etc.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.etc.confidence
+   Fait : measurement_readiness.etc.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.etc.applied_rules
+   Fait : measurement_readiness.etc.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INVALID_DIRECT_PEAK
+ • Preuve evidence.measurement_readiness.clarity.status
+   Fait : measurement_readiness.clarity.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.clarity.blocking_issue_count
+   Fait : measurement_readiness.clarity.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.clarity.non_blocking_issue_count
+   Fait : measurement_readiness.clarity.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.clarity.required_channels
+   Fait : measurement_readiness.clarity.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.clarity.missing_facts
+   Fait : measurement_readiness.clarity.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.clarity.confidence
+   Fait : measurement_readiness.clarity.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.clarity.applied_rules
+   Fait : measurement_readiness.clarity.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INSUFFICIENT_IR_DURATION,BLOCK_INVALID_DIRECT_PEAK
+ • Preuve evidence.measurement_readiness.spatial.status
+   Fait : measurement_readiness.spatial.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.spatial.blocking_issue_count
+   Fait : measurement_readiness.spatial.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 2
+ • Preuve evidence.measurement_readiness.spatial.non_blocking_issue_count
+   Fait : measurement_readiness.spatial.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.spatial.required_channels
+   Fait : measurement_readiness.spatial.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : LEFT,RIGHT
+ • Preuve evidence.measurement_readiness.spatial.missing_facts
+   Fait : measurement_readiness.spatial.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.spatial.confidence
+   Fait : measurement_readiness.spatial.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.spatial.applied_rules
+   Fait : measurement_readiness.spatial.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_LEFT_RIGHT,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INVALID_DIRECT_PEAK,BLOCK_GLOBAL_CHANNEL_SAMPLE_RATE_MISMATCH,BLOCK_GLOBAL_CHANNEL_TIMING_MISMATCH
+ • Preuve evidence.measurement_readiness.direct_reverberant.status
+   Fait : measurement_readiness.direct_reverberant.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.direct_reverberant.blocking_issue_count
+   Fait : measurement_readiness.direct_reverberant.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.direct_reverberant.non_blocking_issue_count
+   Fait : measurement_readiness.direct_reverberant.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.direct_reverberant.required_channels
+   Fait : measurement_readiness.direct_reverberant.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.direct_reverberant.missing_facts
+   Fait : measurement_readiness.direct_reverberant.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.direct_reverberant.confidence
+   Fait : measurement_readiness.direct_reverberant.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.direct_reverberant.applied_rules
+   Fait : measurement_readiness.direct_reverberant.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INSUFFICIENT_DYNAMIC_RANGE,BLOCK_INSUFFICIENT_IR_DURATION,BLOCK_INVALID_DIRECT_PEAK
+ • Preuve evidence.measurement_readiness.bass_decay.status
+   Fait : measurement_readiness.bass_decay.status
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : BLOCKED
+ • Preuve evidence.measurement_readiness.bass_decay.blocking_issue_count
+   Fait : measurement_readiness.bass_decay.blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 3
+ • Preuve evidence.measurement_readiness.bass_decay.non_blocking_issue_count
+   Fait : measurement_readiness.bass_decay.non_blocking_issue_count
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 1
+ • Preuve evidence.measurement_readiness.bass_decay.required_channels
+   Fait : measurement_readiness.bass_decay.required_channels
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : NONE
+ • Preuve evidence.measurement_readiness.bass_decay.missing_facts
+   Fait : measurement_readiness.bass_decay.missing_facts
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : ANY_ELIGIBLE_CHANNEL
+ • Preuve evidence.measurement_readiness.bass_decay.confidence
+   Fait : measurement_readiness.bass_decay.confidence
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : 100.0
+ • Preuve evidence.measurement_readiness.bass_decay.applied_rules
+   Fait : measurement_readiness.bass_decay.applied_rules
+   Analyse : MeasurementReadinessAnalysis
+   Niveau : CALCULATED
+   Valeur : REQUIRE_ANY_ELIGIBLE_CHANNEL,REQUIRE_VALID_SAMPLE_FACTS,BLOCK_HIGH_NOISE_FLOOR,BLOCK_INCONSISTENT_MEASUREMENT_METADATA,BLOCK_INSUFFICIENT_DYNAMIC_RANGE,BLOCK_INSUFFICIENT_IR_DURATION,BLOCK_INVALID_DIRECT_PEAK
  • Preuve evidence.global.confidence
    Fait : global.confidence
    Analyse : ConfidenceAnalysis
    Niveau : CALCULATED
-   Valeur : 80.84812800586789
+   Valeur : 81.96496325809022
 
  • Lien explanation.correlation.stereo_sbir_placement_interaction
    Faits : global.domain.stereo.score, global.domain.sbir.score
@@ -543,9 +998,53 @@ Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRA
    Faits : bass_decay.significant_difference_count, bass_decay.correlation_count
    Preuves : evidence.bass_decay.significant_difference_count, evidence.bass_decay.correlation_count
    Recommandations : COMPARE_BASS_DECAY_CHANNELS
+ • Lien explanation.recommendation.check_measurement_metadata
+   Faits : measurement_quality.issue_count, measurement_quality.issue.0.code, measurement_quality.issue.0.scope, measurement_quality.issue.0.confidence, measurement_quality.issue.0.channel, measurement_quality.issue.0.severity, measurement_quality.issue.0.metric.peak_value_relative_error, measurement_quality.issue.0.threshold.peak_value_relative_tolerance, measurement_quality.issue.0.threshold.sample_interval_relative_tolerance, measurement_quality.issue.0.threshold.timing_tolerance_samples, measurement_quality.issue.1.code, measurement_quality.issue.1.scope, measurement_quality.issue.1.confidence, measurement_quality.issue.1.channel, measurement_quality.issue.1.severity, measurement_quality.issue.1.metric.peak_value_relative_error, measurement_quality.issue.1.threshold.peak_value_relative_tolerance, measurement_quality.issue.1.threshold.sample_interval_relative_tolerance, measurement_quality.issue.1.threshold.timing_tolerance_samples, measurement_quality.issue.2.code, measurement_quality.issue.2.scope, measurement_quality.issue.2.confidence, measurement_quality.issue.2.channel, measurement_quality.issue.2.severity, measurement_quality.issue.2.metric.peak_value_relative_error, measurement_quality.issue.2.threshold.peak_value_relative_tolerance, measurement_quality.issue.2.threshold.sample_interval_relative_tolerance, measurement_quality.issue.2.threshold.timing_tolerance_samples, measurement_quality.issue.3.code, measurement_quality.issue.3.scope, measurement_quality.issue.3.confidence, measurement_quality.issue.3.severity, measurement_quality.issue.3.metric.inconsistent_channel_count, measurement_quality.issue.3.metric.inconsistent_channels, measurement_readiness.frequency.status, measurement_readiness.frequency.blocking_issue_count, measurement_readiness.frequency.non_blocking_issue_count, measurement_readiness.frequency.required_channels, measurement_readiness.frequency.missing_facts, measurement_readiness.frequency.confidence, measurement_readiness.frequency.applied_rules, measurement_readiness.rt60.status, measurement_readiness.rt60.blocking_issue_count, measurement_readiness.rt60.non_blocking_issue_count, measurement_readiness.rt60.required_channels, measurement_readiness.rt60.missing_facts, measurement_readiness.rt60.confidence, measurement_readiness.rt60.applied_rules, measurement_readiness.etc.status, measurement_readiness.etc.blocking_issue_count, measurement_readiness.etc.non_blocking_issue_count, measurement_readiness.etc.required_channels, measurement_readiness.etc.missing_facts, measurement_readiness.etc.confidence, measurement_readiness.etc.applied_rules, measurement_readiness.clarity.status, measurement_readiness.clarity.blocking_issue_count, measurement_readiness.clarity.non_blocking_issue_count, measurement_readiness.clarity.required_channels, measurement_readiness.clarity.missing_facts, measurement_readiness.clarity.confidence, measurement_readiness.clarity.applied_rules, measurement_readiness.spatial.status, measurement_readiness.spatial.blocking_issue_count, measurement_readiness.spatial.non_blocking_issue_count, measurement_readiness.spatial.required_channels, measurement_readiness.spatial.missing_facts, measurement_readiness.spatial.confidence, measurement_readiness.spatial.applied_rules, measurement_readiness.direct_reverberant.status, measurement_readiness.direct_reverberant.blocking_issue_count, measurement_readiness.direct_reverberant.non_blocking_issue_count, measurement_readiness.direct_reverberant.required_channels, measurement_readiness.direct_reverberant.missing_facts, measurement_readiness.direct_reverberant.confidence, measurement_readiness.direct_reverberant.applied_rules, measurement_readiness.bass_decay.status, measurement_readiness.bass_decay.blocking_issue_count, measurement_readiness.bass_decay.non_blocking_issue_count, measurement_readiness.bass_decay.required_channels, measurement_readiness.bass_decay.missing_facts, measurement_readiness.bass_decay.confidence, measurement_readiness.bass_decay.applied_rules
+   Preuves : evidence.measurement_quality.issue_count, evidence.measurement_quality.issue.0.code, evidence.measurement_quality.issue.0.scope, evidence.measurement_quality.issue.0.confidence, evidence.measurement_quality.issue.0.channel, evidence.measurement_quality.issue.0.severity, evidence.measurement_quality.issue.0.metric.peak_value_relative_error, evidence.measurement_quality.issue.0.threshold.peak_value_relative_tolerance, evidence.measurement_quality.issue.0.threshold.sample_interval_relative_tolerance, evidence.measurement_quality.issue.0.threshold.timing_tolerance_samples, evidence.measurement_quality.issue.1.code, evidence.measurement_quality.issue.1.scope, evidence.measurement_quality.issue.1.confidence, evidence.measurement_quality.issue.1.channel, evidence.measurement_quality.issue.1.severity, evidence.measurement_quality.issue.1.metric.peak_value_relative_error, evidence.measurement_quality.issue.1.threshold.peak_value_relative_tolerance, evidence.measurement_quality.issue.1.threshold.sample_interval_relative_tolerance, evidence.measurement_quality.issue.1.threshold.timing_tolerance_samples, evidence.measurement_quality.issue.2.code, evidence.measurement_quality.issue.2.scope, evidence.measurement_quality.issue.2.confidence, evidence.measurement_quality.issue.2.channel, evidence.measurement_quality.issue.2.severity, evidence.measurement_quality.issue.2.metric.peak_value_relative_error, evidence.measurement_quality.issue.2.threshold.peak_value_relative_tolerance, evidence.measurement_quality.issue.2.threshold.sample_interval_relative_tolerance, evidence.measurement_quality.issue.2.threshold.timing_tolerance_samples, evidence.measurement_quality.issue.3.code, evidence.measurement_quality.issue.3.scope, evidence.measurement_quality.issue.3.confidence, evidence.measurement_quality.issue.3.severity, evidence.measurement_quality.issue.3.metric.inconsistent_channel_count, evidence.measurement_quality.issue.3.metric.inconsistent_channels, evidence.measurement_readiness.frequency.status, evidence.measurement_readiness.frequency.blocking_issue_count, evidence.measurement_readiness.frequency.non_blocking_issue_count, evidence.measurement_readiness.frequency.required_channels, evidence.measurement_readiness.frequency.missing_facts, evidence.measurement_readiness.frequency.confidence, evidence.measurement_readiness.frequency.applied_rules, evidence.measurement_readiness.rt60.status, evidence.measurement_readiness.rt60.blocking_issue_count, evidence.measurement_readiness.rt60.non_blocking_issue_count, evidence.measurement_readiness.rt60.required_channels, evidence.measurement_readiness.rt60.missing_facts, evidence.measurement_readiness.rt60.confidence, evidence.measurement_readiness.rt60.applied_rules, evidence.measurement_readiness.etc.status, evidence.measurement_readiness.etc.blocking_issue_count, evidence.measurement_readiness.etc.non_blocking_issue_count, evidence.measurement_readiness.etc.required_channels, evidence.measurement_readiness.etc.missing_facts, evidence.measurement_readiness.etc.confidence, evidence.measurement_readiness.etc.applied_rules, evidence.measurement_readiness.clarity.status, evidence.measurement_readiness.clarity.blocking_issue_count, evidence.measurement_readiness.clarity.non_blocking_issue_count, evidence.measurement_readiness.clarity.required_channels, evidence.measurement_readiness.clarity.missing_facts, evidence.measurement_readiness.clarity.confidence, evidence.measurement_readiness.clarity.applied_rules, evidence.measurement_readiness.spatial.status, evidence.measurement_readiness.spatial.blocking_issue_count, evidence.measurement_readiness.spatial.non_blocking_issue_count, evidence.measurement_readiness.spatial.required_channels, evidence.measurement_readiness.spatial.missing_facts, evidence.measurement_readiness.spatial.confidence, evidence.measurement_readiness.spatial.applied_rules, evidence.measurement_readiness.direct_reverberant.status, evidence.measurement_readiness.direct_reverberant.blocking_issue_count, evidence.measurement_readiness.direct_reverberant.non_blocking_issue_count, evidence.measurement_readiness.direct_reverberant.required_channels, evidence.measurement_readiness.direct_reverberant.missing_facts, evidence.measurement_readiness.direct_reverberant.confidence, evidence.measurement_readiness.direct_reverberant.applied_rules, evidence.measurement_readiness.bass_decay.status, evidence.measurement_readiness.bass_decay.blocking_issue_count, evidence.measurement_readiness.bass_decay.non_blocking_issue_count, evidence.measurement_readiness.bass_decay.required_channels, evidence.measurement_readiness.bass_decay.missing_facts, evidence.measurement_readiness.bass_decay.confidence, evidence.measurement_readiness.bass_decay.applied_rules
+   Recommandations : CHECK_MEASUREMENT_METADATA
  • Lien explanation.global.confidence
    Faits : global.confidence
    Preuves : evidence.global.confidence
+
+------------------------------------------------------------
+Qualité des mesures
+
+Observations
+ • Issues techniques structurées : 4.
+ • Familles bloquées : 7.
+ • Familles disponibles avec réserves : 0.
+ • Issue INCONSISTENT_MEASUREMENT_METADATA (CHANNEL) — canal LEFT, confiance 100 %.
+ • Issue INCONSISTENT_MEASUREMENT_METADATA (CHANNEL) — canal RIGHT, confiance 100 %.
+ • Issue INCONSISTENT_MEASUREMENT_METADATA (CHANNEL) — canal STEREO, confiance 100 %.
+ • Issue INCONSISTENT_MEASUREMENT_METADATA (MEASUREMENT_SET), confiance 100 %.
+ • FREQUENCY : BLOCKED, confiance 100 %.
+ • RT60 : BLOCKED, confiance 100 %.
+ • ETC : BLOCKED, confiance 100 %.
+ • CLARITY : BLOCKED, confiance 100 %.
+ • SPATIAL : BLOCKED, confiance 100 %.
+ • DIRECT_REVERBERANT : BLOCKED, confiance 100 %.
+ • BASS_DECAY : BLOCKED, confiance 100 %.
+
+Conclusion
+
+Certaines familles sont bloquées faute de preuves compatibles.
+
+Gravité : HIGH
+Confiance : 100%
+Niveau de preuve : CALCULATED
+
+Causes
+ • INCONSISTENT_MEASUREMENT_METADATA
+ • FREQUENCY_BLOCKED
+ • RT60_BLOCKED
+ • ETC_BLOCKED
+ • CLARITY_BLOCKED
+ • SPATIAL_BLOCKED
+ • DIRECT_REVERBERANT_BLOCKED
+ • BASS_DECAY_BLOCKED
+
+Recommandations
+ • Vérifier et corriger les métadonnées des mesures.
 
 ------------------------------------------------------------
 Réponse dans le grave
@@ -910,9 +1409,9 @@ Recommandations
 Confiance de l'analyse
 
 Observations
- • Preuves disponibles : 8 ; indisponibles : 1.
- • Couverture des preuves : 89 %.
- • Accord des confiances locales : 72 %.
+ • Preuves disponibles : 10 ; indisponibles : 1.
+ • Couverture des preuves : 91 %.
+ • Accord des confiances locales : 67 %.
  • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
  • sbir : 92/100 — Confiance locale disponible : 92.4/100.
  • stereo : 0/100 — Confiance locale indisponible.
@@ -922,16 +1421,18 @@ Observations
  • spatial : 67/100 — Confiance locale disponible : 67.0/100.
  • direct_reverberant : 95/100 — Confiance locale disponible : 94.9/100.
  • bass_decay : 69/100 — Confiance locale disponible : 68.8/100.
- • coverage : 89/100 — 8/9 analyses fournissent une confiance locale.
- • agreement : 72/100 — Dispersion des confiances locales : 28.0 point(s).
+ • measurement_quality : 100/100 — Confiance locale disponible : 100.0/100.
+ • measurement_readiness : 100/100 — Confiance locale disponible : 100.0/100.
+ • coverage : 91/100 — 10/11 analyses fournissent une confiance locale.
+ • agreement : 67/100 — Dispersion des confiances locales : 33.0 point(s).
 
 Conclusion
 
 Les analyses sont exploitables, avec certaines limites de couverture ou d'accord.
 
 Gravité : MEDIUM
-Score : 81 / 100
-Confiance : 81%
+Score : 82 / 100
+Confiance : 82%
 Niveau de preuve : CALCULATED
 
 Causes

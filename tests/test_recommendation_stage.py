@@ -37,4 +37,6 @@ def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
         "bass_decay": None,
         "bass_decay_correlations": None,
         "confidence": context.confidence_analysis,
+        "measurement_quality": context.measurement_quality_analysis,
+        "measurement_readiness": context.measurement_readiness_analysis,
     }
