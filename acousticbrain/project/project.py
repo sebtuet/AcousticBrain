@@ -5,6 +5,7 @@ from acousticbrain.models import (
     ImpulseResponse,
     Measurement,
     Room,
+    RoomDescription,
     Speaker,
 )
 
@@ -23,6 +24,8 @@ class Project:
     )
 
     speakers: dict[str, Speaker] = field(default_factory=dict)
+
+    room_description: RoomDescription | None = None
 
     def add_measurement(
         self,
