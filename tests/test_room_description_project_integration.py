@@ -68,6 +68,33 @@ def test_failed_load_preserves_the_existing_project_description(tmp_path):
     assert target.room_description is existing
 
 
+def test_project_loader_reports_v1_migration_without_rewriting_source(tmp_path):
+    target = project()
+    payload = RoomDescriptionJsonCodec().to_dict(description())
+    payload["schema_version"] = 1
+    room = payload["room_description"]
+    for speaker in room["speakers"]:
+        speaker.pop("orientation")
+    for field in (
+        "surface_materials",
+        "covering_zones",
+        "furniture",
+        "acoustic_treatments",
+    ):
+        room.pop(field)
+    path = tmp_path / "legacy-v1.json"
+    original = json.dumps(payload, sort_keys=True)
+    path.write_text(original, encoding="utf-8")
+
+    result = RoomDescriptionProjectLoader().load(target, path)
+
+    assert result.is_success
+    assert result.source_schema_version == 1
+    assert result.requires_migration
+    assert path.read_text(encoding="utf-8") == original
+    assert target.room_description.surface_materials == ()
+
+
 def test_file_access_errors_are_structured_and_do_not_mutate_project(tmp_path):
     target = project()
     missing = tmp_path / "missing.json"
@@ -142,7 +169,9 @@ def test_command_selects_measurement_and_room_description_paths(
         "loaded": True,
         "project": "measurements",
         "room_description": "Described room",
-        "schema_version": 1,
+        "source_schema_version": 2,
+        "target_schema_version": 2,
+        "requires_migration": False,
     }
 
 

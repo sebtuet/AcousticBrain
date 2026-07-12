@@ -7,4 +7,11 @@ from .room_description_adapter import (
     RoomDescriptionSerializationResult,
     RoomOpeningFormRow,
     SpeakerPositionFormRow,
+    SurfaceMaterialFormRow,
+    SurfaceCoveringZoneFormRow,
+    FurnitureFormRow,
+    AcousticTreatmentFormRow,
+    RoomDescriptionEditorLevel,
+    RoomDescriptionSectionVisibility,
+    section_visibility,
 )

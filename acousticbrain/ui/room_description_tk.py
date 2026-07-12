@@ -6,6 +6,12 @@ from .room_description_adapter import (
     RoomDescriptionFormState,
     RoomOpeningFormRow,
     SpeakerPositionFormRow,
+    SurfaceMaterialFormRow,
+    SurfaceCoveringZoneFormRow,
+    FurnitureFormRow,
+    AcousticTreatmentFormRow,
+    RoomDescriptionEditorLevel,
+    section_visibility,
 )
 
 
@@ -24,14 +30,22 @@ class RoomDescriptionTkApp:
         self.speakers = []
         self.listening_positions = []
         self.openings = []
+        self.surface_materials = []
+        self.covering_zones = []
+        self.furniture = []
+        self.acoustic_treatments = []
         self.variables = {
             name: tk.StringVar()
             for name in ("name", "length_m", "width_m", "height_m")
         }
         self.status = tk.StringVar(value="")
+        self.editor_level = tk.StringVar(
+            value=RoomDescriptionEditorLevel.MINIMAL.value
+        )
         self._build()
         for variable in self.variables.values():
             variable.trace_add("write", lambda *_: self.validate())
+        self.editor_level.trace_add("write", lambda *_: self._apply_level())
 
     def run(self):
         self.root.mainloop()
@@ -61,11 +75,22 @@ class RoomDescriptionTkApp:
                 dimensions, textvariable=self.variables[field], width=18
             ).grid(row=1, column=column, padx=3)
 
+        level = self.ttk.Frame(frame)
+        level.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        self.ttk.Label(level, text="Niveau de saisie").pack(side="left")
+        self.ttk.Combobox(
+            level,
+            textvariable=self.editor_level,
+            values=tuple(item.value for item in RoomDescriptionEditorLevel),
+            state="readonly",
+            width=12,
+        ).pack(side="left", padx=6)
+
         self.speaker_tree = self._section(
             frame,
-            row=1,
+            row=2,
             title="Enceintes",
-            columns=("speaker_id", "x_m", "y_m", "z_m"),
+            columns=("speaker_id", "x_m", "y_m", "z_m", "yaw_degrees"),
             add=self._add_speaker,
             remove=lambda: self._remove_selected(
                 self.speaker_tree, self.speakers
@@ -73,7 +98,7 @@ class RoomDescriptionTkApp:
         )
         self.listening_tree = self._section(
             frame,
-            row=2,
+            row=3,
             title="Positions d'écoute",
             columns=("position_id", "x_m", "y_m", "z_m"),
             add=self._add_listening_position,
@@ -83,7 +108,7 @@ class RoomDescriptionTkApp:
         )
         self.opening_tree = self._section(
             frame,
-            row=3,
+            row=4,
             title="Ouvertures",
             columns=(
                 "opening_id",
@@ -99,8 +124,33 @@ class RoomDescriptionTkApp:
             ),
         )
 
+        self.material_tree = self._section(
+            frame, row=5, title="Matériaux principaux",
+            columns=("surface", "material_type", "detail"),
+            add=self._add_material,
+            remove=lambda: self._remove_selected(self.material_tree, self.surface_materials),
+        )
+        self.covering_tree = self._section(
+            frame, row=6, title="Zones de revêtement",
+            columns=("zone_id", "surface", "material_type", "detail", "horizontal_offset_m", "vertical_offset_m", "width_m", "height_m"),
+            add=self._add_covering,
+            remove=lambda: self._remove_selected(self.covering_tree, self.covering_zones),
+        )
+        self.furniture_tree = self._section(
+            frame, row=7, title="Mobilier",
+            columns=("furniture_id", "furniture_type", "detail", "x_m", "y_m", "z_m", "length_m", "width_m", "height_m"),
+            add=self._add_furniture,
+            remove=lambda: self._remove_selected(self.furniture_tree, self.furniture),
+        )
+        self.treatment_tree = self._section(
+            frame, row=8, title="Traitements acoustiques",
+            columns=("treatment_id", "treatment_type", "detail", "surface", "horizontal_offset_m", "vertical_offset_m", "width_m", "height_m"),
+            add=self._add_treatment,
+            remove=lambda: self._remove_selected(self.treatment_tree, self.acoustic_treatments),
+        )
+
         actions = self.ttk.Frame(frame)
-        actions.grid(row=4, column=0, sticky="ew", pady=(8, 0))
+        actions.grid(row=9, column=0, sticky="ew", pady=(8, 0))
         self.ttk.Button(actions, text="Charger", command=self.load).pack(
             side="left"
         )
@@ -112,7 +162,8 @@ class RoomDescriptionTkApp:
             textvariable=self.status,
             foreground="#9b1c1c",
             wraplength=900,
-        ).grid(row=5, column=0, sticky="w", pady=(8, 0))
+        ).grid(row=10, column=0, sticky="w", pady=(8, 0))
+        self._apply_level()
 
     def _section(self, parent, *, row, title, columns, add, remove):
         section = self.ttk.LabelFrame(parent, text=title, padding=8)
@@ -145,7 +196,7 @@ class RoomDescriptionTkApp:
         return values
 
     def _add_speaker(self):
-        values = self._ask_values("Enceinte", ("Identifiant", "x", "y", "z"))
+        values = self._ask_values("Enceinte", ("Identifiant", "x", "y", "z", "Yaw (°), optionnel"))
         if values is not None:
             self.speakers.append(SpeakerPositionFormRow(*values))
             self._refresh()
@@ -174,6 +225,30 @@ class RoomDescriptionTkApp:
             self.openings.append(RoomOpeningFormRow(*values))
             self._refresh()
 
+    def _add_material(self):
+        values = self._ask_values("Matériau", ("Surface", "Type", "Détail optionnel"))
+        if values is not None:
+            self.surface_materials.append(SurfaceMaterialFormRow(*values))
+            self._refresh()
+
+    def _add_covering(self):
+        values = self._ask_values("Revêtement", ("Identifiant", "Surface", "Type", "Détail", "Offset horizontal", "Offset vertical", "Largeur", "Hauteur"))
+        if values is not None:
+            self.covering_zones.append(SurfaceCoveringZoneFormRow(*values))
+            self._refresh()
+
+    def _add_furniture(self):
+        values = self._ask_values("Mobilier", ("Identifiant", "Type", "Détail", "x", "y", "z", "Longueur", "Largeur", "Hauteur"))
+        if values is not None:
+            self.furniture.append(FurnitureFormRow(*values))
+            self._refresh()
+
+    def _add_treatment(self):
+        values = self._ask_values("Traitement", ("Identifiant", "Type", "Détail", "Surface", "Offset horizontal", "Offset vertical", "Largeur", "Hauteur"))
+        if values is not None:
+            self.acoustic_treatments.append(AcousticTreatmentFormRow(*values))
+            self._refresh()
+
     def _remove_selected(self, tree, collection):
         selected = tree.selection()
         if selected:
@@ -185,6 +260,10 @@ class RoomDescriptionTkApp:
             (self.speaker_tree, self.speakers),
             (self.listening_tree, self.listening_positions),
             (self.opening_tree, self.openings),
+            (self.material_tree, self.surface_materials),
+            (self.covering_tree, self.covering_zones),
+            (self.furniture_tree, self.furniture),
+            (self.treatment_tree, self.acoustic_treatments),
         ):
             tree.delete(*tree.get_children())
             for row in rows:
@@ -200,6 +279,10 @@ class RoomDescriptionTkApp:
             speakers=tuple(self.speakers),
             listening_positions=tuple(self.listening_positions),
             openings=tuple(self.openings),
+            surface_materials=tuple(self.surface_materials),
+            covering_zones=tuple(self.covering_zones),
+            furniture=tuple(self.furniture),
+            acoustic_treatments=tuple(self.acoustic_treatments),
         )
 
     def set_state(self, state):
@@ -208,7 +291,29 @@ class RoomDescriptionTkApp:
         self.speakers = list(state.speakers)
         self.listening_positions = list(state.listening_positions)
         self.openings = list(state.openings)
+        self.surface_materials = list(state.surface_materials)
+        self.covering_zones = list(state.covering_zones)
+        self.furniture = list(state.furniture)
+        self.acoustic_treatments = list(state.acoustic_treatments)
         self._refresh()
+
+    def _apply_level(self):
+        visibility = section_visibility(
+            RoomDescriptionEditorLevel(self.editor_level.get())
+        )
+        for tree, visible in (
+            (self.speaker_tree, visibility.speakers),
+            (self.listening_tree, visibility.listening_positions),
+            (self.material_tree, visibility.surface_materials),
+            (self.opening_tree, visibility.openings),
+            (self.covering_tree, visibility.covering_zones),
+            (self.furniture_tree, visibility.furniture),
+            (self.treatment_tree, visibility.acoustic_treatments),
+        ):
+            if visible:
+                tree.master.grid()
+            else:
+                tree.master.grid_remove()
 
     def validate(self):
         result = self.adapter.validate(self.state())

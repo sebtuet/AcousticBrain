@@ -3,6 +3,7 @@ import json
 
 from acousticbrain.application import RoomDescriptionProjectLoader
 from acousticbrain.importers import ImportEngine
+from acousticbrain.persistence import RoomDescriptionJsonCodec
 
 
 def build_parser():
@@ -50,7 +51,9 @@ def main(argv=None):
                 "loaded": True,
                 "project": project.name,
                 "room_description": project.room_description.name,
-                "schema_version": 1,
+                "source_schema_version": result.source_schema_version,
+                "target_schema_version": RoomDescriptionJsonCodec.SCHEMA_VERSION,
+                "requires_migration": result.requires_migration,
             },
             sort_keys=True,
         )

@@ -10,6 +10,12 @@ from acousticbrain.models import (
     Room,
     RoomDescription,
     RoomDimensions,
+    RoomDescriptionSurface,
+    SpeakerOrientation,
+    SpeakerPosition,
+    SurfaceCoveringZone,
+    SurfaceMaterialDescription,
+    SurfaceMaterialType,
 )
 from acousticbrain.project import Project
 from acousticbrain.report import ConsoleReporter, RoomGeometryPresenter
@@ -108,3 +114,56 @@ def test_presenter_returns_none_before_geometry_resolution():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
 
     assert RoomGeometryPresenter().present(context) is None
+
+
+def test_presenter_and_traceability_summarize_available_room_features():
+    description = RoomDescription(
+        "Features",
+        RoomDimensions(5.0, 4.0, 2.5),
+        speakers=(
+            SpeakerPosition("LEFT", 1.0, 1.0, 1.0, SpeakerOrientation(15.0)),
+            SpeakerPosition("RIGHT", 1.0, 3.0, 1.0),
+        ),
+        surface_materials=(
+            SurfaceMaterialDescription(
+                RoomDescriptionSurface.FRONT_WALL,
+                SurfaceMaterialType.WOOD,
+            ),
+        ),
+        covering_zones=(
+            SurfaceCoveringZone(
+                "RUG",
+                RoomDescriptionSurface.FLOOR,
+                SurfaceMaterialType.CARPET,
+            ),
+        ),
+    )
+    project = Project(
+        "Features",
+        Room("Legacy", 5.0, 4.0, 2.5),
+        room_description=description,
+    )
+    context = context_for(project)
+
+    presented = RoomGeometryPresenter().present(context)
+    traceability = TraceabilityEngine().analyze(
+        global_analysis=GlobalAnalysis(),
+        recommendation_analysis=RecommendationAnalysis(),
+        room_geometry=context.room_geometry,
+        room_geometry_comparison=context.room_geometry_comparison,
+    )
+    evidence = {item.fact_code: item.value for item in traceability.evidence_references}
+
+    assert presented.oriented_speaker_count == 1
+    assert presented.speaker_count == 2
+    assert presented.surface_material_count == 1
+    assert presented.covering_zone_count == 1
+    assert presented.placed_covering_zone_count == 0
+    assert presented.feature_completeness == pytest.approx(13.333333333333334)
+    assert evidence["room_geometry.speaker.LEFT.yaw_degrees"] == 15.0
+    assert evidence["room_geometry.speaker.RIGHT.yaw_degrees"] is None
+    assert evidence["room_geometry.surface.front_wall.material.type"] == "WOOD"
+    assert evidence["room_geometry.covering_zone.RUG.placed"] is False
+    assert evidence["room_geometry.feature_completeness.score"] == pytest.approx(
+        13.333333333333334
+    )

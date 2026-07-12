@@ -1,15 +1,28 @@
 from math import isfinite
 
 from acousticbrain.models import (
+    GeometryAcousticTreatment,
+    GeometryAcousticTreatmentType,
+    GeometryBox,
+    GeometryCoordinate,
+    GeometryCoveringZone,
+    GeometryFurniture,
+    GeometryFurnitureType,
+    GeometryMaterialType,
     GeometryOpening,
     GeometryPoint,
     GeometrySource,
+    GeometrySpeakerOrientation,
+    GeometrySurfaceMaterial,
+    GeometrySurfaceRectangle,
     Room,
     RoomDescription,
     RoomDimensions,
     RoomGeometry,
     RoomGeometryModel,
     RoomOpeningSurface,
+    RoomDescriptionSurface,
+    RoomFeatureGeometryCompleteness,
     RoomSurface,
     RoomSurfaceKind,
 )
@@ -37,6 +50,14 @@ class RoomGeometryBuilder:
         RoomOpeningSurface.REAR_WALL: "rear_wall",
         RoomOpeningSurface.LEFT_WALL: "left_wall",
         RoomOpeningSurface.RIGHT_WALL: "right_wall",
+    }
+    _DESCRIPTION_SURFACE_IDS = {
+        RoomDescriptionSurface.FRONT_WALL: "front_wall",
+        RoomDescriptionSurface.REAR_WALL: "rear_wall",
+        RoomDescriptionSurface.LEFT_WALL: "left_wall",
+        RoomDescriptionSurface.RIGHT_WALL: "right_wall",
+        RoomDescriptionSurface.FLOOR: "floor",
+        RoomDescriptionSurface.CEILING: "ceiling",
     }
 
     def __init__(self, validator=None):
@@ -95,6 +116,75 @@ class RoomGeometryBuilder:
             completeness += self.SPEAKER_COMPLETENESS
         if listening_positions:
             completeness += self.LISTENING_COMPLETENESS
+        speaker_orientations = tuple(
+            GeometrySpeakerOrientation(
+                speaker_id=item.speaker_id,
+                yaw_degrees=(
+                    item.orientation.yaw_degrees
+                    if item.orientation is not None
+                    else None
+                ),
+            )
+            for item in sorted(
+                description.speakers,
+                key=lambda item: item.speaker_id,
+            )
+        )
+        surface_materials = tuple(
+            GeometrySurfaceMaterial(
+                surface_id=self._DESCRIPTION_SURFACE_IDS[item.surface],
+                material_type=GeometryMaterialType(item.material_type.value),
+                detail=item.detail,
+            )
+            for item in sorted(
+                description.surface_materials,
+                key=lambda item: item.surface.value,
+            )
+        )
+        covering_zones = tuple(
+            GeometryCoveringZone(
+                zone_id=item.zone_id,
+                surface_id=self._DESCRIPTION_SURFACE_IDS[item.surface],
+                material_type=GeometryMaterialType(item.material_type.value),
+                detail=item.detail,
+                placement=self._surface_rectangle(item, dimensions),
+            )
+            for item in sorted(
+                description.covering_zones,
+                key=lambda item: item.zone_id,
+            )
+        )
+        furniture = tuple(
+            GeometryFurniture(
+                furniture_id=item.furniture_id,
+                furniture_type=GeometryFurnitureType(item.furniture_type.value),
+                detail=item.detail,
+                bounding_box=self._furniture_box(item),
+            )
+            for item in sorted(
+                description.furniture,
+                key=lambda item: item.furniture_id,
+            )
+        )
+        acoustic_treatments = tuple(
+            GeometryAcousticTreatment(
+                treatment_id=item.treatment_id,
+                treatment_type=GeometryAcousticTreatmentType(
+                    item.treatment_type.value
+                ),
+                detail=item.detail,
+                surface_id=(
+                    self._DESCRIPTION_SURFACE_IDS[item.surface]
+                    if item.surface is not None
+                    else None
+                ),
+                placement=self._surface_rectangle(item, dimensions),
+            )
+            for item in sorted(
+                description.acoustic_treatments,
+                key=lambda item: item.treatment_id,
+            )
+        )
 
         return self._geometry(
             dimensions=dimensions,
@@ -103,6 +193,18 @@ class RoomGeometryBuilder:
             openings=openings,
             source=GeometrySource.ROOM_DESCRIPTION,
             completeness=completeness,
+            speaker_orientations=speaker_orientations,
+            surface_materials=surface_materials,
+            covering_zones=covering_zones,
+            furniture=furniture,
+            acoustic_treatments=acoustic_treatments,
+            feature_completeness=self._feature_completeness(
+                description,
+                speaker_orientations,
+                covering_zones,
+                furniture,
+                acoustic_treatments,
+            ),
         )
 
     def from_legacy_room(self, room: Room) -> RoomGeometry:
@@ -145,6 +247,12 @@ class RoomGeometryBuilder:
         openings,
         source,
         completeness,
+        speaker_orientations=(),
+        surface_materials=(),
+        covering_zones=(),
+        furniture=(),
+        acoustic_treatments=(),
+        feature_completeness=None,
     ):
         return RoomGeometry(
             dimensions=dimensions,
@@ -156,6 +264,127 @@ class RoomGeometryBuilder:
             model=RoomGeometryModel.RECTANGULAR,
             model_version=cls.MODEL_VERSION,
             completeness=completeness,
+            speaker_orientations=speaker_orientations,
+            surface_materials=surface_materials,
+            covering_zones=covering_zones,
+            furniture=furniture,
+            acoustic_treatments=acoustic_treatments,
+            feature_completeness=feature_completeness,
+        )
+
+    @classmethod
+    def _surface_rectangle(cls, item, dimensions):
+        if item.horizontal_offset_m is None:
+            return None
+        horizontal = item.horizontal_offset_m
+        vertical = item.vertical_offset_m
+        width = item.width_m
+        height = item.height_m
+        surface = item.surface
+        if surface is RoomDescriptionSurface.FRONT_WALL:
+            minimum = (0.0, horizontal, vertical)
+            maximum = (0.0, horizontal + width, vertical + height)
+        elif surface is RoomDescriptionSurface.REAR_WALL:
+            minimum = (dimensions.length_m, horizontal, vertical)
+            maximum = (
+                dimensions.length_m,
+                horizontal + width,
+                vertical + height,
+            )
+        elif surface is RoomDescriptionSurface.LEFT_WALL:
+            minimum = (horizontal, 0.0, vertical)
+            maximum = (horizontal + width, 0.0, vertical + height)
+        elif surface is RoomDescriptionSurface.RIGHT_WALL:
+            minimum = (horizontal, dimensions.width_m, vertical)
+            maximum = (
+                horizontal + width,
+                dimensions.width_m,
+                vertical + height,
+            )
+        elif surface is RoomDescriptionSurface.FLOOR:
+            minimum = (horizontal, vertical, 0.0)
+            maximum = (horizontal + width, vertical + height, 0.0)
+        else:
+            minimum = (horizontal, vertical, dimensions.height_m)
+            maximum = (
+                horizontal + width,
+                vertical + height,
+                dimensions.height_m,
+            )
+        return GeometrySurfaceRectangle(
+            horizontal_offset_m=horizontal,
+            vertical_offset_m=vertical,
+            width_m=width,
+            height_m=height,
+            minimum_corner=GeometryCoordinate(*minimum),
+            maximum_corner=GeometryCoordinate(*maximum),
+        )
+
+    @staticmethod
+    def _furniture_box(item):
+        if item.x_m is None:
+            return None
+        return GeometryBox(
+            minimum_corner=GeometryCoordinate(item.x_m, item.y_m, item.z_m),
+            maximum_corner=GeometryCoordinate(
+                item.x_m + item.length_m,
+                item.y_m + item.width_m,
+                item.z_m + item.height_m,
+            ),
+        )
+
+    @staticmethod
+    def _feature_completeness(
+        description,
+        orientations,
+        zones,
+        furniture,
+        treatments,
+    ):
+        has_features = any(
+            item.yaw_degrees is not None for item in orientations
+        ) or any(
+            (
+                description.surface_materials,
+                description.covering_zones,
+                description.furniture,
+                description.acoustic_treatments,
+            )
+        )
+        if not has_features:
+            return None
+
+        def coverage(items, available):
+            return 100.0 * available / len(items) if items else 0.0
+
+        orientation_coverage = coverage(
+            orientations,
+            sum(item.yaw_degrees is not None for item in orientations),
+        )
+        material_coverage = 100.0 * len(description.surface_materials) / 6.0
+        covering_coverage = coverage(
+            zones, sum(item.placement is not None for item in zones)
+        )
+        furniture_coverage = coverage(
+            furniture, sum(item.bounding_box is not None for item in furniture)
+        )
+        treatment_coverage = coverage(
+            treatments, sum(item.placement is not None for item in treatments)
+        )
+        components = (
+            orientation_coverage,
+            material_coverage,
+            covering_coverage,
+            furniture_coverage,
+            treatment_coverage,
+        )
+        return RoomFeatureGeometryCompleteness(
+            orientation_coverage=orientation_coverage,
+            material_coverage=material_coverage,
+            covering_placement_coverage=covering_coverage,
+            furniture_placement_coverage=furniture_coverage,
+            treatment_placement_coverage=treatment_coverage,
+            score=sum(components) / len(components),
         )
 
     @classmethod
