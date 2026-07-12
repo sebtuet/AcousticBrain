@@ -8,6 +8,8 @@ class PresentedGlobalDomain:
     confidence: float | None
     source_analysis: str
     recommendation_codes: tuple[str, ...] = ()
+    kind: str = "ACOUSTIC"
+    contributes_to_acoustic_score: bool = True
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,10 @@ class GlobalPresenter:
                     confidence=domain.confidence,
                     source_analysis=domain.source_analysis,
                     recommendation_codes=domain.recommendation_codes,
+                    kind=domain.kind.value,
+                    contributes_to_acoustic_score=(
+                        domain.contributes_to_acoustic_score
+                    ),
                 )
                 for domain in analysis.domains
             ],

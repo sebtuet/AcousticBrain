@@ -95,9 +95,19 @@ class ConsoleReporter:
                     else "indisponible"
                 )
                 print(f" • Domaine {domain.code}")
-                print(f"   Score : {domain.score:.1f} / 100")
+                score_label = (
+                    "Score acoustique"
+                    if domain.contributes_to_acoustic_score
+                    else "Score technique de disponibilité"
+                )
+                print(f"   {score_label} : {domain.score:.1f} / 100")
                 print(f"   Confiance : {domain_confidence}")
                 print(f"   Provenance : {domain.source_analysis}")
+                print(f"   Nature : {domain.kind}")
+                print(
+                    "   Contribution au score acoustique : "
+                    + ("oui" if domain.contributes_to_acoustic_score else "non")
+                )
                 if domain.recommendation_codes:
                     print(
                         "   Références d'action : "

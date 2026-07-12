@@ -15,6 +15,9 @@ from acousticbrain.models import (
     GlobalAnalysis,
     GlobalCorrelation,
     GlobalDomainAnalysis,
+    GlobalDomainKind,
+    MeasurementQualityAnalysis,
+    MeasurementReadinessAnalysis,
     ModalDensityAnalysis,
     RT60Analysis,
     SBIRAnalysis,
@@ -66,6 +69,8 @@ class GlobalSynthesizer:
         bass_decay: BassDecayAnalysis | None = None,
         bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
+        measurement_quality: MeasurementQualityAnalysis | None = None,
+        measurement_readiness: MeasurementReadinessAnalysis | None = None,
     ) -> GlobalAnalysis:
         domains = self._domains(
             stereo=stereo,
@@ -85,7 +90,13 @@ class GlobalSynthesizer:
             ),
             bass_decay=bass_decay,
             bass_decay_correlations=bass_decay_correlations,
+            measurement_quality=measurement_quality,
+            measurement_readiness=measurement_readiness,
         )
+        acoustic_domains = [
+            domain for domain in domains
+            if domain.contributes_to_acoustic_score
+        ]
         local_confidences = [
             domain.confidence
             for domain in domains
@@ -93,7 +104,11 @@ class GlobalSynthesizer:
         ]
 
         return GlobalAnalysis(
-            score=fmean(domain.score for domain in domains) if domains else None,
+            score=(
+                fmean(domain.score for domain in acoustic_domains)
+                if acoustic_domains
+                else None
+            ),
             confidence=(
                 confidence.score
                 if confidence is not None
@@ -110,7 +125,7 @@ class GlobalSynthesizer:
             ),
             priority_domains=tuple(
                 domain.code
-                for domain in sorted(domains, key=lambda item: item.score)
+                for domain in sorted(acoustic_domains, key=lambda item: item.score)
                 if domain.score < self.PRIORITY_SCORE_THRESHOLD
             ),
             source_analyses=tuple(domain.source_analysis for domain in domains),
@@ -137,6 +152,8 @@ class GlobalSynthesizer:
         ),
         bass_decay: BassDecayAnalysis | None,
         bass_decay_correlations: BassDecayCorrelationAnalysis | None,
+        measurement_quality: MeasurementQualityAnalysis | None,
+        measurement_readiness: MeasurementReadinessAnalysis | None,
     ) -> list[GlobalDomainAnalysis]:
         domains: list[GlobalDomainAnalysis] = []
 
@@ -243,6 +260,31 @@ class GlobalSynthesizer:
         bass_decay_domain = cls._bass_decay_domain(bass_decay)
         if bass_decay_domain is not None:
             domains.append(bass_decay_domain)
+
+        if measurement_quality is not None:
+            readiness_scores = {
+                "AVAILABLE": 100.0,
+                "AVAILABLE_WITH_RESERVATIONS": 50.0,
+                "BLOCKED": 0.0,
+            }
+            technical_score = (
+                fmean(
+                    readiness_scores[item.status.value]
+                    for item in measurement_readiness.analyses
+                )
+                if measurement_readiness is not None
+                and measurement_readiness.analyses
+                else measurement_quality.confidence
+            )
+            domains.append(
+                GlobalDomainAnalysis(
+                    code=GlobalDomainCode.MEASUREMENT_QUALITY,
+                    score=technical_score,
+                    confidence=measurement_quality.confidence,
+                    source_analysis=SourceAnalysisCode.MEASUREMENT_QUALITY,
+                    kind=GlobalDomainKind.MEASUREMENT_QUALITY,
+                )
+            )
 
         return domains
 

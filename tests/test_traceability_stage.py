@@ -39,6 +39,8 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
         "bass_decay": None,
         "bass_decay_correlations": None,
         "confidence": context.confidence_analysis,
+        "measurement_quality": context.measurement_quality_analysis,
+        "measurement_readiness": context.measurement_readiness_analysis,
     }
 
 

@@ -12,6 +12,9 @@ from acousticbrain.models import (
     DirectReverberantAnalysis,
     DirectReverberantCorrelationAnalysis,
     ModalDensityAnalysis,
+    MeasurementQualityAnalysis,
+    MeasurementReadinessAnalysis,
+    MeasurementQualityIssueCode,
     Recommendation,
     RecommendationAnalysis,
     RecommendationPriority,
@@ -52,6 +55,8 @@ class RecommendationEngine:
         bass_decay: BassDecayAnalysis | None = None,
         bass_decay_correlations: BassDecayCorrelationAnalysis | None = None,
         confidence: ConfidenceAnalysis | None = None,
+        measurement_quality: MeasurementQualityAnalysis | None = None,
+        measurement_readiness: MeasurementReadinessAnalysis | None = None,
     ) -> RecommendationAnalysis:
         recommendations: list[Recommendation] = []
 
@@ -95,6 +100,13 @@ class RecommendationEngine:
             recommendations.extend(
                 self._from_bass_decay(bass_decay, bass_decay_correlations)
             )
+        if measurement_quality is not None:
+            recommendations.extend(
+                self._from_measurement_quality(
+                    measurement_quality,
+                    measurement_readiness,
+                )
+            )
 
         if confidence is not None:
             recommendations = [
@@ -105,6 +117,89 @@ class RecommendationEngine:
         return RecommendationAnalysis(
             recommendations=self._deduplicate(recommendations)
         )
+
+    @staticmethod
+    def _from_measurement_quality(quality, readiness):
+        issues = [
+            issue
+            for channel in quality.channel_qualities
+            for issue in channel.issues
+        ]
+        if quality.measurement_set_quality is not None:
+            issues.extend(quality.measurement_set_quality.issues)
+        blocked_count = sum(
+            item.status.value == "BLOCKED"
+            for item in readiness.analyses
+        ) if readiness is not None else 0
+        sources = (SourceAnalysisCode.MEASUREMENT_QUALITY,)
+        if readiness is not None:
+            sources += (SourceAnalysisCode.MEASUREMENT_READINESS,)
+
+        definitions = (
+            (
+                RecommendationCode.RETAKE_CLIPPED_MEASUREMENT,
+                {MeasurementQualityIssueCode.CLIPPING_DETECTED},
+                "retake",
+                "clipped_measurement",
+            ),
+            (
+                RecommendationCode.IMPROVE_SIGNAL_TO_NOISE,
+                {
+                    MeasurementQualityIssueCode.LOW_SIGNAL_LEVEL,
+                    MeasurementQualityIssueCode.HIGH_NOISE_FLOOR,
+                    MeasurementQualityIssueCode.INSUFFICIENT_DYNAMIC_RANGE,
+                },
+                "improve",
+                "signal_to_noise",
+            ),
+            (
+                RecommendationCode.FIX_CHANNEL_TIMING,
+                {MeasurementQualityIssueCode.CHANNEL_TIMING_MISMATCH},
+                "fix",
+                "channel_timing",
+            ),
+            (
+                RecommendationCode.COMPLETE_REQUIRED_CHANNELS,
+                {MeasurementQualityIssueCode.MISSING_REQUIRED_CHANNEL},
+                "complete",
+                "required_channels",
+            ),
+            (
+                RecommendationCode.CHECK_MEASUREMENT_METADATA,
+                {MeasurementQualityIssueCode.INCONSISTENT_MEASUREMENT_METADATA},
+                "check",
+                "measurement_metadata",
+            ),
+        )
+        recommendations = []
+        for code, supported_codes, action, target in definitions:
+            supporting = [issue for issue in issues if issue.code in supported_codes]
+            if not supporting:
+                continue
+            channels = sorted(
+                {issue.channel.value for issue in supporting if issue.channel}
+            )
+            parameters = {
+                "issue_count": len(supporting),
+                "blocked_family_count": blocked_count,
+            }
+            if channels:
+                parameters["affected_channels"] = ",".join(channels)
+            recommendations.append(
+                Recommendation(
+                    code=code,
+                    action=action,
+                    target=target,
+                    priority=RecommendationPriority.HIGH,
+                    confidence=min(
+                        quality.confidence,
+                        max(issue.confidence for issue in supporting),
+                    ),
+                    source_analyses=sources,
+                    parameters=parameters,
+                )
+            )
+        return recommendations
 
     @staticmethod
     def _from_bass_decay(analysis, correlations):

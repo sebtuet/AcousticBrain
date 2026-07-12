@@ -12,6 +12,8 @@ from acousticbrain.models import (
     ETCReflectionCorrelationAnalysis,
     GlobalAnalysis,
     Measurement,
+    MeasurementQualityAnalysis,
+    MeasurementReadinessAnalysis,
     ModalDensityAnalysis,
     RecommendationAnalysis,
     RT60Analysis,
@@ -55,6 +57,10 @@ class AnalysisContext:
     sbir: SBIRAnalysis | None = None
 
     modal_density: ModalDensityAnalysis | None = None
+
+    measurement_quality_analysis: MeasurementQualityAnalysis | None = None
+
+    measurement_readiness_analysis: MeasurementReadinessAnalysis | None = None
 
     rt60_analysis: RT60Analysis | None = None
 

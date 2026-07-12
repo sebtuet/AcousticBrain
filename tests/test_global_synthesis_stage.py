@@ -40,6 +40,8 @@ def test_global_synthesis_stage_stores_result_from_explicit_analyses():
         "bass_decay": None,
         "bass_decay_correlations": None,
         "confidence": context.confidence_analysis,
+        "measurement_quality": context.measurement_quality_analysis,
+        "measurement_readiness": context.measurement_readiness_analysis,
     }
 
 
@@ -67,4 +69,6 @@ def test_global_synthesis_stage_contains_no_fallback_business_rules():
         "bass_decay": None,
         "bass_decay_correlations": None,
         "confidence": None,
+        "measurement_quality": None,
+        "measurement_readiness": None,
     }
