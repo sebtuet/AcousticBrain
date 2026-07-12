@@ -12,6 +12,16 @@ class PresentedRoomGeometry:
     completeness: float
     comparison_status: str
     differing_fields: tuple[str, ...] = ()
+    speaker_count: int = 0
+    oriented_speaker_count: int = 0
+    surface_material_count: int = 0
+    covering_zone_count: int = 0
+    placed_covering_zone_count: int = 0
+    furniture_count: int = 0
+    placed_furniture_count: int = 0
+    treatment_count: int = 0
+    placed_treatment_count: int = 0
+    feature_completeness: float | None = None
 
 
 class RoomGeometryPresenter:
@@ -38,5 +48,29 @@ class RoomGeometryPresenter:
             ),
             differing_fields=(
                 comparison.differing_fields if comparison is not None else ()
+            ),
+            speaker_count=len(geometry.speakers),
+            oriented_speaker_count=sum(
+                item.yaw_degrees is not None
+                for item in geometry.speaker_orientations
+            ),
+            surface_material_count=len(geometry.surface_materials),
+            covering_zone_count=len(geometry.covering_zones),
+            placed_covering_zone_count=sum(
+                item.placement is not None for item in geometry.covering_zones
+            ),
+            furniture_count=len(geometry.furniture),
+            placed_furniture_count=sum(
+                item.bounding_box is not None for item in geometry.furniture
+            ),
+            treatment_count=len(geometry.acoustic_treatments),
+            placed_treatment_count=sum(
+                item.placement is not None
+                for item in geometry.acoustic_treatments
+            ),
+            feature_completeness=(
+                geometry.feature_completeness.score
+                if geometry.feature_completeness is not None
+                else None
             ),
         )

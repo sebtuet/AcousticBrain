@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 
 from acousticbrain.models import (
     RoomDescription,
@@ -14,6 +15,7 @@ class SpeakerPositionFormRow:
     x_m: str = ""
     y_m: str = ""
     z_m: str = ""
+    yaw_degrees: str = ""
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,86 @@ class RoomOpeningFormRow:
 
 
 @dataclass(frozen=True)
+class SurfaceMaterialFormRow:
+    surface: str = "FRONT_WALL"
+    material_type: str = "OTHER"
+    detail: str = ""
+
+
+@dataclass(frozen=True)
+class SurfaceCoveringZoneFormRow:
+    zone_id: str = ""
+    surface: str = "FLOOR"
+    material_type: str = "CARPET"
+    detail: str = ""
+    horizontal_offset_m: str = ""
+    vertical_offset_m: str = ""
+    width_m: str = ""
+    height_m: str = ""
+
+
+@dataclass(frozen=True)
+class FurnitureFormRow:
+    furniture_id: str = ""
+    furniture_type: str = "OTHER"
+    detail: str = ""
+    x_m: str = ""
+    y_m: str = ""
+    z_m: str = ""
+    length_m: str = ""
+    width_m: str = ""
+    height_m: str = ""
+
+
+@dataclass(frozen=True)
+class AcousticTreatmentFormRow:
+    treatment_id: str = ""
+    treatment_type: str = "OTHER"
+    detail: str = ""
+    surface: str = ""
+    horizontal_offset_m: str = ""
+    vertical_offset_m: str = ""
+    width_m: str = ""
+    height_m: str = ""
+
+
+class RoomDescriptionEditorLevel(Enum):
+    MINIMAL = "MINIMAL"
+    GUIDED = "GUIDED"
+    EXPERT = "EXPERT"
+
+
+@dataclass(frozen=True)
+class RoomDescriptionSectionVisibility:
+    speakers: bool
+    listening_positions: bool
+    surface_materials: bool
+    openings: bool
+    covering_zones: bool
+    furniture: bool
+    acoustic_treatments: bool
+
+
+def section_visibility(level: RoomDescriptionEditorLevel):
+    if not isinstance(level, RoomDescriptionEditorLevel):
+        raise TypeError("Editor visibility requires RoomDescriptionEditorLevel.")
+    guided = level in {
+        RoomDescriptionEditorLevel.GUIDED,
+        RoomDescriptionEditorLevel.EXPERT,
+    }
+    expert = level is RoomDescriptionEditorLevel.EXPERT
+    return RoomDescriptionSectionVisibility(
+        speakers=guided,
+        listening_positions=guided,
+        surface_materials=guided,
+        openings=expert,
+        covering_zones=expert,
+        furniture=expert,
+        acoustic_treatments=expert,
+    )
+
+
+@dataclass(frozen=True)
 class RoomDescriptionFormState:
     name: str = ""
     length_m: str = ""
@@ -43,6 +125,10 @@ class RoomDescriptionFormState:
     speakers: tuple[SpeakerPositionFormRow, ...] = ()
     listening_positions: tuple[ListeningPositionFormRow, ...] = ()
     openings: tuple[RoomOpeningFormRow, ...] = ()
+    surface_materials: tuple[SurfaceMaterialFormRow, ...] = ()
+    covering_zones: tuple[SurfaceCoveringZoneFormRow, ...] = ()
+    furniture: tuple[FurnitureFormRow, ...] = ()
+    acoustic_treatments: tuple[AcousticTreatmentFormRow, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -128,6 +214,11 @@ class RoomDescriptionEditorAdapter:
                     str(item.x_m),
                     str(item.y_m),
                     str(item.z_m),
+                    (
+                        str(item.orientation.yaw_degrees)
+                        if item.orientation is not None
+                        else ""
+                    ),
                 )
                 for item in description.speakers
             ),
@@ -151,7 +242,59 @@ class RoomDescriptionEditorAdapter:
                 )
                 for item in description.openings
             ),
+            surface_materials=tuple(
+                SurfaceMaterialFormRow(
+                    item.surface.value,
+                    item.material_type.value,
+                    item.detail or "",
+                )
+                for item in description.surface_materials
+            ),
+            covering_zones=tuple(
+                SurfaceCoveringZoneFormRow(
+                    item.zone_id,
+                    item.surface.value,
+                    item.material_type.value,
+                    item.detail or "",
+                    RoomDescriptionEditorAdapter._form_number(item.horizontal_offset_m),
+                    RoomDescriptionEditorAdapter._form_number(item.vertical_offset_m),
+                    RoomDescriptionEditorAdapter._form_number(item.width_m),
+                    RoomDescriptionEditorAdapter._form_number(item.height_m),
+                )
+                for item in description.covering_zones
+            ),
+            furniture=tuple(
+                FurnitureFormRow(
+                    item.furniture_id,
+                    item.furniture_type.value,
+                    item.detail or "",
+                    RoomDescriptionEditorAdapter._form_number(item.x_m),
+                    RoomDescriptionEditorAdapter._form_number(item.y_m),
+                    RoomDescriptionEditorAdapter._form_number(item.z_m),
+                    RoomDescriptionEditorAdapter._form_number(item.length_m),
+                    RoomDescriptionEditorAdapter._form_number(item.width_m),
+                    RoomDescriptionEditorAdapter._form_number(item.height_m),
+                )
+                for item in description.furniture
+            ),
+            acoustic_treatments=tuple(
+                AcousticTreatmentFormRow(
+                    item.treatment_id,
+                    item.treatment_type.value,
+                    item.detail or "",
+                    item.surface.value if item.surface is not None else "",
+                    RoomDescriptionEditorAdapter._form_number(item.horizontal_offset_m),
+                    RoomDescriptionEditorAdapter._form_number(item.vertical_offset_m),
+                    RoomDescriptionEditorAdapter._form_number(item.width_m),
+                    RoomDescriptionEditorAdapter._form_number(item.height_m),
+                )
+                for item in description.acoustic_treatments
+            ),
         )
+
+    @staticmethod
+    def _form_number(value):
+        return "" if value is None else str(value)
 
     def _payload(self, state):
         if not isinstance(state, RoomDescriptionFormState):
@@ -165,6 +308,14 @@ class RoomDescriptionEditorAdapter:
                 errors.append(self._invalid(path))
                 return None
             return parsed
+
+        def optional_number(value, path):
+            if value is None or value == "":
+                return None
+            return number(value, path)
+
+        def optional_text(value):
+            return value if isinstance(value, str) and value.strip() else None
 
         room = {
             "name": state.name,
@@ -196,6 +347,22 @@ class RoomDescriptionEditorAdapter:
                     "z_m": number(
                         item.z_m,
                         ("room_description", "speakers", index, "z_m"),
+                    ),
+                    "orientation": (
+                        {
+                            "yaw_degrees": optional_number(
+                                item.yaw_degrees,
+                                (
+                                    "room_description",
+                                    "speakers",
+                                    index,
+                                    "orientation",
+                                    "yaw_degrees",
+                                ),
+                            )
+                        }
+                        if item.yaw_degrees != ""
+                        else None
                     ),
                 }
                 for index, item in enumerate(state.speakers)
@@ -265,6 +432,78 @@ class RoomDescriptionEditorAdapter:
                     ),
                 }
                 for index, item in enumerate(state.openings)
+            ],
+            "surface_materials": [
+                {
+                    "surface": item.surface,
+                    "material_type": item.material_type,
+                    "detail": optional_text(item.detail),
+                }
+                for item in state.surface_materials
+            ],
+            "covering_zones": [
+                {
+                    "zone_id": item.zone_id,
+                    "surface": item.surface,
+                    "material_type": item.material_type,
+                    "detail": optional_text(item.detail),
+                    "horizontal_offset_m": optional_number(
+                        item.horizontal_offset_m,
+                        ("room_description", "covering_zones", index, "horizontal_offset_m"),
+                    ),
+                    "vertical_offset_m": optional_number(
+                        item.vertical_offset_m,
+                        ("room_description", "covering_zones", index, "vertical_offset_m"),
+                    ),
+                    "width_m": optional_number(
+                        item.width_m,
+                        ("room_description", "covering_zones", index, "width_m"),
+                    ),
+                    "height_m": optional_number(
+                        item.height_m,
+                        ("room_description", "covering_zones", index, "height_m"),
+                    ),
+                }
+                for index, item in enumerate(state.covering_zones)
+            ],
+            "furniture": [
+                {
+                    "furniture_id": item.furniture_id,
+                    "furniture_type": item.furniture_type,
+                    "detail": optional_text(item.detail),
+                    "x_m": optional_number(item.x_m, ("room_description", "furniture", index, "x_m")),
+                    "y_m": optional_number(item.y_m, ("room_description", "furniture", index, "y_m")),
+                    "z_m": optional_number(item.z_m, ("room_description", "furniture", index, "z_m")),
+                    "length_m": optional_number(item.length_m, ("room_description", "furniture", index, "length_m")),
+                    "width_m": optional_number(item.width_m, ("room_description", "furniture", index, "width_m")),
+                    "height_m": optional_number(item.height_m, ("room_description", "furniture", index, "height_m")),
+                }
+                for index, item in enumerate(state.furniture)
+            ],
+            "acoustic_treatments": [
+                {
+                    "treatment_id": item.treatment_id,
+                    "treatment_type": item.treatment_type,
+                    "detail": optional_text(item.detail),
+                    "surface": optional_text(item.surface),
+                    "horizontal_offset_m": optional_number(
+                        item.horizontal_offset_m,
+                        ("room_description", "acoustic_treatments", index, "horizontal_offset_m"),
+                    ),
+                    "vertical_offset_m": optional_number(
+                        item.vertical_offset_m,
+                        ("room_description", "acoustic_treatments", index, "vertical_offset_m"),
+                    ),
+                    "width_m": optional_number(
+                        item.width_m,
+                        ("room_description", "acoustic_treatments", index, "width_m"),
+                    ),
+                    "height_m": optional_number(
+                        item.height_m,
+                        ("room_description", "acoustic_treatments", index, "height_m"),
+                    ),
+                }
+                for index, item in enumerate(state.acoustic_treatments)
             ],
         }
         return (

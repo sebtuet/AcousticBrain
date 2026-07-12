@@ -49,6 +49,20 @@ class ConsoleReporter:
                 f"{geometry.height_m:.2f} m"
             )
             print(f"Complétude : {geometry.completeness:.0f} %")
+            feature_completeness = (
+                f"{geometry.feature_completeness:.0f} %"
+                if geometry.feature_completeness is not None
+                else "indisponible"
+            )
+            print(f"Complétude des features : {feature_completeness}")
+            print(
+                "Informations disponibles : "
+                f"{geometry.oriented_speaker_count}/{geometry.speaker_count} orientations, "
+                f"{geometry.surface_material_count} matériaux, "
+                f"{geometry.placed_covering_zone_count}/{geometry.covering_zone_count} revêtements placés, "
+                f"{geometry.placed_furniture_count}/{geometry.furniture_count} meubles placés, "
+                f"{geometry.placed_treatment_count}/{geometry.treatment_count} traitements placés"
+            )
             print(f"Compatibilité des sources : {geometry.comparison_status}")
             if geometry.differing_fields:
                 print(

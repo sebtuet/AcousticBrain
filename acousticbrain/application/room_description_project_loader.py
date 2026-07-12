@@ -13,6 +13,8 @@ from acousticbrain.project import Project
 class RoomDescriptionProjectLoadResult:
     attached: bool = False
     errors: tuple[RoomDescriptionPersistenceError, ...] = ()
+    source_schema_version: int | None = None
+    requires_migration: bool = False
 
     @property
     def is_success(self) -> bool:
@@ -47,7 +49,11 @@ class RoomDescriptionProjectLoader:
             return RoomDescriptionProjectLoadResult(errors=loaded.errors)
 
         project.room_description = loaded.description
-        return RoomDescriptionProjectLoadResult(attached=True)
+        return RoomDescriptionProjectLoadResult(
+            attached=True,
+            source_schema_version=loaded.source_schema_version,
+            requires_migration=loaded.requires_migration,
+        )
 
     @staticmethod
     def _failure(code, path):

@@ -403,6 +403,7 @@ class TraceabilityEngine:
                 )
                 for name, value in values
             )
+            evidence.extend(cls._room_feature_evidence(room_geometry))
         if room_geometry_comparison is not None:
             evidence.append(
                 cls._evidence(
@@ -423,6 +424,76 @@ class TraceabilityEngine:
                     room_geometry_comparison.absolute_differences_m.items()
                 )
             )
+        return evidence
+
+    @classmethod
+    def _room_feature_evidence(cls, geometry):
+        source = SourceAnalysisCode.ROOM_GEOMETRY
+        evidence = []
+        completeness = geometry.feature_completeness
+        if completeness is not None:
+            for name, value in (
+                ("orientation_coverage", completeness.orientation_coverage),
+                ("material_coverage", completeness.material_coverage),
+                ("covering_placement_coverage", completeness.covering_placement_coverage),
+                ("furniture_placement_coverage", completeness.furniture_placement_coverage),
+                ("treatment_placement_coverage", completeness.treatment_placement_coverage),
+                ("score", completeness.score),
+            ):
+                evidence.append(
+                    cls._evidence(
+                        f"evidence.room_geometry.feature_completeness.{name}",
+                        source,
+                        f"room_geometry.feature_completeness.{name}",
+                        value,
+                    )
+                )
+        for item in geometry.speaker_orientations:
+            evidence.append(
+                cls._evidence(
+                    f"evidence.room_geometry.speaker.{item.speaker_id}.yaw_degrees",
+                    source,
+                    f"room_geometry.speaker.{item.speaker_id}.yaw_degrees",
+                    item.yaw_degrees,
+                )
+            )
+        for item in geometry.surface_materials:
+            prefix = f"room_geometry.surface.{item.surface_id}.material"
+            evidence.append(
+                cls._evidence(
+                    f"evidence.{prefix}.type",
+                    source,
+                    f"{prefix}.type",
+                    item.material_type.value,
+                )
+            )
+        for category, items, id_attribute, placement_attribute in (
+            ("covering_zone", geometry.covering_zones, "zone_id", "placement"),
+            ("furniture", geometry.furniture, "furniture_id", "bounding_box"),
+            ("treatment", geometry.acoustic_treatments, "treatment_id", "placement"),
+        ):
+            for item in items:
+                identifier = getattr(item, id_attribute)
+                placed = getattr(item, placement_attribute) is not None
+                prefix = f"room_geometry.{category}.{identifier}"
+                evidence.append(
+                    cls._evidence(
+                        f"evidence.{prefix}.placed",
+                        source,
+                        f"{prefix}.placed",
+                        placed,
+                    )
+                )
+                surface_id = getattr(item, "surface_id", None)
+                if surface_id is not None:
+                    evidence.append(
+                        cls._evidence(
+                            f"evidence.{prefix}.surface_id",
+                            source,
+                            f"{prefix}.surface_id",
+                            surface_id,
+                        )
+                    )
         return evidence
 
     @classmethod

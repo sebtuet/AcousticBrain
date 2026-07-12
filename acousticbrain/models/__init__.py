@@ -4,6 +4,15 @@ from .band import FrequencyBand
 from .room import Room
 from .room_dimensions import RoomDimensions
 from .speaker_position import SpeakerPosition
+from .speaker_orientation import SpeakerOrientation
+from .room_description_surface import RoomDescriptionSurface
+from .surface_material_type import SurfaceMaterialType
+from .surface_material_description import SurfaceMaterialDescription
+from .surface_covering_zone import SurfaceCoveringZone
+from .furniture_type import FurnitureType
+from .room_furniture_description import RoomFurnitureDescription
+from .acoustic_treatment_type import AcousticTreatmentType
+from .acoustic_treatment_description import AcousticTreatmentDescription
 from .listening_position import ListeningPosition
 from .room_opening_surface import RoomOpeningSurface
 from .room_opening import RoomOpening
@@ -14,6 +23,18 @@ from .geometry_point import GeometryPoint
 from .room_surface import RoomSurface, RoomSurfaceKind
 from .geometry_opening import GeometryOpening
 from .room_geometry import RoomGeometry
+from .geometry_coordinate import GeometryCoordinate
+from .geometry_speaker_orientation import GeometrySpeakerOrientation
+from .geometry_material_type import GeometryMaterialType
+from .geometry_surface_material import GeometrySurfaceMaterial
+from .geometry_surface_rectangle import GeometrySurfaceRectangle
+from .geometry_covering_zone import GeometryCoveringZone
+from .geometry_furniture import GeometryBox, GeometryFurniture, GeometryFurnitureType
+from .geometry_acoustic_treatment import (
+    GeometryAcousticTreatment,
+    GeometryAcousticTreatmentType,
+)
+from .room_feature_geometry_completeness import RoomFeatureGeometryCompleteness
 from .room_geometry_comparison import (
     RoomGeometryComparison,
     RoomGeometryComparisonStatus,

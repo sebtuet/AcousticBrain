@@ -16,6 +16,8 @@ Modèle : RECTANGULAR
 Version : 1
 Dimensions : 5.84 × 5.51 × 2.60 m
 Complétude : 60 %
+Complétude des features : indisponible
+Informations disponibles : 0/0 orientations, 0 matériaux, 0/0 revêtements placés, 0/0 meubles placés, 0/0 traitements placés
 Compatibilité des sources : SINGLE_SOURCE
 
 

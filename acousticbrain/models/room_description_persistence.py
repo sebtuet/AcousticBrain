@@ -31,10 +31,18 @@ class RoomDescriptionLoadResult:
 
     description: RoomDescription | None = None
     errors: tuple[RoomDescriptionPersistenceError, ...] = ()
+    source_schema_version: int | None = None
+    requires_migration: bool = False
 
     def __post_init__(self):
         if self.description is not None and self.errors:
             raise ValueError("A load result cannot contain data and errors.")
+        if self.requires_migration and (
+            self.description is None or self.source_schema_version is None
+        ):
+            raise ValueError(
+                "Migration status requires loaded data and a source version."
+            )
 
     @property
     def is_success(self) -> bool:
