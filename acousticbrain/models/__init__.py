@@ -8,6 +8,16 @@ from .listening_position import ListeningPosition
 from .room_opening_surface import RoomOpeningSurface
 from .room_opening import RoomOpening
 from .room_description import RoomDescription
+from .geometry_source import GeometrySource
+from .room_geometry_model import RoomGeometryModel
+from .geometry_point import GeometryPoint
+from .room_surface import RoomSurface, RoomSurfaceKind
+from .geometry_opening import GeometryOpening
+from .room_geometry import RoomGeometry
+from .room_geometry_comparison import (
+    RoomGeometryComparison,
+    RoomGeometryComparisonStatus,
+)
 from .room_description_validation_error import (
     RoomDescriptionEntityType,
     RoomDescriptionValidationCode,

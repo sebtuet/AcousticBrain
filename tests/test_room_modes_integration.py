@@ -1,5 +1,6 @@
 from acousticbrain.analysis import AnalysisContext
 from acousticbrain.brain.stages.physics import PhysicsStage
+from acousticbrain.brain.stages.room_geometry import RoomGeometryStage
 from acousticbrain.models import Measurement, Room, RoomModeType
 from acousticbrain.project import Project
 
@@ -10,6 +11,8 @@ def test_physics_stage_stores_complete_modes_and_preserves_legacy_axial_view():
         room=Room(name="Room", length=5.4, width=4.1, height=2.45),
     )
     context = AnalysisContext(measurement=Measurement(name="L+R"))
+
+    RoomGeometryStage().run(project, context)
 
     PhysicsStage().run(project, context)
 
@@ -22,4 +25,3 @@ def test_physics_stage_stores_complete_modes_and_preserves_legacy_axial_view():
         mode.mode_type is RoomModeType.AXIAL
         for mode in context.room_modes
     )
-

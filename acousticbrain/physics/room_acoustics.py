@@ -1,7 +1,7 @@
 import math
 
 from acousticbrain.models import (
-    Room,
+    RoomGeometry,
     RoomProperties,
 )
 
@@ -12,30 +12,34 @@ class RoomAcoustics:
 
         self,
 
-        room: Room,
+        geometry: RoomGeometry,
 
         rt60: float = 0.30,
 
     ) -> RoomProperties:
 
+        if not isinstance(geometry, RoomGeometry):
+            raise TypeError("RoomAcoustics requires RoomGeometry.")
+        dimensions = geometry.dimensions
+
         volume = (
-            room.length
-            * room.width
-            * room.height
+            dimensions.length_m
+            * dimensions.width_m
+            * dimensions.height_m
         )
 
         floor_area = (
-            room.length
-            * room.width
+            dimensions.length_m
+            * dimensions.width_m
         )
 
         total_area = (
 
-            2 * room.length * room.width
+            2 * dimensions.length_m * dimensions.width_m
 
-            + 2 * room.length * room.height
+            + 2 * dimensions.length_m * dimensions.height_m
 
-            + 2 * room.width * room.height
+            + 2 * dimensions.width_m * dimensions.height_m
 
         )
 
@@ -58,4 +62,3 @@ class RoomAcoustics:
             schroeder_frequency=schroeder,
 
         )
-        

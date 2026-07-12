@@ -1,7 +1,7 @@
 import math
 
 from acousticbrain.models import (
-    Room,
+    RoomGeometry,
     RoomMode,
     RoomModesAnalysis,
     RoomModeType,
@@ -14,14 +14,14 @@ class RoomModesAnalyzer:
 
     def analyze(
         self,
-        room: Room,
+        geometry: RoomGeometry,
         *,
         minimum_frequency_hz: float,
         maximum_frequency_hz: float,
         maximum_order: int,
     ) -> RoomModesAnalysis:
         self._validate_bounds(
-            room,
+            geometry,
             minimum_frequency_hz,
             maximum_frequency_hz,
             maximum_order,
@@ -37,7 +37,7 @@ class RoomModesAnalyzer:
                         continue
                     modal_indices.add(indices)
 
-                    frequency = self._frequency(room, *indices)
+                    frequency = self._frequency(geometry, *indices)
                     if not minimum_frequency_hz <= frequency <= maximum_frequency_hz:
                         continue
 
@@ -78,23 +78,33 @@ class RoomModesAnalyzer:
         )
 
     @staticmethod
-    def _frequency(room: Room, order_x: int, order_y: int, order_z: int) -> float:
+    def _frequency(
+        geometry: RoomGeometry,
+        order_x: int,
+        order_y: int,
+        order_z: int,
+    ) -> float:
+        dimensions = geometry.dimensions
         indices = (order_x, order_y, order_z)
         if sum(index > 0 for index in indices) == 1:
             order, dimension = next(
                 (order, dimension)
                 for order, dimension in zip(
                     indices,
-                    (room.length, room.width, room.height),
+                    (
+                        dimensions.length_m,
+                        dimensions.width_m,
+                        dimensions.height_m,
+                    ),
                 )
                 if order > 0
             )
             return SPEED_OF_SOUND * order / (2 * dimension)
 
         return SPEED_OF_SOUND / 2.0 * math.sqrt(
-            (order_x / room.length) ** 2
-            + (order_y / room.width) ** 2
-            + (order_z / room.height) ** 2
+            (order_x / dimensions.length_m) ** 2
+            + (order_y / dimensions.width_m) ** 2
+            + (order_z / dimensions.height_m) ** 2
         )
 
     @staticmethod
@@ -119,13 +129,13 @@ class RoomModesAnalyzer:
 
     @staticmethod
     def _validate_bounds(
-        room: Room,
+        geometry: RoomGeometry,
         minimum_frequency_hz: float,
         maximum_frequency_hz: float,
         maximum_order: int,
     ) -> None:
-        if min(room.length, room.width, room.height) <= 0:
-            raise ValueError("Room dimensions must be greater than zero.")
+        if not isinstance(geometry, RoomGeometry):
+            raise TypeError("RoomModesAnalyzer requires RoomGeometry.")
         if minimum_frequency_hz < 0:
             raise ValueError("Minimum frequency must be non-negative.")
         if maximum_frequency_hz < minimum_frequency_hz:

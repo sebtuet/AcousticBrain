@@ -22,6 +22,8 @@ from acousticbrain.models import (
     TraceabilityAnalysis,
     MeasurementQualityAnalysis,
     MeasurementReadinessAnalysis,
+    RoomGeometry,
+    RoomGeometryComparison,
 )
 from acousticbrain.knowledge_codes import FactCode, SourceAnalysisCode
 
@@ -71,6 +73,8 @@ class TraceabilityEngine:
         confidence: ConfidenceAnalysis | None = None,
         measurement_quality: MeasurementQualityAnalysis | None = None,
         measurement_readiness: MeasurementReadinessAnalysis | None = None,
+        room_geometry: RoomGeometry | None = None,
+        room_geometry_comparison: RoomGeometryComparison | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -100,6 +104,8 @@ class TraceabilityEngine:
             bass_decay_correlations=bass_decay_correlations,
             measurement_quality=measurement_quality,
             measurement_readiness=measurement_readiness,
+            room_geometry=room_geometry,
+            room_geometry_comparison=room_geometry_comparison,
         )
         evidence_references.extend(physical_evidence)
         for item in physical_evidence:
@@ -181,6 +187,8 @@ class TraceabilityEngine:
         bass_decay_correlations,
         measurement_quality,
         measurement_readiness,
+        room_geometry,
+        room_geometry_comparison,
     ):
         evidence = []
         if rt60 is not None:
@@ -375,6 +383,46 @@ class TraceabilityEngine:
             evidence.extend(cls._measurement_quality_evidence(measurement_quality))
         if measurement_readiness is not None:
             evidence.extend(cls._measurement_readiness_evidence(measurement_readiness))
+        if room_geometry is not None:
+            dimensions = room_geometry.dimensions
+            values = (
+                ("source", room_geometry.source.value),
+                ("model", room_geometry.model.value),
+                ("model_version", room_geometry.model_version),
+                ("length_m", dimensions.length_m),
+                ("width_m", dimensions.width_m),
+                ("height_m", dimensions.height_m),
+                ("completeness", room_geometry.completeness),
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.room_geometry.{name}",
+                    SourceAnalysisCode.ROOM_GEOMETRY,
+                    f"room_geometry.{name}",
+                    value,
+                )
+                for name, value in values
+            )
+        if room_geometry_comparison is not None:
+            evidence.append(
+                cls._evidence(
+                    "evidence.room_geometry.comparison_status",
+                    SourceAnalysisCode.ROOM_GEOMETRY,
+                    "room_geometry.comparison_status",
+                    room_geometry_comparison.status.value,
+                )
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.room_geometry.difference.{field}",
+                    SourceAnalysisCode.ROOM_GEOMETRY,
+                    f"room_geometry.difference.{field}",
+                    difference,
+                )
+                for field, difference in (
+                    room_geometry_comparison.absolute_differences_m.items()
+                )
+            )
         return evidence
 
     @classmethod

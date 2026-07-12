@@ -2,7 +2,7 @@ from math import isclose
 
 import pytest
 
-from acousticbrain.analysis import RoomModesAnalyzer
+from acousticbrain.analysis import RoomGeometryBuilder, RoomModesAnalyzer
 from acousticbrain.models import Room, RoomModeType
 from acousticbrain.physics import ModesCalculator
 
@@ -11,9 +11,13 @@ def room():
     return Room(name="Reference", length=5.4, width=4.1, height=2.45)
 
 
+def geometry():
+    return RoomGeometryBuilder().from_legacy_room(room())
+
+
 def analyze(maximum_order=2, minimum_frequency_hz=0.0, maximum_frequency_hz=300.0):
     return RoomModesAnalyzer().analyze(
-        room(),
+        geometry(),
         minimum_frequency_hz=minimum_frequency_hz,
         maximum_frequency_hz=maximum_frequency_hz,
         maximum_order=maximum_order,
@@ -66,7 +70,7 @@ def test_filters_by_frequency_and_sorts_the_result():
 
 def test_preserves_existing_axial_calculation_as_reference():
     complete = analyze(maximum_order=4)
-    legacy = ModesCalculator().axial_modes(room(), order=4)
+    legacy = ModesCalculator().axial_modes(geometry(), order=4)
     complete_by_axis_order = {
         (mode.axis, mode.order): mode.frequency
         for mode in complete.axial_modes
@@ -82,7 +86,7 @@ def test_rejects_invalid_calculation_bounds():
 
     with pytest.raises(ValueError):
         analyzer.analyze(
-            room(),
+            geometry(),
             minimum_frequency_hz=100.0,
             maximum_frequency_hz=50.0,
             maximum_order=4,
@@ -90,7 +94,7 @@ def test_rejects_invalid_calculation_bounds():
 
     with pytest.raises(ValueError):
         analyzer.analyze(
-            room(),
+            geometry(),
             minimum_frequency_hz=0.0,
             maximum_frequency_hz=100.0,
             maximum_order=0,

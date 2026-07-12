@@ -1,5 +1,9 @@
 from .report import Report
 from .console import ConsoleReporter
+from .room_geometry_presenter import (
+    PresentedRoomGeometry,
+    RoomGeometryPresenter,
+)
 from .recommendation import PresentedRecommendation, RecommendationPresenter
 from .global_presenter import (
     GlobalPresenter,

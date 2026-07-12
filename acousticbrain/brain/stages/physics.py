@@ -22,7 +22,9 @@ class PhysicsStage:
 
     def run(self, project, context):
 
-        room = project.room
+        geometry = context.room_geometry
+        if geometry is None:
+            raise ValueError("PhysicsStage requires resolved RoomGeometry.")
 
         #
         # Caractéristiques de la salle
@@ -30,7 +32,7 @@ class PhysicsStage:
 
         context.room_properties = (
             RoomAcoustics().calculate(
-                room
+                geometry
             )
         )
 
@@ -39,7 +41,7 @@ class PhysicsStage:
         #
 
         context.room_modes_analysis = RoomModesAnalyzer().analyze(
-            room,
+            geometry,
             minimum_frequency_hz=self.ROOM_MODES_MINIMUM_FREQUENCY_HZ,
             maximum_frequency_hz=self.ROOM_MODES_MAXIMUM_FREQUENCY_HZ,
             maximum_order=self.ROOM_MODES_MAXIMUM_ORDER,
