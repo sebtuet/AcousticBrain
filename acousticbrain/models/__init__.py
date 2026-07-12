@@ -75,3 +75,4 @@ from .bass_decay_band_difference import BassDecayBandDifference
 from .bass_decay_analysis import BassDecayAnalysis
 from .bass_decay_correlation import BassDecayCorrelation
 from .bass_decay_correlation_analysis import BassDecayCorrelationAnalysis
+from .bass_decay_modal_match import BassDecayModalMatch

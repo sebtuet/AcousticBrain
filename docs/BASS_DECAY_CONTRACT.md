@@ -167,3 +167,16 @@ corrélations Bass Decay.
 `BassDecayCorrelationAnalysis`. Il restitue couverture, temps, asymétries et
 corrélations existantes sans recalculer de pente, de bruit, de temps de
 décroissance ou de corrélation.
+
+### Traçabilité des correspondances modales
+
+Chaque `SLOW_DECAY_MODAL_INTERACTION` conserve des
+`BassDecayModalMatch` ordonnés de manière déterministe. Une correspondance
+contient le centre de la bande Bass Decay, la fréquence et le type du mode, ses
+trois indices ainsi que l'erreur absolue entre le mode et le centre de bande.
+
+`TraceabilityEngine` expose le nombre de correspondances comme un entier, puis
+une preuve atomique pour chacun de ces champs sous un préfixe stable tel que
+`bass_decay.modal_match.31_5hz.0`. Le lien de
+`CHECK_MODAL_EXCITATION` référence directement toutes ces preuves ; la
+recommandation ne repose donc plus sur le seul nombre global de corrélations.
