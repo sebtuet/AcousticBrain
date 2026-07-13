@@ -1,0 +1,61 @@
+{
+  "channel_assignments": {
+    "impulse/L retour sans eq Jul 7.wav": "LEFT",
+    "impulse/L+R retour sans eq Jul 7.wav": "STEREO",
+    "impulse/R retour sans eq Jul 7.wav": "RIGHT",
+    "measurements/L retour sans eq Jul 7.txt": "LEFT",
+    "measurements/L+R retour sans eq Jul 7.txt": "STEREO",
+    "measurements/R retour sans eq Jul 7.txt": "RIGHT"
+  },
+  "content_hash": "580c801020f786d130b85191655c9ca31d426bf3441a9830396c7c756b7647db",
+  "experiment_id": "baseline",
+  "experiment_type": "BASELINE",
+  "files": [
+    {
+      "channel": "LEFT",
+      "path": "impulse/L retour sans eq Jul 7.wav",
+      "sha256": "01c7364baa9b5085d1395dc5beff39a5411faab9fe85bcec1396b1b3c5906ab6",
+      "type": "WAV"
+    },
+    {
+      "channel": "STEREO",
+      "path": "impulse/L+R retour sans eq Jul 7.wav",
+      "sha256": "676b240b0ef2f10646f617fa4fe36238abca88bcd785572319f8232384346d19",
+      "type": "WAV"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "impulse/R retour sans eq Jul 7.wav",
+      "sha256": "99562eeb6a173816f520d007ba2fd14db3c636c5297c4322f54655f7510ef3ef",
+      "type": "WAV"
+    },
+    {
+      "channel": "LEFT",
+      "path": "measurements/L retour sans eq Jul 7.txt",
+      "sha256": "d3030b505e0cbf70d7e80811bd2a4b440eedfea69e02e5015aa3ede91ea03c7d",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "STEREO",
+      "path": "measurements/L+R retour sans eq Jul 7.txt",
+      "sha256": "808026bfd2616887fdd379b5e6bf21f355185a7647eed2bf4bd0a9f15b2f3446",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "measurements/R retour sans eq Jul 7.txt",
+      "sha256": "567363918dde353ffbf78c856e60059e4a797ac38e09c41a74591750250d09b8",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": null,
+      "path": "rew/baseline.mdat",
+      "sha256": "4e9a9046bb32708dcd97387cce2aea3edf7ad5d37e71051b7aed19625a5624d1",
+      "type": "MDAT"
+    }
+  ],
+  "imported_at": "2026-07-13T18:42:59.089547+00:00",
+  "schema_version": 1,
+  "state": "READY",
+  "timestamp": "2026-07-07T15:57:39"
+}

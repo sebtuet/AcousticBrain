@@ -80,4 +80,25 @@ class ImportEngine:
                 )
                 project.add_impulse_response(impulse)
 
+        if (
+            project.get_measurement(Measurements.STEREO) is None
+            and (directory / "baseline").is_dir()
+        ):
+            from acousticbrain.application.experiment_discovery import (
+                ExperimentDiscoveryService,
+            )
+            from .experiment import ExperimentImporter
+
+            baseline = next(
+                (
+                    item
+                    for item in ExperimentDiscoveryService().discover(directory)
+                    if item.experiment_id.lower() == "baseline"
+                ),
+                None,
+            )
+            if baseline is not None:
+                project = ExperimentImporter().load(baseline)
+                project.name = directory.name
+
         return project

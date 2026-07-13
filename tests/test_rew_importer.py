@@ -1,13 +1,8 @@
-from pathlib import Path
-
 from acousticbrain.importers import REWTxtImporter
+from test_golden_report import reference_stereo_measurement_path
 
 
-MEASUREMENT_FILE = (
-    Path(__file__).resolve().parents[1]
-    / "measurements"
-    / "LR.txt"
-)
+MEASUREMENT_FILE = reference_stereo_measurement_path()
 
 
 def test_import():
