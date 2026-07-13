@@ -12,6 +12,7 @@ from .room_geometry_presenter import PresentedRoomGeometry
 from .optimization_session_presenter import PresentedOptimizationSession
 from .experiment_planning_presenter import PresentedExperimentPlanning
 from .experiment_discovery_presenter import PresentedExperimentDiscovery
+from .experiment_comparison_presenter import PresentedExperimentComparison
 
 
 @dataclass
@@ -38,6 +39,8 @@ class Report:
     experiment_planning: PresentedExperimentPlanning | None = None
 
     experiments_discovered: PresentedExperimentDiscovery | None = None
+
+    experiment_comparison: PresentedExperimentComparison | None = None
 
     def add(self, diagnostic):
 

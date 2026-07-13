@@ -45,6 +45,11 @@ class ExperimentDescriptor:
     timestamp: str
     imported_at: str
     state: ExperimentState
+    parent_experiment_ids: tuple[str, ...] = ()
+    source_protocol_id: str | None = None
+    source_hypothesis_code: str | None = None
+    declared_change_codes: tuple[str, ...] = ()
+    required_comparison_fact_codes: tuple[str, ...] = ()
 
     def __post_init__(self):
         collections = (
@@ -52,9 +57,11 @@ class ExperimentDescriptor:
             self.available_channels,
             self.wav_files,
             self.txt_files,
+            self.parent_experiment_ids,
+            self.declared_change_codes,
+            self.required_comparison_fact_codes,
         )
         if any(not isinstance(collection, tuple) for collection in collections):
             raise ValueError("Experiment descriptor collections must be tuples.")
         if not self.experiment_id or not self.directory or not self.content_hash:
             raise ValueError("Experiment descriptor identifiers are required.")
-

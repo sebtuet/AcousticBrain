@@ -97,6 +97,7 @@ class BrainPipeline:
         session_context=None,
         plan_experiments=False,
         experiment_descriptors=(),
+        return_context=False,
     ):
 
         #
@@ -225,4 +226,4 @@ class BrainPipeline:
 
         PrioritizationStage().run(report)
 
-        return report
+        return (report, context) if return_context else report

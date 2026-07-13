@@ -70,6 +70,7 @@ class ExperimentDiscoveryService:
         imported_at = existing.get("imported_at")
         if not isinstance(imported_at, str) or not imported_at:
             imported_at = self.clock().isoformat()
+        comparison_metadata = self._comparison_metadata(existing)
         detected_assignments = {
             item.path.relative_to(directory).as_posix(): item.channel.value
             for item in inspected
@@ -94,6 +95,8 @@ class ExperimentDiscoveryService:
                 for item in inspected
             ],
         }
+        if comparison_metadata:
+            manifest["comparison"] = comparison_metadata
         self.repository.save_manifest(directory, manifest)
         files = tuple(
             ExperimentFileDescriptor(
@@ -137,7 +140,59 @@ class ExperimentDiscoveryService:
             timestamp=timestamp,
             imported_at=imported_at,
             state=state,
+            parent_experiment_ids=self._string_tuple(
+                comparison_metadata.get("parent_experiment_ids")
+            ),
+            source_protocol_id=self._optional_string(
+                comparison_metadata.get("source_protocol_id")
+            ),
+            source_hypothesis_code=self._optional_string(
+                comparison_metadata.get("source_hypothesis_code")
+            ),
+            declared_change_codes=self._string_tuple(
+                comparison_metadata.get("declared_change_codes")
+            ),
+            required_comparison_fact_codes=self._string_tuple(
+                comparison_metadata.get("required_fact_codes")
+            ),
         )
+
+    @classmethod
+    def _comparison_metadata(cls, manifest):
+        value = manifest.get("comparison", {})
+        if not isinstance(value, dict):
+            return {}
+        metadata = {}
+        parents = value.get("parent_experiment_ids", value.get("parent_experiment_id"))
+        parent_ids = cls._string_tuple(parents)
+        if parent_ids:
+            metadata["parent_experiment_ids"] = list(parent_ids)
+        for key in ("source_protocol_id", "source_hypothesis_code"):
+            item = cls._optional_string(value.get(key))
+            if item is not None:
+                metadata[key] = item
+        changes = cls._string_tuple(value.get("declared_change_codes"))
+        if changes:
+            metadata["declared_change_codes"] = list(changes)
+        required = cls._string_tuple(value.get("required_fact_codes"))
+        if required:
+            metadata["required_fact_codes"] = list(required)
+        return metadata
+
+    @staticmethod
+    def _optional_string(value):
+        return value.strip() if isinstance(value, str) and value.strip() else None
+
+    @classmethod
+    def _string_tuple(cls, value):
+        if isinstance(value, str):
+            value = (value,)
+        if not isinstance(value, (list, tuple)):
+            return ()
+        return tuple(dict.fromkeys(
+            item for raw in value
+            if (item := cls._optional_string(raw)) is not None
+        ))
 
     @classmethod
     def _experiment_type(cls, name):

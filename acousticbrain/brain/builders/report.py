@@ -7,6 +7,7 @@ from acousticbrain.report import (
     OptimizationSessionPresenter,
     ExperimentPlanningPresenter,
     ExperimentDiscoveryPresenter,
+    ExperimentComparisonPresenter,
 )
 
 
@@ -32,5 +33,6 @@ class ReportBuilder:
         report.optimization_session = OptimizationSessionPresenter().present(context)
         report.experiment_planning = ExperimentPlanningPresenter().present(context)
         report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
+        report.experiment_comparison = ExperimentComparisonPresenter().present(context)
 
         return report
