@@ -201,3 +201,12 @@ from .experiment_comparison import (
     ObservedExperimentFact,
     UnresolvedDiscrimination,
 )
+from .causal_discrimination import (
+    CausalDiscriminationAnalysis,
+    CausalDiscriminationTrace,
+    CausalProtocolStatus,
+    CausalProtocolStep,
+    CausalTrajectoryAssessment,
+    CausalTrajectoryCode,
+    CausalTrajectoryStatus,
+)

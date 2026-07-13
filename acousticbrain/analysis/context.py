@@ -127,3 +127,5 @@ class AnalysisContext:
     experiment_descriptors: tuple = ()
 
     experiment_comparison_analysis = None
+
+    causal_discrimination_analysis = None

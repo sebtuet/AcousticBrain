@@ -13,3 +13,4 @@ from .automatic_experiment_comparison import (
     AutomaticExperimentComparisonService,
     ExperimentFactProjector,
 )
+from .causal_discrimination import CausalDiscriminationService

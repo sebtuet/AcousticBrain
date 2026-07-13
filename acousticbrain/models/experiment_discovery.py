@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .impulse_channel import ImpulseChannel
+from .causal_discrimination import CausalProtocolStep
 
 
 class ExperimentType(Enum):
@@ -50,6 +51,7 @@ class ExperimentDescriptor:
     source_hypothesis_code: str | None = None
     declared_change_codes: tuple[str, ...] = ()
     required_comparison_fact_codes: tuple[str, ...] = ()
+    causal_protocol_step: CausalProtocolStep | None = None
 
     def __post_init__(self):
         collections = (

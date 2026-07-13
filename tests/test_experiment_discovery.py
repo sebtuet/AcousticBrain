@@ -105,6 +105,37 @@ def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
     )
 
 
+def test_discovery_preserves_explicit_causal_protocol_step(tmp_path):
+    directory = tmp_path / "exp-002"
+    complete_experiment(directory)
+    (directory / "manifest.json").write_text(json.dumps({
+        "causal_protocol_step": {
+            "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+            "step_code": "STEP_2_SPEAKER_SWAP",
+            "step_index": 2,
+            "controlled_variable_codes": [
+                "ROOM_SIDE", "SIGNAL_CHAIN_ASSIGNMENT", "MICROPHONE_POSITION"
+            ],
+            "changed_variable_codes": ["LOUDSPEAKER_ASSIGNMENT"],
+            "unknown_variable_codes": [],
+            "observation_codes": [
+                "ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER"
+            ],
+        }
+    }), encoding="utf-8")
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    causal_step = descriptor.causal_protocol_step
+
+    assert causal_step.protocol_code == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    assert causal_step.step_index == 2
+    assert causal_step.changed_variable_codes == ("LOUDSPEAKER_ASSIGNMENT",)
+    persisted = json.loads((directory / "manifest.json").read_text())
+    assert persisted["causal_protocol_step"]["observation_codes"] == [
+        "ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER"
+    ]
+
+
 def test_identical_manifest_is_not_rewritten(tmp_path):
     directory = tmp_path / "baseline"
     complete_experiment(directory)
