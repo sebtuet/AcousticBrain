@@ -178,3 +178,10 @@ from .experiment_planning import (
     ExperimentReversibility,
     ExperimentSelectionReason,
 )
+from .experiment_discovery import (
+    ExperimentDescriptor,
+    ExperimentFileDescriptor,
+    ExperimentFileType,
+    ExperimentState,
+    ExperimentType,
+)

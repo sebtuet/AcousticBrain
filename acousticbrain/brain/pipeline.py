@@ -96,6 +96,7 @@ class BrainPipeline:
         *,
         session_context=None,
         plan_experiments=False,
+        experiment_descriptors=(),
     ):
 
         #
@@ -120,6 +121,7 @@ class BrainPipeline:
         project,
         measurement,
         )
+        context.experiment_descriptors = tuple(experiment_descriptors)
 
         RoomGeometryStage().run(
             project,

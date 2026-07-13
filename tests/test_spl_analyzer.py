@@ -1,12 +1,13 @@
 from acousticbrain.importers import REWTxtImporter
 from acousticbrain.analyzers import SPLAnalyzer
+from test_golden_report import reference_stereo_measurement_path
 
 
 def test_spl_analyzer():
 
     importer = REWTxtImporter()
 
-    measurement = importer.load("measurements/LR.txt")
+    measurement = importer.load(reference_stereo_measurement_path())
 
     analyzer = SPLAnalyzer()
 

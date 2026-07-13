@@ -5,7 +5,7 @@
 * REW Settings:
 *  C-weighting compensation: Off
 *  Target level: 75.0 dB
-* Note: droite 10 gauche 11 Delay 0.1069 ms (37 mm, 1.44 in) using estimated IR delay relative to Acoustic reference played from  R with no timing offset
+* Note: ; droite 10 gauche 11 Delay 0.1069 ms (37 mm, 1.44 in) using estimated IR delay relative to Acoustic reference played from  R with no timing offset
 * Measurement: L retour sans eq Jul 7
 * Smoothing: 1/12 octave
 * Frequency Step: 96 ppo

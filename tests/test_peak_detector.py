@@ -1,10 +1,11 @@
 from acousticbrain.importers import REWTxtImporter
 from acousticbrain.analyzers.peak_detector import PeakDetector
+from test_golden_report import reference_stereo_measurement_path
 
 
 def test_peak_detector():
 
-    measurement = REWTxtImporter().load("measurements/LR.txt")
+    measurement = REWTxtImporter().load(reference_stereo_measurement_path())
 
     detector = PeakDetector()
 
@@ -13,4 +14,3 @@ def test_peak_detector():
     assert len(peaks) > 0
 
     assert peaks[0].frequency > 20
-    

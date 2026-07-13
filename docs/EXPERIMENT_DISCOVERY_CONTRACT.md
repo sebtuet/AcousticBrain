@@ -1,0 +1,67 @@
+# Contrat de découverte automatique des expériences
+
+Le dossier de mesures devient une source technique explicite :
+
+```text
+measurements/
+    baseline/
+    exp-001/
+    exp-002/
+```
+
+`AcousticBrain.analyze(measurement_root="measurements")` ouvre une
+`AcousticSession`, découvre les dossiers, importe la dernière expérience
+`READY`, exécute le pipeline existant et active la planification. Cette session
+est un conteneur technique de fichiers et de projets. Elle ne crée aucune
+`OptimizationIteration`, aucun protocole métier et aucune comparaison.
+
+## Détection indépendante des noms
+
+`MeasurementRepository` parcourt récursivement chaque expérience. Les chemins
+servent uniquement à retrouver les fichiers ; ils ne déterminent jamais leur
+canal.
+
+- Les TXT REW sont reconnus par leurs marqueurs internes. Le canal provient de
+  `* Measurement:`.
+- Les WAV sont validés comme RIFF/WAVE. Un canal embarqué dans `bext` ou
+  `LIST/INFO` est utilisé lorsqu’il existe.
+- Lorsqu’un WAV mono ne contient aucun canal, il peut être associé à un TXT par
+  corrélation de leur empreinte spectrale. L’association exige une corrélation
+  minimale de 0,75 et une marge minimale de 0,03 sur la seconde possibilité.
+  Une association ambiguë reste volontairement absente.
+- Une affectation persistée dans `channel_assignments` du manifest est
+  prioritaire.
+- Un `.mdat` est seulement détecté et hashé. Son contenu n’est jamais
+  désérialisé ni interprété.
+
+L’empreinte spectrale est une opération technique d’identification de deux
+exports du même enregistrement. Elle ne produit ni fait acoustique, ni score,
+ni comparaison métier.
+
+## État et ordre
+
+Un dossier est `READY` lorsque ses TXT de mesure fournissent LEFT, RIGHT et
+STEREO. Sinon il est `INCOMPLETE`. Les autres exports restent décrits même
+lorsqu’ils ne peuvent pas être affectés à un canal.
+
+`baseline` est toujours présenté en premier. Les expériences sont ensuite
+ordonnées par le premier horodatage REW détecté, puis par identifiant stable.
+
+## Manifest versionné
+
+Le manifest contient : version, identifiant, type, état, horodatage de mesure,
+date du premier import, hash agrégé, affectations de canaux et liste des
+fichiers avec leurs SHA-256.
+
+Le hash agrégé dépend des contenus, pas des noms. `manifest.json` et les
+fichiers étrangers comme `.DS_Store` sont exclus. La date du premier import est
+conservée. Le fichier n’est réécrit que si sa représentation complète change.
+
+## Compatibilité
+
+Le chemin historique `AcousticBrain.analyze(project)` reste inchangé et
+n’affiche aucune section de découverte. `ImportEngine.load_directory` sait
+retrouver `baseline` lorsque l’ancien appel pointe désormais vers une racine
+structurée. Le golden acoustique historique reste conservé ; la fixture de
+travail PR-027 utilise toutefois des WAV plus courts que les anciens exports
+impulsionnels texte et n’est pas utilisée pour réécrire cette référence.

@@ -1,0 +1,61 @@
+{
+  "channel_assignments": {
+    "impulse/L exp002 Jul 13.wav": "LEFT",
+    "impulse/L+R exp002 Jul 13.wav": "STEREO",
+    "impulse/R exp002 Jul 13.wav": "RIGHT",
+    "measurements/L exp002 Jul 13.txt": "LEFT",
+    "measurements/L+R exp002 Jul 13.txt": "STEREO",
+    "measurements/R exp002 Jul 13.txt": "RIGHT"
+  },
+  "content_hash": "43e41e955f30ee65ea7ecb566a6eea08869517c74008805990422c834e014569",
+  "experiment_id": "exp-001",
+  "experiment_type": "EXPERIMENT",
+  "files": [
+    {
+      "channel": "LEFT",
+      "path": "impulse/L exp002 Jul 13.wav",
+      "sha256": "531b33f6cda31c4af9007e891b59999056af943b754b2f50813639fd1d496bc9",
+      "type": "WAV"
+    },
+    {
+      "channel": "STEREO",
+      "path": "impulse/L+R exp002 Jul 13.wav",
+      "sha256": "3936abbf27ec2d53ed62ff461f9679e65ca28d67b6eac74ca4980277906827ba",
+      "type": "WAV"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "impulse/R exp002 Jul 13.wav",
+      "sha256": "0b4d895a17a7a1d1999d5ec738a8399831135a0f8ed42758c9cac49cd7c2f129",
+      "type": "WAV"
+    },
+    {
+      "channel": "LEFT",
+      "path": "measurements/L exp002 Jul 13.txt",
+      "sha256": "01db67dda15a629a388eef5dcbe21e81935d5a54cf4dc36ac7a5e0b7fb9c1eb7",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "STEREO",
+      "path": "measurements/L+R exp002 Jul 13.txt",
+      "sha256": "9e18527c4d5962f03ca29bbc499171e26b629852f79917f70a27bf412760896b",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "measurements/R exp002 Jul 13.txt",
+      "sha256": "83d32fcd290a56fdfbd179f5cc8c18570e21cae002fa7567da2047b0ce83e264",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": null,
+      "path": "rew/exp-001.mdat",
+      "sha256": "2ff8ab0cbd9bb2ad120dc7498b2c4928877431e83589522090626b4299efcf20",
+      "type": "MDAT"
+    }
+  ],
+  "imported_at": "2026-07-13T18:42:59.114666+00:00",
+  "schema_version": 1,
+  "state": "READY",
+  "timestamp": "2026-07-13T10:53:20"
+}

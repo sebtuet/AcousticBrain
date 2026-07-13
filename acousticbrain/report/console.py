@@ -70,6 +70,22 @@ class ConsoleReporter:
                     "sur " + ", ".join(geometry.differing_fields)
                 )
 
+        discovery = report.experiments_discovered
+        if discovery is not None:
+            print()
+            print("EXPERIMENTS DISCOVERED")
+            print()
+            for experiment in discovery.experiments:
+                print(experiment.experiment_id)
+                print(f"État : {experiment.state}")
+                print(f"Fichiers : {experiment.file_count}")
+                print(f"Date : {experiment.timestamp}")
+                print(
+                    "Canaux : "
+                    + (", ".join(experiment.available_channels) or "aucun")
+                )
+                print()
+
         print()
 
         print()

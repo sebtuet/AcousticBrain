@@ -28,3 +28,8 @@ from .experiment_planning_presenter import (
     PresentedExperimentCandidate,
     PresentedExperimentPlanning,
 )
+from .experiment_discovery_presenter import (
+    ExperimentDiscoveryPresenter,
+    PresentedDiscoveredExperiment,
+    PresentedExperimentDiscovery,
+)
