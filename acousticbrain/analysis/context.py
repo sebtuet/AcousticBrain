@@ -125,3 +125,5 @@ class AnalysisContext:
     optimization_session_analysis = None
 
     experiment_descriptors: tuple = ()
+
+    experiment_comparison_analysis = None

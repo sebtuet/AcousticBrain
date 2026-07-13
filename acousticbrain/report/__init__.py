@@ -33,3 +33,8 @@ from .experiment_discovery_presenter import (
     PresentedDiscoveredExperiment,
     PresentedExperimentDiscovery,
 )
+from .experiment_comparison_presenter import (
+    ExperimentComparisonPresenter,
+    PresentedExperimentComparison,
+    PresentedExperimentEvolution,
+)

@@ -1,0 +1,66 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : comparison-fixture
+
+ÉVOLUTION DES EXPÉRIENCES
+
+Chronologie : baseline → exp-001
+
+Comparaisons locales
+
+Expérience exp-001
+Avant : baseline
+Après : exp-001
+Comparabilité : COMPARABLE
+Protocole : protocol.repeat-pair
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Évolution : STRONGER
+Faits améliorés : global.domain.spatial.score
+Faits dégradés : aucun
+Faits modifiés sans direction : aucun
+Faits inchangés pertinents : global.domain.sbir.score
+Faits indisponibles : aucun
+Observations :
+ • l’asymétrie spatiale diminue.
+Limites :
+ • la mesure ne distingue pas encore l’enceinte du côté de la pièce.
+Confiance : 82.0%
+Trace : trace:local:baseline:exp-001
+Hash avant : baseline-hash
+Hash après : experiment-hash
+Faits avant : global.domain.spatial.score
+Faits après : global.domain.spatial.score
+Deltas : global.domain.spatial.score
+Faits expérimentaux : SPATIAL_ASYMMETRY_DECREASED
+Discriminations ouvertes : LOUDSPEAKER_VS_ROOM_SIDE
+
+Synthèse cumulative depuis la baseline
+
+Expérience exp-001
+Avant : baseline
+Après : exp-001
+Comparabilité : COMPARABLE
+Protocole : protocol.repeat-pair
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Évolution : STRONGER
+Faits améliorés : global.domain.spatial.score
+Faits dégradés : aucun
+Faits modifiés sans direction : aucun
+Faits inchangés pertinents : global.domain.sbir.score
+Faits indisponibles : aucun
+Observations :
+ • l’asymétrie spatiale diminue.
+Limites :
+ • la mesure ne distingue pas encore l’enceinte du côté de la pièce.
+Confiance : 82.0%
+Trace : trace:cumulative:baseline:exp-001
+Hash avant : baseline-hash
+Hash après : experiment-hash
+Faits avant : global.domain.spatial.score
+Faits après : global.domain.spatial.score
+Deltas : global.domain.spatial.score
+Faits expérimentaux : SPATIAL_ASYMMETRY_DECREASED
+Discriminations ouvertes : LOUDSPEAKER_VS_ROOM_SIDE

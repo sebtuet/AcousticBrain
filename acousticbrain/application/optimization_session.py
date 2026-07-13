@@ -126,6 +126,14 @@ class OptimizationSessionService:
 
     @staticmethod
     def _snapshot(session, context, index):
+        return OptimizationSessionService.snapshot_analysis(
+            context,
+            state_id=f"{session.session_id}:state:{index}",
+        )
+
+    @staticmethod
+    def snapshot_analysis(context, *, state_id):
+        """Crée un état PR-025 sans créer ni muter de session métier."""
         global_analysis = context.global_analysis
         reasoning = context.acoustic_reasoning_analysis
         traceability = context.traceability_analysis
@@ -202,7 +210,7 @@ class OptimizationSessionService:
             for item in reasoning.hypotheses
         )
         return AcousticBrainState(
-            state_id=f"{session.session_id}:state:{index}",
+            state_id=state_id,
             measurement_name=context.measurement.name,
             global_score=global_analysis.score,
             facts=tuple(facts),
@@ -260,6 +268,11 @@ class OptimizationSessionService:
 
     @staticmethod
     def _hypothesis_evolution(code, before, after):
+        return OptimizationSessionService.compare_hypothesis(code, before, after)
+
+    @staticmethod
+    def compare_hypothesis(code, before, after):
+        """Projette l'évolution PR-025 entre deux snapshots explicites."""
         old = next((item for item in before.hypotheses if item.code == code), None)
         new = next((item for item in after.hypotheses if item.code == code), None)
         old_status = old.status if old else None

@@ -185,3 +185,19 @@ from .experiment_discovery import (
     ExperimentState,
     ExperimentType,
 )
+from .experiment_comparison import (
+    ComparableExperimentFact,
+    ComparisonEligibilityStatus,
+    ComparisonIneligibilityReason,
+    ExperimentComparisonAnalysis,
+    ExperimentComparisonSequence,
+    ExperimentComparisonTrace,
+    ExperimentComparisonType,
+    ExperimentCounterFact,
+    ExperimentEvolutionOutcome,
+    ExperimentEvolutionResult,
+    ExperimentFactChange,
+    ExperimentFactDelta,
+    ObservedExperimentFact,
+    UnresolvedDiscrimination,
+)

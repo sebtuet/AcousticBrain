@@ -80,6 +80,31 @@ def test_discovery_creates_manifests_hashes_and_chronological_descriptors(tmp_pa
     }
 
 
+def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
+    baseline = tmp_path / "baseline"
+    experiment = tmp_path / "exp-001-arbitrary-name"
+    complete_experiment(baseline)
+    complete_experiment(experiment)
+    (experiment / "manifest.json").write_text(json.dumps({
+        "comparison": {
+            "parent_experiment_id": "baseline",
+            "source_protocol_id": "protocol.repeat-pair",
+            "source_hypothesis_code": "ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            "declared_change_codes": ["LEFT_RIGHT_REMEASUREMENT"],
+            "required_fact_codes": ["spatial.left_right.level_difference_abs_db"],
+        }
+    }), encoding="utf-8")
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[1]
+
+    assert descriptor.parent_experiment_ids == ("baseline",)
+    assert descriptor.source_protocol_id == "protocol.repeat-pair"
+    assert descriptor.declared_change_codes == ("LEFT_RIGHT_REMEASUREMENT",)
+    assert descriptor.required_comparison_fact_codes == (
+        "spatial.left_right.level_difference_abs_db",
+    )
+
+
 def test_identical_manifest_is_not_rewritten(tmp_path):
     directory = tmp_path / "baseline"
     complete_experiment(directory)

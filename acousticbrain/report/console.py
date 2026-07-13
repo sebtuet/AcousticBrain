@@ -86,9 +86,32 @@ class ConsoleReporter:
                 )
                 print()
 
-        print()
+        comparison_analysis = report.experiment_comparison
+        if comparison_analysis is not None:
+            print()
+            print("ÉVOLUTION DES EXPÉRIENCES")
+            print()
+            print("Chronologie : " + " → ".join(comparison_analysis.chronology))
+            print()
+            print("Comparaisons locales")
+            for index, comparison in enumerate(comparison_analysis.local_comparisons):
+                if index:
+                    print()
+                self._print_experiment_evolution(
+                    comparison, comparison_analysis.detailed_traceability
+                )
+            print()
+            print("Synthèse cumulative depuis la baseline")
+            for index, comparison in enumerate(comparison_analysis.cumulative_comparisons):
+                if index:
+                    print()
+                self._print_experiment_evolution(
+                    comparison, comparison_analysis.detailed_traceability
+                )
 
-        print()
+        if comparison_analysis is None:
+            print()
+            print()
 
         if report.recommendations:
 
@@ -383,6 +406,7 @@ class ConsoleReporter:
                         f"Mesure ou état analysé : {chain.measurement_name} / "
                         f"{chain.source_state_id}"
                     )
+
                     print("Faits : " + (", ".join(chain.fact_codes) or "aucun"))
                     print(
                         "Corrélations : "
@@ -457,6 +481,47 @@ class ConsoleReporter:
                     print(f" • {recommendation}")
 
                 print()
+
+    def _print_experiment_evolution(self, comparison, detailed_traceability=False):
+        print()
+        print(f"Expérience {comparison.after_experiment_id}")
+        print(f"Avant : {comparison.before_experiment_id}")
+        print(f"Après : {comparison.after_experiment_id}")
+        print(f"Comparabilité : {comparison.eligibility}")
+        if comparison.ineligibility_reasons:
+            print("Raisons : " + ", ".join(comparison.ineligibility_reasons))
+        print(f"Protocole : {comparison.source_protocol_id or 'non déclaré'}")
+        print(f"Hypothèse : {comparison.source_hypothesis_code or 'non déclarée'}")
+        print(f"Évolution : {comparison.outcome}")
+        print("Faits améliorés : " + (", ".join(comparison.improved_fact_codes) or "aucun"))
+        print("Faits dégradés : " + (", ".join(comparison.degraded_fact_codes) or "aucun"))
+        print("Faits modifiés sans direction : " + (", ".join(comparison.changed_fact_codes) or "aucun"))
+        print("Faits inchangés pertinents : " + (", ".join(comparison.unchanged_fact_codes) or "aucun"))
+        print("Faits indisponibles : " + (", ".join(comparison.unavailable_fact_codes) or "aucun"))
+        if comparison.observation_labels:
+            print("Observations :")
+            for label in comparison.observation_labels:
+                print(f" • {label}.")
+        if comparison.counter_fact_codes:
+            print("Contre-faits : " + ", ".join(comparison.counter_fact_codes))
+        if comparison.unresolved_discrimination_labels:
+            print("Limites :")
+            for label in comparison.unresolved_discrimination_labels:
+                print(f" • {label}.")
+        confidence = (
+            f"{comparison.technical_confidence:.1f}%"
+            if comparison.technical_confidence is not None else "indisponible"
+        )
+        print(f"Confiance : {confidence}")
+        if self.detailed_traceability or detailed_traceability:
+            print(f"Trace : {comparison.trace_id}")
+            print(f"Hash avant : {comparison.trace_before_file_hash}")
+            print(f"Hash après : {comparison.trace_after_file_hash}")
+            print("Faits avant : " + (", ".join(comparison.trace_before_fact_codes) or "aucun"))
+            print("Faits après : " + (", ".join(comparison.trace_after_fact_codes) or "aucun"))
+            print("Deltas : " + (", ".join(comparison.trace_delta_fact_codes) or "aucun"))
+            print("Faits expérimentaux : " + (", ".join(comparison.trace_observed_fact_codes) or "aucun"))
+            print("Discriminations ouvertes : " + (", ".join(comparison.trace_unresolved_discrimination_codes) or "aucune"))
 
     @staticmethod
     def _diagnostics_to_render(report):
