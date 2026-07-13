@@ -7,6 +7,16 @@
     "measurements/L+R exp002 Jul 13.txt": "STEREO",
     "measurements/R exp002 Jul 13.txt": "RIGHT"
   },
+  "comparison": {
+    "declared_change_codes": [
+      "LEFT_RIGHT_REMEASUREMENT"
+    ],
+    "parent_experiment_ids": [
+      "baseline"
+    ],
+    "source_hypothesis_code": "ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+    "source_protocol_id": "protocol.verify_speaker_room_asymmetry.v1"
+  },
   "content_hash": "43e41e955f30ee65ea7ecb566a6eea08869517c74008805990422c834e014569",
   "experiment_id": "exp-001",
   "experiment_type": "EXPERIMENT",

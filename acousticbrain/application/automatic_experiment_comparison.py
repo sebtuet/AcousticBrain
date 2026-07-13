@@ -472,6 +472,14 @@ class AutomaticExperimentComparisonService:
                 "sbir.target_null_prominence_db": "TARGET_NULL_DEPTH_REDUCED",
             },
         }.get(hypothesis, {})
+        counter_mapping = {
+            "SPATIAL_ASYMMETRY_DECREASED": "SPATIAL_ASYMMETRY_INCREASED",
+            "DRR_ASYMMETRY_DECREASED": "DRR_ASYMMETRY_INCREASED",
+            "BASS_DECAY_ASYMMETRY_DECREASED": "BASS_DECAY_ASYMMETRY_INCREASED",
+            "BASS_DECAY_REDUCED_AT_TARGET_BANDS": "BASS_DECAY_INCREASED_AT_TARGET_BANDS",
+            "UNMATCHED_EVENT_COUNT_DECREASED": "UNMATCHED_EVENT_COUNT_INCREASED",
+            "TARGET_NULL_DEPTH_REDUCED": "TARGET_NULL_DEPTH_INCREASED",
+        }
         observed = []
         counters = []
         for delta in deltas:
@@ -490,7 +498,6 @@ class AutomaticExperimentComparisonService:
                         delta.source_analysis_codes,
                     ))
                 continue
-            target = observed if delta.change is ExperimentFactChange.IMPROVED else counters
             if delta.change is ExperimentFactChange.UNCHANGED:
                 stable = {
                     "BASS_DECAY_REDUCED_AT_TARGET_BANDS": "BASS_DECAY_STABLE_AT_TARGET_BANDS",
@@ -501,8 +508,16 @@ class AutomaticExperimentComparisonService:
                         stable, (delta.fact_code,), delta.source_analysis_codes
                     ))
                 continue
-            cls = ObservedExperimentFact if target is observed else ExperimentCounterFact
-            target.append(cls(code, (delta.fact_code,), delta.source_analysis_codes))
+            if delta.change is ExperimentFactChange.IMPROVED:
+                observed.append(ObservedExperimentFact(
+                    code, (delta.fact_code,), delta.source_analysis_codes
+                ))
+            else:
+                counters.append(ExperimentCounterFact(
+                    counter_mapping.get(code, code),
+                    (delta.fact_code,),
+                    delta.source_analysis_codes,
+                ))
         if (
             hypothesis == "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
             and "LEFT_RIGHT_REMEASUREMENT" in declared_changes

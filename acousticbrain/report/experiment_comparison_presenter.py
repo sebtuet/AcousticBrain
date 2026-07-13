@@ -56,6 +56,9 @@ class ExperimentComparisonPresenter:
         "TARGET_NULL_FREQUENCY_SHIFTED": "la fréquence du creux ciblé se déplace",
         "TARGET_NULL_DEPTH_REDUCED": "la profondeur du creux ciblé diminue",
         "TARGET_NULL_UNCHANGED": "le creux ciblé reste inchangé",
+        "LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE": "l’écart gauche/droite est reproductible",
+        "CHANNEL_SPECIFIC_PATTERN_STABLE": "le motif spécifique aux canaux reste stable",
+        "CHANNEL_SPECIFIC_PATTERN_CHANGED": "le motif spécifique aux canaux a changé",
     }
     DISCRIMINATION_LABELS = {
         "LOUDSPEAKER_VS_ROOM_SIDE": "la mesure ne distingue pas encore l’enceinte du côté de la pièce",

@@ -321,6 +321,43 @@ def test_repeated_pair_produces_reproducibility_facts_without_confirming_a_cause
     }
 
 
+def test_degradation_uses_a_counter_fact_that_describes_the_actual_direction():
+    service = AutomaticExperimentComparisonService()
+    code = "bass_decay.left_right.maximum_difference_abs_s"
+    deltas, _, _ = service._fact_deltas(
+        analyzed(descriptor("baseline", baseline=True), (
+            replace(
+                fact(
+                    0.2,
+                    code=code,
+                    unit="SECONDS",
+                    family="BASS_DECAY",
+                    threshold=0.05,
+                ),
+                higher_is_better=False,
+            ),
+        )),
+        analyzed(descriptor("exp-001"), (
+            replace(
+                fact(
+                    0.5,
+                    code=code,
+                    unit="SECONDS",
+                    family="BASS_DECAY",
+                    threshold=0.05,
+                ),
+                higher_is_better=False,
+            ),
+        )),
+    )
+
+    _, counter_facts = service._observations(HYPOTHESIS, deltas)
+
+    assert tuple(item.code for item in counter_facts) == (
+        "BASS_DECAY_ASYMMETRY_INCREASED",
+    )
+
+
 def test_expected_change_with_identical_hash_and_missing_required_fact_is_ineligible(
     monkeypatch,
 ):
