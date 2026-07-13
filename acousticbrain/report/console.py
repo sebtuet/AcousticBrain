@@ -230,6 +230,84 @@ class ConsoleReporter:
             if self.detailed_traceability and traceability.links:
                 print()
 
+        session = report.optimization_session
+        if session is not None:
+            print("SESSION D’OPTIMISATION")
+            print()
+            print(f"Identifiant : {session.session_id}")
+            print(f"Itération courante : {session.current_iteration}")
+            print(f"Expériences terminées : {session.completed_experiments}")
+            print(
+                "Hypothèses ouvertes : "
+                + (", ".join(session.open_hypotheses) or "aucune")
+            )
+            print(
+                "Hypothèses renforcées : "
+                + (", ".join(session.reinforced_hypotheses) or "aucune")
+            )
+            print(
+                "Hypothèses réfutées : "
+                + (", ".join(session.refuted_hypotheses) or "aucune")
+            )
+            gain = (
+                f"{session.global_gain:+.1f} points"
+                if session.global_gain is not None else "indisponible"
+            )
+            print(f"Gain global depuis l’état initial : {gain}")
+            print(
+                "Améliorations principales : "
+                + (", ".join(session.main_improvements) or "aucune")
+            )
+            print(
+                "Dégradations principales : "
+                + (", ".join(session.main_degradations) or "aucune")
+            )
+            print(
+                "Expérience en attente : "
+                + (session.pending_experiment or "aucune")
+            )
+            print()
+
+            for iteration in session.iterations:
+                print(f"Itération {iteration.number}")
+                print(f"Hypothèse testée : {iteration.hypothesis_code}")
+                print(f"Expérience réalisée : {iteration.experiment_label}")
+                print(f"État avant : {iteration.before_state_id}")
+                print(f"État après : {iteration.after_state_id or 'en attente'}")
+                print(
+                    "Faits améliorés : "
+                    + (", ".join(iteration.improved_fact_codes) or "aucun")
+                )
+                print(
+                    "Faits dégradés : "
+                    + (", ".join(iteration.degraded_fact_codes) or "aucun")
+                )
+                print(
+                    "Résultat sur l’hypothèse : "
+                    + (iteration.hypothesis_result or "en attente")
+                )
+                print()
+
+            if self.detailed_traceability or session.detailed_traceability:
+                for chain in session.trace_chains:
+                    print(f"Chaîne de session {chain.progression_id}")
+                    print(
+                        f"Mesure ou état analysé : {chain.measurement_name} / "
+                        f"{chain.source_state_id}"
+                    )
+                    print("Faits : " + (", ".join(chain.fact_codes) or "aucun"))
+                    print(
+                        "Corrélations : "
+                        + (", ".join(chain.correlation_codes) or "aucune")
+                    )
+                    print(f"Hypothèse : {chain.hypothesis_code}")
+                    print(f"Protocole ou expérience : {chain.protocol_id}")
+                    print(f"Nouvel état : {chain.new_state_id}")
+                    print(f"Comparaison : {chain.comparison_id}")
+                    print(f"Évolution de l’hypothèse : {chain.evolution_result}")
+                    print(f"Progression de la session : {chain.progression_id}")
+                    print()
+
         for diagnostic, is_secondary in self._diagnostics_to_render(report):
 
             print("-" * 60)

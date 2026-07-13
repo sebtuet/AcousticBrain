@@ -152,3 +152,18 @@ from .reasoning_evidence import MissingReasoningFact, ReasoningEvidence
 from .verification_action import VerificationAction
 from .acoustic_hypothesis import AcousticHypothesis
 from .acoustic_reasoning_analysis import AcousticReasoningAnalysis
+from .optimization_session import (
+    AcousticBrainState,
+    ExperimentComparison,
+    ExperimentProtocol,
+    FactEvolution,
+    HypothesisEvolution,
+    HypothesisEvolutionResult,
+    OptimizationIteration,
+    OptimizationSession,
+    OptimizationSessionAnalysis,
+    SessionCorrelation,
+    SessionFact,
+    SessionHypothesis,
+    SessionTraceChain,
+)

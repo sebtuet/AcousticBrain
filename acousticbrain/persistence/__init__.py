@@ -1,1 +1,2 @@
 from .room_description_json import RoomDescriptionJsonCodec
+from .optimization_session_json import OptimizationSessionJsonRepository

@@ -89,7 +89,7 @@ class BrainPipeline:
 
         ]
 
-    def run(self, project):
+    def run(self, project, *, session_context=None):
 
         #
         # Mesure principale
@@ -187,6 +187,10 @@ class BrainPipeline:
         TraceabilityStage().run(
             context,
         )
+
+        if session_context is not None:
+            session_context.record_analysis(context)
+            context.optimization_session = session_context.session
 
         report = ReportBuilder().build(
             project,

@@ -1,0 +1,30 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : Studio
+
+
+SESSION D’OPTIMISATION
+
+Identifiant : session-1
+Itération courante : 1
+Expériences terminées : 1
+Hypothèses ouvertes : SBIR_PLACEMENT_INTERACTION
+Hypothèses renforcées : SBIR_PLACEMENT_INTERACTION
+Hypothèses réfutées : aucune
+Gain global depuis l’état initial : +10.0 points
+Améliorations principales : global.domain.sbir.score
+Dégradations principales : aucune
+Expérience en attente : aucune
+
+Itération 1
+Hypothèse testée : SBIR_PLACEMENT_INTERACTION
+Expérience réalisée : Déplacement temporaire des enceintes
+État avant : session-1:state:1
+État après : session-1:state:2
+Faits améliorés : global.domain.sbir.score
+Faits dégradés : aucun
+Résultat sur l’hypothèse : REINFORCED
+

@@ -17,3 +17,9 @@ from .traceability_presenter import (
     PresentedTraceabilityAnalysis,
     TraceabilityPresenter,
 )
+from .optimization_session_presenter import (
+    OptimizationSessionPresenter,
+    PresentedOptimizationSession,
+    PresentedSessionIteration,
+    PresentedSessionTraceChain,
+)

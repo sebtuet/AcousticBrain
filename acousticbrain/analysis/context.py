@@ -116,3 +116,7 @@ class AnalysisContext:
     project: Project | None = None
 
     comparison = None
+
+    optimization_session = None
+
+    optimization_session_analysis = None
