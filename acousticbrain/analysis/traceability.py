@@ -25,6 +25,7 @@ from acousticbrain.models import (
     RoomGeometry,
     RoomGeometryComparison,
     AcousticReasoningAnalysis,
+    ExperimentPlanningAnalysis,
 )
 from acousticbrain.knowledge_codes import FactCode, SourceAnalysisCode
 
@@ -77,6 +78,7 @@ class TraceabilityEngine:
         room_geometry: RoomGeometry | None = None,
         room_geometry_comparison: RoomGeometryComparison | None = None,
         acoustic_reasoning: AcousticReasoningAnalysis | None = None,
+        experiment_planning: ExperimentPlanningAnalysis | None = None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -136,6 +138,8 @@ class TraceabilityEngine:
             )
             evidence_references.extend(reasoning_evidence)
             links.extend(reasoning_links)
+        if experiment_planning is not None:
+            links.extend(self._planning_graph(experiment_planning))
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -173,6 +177,16 @@ class TraceabilityEngine:
                         if acoustic_reasoning is not None
                         else ()
                     ),
+                    *(
+                        ("ExperimentPlanningAnalysis",)
+                        if experiment_planning is not None
+                        else ()
+                    ),
+                    *(
+                        experiment_planning.plan.source_analysis_codes
+                        if experiment_planning is not None
+                        else ()
+                    ),
                     *(("ConfidenceAnalysis",) if confidence is not None else ()),
                 )
             )
@@ -183,6 +197,33 @@ class TraceabilityEngine:
             links=links,
             source_analyses=sources,
         )
+
+    @staticmethod
+    def _planning_graph(analysis):
+        return [
+            ExplanationLink(
+                code=f"explanation.{item.trace_id}",
+                fact_codes=item.fact_codes,
+                evidence_codes=item.evidence_codes,
+                hypothesis_codes=(item.hypothesis_code,),
+                protocol_codes=(item.source_protocol_id,),
+                candidate_codes=(item.candidate_id,),
+                ranking_codes=(
+                    (f"experiment_rank.{item.rank}",)
+                    if item.rank is not None
+                    else ()
+                ),
+                recommended_candidate_codes=(
+                    (item.candidate_id,) if item.recommended else ()
+                ),
+                iteration_codes=(
+                    (f"optimization_iteration.{item.session_iteration_number}",)
+                    if item.session_iteration_number is not None
+                    else ()
+                ),
+            )
+            for item in analysis.trace_links
+        ]
 
     @staticmethod
     def _reasoning_graph(analysis, recommendation_analysis):

@@ -35,3 +35,4 @@ from .room_geometry_builder import (
     RoomGeometryBuilder,
 )
 from .acoustic_reasoning import AcousticReasoningEngine
+from .experiment_planning import ExperimentPlanner

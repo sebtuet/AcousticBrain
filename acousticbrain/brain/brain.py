@@ -7,6 +7,16 @@ class AcousticBrain:
 
         self.pipeline = BrainPipeline()
 
-    def analyze(self, project, *, session_context=None):
+    def analyze(
+        self,
+        project,
+        *,
+        session_context=None,
+        plan_experiments=False,
+    ):
 
-        return self.pipeline.run(project, session_context=session_context)
+        return self.pipeline.run(
+            project,
+            session_context=session_context,
+            plan_experiments=plan_experiments,
+        )

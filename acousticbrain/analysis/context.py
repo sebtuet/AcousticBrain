@@ -29,6 +29,7 @@ from acousticbrain.models import (
     StereoAnalysis,
     TraceabilityAnalysis,
     AcousticReasoningAnalysis,
+    ExperimentPlanningAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -102,6 +103,8 @@ class AnalysisContext:
     recommendation_analysis: RecommendationAnalysis | None = None
 
     acoustic_reasoning_analysis: AcousticReasoningAnalysis | None = None
+
+    experiment_planning_analysis: ExperimentPlanningAnalysis | None = None
 
     global_analysis: GlobalAnalysis | None = None
 

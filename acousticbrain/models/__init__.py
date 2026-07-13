@@ -167,3 +167,14 @@ from .optimization_session import (
     SessionHypothesis,
     SessionTraceChain,
 )
+from .experiment_planning import (
+    ExperimentCandidate,
+    ExperimentCostCategory,
+    ExperimentDifficulty,
+    ExperimentPlan,
+    ExperimentPlanningAnalysis,
+    ExperimentPlanningStatus,
+    ExperimentPlanningTraceLink,
+    ExperimentReversibility,
+    ExperimentSelectionReason,
+)

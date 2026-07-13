@@ -5,6 +5,7 @@ from acousticbrain.report import (
     TraceabilityPresenter,
     RoomGeometryPresenter,
     OptimizationSessionPresenter,
+    ExperimentPlanningPresenter,
 )
 
 
@@ -28,5 +29,6 @@ class ReportBuilder:
         report.traceability_analysis = TraceabilityPresenter().present(context)
         report.room_geometry = RoomGeometryPresenter().present(context)
         report.optimization_session = OptimizationSessionPresenter().present(context)
+        report.experiment_planning = ExperimentPlanningPresenter().present(context)
 
         return report

@@ -1,0 +1,25 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : Studio
+
+
+PROCHAINE EXPÉRIENCE RECOMMANDÉE
+
+Statut : READY
+Code : experiment_candidate.asymmetric_speaker_room_interaction
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Valeur informative : 26.33 / 100
+Difficulté : EASY
+Réversibilité : HIGH
+Durée estimée : 15 min
+Coût : LOW
+Objectif : DISCRIMINATE_CHANNEL_AND_ROOM_ASYMMETRY
+Faits à mesurer : stereo.symmetry_score, spatial.pair_analysis, etc.channel_specific_event_difference, verification.asymmetry_persists_by_channel, verification.asymmetry_disappears_after_control
+Raison principale du choix : RESOLVES_MISSING_FACTS
+Prérequis : aucun
+Alternatives classées :
+ • experiment_candidate.modal_bass_persistence — 21.33 / 100
+

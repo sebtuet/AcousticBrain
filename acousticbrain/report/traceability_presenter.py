@@ -19,6 +19,13 @@ class PresentedExplanationLink:
     evidence_codes: tuple[str, ...]
     correlation_codes: tuple[str, ...] = ()
     recommendation_codes: tuple[str, ...] = ()
+    hypothesis_codes: tuple[str, ...] = ()
+    action_codes: tuple[str, ...] = ()
+    protocol_codes: tuple[str, ...] = ()
+    candidate_codes: tuple[str, ...] = ()
+    ranking_codes: tuple[str, ...] = ()
+    recommended_candidate_codes: tuple[str, ...] = ()
+    iteration_codes: tuple[str, ...] = ()
 
 
 @dataclass
@@ -61,6 +68,15 @@ class TraceabilityPresenter:
                     evidence_codes=link.evidence_codes,
                     correlation_codes=link.correlation_codes,
                     recommendation_codes=link.recommendation_codes,
+                    hypothesis_codes=link.hypothesis_codes,
+                    action_codes=link.action_codes,
+                    protocol_codes=link.protocol_codes,
+                    candidate_codes=link.candidate_codes,
+                    ranking_codes=link.ranking_codes,
+                    recommended_candidate_codes=(
+                        link.recommended_candidate_codes
+                    ),
+                    iteration_codes=link.iteration_codes,
                 )
                 for link in analysis.links
             ],
