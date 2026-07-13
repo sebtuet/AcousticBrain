@@ -40,6 +40,7 @@ from .stages.recommendation import RecommendationStage
 from .stages.global_synthesis import GlobalSynthesisStage
 from .stages.traceability import TraceabilityStage
 from .stages.acoustic_reasoning import AcousticReasoningStage
+from .stages.experiment_planning import ExperimentPlanningStage
 
 from .builders.report import ReportBuilder
 
@@ -89,7 +90,13 @@ class BrainPipeline:
 
         ]
 
-    def run(self, project, *, session_context=None):
+    def run(
+        self,
+        project,
+        *,
+        session_context=None,
+        plan_experiments=False,
+    ):
 
         #
         # Mesure principale
@@ -175,6 +182,16 @@ class BrainPipeline:
         AcousticReasoningStage().run(
             context,
         )
+
+        if plan_experiments:
+            ExperimentPlanningStage().run(
+                context,
+                session=(
+                    session_context.session
+                    if session_context is not None
+                    else None
+                ),
+            )
 
         GlobalSynthesisStage().run(
             context,

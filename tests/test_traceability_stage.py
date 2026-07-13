@@ -44,6 +44,7 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
         "room_geometry": context.room_geometry,
             "room_geometry_comparison": context.room_geometry_comparison,
             "acoustic_reasoning": context.acoustic_reasoning_analysis,
+            "experiment_planning": context.experiment_planning_analysis,
         }
 
 

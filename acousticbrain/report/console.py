@@ -226,8 +226,80 @@ class ConsoleReporter:
                         "   Recommandations : "
                         + ", ".join(link.recommendation_codes)
                     )
+                if link.hypothesis_codes:
+                    print("   Hypothèses : " + ", ".join(link.hypothesis_codes))
+                if link.protocol_codes:
+                    print("   Protocoles : " + ", ".join(link.protocol_codes))
+                if link.candidate_codes:
+                    print("   Candidats : " + ", ".join(link.candidate_codes))
+                if link.ranking_codes:
+                    print("   Classement : " + ", ".join(link.ranking_codes))
+                if link.recommended_candidate_codes:
+                    print(
+                        "   Expérience recommandée : "
+                        + ", ".join(link.recommended_candidate_codes)
+                    )
+                if link.iteration_codes:
+                    print("   Itérations : " + ", ".join(link.iteration_codes))
 
             if self.detailed_traceability and traceability.links:
+                print()
+
+        planning = report.experiment_planning
+        if planning is not None:
+            print("PROCHAINE EXPÉRIENCE RECOMMANDÉE")
+            print()
+            print(f"Statut : {planning.status}")
+            candidate = planning.recommended_candidate
+            if candidate is None:
+                print("Code : aucune")
+            else:
+                print(f"Code : {candidate.candidate_id}")
+                print(f"Hypothèse : {candidate.hypothesis_code}")
+                print(
+                    "Valeur informative : "
+                    f"{candidate.informative_value:.2f} / 100"
+                )
+                print(f"Difficulté : {candidate.difficulty}")
+                print(f"Réversibilité : {candidate.reversibility}")
+                duration = (
+                    f"{candidate.estimated_duration_minutes} min"
+                    if candidate.estimated_duration_minutes is not None
+                    else "indisponible"
+                )
+                print(f"Durée estimée : {duration}")
+                print(f"Coût : {candidate.cost_category}")
+                print(f"Objectif : {candidate.objective_code}")
+                print(
+                    "Faits à mesurer : "
+                    + ", ".join(candidate.observable_fact_codes)
+                )
+                print(
+                    "Raison principale du choix : "
+                    + (candidate.primary_selection_reason or "aucune")
+                )
+                print(
+                    "Prérequis : "
+                    + (", ".join(candidate.prerequisite_codes) or "aucun")
+                )
+                print("Alternatives classées :")
+                for alternative in planning.alternatives:
+                    print(
+                        f" • {alternative.candidate_id} — "
+                        f"{alternative.informative_value:.2f} / 100"
+                    )
+            print()
+
+            if self.detailed_traceability:
+                print("Candidats expérimentaux exhaustifs")
+                for item in planning.all_candidates:
+                    eligibility = "éligible" if item.eligible else "inéligible"
+                    print(f" • {item.candidate_id} — {eligibility}")
+                    if item.ineligibility_reasons:
+                        print(
+                            "   Raisons : "
+                            + ", ".join(item.ineligibility_reasons)
+                        )
                 print()
 
         session = report.optimization_session
