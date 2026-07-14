@@ -10,6 +10,7 @@ RecommendationParameter = str | int | float | bool
 class RecommendationStatus(Enum):
     ACTIVE = "ACTIVE"
     DEFERRED = "DEFERRED"
+    COMPLETED = "COMPLETED"
 
 
 @dataclass

@@ -183,6 +183,9 @@ class ExperimentDiscoveryService:
             required_comparison_fact_codes=self._string_tuple(
                 comparison_metadata.get("required_fact_codes")
             ),
+            comparison_parameters=tuple(
+                sorted(comparison_metadata.get("parameters", {}).items())
+            ),
             causal_protocol_step=causal_step,
             causal_discrimination_decisions=causal_decisions,
         )
@@ -271,6 +274,20 @@ class ExperimentDiscoveryService:
         required = cls._string_tuple(value.get("required_fact_codes"))
         if required:
             metadata["required_fact_codes"] = list(required)
+        parameters = value.get("parameters", {})
+        if not isinstance(parameters, dict):
+            raise ValueError("Experiment comparison parameters must be an object.")
+        if any(
+            not isinstance(key, str)
+            or not key
+            or not isinstance(item, (str, int, float, bool))
+            for key, item in parameters.items()
+        ):
+            raise ValueError("Experiment comparison parameters are invalid.")
+        if parameters:
+            metadata["parameters"] = {
+                key: parameters[key] for key in sorted(parameters)
+            }
         return metadata
 
     @staticmethod

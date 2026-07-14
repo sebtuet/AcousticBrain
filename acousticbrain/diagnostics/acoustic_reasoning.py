@@ -34,6 +34,23 @@ class AcousticReasoningDiagnostic(DiagnosticBase):
             if supported
             else "Les hypothèses restent à vérifier avant toute correction."
         )
+        recommendation_analysis = getattr(context, "recommendation_analysis", None)
+        dispositions = {
+            item.code: (item.status.value, item.status_reason)
+            for item in (
+                recommendation_analysis.recommendations
+                if recommendation_analysis is not None else ()
+            )
+        }
+
+        def recommendation_label(action):
+            status, reason = dispositions.get(action.code, ("ACTIVE", None))
+            suffix = (
+                f" — {status}" + (f" ({reason})" if reason else "")
+                if status != "ACTIVE" else ""
+            )
+            return f"{action.code} — {action.target}{suffix}."
+
         return Diagnostic(
             title="Raisonnement acoustique déterministe",
             message=conclusion,
@@ -52,7 +69,7 @@ class AcousticReasoningDiagnostic(DiagnosticBase):
             ],
             causes=[item.code.value for item in supported],
             recommendations=[
-                f"{action.code} — {action.target}."
+                recommendation_label(action)
                 for item in analysis.hypotheses
                 if item.status is not HypothesisStatus.CONTRADICTED
                 for action in item.verification_actions

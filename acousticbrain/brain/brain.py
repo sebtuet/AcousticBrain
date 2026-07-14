@@ -4,11 +4,13 @@ from acousticbrain.application import (
     AcousticSession,
     AutomaticExperimentComparisonService,
     CausalDiscriminationService,
+    ExperimentCampaignSynthesisService,
 )
 from acousticbrain.report import (
     ExperimentComparisonPresenter,
     CausalDiscriminationPresenter,
     ExperimentDiscoveryPresenter,
+    ExperimentCampaignPresenter,
     Report,
 )
 
@@ -124,6 +126,12 @@ class AcousticBrain:
             )
         else:
             current_context.experiment_comparison_analysis = comparison
+        campaign_analyses = ExperimentCampaignSynthesisService().analyze(
+            acoustic_session.descriptors,
+            comparison,
+            detailed_traceability=detailed_traceability,
+        )
+        current_context.experiment_campaign_analyses = campaign_analyses
         causal_analysis = None
         if analyze_causal_discrimination:
             causal_analysis = CausalDiscriminationService().analyze(
@@ -134,6 +142,9 @@ class AcousticBrain:
             current_context.causal_discrimination_analysis = causal_analysis
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)
+        )
+        current_report.experiment_campaigns = (
+            ExperimentCampaignPresenter().present(current_context)
         )
         current_report.causal_discrimination = (
             CausalDiscriminationPresenter().present(current_context)

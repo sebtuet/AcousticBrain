@@ -33,6 +33,7 @@ from .stages.direct_reverberant_correlation import (
 from .stages.bass_decay_correlation import BassDecayCorrelationStage
 from .stages.confidence import ConfidenceStage
 from .stages.etc_correlation import ETCCorrelationStage
+from .stages.geometry_early_reflection import GeometryEarlyReflectionStage
 from .stages.clarity_correlation import ClarityCorrelationStage
 from .stages.spatial_interpretation import SpatialInterpretationStage
 
@@ -167,6 +168,10 @@ class BrainPipeline:
         )
 
         ConfidenceStage().run(
+            context,
+        )
+
+        GeometryEarlyReflectionStage().run(
             context,
         )
 

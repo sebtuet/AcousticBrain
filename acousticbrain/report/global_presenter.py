@@ -8,6 +8,7 @@ class PresentedGlobalDomain:
     confidence: float | None
     source_analysis: str
     recommendation_codes: tuple[str, ...] = ()
+    recommendation_statuses: tuple[tuple[str, str], ...] = ()
     kind: str = "ACOUSTIC"
     contributes_to_acoustic_score: bool = True
 
@@ -39,6 +40,14 @@ class GlobalPresenter:
         if analysis is None:
             return None
 
+        recommendation_analysis = getattr(context, "recommendation_analysis", None)
+        recommendation_statuses = {
+            item.code: item.status.value
+            for item in (
+                recommendation_analysis.recommendations
+                if recommendation_analysis is not None else ()
+            )
+        }
         return PresentedGlobalAnalysis(
             score=analysis.score,
             confidence=analysis.confidence,
@@ -49,6 +58,10 @@ class GlobalPresenter:
                     confidence=domain.confidence,
                     source_analysis=domain.source_analysis,
                     recommendation_codes=domain.recommendation_codes,
+                    recommendation_statuses=tuple(
+                        (code, recommendation_statuses.get(code, "ACTIVE"))
+                        for code in domain.recommendation_codes
+                    ),
                     kind=domain.kind.value,
                     contributes_to_acoustic_score=(
                         domain.contributes_to_acoustic_score

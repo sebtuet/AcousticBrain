@@ -17,12 +17,16 @@ from .listening_position import ListeningPosition
 from .room_opening_surface import RoomOpeningSurface
 from .room_opening import RoomOpening
 from .room_description import RoomDescription
+from .geometry_datum_quality_description import GeometryDatumQualityDescription
+from .geometry_datum_quality import GeometryDatumQuality
 from .geometry_source import GeometrySource
 from .room_geometry_model import RoomGeometryModel
 from .geometry_point import GeometryPoint
 from .room_surface import RoomSurface, RoomSurfaceKind
 from .geometry_opening import GeometryOpening
 from .room_geometry import RoomGeometry
+from .geometry_reflection_path import GeometryReflectionPath
+from .geometry_early_reflection_analysis import GeometryEarlyReflectionAnalysis
 from .geometry_coordinate import GeometryCoordinate
 from .geometry_speaker_orientation import GeometrySpeakerOrientation
 from .geometry_material_type import GeometryMaterialType
@@ -199,11 +203,20 @@ from .experiment_comparison import (
     ExperimentComparisonType,
     ExperimentCounterFact,
     ExperimentEvolutionOutcome,
+    ExperimentAcousticOutcome,
     ExperimentEvolutionResult,
     ExperimentFactChange,
     ExperimentFactDelta,
     ObservedExperimentFact,
     UnresolvedDiscrimination,
+)
+from .experiment_campaign import (
+    ExperimentCampaignAnalysis,
+    ExperimentCampaignBranchResult,
+    ExperimentCampaignMeasurement,
+    ExperimentCampaignMetric,
+    ExperimentCampaignStatus,
+    ExperimentCampaignTrace,
 )
 from .causal_discrimination import (
     CausalDiscriminationAnalysis,

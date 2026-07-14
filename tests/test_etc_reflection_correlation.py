@@ -8,6 +8,9 @@ from acousticbrain.models import (
     ETCChannelAnalysis,
     ETCReflectionCorrelation,
     ETCReflectionCorrelationAnalysis,
+    GeometryCoordinate,
+    GeometryEarlyReflectionAnalysis,
+    GeometryReflectionPath,
     ImpulseChannel,
     Peak,
     ReflectionEvent,
@@ -145,6 +148,61 @@ def test_returns_explicit_absence_without_sbir_analysis():
 
     assert result.correlations == []
     assert result.unmatched_events[ImpulseChannel.LEFT] == [matched, unmatched]
+
+
+def test_correlates_exact_named_geometry_surface_with_observed_event():
+    observed = event(3.0, sample_index=144, confidence=90.0)
+    etc = ETCAnalysis(
+        channels={
+            ImpulseChannel.LEFT: ETCChannelAnalysis(
+                channel=ImpulseChannel.LEFT,
+                direct_sound_time_s=0.0,
+                direct_sound_index=0,
+                events=[observed],
+                confidence=90.0,
+            )
+        },
+        available_channels=[ImpulseChannel.LEFT],
+        confidence=90.0,
+    )
+    path = GeometryReflectionPath(
+        path_id="geometry_reflection.LEFT.MIC.LEFT_SIDE_WALL_PANEL_02",
+        speaker_id="LEFT",
+        listening_position_id="MIC",
+        surface_id="LEFT_SIDE_WALL_PANEL_02",
+        base_surface_id="left_wall",
+        surface=ReflectionSurface.LEFT_WALL,
+        impact_point=GeometryCoordinate(2.0, 0.0, 1.0),
+        direct_path_m=2.0,
+        reflected_path_m=2.98,
+        acoustic_path_difference_m=0.98,
+        theoretical_delay_ms=2.86,
+        uncertainty_ms=0.2,
+        confidence=88.0,
+        provenance_codes=("LASER_MEASURED",),
+    )
+    geometry = GeometryEarlyReflectionAnalysis(
+        paths=(path,),
+        source_analysis_codes=("RoomGeometry",),
+        applied_rule_codes=("GEOMETRY_IMAGE_SOURCE_FIRST_ORDER",),
+    )
+
+    result = ETCReflectionCorrelationEngine().analyze(
+        etc, None, geometry_reflections=geometry
+    )
+
+    correlation = result.correlations[0]
+    assert correlation.surface_id == "LEFT_SIDE_WALL_PANEL_02"
+    assert correlation.geometry_path_id == path.path_id
+    assert correlation.measured_delay_ms == 3.0
+    assert correlation.theoretical_delay_ms == 2.86
+    assert correlation.timing_error_ms == pytest.approx(0.14)
+    assert correlation.geometric_uncertainty_ms == 0.2
+    assert correlation.geometry_confidence == 88.0
+    assert correlation.impact_point == path.impact_point
+    assert correlation.provenance_codes == ("LASER_MEASURED",)
+    assert result.available_surface_ids == ("LEFT_SIDE_WALL_PANEL_02",)
+    assert result.geometry_candidate_count == 1
 
 
 def test_correlation_contract_contains_no_user_text_or_action():

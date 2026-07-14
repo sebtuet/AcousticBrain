@@ -37,7 +37,17 @@ ACTION_DATA = {
     HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION: (
         "VERIFY_DOMINANT_EARLY_REFLECTION",
         VerificationActionType.TEMPORARY_MASK,
-        {"surface": "LEFT_WALL"},
+        {
+            "surface": "LEFT_SIDE_WALL_PANEL_02",
+            "observed_channel": "LEFT",
+            "observed_event_delay_ms": 3.0,
+            "observed_event_relative_level_db": -7.4,
+            "theoretical_delay_ms": 2.86,
+            "timing_error_ms": 0.14,
+            "geometry_uncertainty_ms": 0.2,
+            "geometry_confidence": 88.0,
+            "geometry_path_id": "geometry_reflection.LEFT.MIC.LEFT_SIDE_WALL_PANEL_02",
+        },
     ),
     HypothesisCode.SBIR_PLACEMENT_INTERACTION: (
         "VERIFY_SBIR_PLACEMENT",
@@ -143,6 +153,59 @@ def candidate(result, code):
     )
 
 
+@pytest.mark.parametrize(
+    ("override", "reason"),
+    (
+        (
+            {"timing_error_ms": 1.01},
+            ExperimentSelectionReason.GEOMETRY_TIMING_INCOMPATIBLE,
+        ),
+        (
+            {"geometry_uncertainty_ms": 0.51},
+            ExperimentSelectionReason.GEOMETRY_UNCERTAINTY_TOO_HIGH,
+        ),
+        (
+            {"geometry_confidence": 69.9},
+            ExperimentSelectionReason.GEOMETRY_CONFIDENCE_TOO_LOW,
+        ),
+    ),
+)
+def test_early_reflection_protocol_enforces_geometry_quality(override, reason):
+    parameters = dict(
+        ACTION_DATA[HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION][2]
+    )
+    parameters.update(override)
+    result = ExperimentPlanner().plan(analysis(hypothesis(
+        HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION,
+        parameters=parameters,
+    )))
+
+    item = candidate(
+        result, HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION
+    )
+
+    assert item.eligible is False
+    assert reason in item.ineligibility_reasons
+
+
+def test_early_reflection_protocol_preserves_testable_surface_parameters():
+    result = ExperimentPlanner().plan(analysis(hypothesis(
+        HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION,
+    )))
+
+    item = candidate(
+        result, HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION
+    )
+
+    assert item.eligible is True
+    assert item.source_protocol_id == "protocol.temporary_mask_surface.v1"
+    assert item.parameters["surface"] == "LEFT_SIDE_WALL_PANEL_02"
+    assert item.parameters["timing_error_ms"] == 0.14
+    assert item.changed_variable_codes == ("SURFACE_MASKING_STATE",)
+    assert "MICROPHONE_POSITION" in item.controlled_variable_codes
+    assert "LOUDSPEAKER_ORIENTATION" in item.controlled_variable_codes
+
+
 def test_planner_classifies_the_four_initial_experiments():
     reasoning = AcousticReasoningEngine().analyze()
 
@@ -174,6 +237,21 @@ def test_planner_excludes_action_explicitly_deferred_by_user():
         asymmetry.ineligibility_reasons
     )
     assert result.plan.recommended_candidate is not asymmetry
+
+
+def test_planner_excludes_protocol_completed_by_discovered_experiments():
+    result = ExperimentPlanner().plan(
+        AcousticReasoningEngine().analyze(),
+        completed_protocol_ids=(
+            "protocol.verify_modal_bass_persistence.v1",
+        ),
+    )
+
+    modal = candidate(result, HypothesisCode.MODAL_BASS_PERSISTENCE)
+    assert modal.eligible is False
+    assert ExperimentSelectionReason.ALREADY_COMPLETED in (
+        modal.ineligibility_reasons
+    )
 
 
 def test_information_value_is_not_the_support_score():

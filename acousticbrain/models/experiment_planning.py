@@ -1,6 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, IntEnum
 from math import isfinite
+from types import MappingProxyType
+from typing import Mapping
+
+from .recommendation import RecommendationParameter
 
 
 class ExperimentPlanningStatus(Enum):
@@ -45,6 +49,9 @@ class ExperimentSelectionReason(Enum):
     ALREADY_COMPLETED = "ALREADY_COMPLETED"
     HYPOTHESIS_REFUTED = "HYPOTHESIS_REFUTED"
     GEOMETRY_PARAMETER_MISSING = "GEOMETRY_PARAMETER_MISSING"
+    GEOMETRY_TIMING_INCOMPATIBLE = "GEOMETRY_TIMING_INCOMPATIBLE"
+    GEOMETRY_UNCERTAINTY_TOO_HIGH = "GEOMETRY_UNCERTAINTY_TOO_HIGH"
+    GEOMETRY_CONFIDENCE_TOO_LOW = "GEOMETRY_CONFIDENCE_TOO_LOW"
     NON_REVERSIBLE = "NON_REVERSIBLE"
     USER_DEFERRED = "USER_DEFERRED"
 
@@ -76,6 +83,11 @@ class ExperimentCandidate:
     evidence_codes: tuple[str, ...]
     applied_rule_codes: tuple[str, ...]
     eligible: bool
+    parameters: Mapping[str, RecommendationParameter] = field(
+        default_factory=dict
+    )
+    controlled_variable_codes: tuple[str, ...] = ()
+    changed_variable_codes: tuple[str, ...] = ()
 
     def __post_init__(self):
         for value in (
@@ -100,6 +112,8 @@ class ExperimentCandidate:
             self.source_analysis_codes,
             self.evidence_codes,
             self.applied_rule_codes,
+            self.controlled_variable_codes,
+            self.changed_variable_codes,
         )
         if any(not isinstance(collection, tuple) for collection in collections):
             raise ValueError("Experiment candidate collections must be tuples.")
@@ -119,6 +133,7 @@ class ExperimentCandidate:
             raise ValueError("Experiment duration must be non-negative.")
         if self.eligible == bool(self.ineligibility_reasons):
             raise ValueError("Experiment eligibility and reasons are inconsistent.")
+        object.__setattr__(self, "parameters", MappingProxyType(dict(self.parameters)))
 
 
 @dataclass(frozen=True)

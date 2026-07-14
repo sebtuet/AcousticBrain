@@ -12,6 +12,7 @@ from .rt60_aggregator import RT60Aggregator
 from .etc import ETCAnalyzer
 from .etc_aggregator import ETCAggregator
 from .etc_reflection_correlation import ETCReflectionCorrelationEngine
+from .geometry_early_reflection import GeometryEarlyReflectionEngine
 from .clarity import ClarityAnalyzer
 from .clarity_aggregator import ClarityAggregator
 from .clarity_correlation import ClarityCorrelationEngine

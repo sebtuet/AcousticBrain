@@ -92,6 +92,10 @@ def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
             "source_hypothesis_code": "ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
             "declared_change_codes": ["LEFT_RIGHT_REMEASUREMENT"],
             "required_fact_codes": ["spatial.left_right.level_difference_abs_db"],
+            "parameters": {
+                "listening_position_offset_m": -0.3,
+                "position_role": "BACKWARD",
+            },
         }
     }), encoding="utf-8")
 
@@ -102,6 +106,10 @@ def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
     assert descriptor.declared_change_codes == ("LEFT_RIGHT_REMEASUREMENT",)
     assert descriptor.required_comparison_fact_codes == (
         "spatial.left_right.level_difference_abs_db",
+    )
+    assert descriptor.comparison_parameters == (
+        ("listening_position_offset_m", -0.3),
+        ("position_role", "BACKWARD"),
     )
 
 

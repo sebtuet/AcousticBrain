@@ -25,3 +25,4 @@ Data/
 exchanges/
 
 measurements/Impulse_*.txt
+measurements/exp-*/

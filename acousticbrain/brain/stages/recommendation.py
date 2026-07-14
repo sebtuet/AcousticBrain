@@ -38,6 +38,9 @@ class RecommendationStage:
         deferred_actions = self._deferred_action_reasons(
             context.experiment_descriptors
         )
+        completed_actions = self._completed_action_reasons(
+            context.experiment_descriptors
+        )
         analysis.recommendations = [
             replace(
                 item,
@@ -45,6 +48,12 @@ class RecommendationStage:
                 status_reason=deferred_actions[item.code],
             )
             if item.code in deferred_actions
+            else replace(
+                item,
+                status=RecommendationStatus.COMPLETED,
+                status_reason=completed_actions[item.code],
+            )
+            if item.code in completed_actions
             else item
             for item in analysis.recommendations
         ]
@@ -65,3 +74,23 @@ class RecommendationStage:
                 ):
                     reasons[action] = decision.reason.value
         return reasons
+
+    @staticmethod
+    def _completed_action_reasons(descriptors):
+        actions_by_protocol = {
+            "protocol.verify_modal_bass_persistence.v1": (
+                "MEASURE_MULTIPLE_POSITIONS",
+                "VERIFY_MODAL_BASS_PERSISTENCE",
+            ),
+        }
+        completed_protocols = {
+            getattr(descriptor, "source_protocol_id", None)
+            for descriptor in descriptors
+            if "MULTIPLE_LISTENING_POSITIONS"
+            in getattr(descriptor, "declared_change_codes", ())
+        }
+        return {
+            action: "EXPERIMENT_PROTOCOL_COMPLETED"
+            for protocol in completed_protocols
+            for action in actions_by_protocol.get(protocol, ())
+        }

@@ -18,4 +18,5 @@ class ETCReflectionCorrelationAnalysis:
     evaluated_event_count: int = 0
     matched_event_count: int = 0
     confidence: float = 0.0
-
+    available_surface_ids: tuple[str, ...] = ()
+    geometry_candidate_count: int = 0

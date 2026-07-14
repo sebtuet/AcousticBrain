@@ -1,0 +1,34 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : campaign-fixture
+
+CAMPAGNES EXPÉRIMENTALES
+
+Campagne : VERIFY_MODAL_BASS_PERSISTENCE
+Protocole : protocol.verify_modal_bass_persistence.v1
+Hypothèse : MODAL_BASS_PERSISTENCE
+Objectif : déterminer si la persistance du grave dépend du point d’écoute
+Statut : PARTIALLY_RESOLVED
+Mesures :
+ ✓ exp-003 — REFERENCE (0.00 m) — READY
+ ✓ exp-004 — BACKWARD (-0.30 m) — READY
+ ✓ exp-005 — FORWARD (+0.30 m) — READY
+Résultats par position :
+ • BACKWARD (-0.30 m, exp-004) — évolution acoustique UNCHANGED
+   Décroissance maximale : 0.790 → 0.790 s
+   - la décroissance reste stable dans les bandes ciblées
+ • FORWARD (+0.30 m, exp-005) — évolution acoustique IMPROVED
+   Décroissance maximale : 0.790 → 0.636 s
+   - la décroissance diminue dans les bandes ciblées
+   - la décroissance grave varie selon la position d’écoute
+   - un effet local de position est soutenu
+Conclusion actuelle :
+ ✓ la décroissance grave varie selon la position d’écoute
+ ✓ un effet local de position est soutenu
+ ✗ la composante modale globale reste non discriminée
+Diminution maximale observée : 0.790 → 0.636 s (19.5 %, exp-005)
+Discriminations restantes : effet local de position vs composante modale globale
+Prochaine discrimination nécessaire : variation contrôlée de la position de la source, microphone fixe

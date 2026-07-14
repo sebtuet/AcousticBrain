@@ -8,6 +8,7 @@ from .surface_material_description import SurfaceMaterialDescription
 from .surface_covering_zone import SurfaceCoveringZone
 from .room_furniture_description import RoomFurnitureDescription
 from .acoustic_treatment_description import AcousticTreatmentDescription
+from .geometry_datum_quality_description import GeometryDatumQualityDescription
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class RoomDescription:
     covering_zones: tuple[SurfaceCoveringZone, ...] = ()
     furniture: tuple[RoomFurnitureDescription, ...] = ()
     acoustic_treatments: tuple[AcousticTreatmentDescription, ...] = ()
+    geometry_data_quality: tuple[GeometryDatumQualityDescription, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name.strip():
@@ -37,6 +39,7 @@ class RoomDescription:
             ("covering_zones", self.covering_zones),
             ("furniture", self.furniture),
             ("acoustic_treatments", self.acoustic_treatments),
+            ("geometry_data_quality", self.geometry_data_quality),
         ):
             if not isinstance(collection, tuple):
                 raise ValueError(f"Room-description {name} must be a tuple.")
@@ -48,6 +51,11 @@ class RoomDescription:
             ("covering_zones", self.covering_zones, SurfaceCoveringZone),
             ("furniture", self.furniture, RoomFurnitureDescription),
             ("acoustic_treatments", self.acoustic_treatments, AcousticTreatmentDescription),
+            (
+                "geometry_data_quality",
+                self.geometry_data_quality,
+                GeometryDatumQualityDescription,
+            ),
         ):
             if any(not isinstance(item, expected_type) for item in collection):
                 raise ValueError(f"Room-description {name} contain an invalid type.")
@@ -78,6 +86,10 @@ class RoomDescription:
         self._require_unique(
             (item.treatment_id for item in self.acoustic_treatments),
             "acoustic-treatment",
+        )
+        self._require_unique(
+            (item.datum_id for item in self.geometry_data_quality),
+            "geometry-datum-quality",
         )
 
     @staticmethod

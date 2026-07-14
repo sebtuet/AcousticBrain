@@ -17,7 +17,9 @@ Après : exp-001
 Comparabilité : COMPARABLE
 Protocole : protocol.repeat-pair
 Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
-Évolution : STRONGER
+Évolution acoustique : IMPROVED
+Évolution de l’hypothèse : STRONGER
+Résultat expérimental : un effet local est soutenu
 Faits améliorés : global.domain.spatial.score
 Faits dégradés : aucun
 Faits modifiés sans direction : aucun
@@ -39,13 +41,15 @@ Discriminations ouvertes : LOUDSPEAKER_VS_ROOM_SIDE
 
 Synthèse cumulative depuis la baseline
 
-Expérience exp-001
+Comparaison cumulative depuis baseline — exp-001
 Avant : baseline
 Après : exp-001
 Comparabilité : COMPARABLE
 Protocole : protocol.repeat-pair
 Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
-Évolution : STRONGER
+Évolution acoustique : IMPROVED
+Évolution de l’hypothèse : STRONGER
+Résultat expérimental : un effet local est soutenu
 Faits améliorés : global.domain.spatial.score
 Faits dégradés : aucun
 Faits modifiés sans direction : aucun
