@@ -85,6 +85,49 @@ class ConsoleReporter:
                     f"{geometry.propagation_completeness:.0f} %"
                 )
 
+        materials = report.surface_materials
+        if materials is not None:
+            print()
+            print("Surface materials")
+            print(f"Completeness: {materials.completeness:.0f} %")
+            for material in materials.materials:
+                print()
+                print(f"Material: {material.material_id} — {material.display_name}")
+                print(f"Source: {material.source}")
+                print(f"Confidence: {material.confidence:.1f} %")
+                print(f"Quality: {material.quality}")
+                print(f"Precision: {material.precision}")
+                print(
+                    "Provenance: "
+                    + (", ".join(material.provenance_codes) or "none")
+                )
+                self._print_material_coefficients(
+                    "Absorption", material.absorption_coefficients
+                )
+                self._print_material_coefficients(
+                    "Diffusion", material.diffusion_coefficients
+                )
+                self._print_material_coefficients(
+                    "Transmission", material.transmission_coefficients
+                )
+            print("Assignments:")
+            for target in materials.targets:
+                print(
+                    f" • {target.target_kind} {target.target_id}: "
+                    f"{target.material_id or 'missing'}"
+                )
+            print(
+                "Available facts: "
+                + (", ".join(materials.available_fact_codes) or "none")
+            )
+            print(
+                "Missing facts: "
+                + (", ".join(
+                    (*materials.missing_fact_codes,
+                     *materials.missing_material_target_codes)
+                ) or "none")
+            )
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()
@@ -801,3 +844,19 @@ class ConsoleReporter:
             (item.diagnostic, item.is_secondary)
             for item in report.diagnostic_priority.prioritized_diagnostics
         ]
+
+    @staticmethod
+    def _print_material_coefficients(label, coefficients):
+        if coefficients is None:
+            print(f"{label}: unavailable")
+            return
+        if not coefficients:
+            print(f"{label}: none")
+            return
+        print(
+            f"{label}: "
+            + ", ".join(
+                f"{item.center_frequency_hz:g} Hz={item.coefficient:.3f}"
+                for item in coefficients
+            )
+        )

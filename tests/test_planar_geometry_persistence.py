@@ -37,9 +37,9 @@ def test_schema_v3_round_trip_preserves_planar_geometry():
     payload = codec.dumps(description())
     result = codec.loads(payload)
 
-    assert json.loads(payload)["schema_version"] == 3
+    assert json.loads(payload)["schema_version"] == 4
     assert result.description == description()
-    assert result.source_schema_version == 3
+    assert result.source_schema_version == 4
     assert not result.requires_migration
 
 

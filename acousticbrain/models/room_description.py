@@ -5,6 +5,7 @@ from .room_dimensions import RoomDimensions
 from .room_opening import RoomOpening
 from .speaker_position import SpeakerPosition
 from .surface_material_description import SurfaceMaterialDescription
+from .surface_material_assignment import SurfaceMaterialAssignment
 from .surface_covering_zone import SurfaceCoveringZone
 from .room_furniture_description import RoomFurnitureDescription
 from .acoustic_treatment_description import AcousticTreatmentDescription
@@ -31,6 +32,8 @@ class RoomDescription:
     geometry_data_quality: tuple[GeometryDatumQualityDescription, ...] = ()
     planar_surfaces: tuple[PlanarSurfaceDescription, ...] = ()
     planar_regions: tuple[PlanarRegionDescription, ...] = ()
+    materials: tuple[SurfaceMaterialDescription, ...] = ()
+    material_assignments: tuple[SurfaceMaterialAssignment, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name.strip():
@@ -48,6 +51,8 @@ class RoomDescription:
             ("geometry_data_quality", self.geometry_data_quality),
             ("planar_surfaces", self.planar_surfaces),
             ("planar_regions", self.planar_regions),
+            ("materials", self.materials),
+            ("material_assignments", self.material_assignments),
         ):
             if not isinstance(collection, tuple):
                 raise ValueError(f"Room-description {name} must be a tuple.")
@@ -66,6 +71,8 @@ class RoomDescription:
             ),
             ("planar_surfaces", self.planar_surfaces, PlanarSurfaceDescription),
             ("planar_regions", self.planar_regions, PlanarRegionDescription),
+            ("materials", self.materials, SurfaceMaterialDescription),
+            ("material_assignments", self.material_assignments, SurfaceMaterialAssignment),
         ):
             if any(not isinstance(item, expected_type) for item in collection):
                 raise ValueError(f"Room-description {name} contain an invalid type.")
@@ -108,6 +115,16 @@ class RoomDescription:
         self._require_unique(
             (item.region_id for item in self.planar_regions),
             "planar-region",
+        )
+        if any(item.is_legacy for item in self.materials):
+            raise ValueError("Frequency-dependent materials cannot use legacy mode.")
+        self._require_unique(
+            (item.material_id for item in self.materials),
+            "frequency-dependent-material",
+        )
+        self._require_unique(
+            (item.assignment_id for item in self.material_assignments),
+            "surface-material-assignment",
         )
 
     @staticmethod

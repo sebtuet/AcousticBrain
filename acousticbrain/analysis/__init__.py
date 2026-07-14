@@ -1,4 +1,5 @@
 from .context import AnalysisContext
+from .surface_material import SurfaceMaterialAnalyzer
 from .stereo import StereoAnalyzer
 from .sbir import SBIRAnalyzer
 from .modal_density import ModalDensityAnalyzer

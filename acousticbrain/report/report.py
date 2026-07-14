@@ -15,6 +15,7 @@ from .experiment_discovery_presenter import PresentedExperimentDiscovery
 from .experiment_comparison_presenter import PresentedExperimentComparison
 from .causal_discrimination_presenter import PresentedCausalDiscrimination
 from .experiment_campaign_presenter import PresentedExperimentCampaign
+from .surface_material_presenter import PresentedSurfaceMaterialAnalysis
 
 
 @dataclass
@@ -47,6 +48,8 @@ class Report:
     experiment_campaigns: tuple[PresentedExperimentCampaign, ...] = ()
 
     causal_discrimination: PresentedCausalDiscrimination | None = None
+
+    surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 
     def add(self, diagnostic):
 

@@ -1,4 +1,8 @@
 from .report import Report
+from .surface_material_presenter import (
+    PresentedSurfaceMaterialAnalysis,
+    SurfaceMaterialPresenter,
+)
 from .console import ConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
