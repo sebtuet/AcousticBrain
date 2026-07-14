@@ -17,6 +17,13 @@ from .listening_position import ListeningPosition
 from .room_opening_surface import RoomOpeningSurface
 from .room_opening import RoomOpening
 from .room_description import RoomDescription
+from .planar_geometry_description import (
+    PlanarRegionDescription,
+    PlanarRegionRole,
+    PlanarSurfaceDescription,
+    PlanarSurfaceRole,
+    PlanarVertexDescription,
+)
 from .geometry_datum_quality_description import GeometryDatumQualityDescription
 from .geometry_datum_quality import GeometryDatumQuality
 from .geometry_source import GeometrySource

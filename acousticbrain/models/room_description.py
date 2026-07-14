@@ -9,6 +9,10 @@ from .surface_covering_zone import SurfaceCoveringZone
 from .room_furniture_description import RoomFurnitureDescription
 from .acoustic_treatment_description import AcousticTreatmentDescription
 from .geometry_datum_quality_description import GeometryDatumQualityDescription
+from .planar_geometry_description import (
+    PlanarRegionDescription,
+    PlanarSurfaceDescription,
+)
 
 
 @dataclass(frozen=True)
@@ -25,6 +29,8 @@ class RoomDescription:
     furniture: tuple[RoomFurnitureDescription, ...] = ()
     acoustic_treatments: tuple[AcousticTreatmentDescription, ...] = ()
     geometry_data_quality: tuple[GeometryDatumQualityDescription, ...] = ()
+    planar_surfaces: tuple[PlanarSurfaceDescription, ...] = ()
+    planar_regions: tuple[PlanarRegionDescription, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name.strip():
@@ -40,6 +46,8 @@ class RoomDescription:
             ("furniture", self.furniture),
             ("acoustic_treatments", self.acoustic_treatments),
             ("geometry_data_quality", self.geometry_data_quality),
+            ("planar_surfaces", self.planar_surfaces),
+            ("planar_regions", self.planar_regions),
         ):
             if not isinstance(collection, tuple):
                 raise ValueError(f"Room-description {name} must be a tuple.")
@@ -56,6 +64,8 @@ class RoomDescription:
                 self.geometry_data_quality,
                 GeometryDatumQualityDescription,
             ),
+            ("planar_surfaces", self.planar_surfaces, PlanarSurfaceDescription),
+            ("planar_regions", self.planar_regions, PlanarRegionDescription),
         ):
             if any(not isinstance(item, expected_type) for item in collection):
                 raise ValueError(f"Room-description {name} contain an invalid type.")
@@ -90,6 +100,14 @@ class RoomDescription:
         self._require_unique(
             (item.datum_id for item in self.geometry_data_quality),
             "geometry-datum-quality",
+        )
+        self._require_unique(
+            (item.surface_id for item in self.planar_surfaces),
+            "planar-surface",
+        )
+        self._require_unique(
+            (item.region_id for item in self.planar_regions),
+            "planar-region",
         )
 
     @staticmethod
