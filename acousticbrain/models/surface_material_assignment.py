@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from math import isfinite
+
+from .surface_material_description import SurfaceMaterialDescriptionSource
 
 
 @dataclass(frozen=True)
@@ -7,6 +10,11 @@ class SurfaceMaterialAssignment:
     material_id: str
     surface_id: str | None = None
     region_id: str | None = None
+    description_source: SurfaceMaterialDescriptionSource = (
+        SurfaceMaterialDescriptionSource.IMPORTED_PROJECT_DATA
+    )
+    description_confidence: float = 0.0
+    provenance_codes: tuple[str, ...] = ()
 
     def __post_init__(self):
         for value, label in (
@@ -23,6 +31,20 @@ class SurfaceMaterialAssignment:
             for value in targets
         ):
             raise ValueError("Material-assignment target identifier is invalid.")
+        if not isinstance(self.description_source, SurfaceMaterialDescriptionSource):
+            raise ValueError("Material assignment requires a description source.")
+        if (
+            isinstance(self.description_confidence, bool)
+            or not isinstance(self.description_confidence, (int, float))
+            or not isfinite(self.description_confidence)
+            or not 0.0 <= self.description_confidence <= 100.0
+        ):
+            raise ValueError("Material-assignment confidence must be bounded.")
+        if not isinstance(self.provenance_codes, tuple) or any(
+            not isinstance(item, str) or not item.strip()
+            for item in self.provenance_codes
+        ):
+            raise ValueError("Material-assignment provenance must contain codes.")
 
     @property
     def target_kind(self):

@@ -10,6 +10,7 @@ from .surface_material_type import SurfaceMaterialType
 from .surface_material_description import (
     SurfaceMaterialCoefficient,
     SurfaceMaterialDescription,
+    SurfaceMaterialDescriptionSource,
     SurfaceMaterialPrecision,
     SurfaceMaterialQuality,
     SurfaceMaterialSource,
@@ -18,6 +19,21 @@ from .surface_material_assignment import SurfaceMaterialAssignment
 from .surface_material_analysis import (
     SurfaceMaterialAnalysis,
     SurfaceMaterialTargetAvailability,
+)
+from .guided_room_description import (
+    GuidedAllowedValue,
+    GuidedAnswerInterpretation,
+    GuidedChangeKind,
+    GuidedCompletenessProjection,
+    GuidedInterpretedFact,
+    GuidedInterpretationStatus,
+    GuidedQuestionKind,
+    GuidedQuestionPriority,
+    GuidedRequestedChange,
+    GuidedValidationIssue,
+    RoomDescriptionChangeProposal,
+    RoomDescriptionChangeProposalStatus,
+    RoomDescriptionQuestionPlan,
 )
 from .surface_covering_zone import SurfaceCoveringZone
 from .furniture_type import FurnitureType

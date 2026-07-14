@@ -16,3 +16,11 @@ from .automatic_experiment_comparison import (
     ExperimentFactProjector,
 )
 from .causal_discrimination import CausalDiscriminationService
+from .guided_room_description import (
+    ControlledVocabularyRoomDescriptionInterpreter,
+    GuidedRoomDescriptionApplyResult,
+    GuidedRoomDescriptionWorkflow,
+    RoomDescriptionProposalService,
+    RoomDescriptionQuestionPlanner,
+    StructuredRoomDescriptionInterpreter,
+)

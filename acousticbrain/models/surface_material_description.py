@@ -11,6 +11,15 @@ class SurfaceMaterialSource(Enum):
     MANUFACTURER = "MANUFACTURER"
     MEASURED = "MEASURED"
     DATABASE = "DATABASE"
+    MANUFACTURER_DATA = "MANUFACTURER_DATA"
+    CATALOG_ESTIMATE = "CATALOG_ESTIMATE"
+    USER_PROVIDED = "USER_PROVIDED"
+
+
+class SurfaceMaterialDescriptionSource(Enum):
+    USER_DESCRIPTION_INTERPRETED = "USER_DESCRIPTION_INTERPRETED"
+    USER_STRUCTURED_INPUT = "USER_STRUCTURED_INPUT"
+    IMPORTED_PROJECT_DATA = "IMPORTED_PROJECT_DATA"
 
 
 class SurfaceMaterialQuality(Enum):
@@ -63,6 +72,7 @@ class SurfaceMaterialDescription:
     quality: SurfaceMaterialQuality
     precision: SurfaceMaterialPrecision
     provenance_codes: tuple[str, ...]
+    catalog_entry_id: str | None
     legacy_surface: RoomDescriptionSurface | None
     legacy_material_type: SurfaceMaterialType | None
     legacy_detail: str | None
@@ -79,6 +89,7 @@ class SurfaceMaterialDescription:
         quality=SurfaceMaterialQuality.UNKNOWN,
         precision=SurfaceMaterialPrecision.UNKNOWN,
         provenance_codes=(),
+        catalog_entry_id=None,
         *,
         surface=None,
         material_type=None,
@@ -108,6 +119,7 @@ class SurfaceMaterialDescription:
                 "quality": SurfaceMaterialQuality.UNKNOWN,
                 "precision": SurfaceMaterialPrecision.UNKNOWN,
                 "provenance_codes": ("LEGACY_SURFACE_MATERIAL_DECLARATION",),
+                "catalog_entry_id": None,
                 "legacy_surface": surface,
                 "legacy_material_type": material_type,
                 "legacy_detail": detail,
@@ -124,6 +136,7 @@ class SurfaceMaterialDescription:
                 "quality": quality,
                 "precision": precision,
                 "provenance_codes": provenance_codes,
+                "catalog_entry_id": catalog_entry_id,
                 "legacy_surface": None,
                 "legacy_material_type": None,
                 "legacy_detail": None,
@@ -180,6 +193,16 @@ class SurfaceMaterialDescription:
             raise ValueError("Surface-material provenance must be a tuple of codes.")
         if len(self.provenance_codes) != len(set(self.provenance_codes)):
             raise ValueError("Surface-material provenance codes must be unique.")
+        if self.catalog_entry_id is not None and (
+            not isinstance(self.catalog_entry_id, str)
+            or not self.catalog_entry_id.strip()
+        ):
+            raise ValueError("Surface-material catalog identifier cannot be empty.")
+        if (
+            self.source is SurfaceMaterialSource.CATALOG_ESTIMATE
+            and self.catalog_entry_id is None
+        ):
+            raise ValueError("Catalog estimates require an immutable catalog entry.")
 
     @staticmethod
     def _validate_coefficients(name, coefficients):

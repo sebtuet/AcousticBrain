@@ -63,9 +63,9 @@ def test_schema_v4_round_trip_preserves_material_profiles_and_assignments():
     result = codec.loads(payload)
 
     assert result.description == description()
-    assert result.source_schema_version == 4
+    assert result.source_schema_version == 5
     assert not result.requires_migration
-    assert json.loads(payload)["schema_version"] == 4
+    assert json.loads(payload)["schema_version"] == 5
 
 
 def test_schema_v4_writer_is_deterministic_by_stable_identifiers():

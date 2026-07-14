@@ -3,6 +3,10 @@ from .surface_material_presenter import (
     PresentedSurfaceMaterialAnalysis,
     SurfaceMaterialPresenter,
 )
+from .guided_room_description_presenter import (
+    PresentedRoomDescriptionChangeProposal,
+    RoomDescriptionChangeProposalPresenter,
+)
 from .console import ConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,

@@ -55,8 +55,8 @@ def test_round_trip_preserves_identifiers_types_and_geometry():
     assert result.is_success
     assert result.description == description()
     assert result.description.openings[0].surface is RoomOpeningSurface.REAR_WALL
-    assert json.loads(payload)["schema_version"] == 4
-    assert result.source_schema_version == 4
+    assert json.loads(payload)["schema_version"] == 5
+    assert result.source_schema_version == 5
     assert not result.requires_migration
 
 
@@ -106,7 +106,7 @@ def test_reports_invalid_json_without_raising_a_parser_error():
     assert result.errors[0].path == ()
 
 
-@pytest.mark.parametrize("version", [0, 5, "1", True])
+@pytest.mark.parametrize("version", [0, 6, "1", True])
 def test_reports_unknown_or_untyped_schema_versions(version):
     payload = encoded_payload()
     payload["schema_version"] = version
