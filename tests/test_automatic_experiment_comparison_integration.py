@@ -9,80 +9,52 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_explicit_mode_analyzes_discovered_experiments_without_business_history():
+@pytest.fixture
+def versioned_measurement_root(tmp_path):
+    measurement_root = tmp_path / "measurements"
+    for experiment_id in ("baseline", "exp-001", "exp-002"):
+        shutil.copytree(
+            ROOT / "measurements" / experiment_id,
+            measurement_root / experiment_id,
+        )
+    return measurement_root
+
+
+def test_explicit_mode_analyzes_versioned_experiments_without_local_data(
+    versioned_measurement_root,
+):
     report = AcousticBrain().analyze(
-        measurement_root=ROOT / "measurements",
+        measurement_root=versioned_measurement_root,
         compare_experiments=True,
         detailed_comparison_traceability=True,
     )
 
     assert report.experiment_comparison.chronology == (
-        "baseline", "exp-001", "exp-002", "exp-003", "exp-004", "exp-005"
+        "baseline", "exp-001", "exp-002"
     )
-    assert len(report.experiment_comparison.local_comparisons) == 5
-    assert len(report.experiment_comparison.cumulative_comparisons) == 5
-    assert len(report.experiment_campaigns) == 1
-    campaign = report.experiment_campaigns[0]
-    assert campaign.campaign_code == "VERIFY_MODAL_BASS_PERSISTENCE"
-    assert campaign.status == "PARTIALLY_RESOLVED"
-    assert campaign.objective_label == (
-        "déterminer si la persistance du grave dépend du point d’écoute"
-    )
-    assert campaign.reference_experiment_id == "exp-003"
-    assert tuple(item.experiment_id for item in campaign.measurements) == (
-        "exp-003", "exp-004", "exp-005"
-    )
-    assert "un effet local de position est soutenu" in campaign.result_labels
-    assert "la composante modale globale reste non discriminée" in (
-        campaign.result_labels
-    )
-    metric = campaign.metrics[0]
-    assert metric.reference_value == pytest.approx(0.790, abs=0.001)
-    assert metric.best_value == pytest.approx(0.636, abs=0.001)
-    assert metric.best_experiment_id == "exp-005"
-    assert campaign.next_discrimination_label == (
-        "variation contrôlée de la position de la source, microphone fixe"
-    )
+    assert len(report.experiment_comparison.local_comparisons) == 2
+    assert len(report.experiment_comparison.cumulative_comparisons) == 2
+    assert report.experiment_campaigns == ()
     assert report.experiment_comparison.local_comparisons[0].trace_id
-    exp004 = next(
-        item for item in report.experiment_comparison.local_comparisons
-        if item.after_experiment_id == "exp-004"
-    )
-    exp005 = next(
-        item for item in report.experiment_comparison.local_comparisons
-        if item.after_experiment_id == "exp-005"
-    )
-    assert exp004.before_experiment_id == "exp-003"
-    assert exp005.before_experiment_id == "exp-003"
-    assert exp005.source_protocol_id == (
-        "protocol.verify_modal_bass_persistence.v1"
-    )
-    assert exp005.experiment_parameters == (
-        ("listening_position_offset_m", 0.3),
-        ("position_role", "FORWARD"),
-    )
-    assert exp004.acoustic_outcome == "UNCHANGED"
-    assert exp005.acoustic_outcome == "IMPROVED"
-    assert exp005.outcome == "UNCHANGED"
-    assert exp005.experimental_result_labels == (
-        "un effet local de position est soutenu",
-    )
-    assert "la décroissance grave varie selon la position d’écoute" in (
-        exp005.observation_labels
-    )
     assert report.optimization_session is None
 
 
-def test_comparison_is_absent_when_explicit_mode_is_disabled():
-    report = AcousticBrain().analyze(measurement_root=ROOT / "measurements")
+def test_comparison_is_absent_when_explicit_mode_is_disabled(
+    versioned_measurement_root,
+):
+    report = AcousticBrain().analyze(
+        measurement_root=versioned_measurement_root
+    )
 
     assert report.experiment_comparison is None
     assert report.optimization_session is None
 
 
-def test_causal_mode_projects_only_explicit_repository_steps():
+def test_causal_mode_projects_only_explicit_repository_steps(
+    versioned_measurement_root,
+):
     report = AcousticBrain().analyze(
-        measurement_root=ROOT / "measurements",
+        measurement_root=versioned_measurement_root,
         compare_experiments=True,
         analyze_causal_discrimination=True,
         plan_experiments=True,
@@ -128,34 +100,21 @@ def test_causal_mode_projects_only_explicit_repository_steps():
     )
     assert planned_asymmetry.eligible is False
     assert "USER_DEFERRED" in planned_asymmetry.ineligibility_reasons
-    planned_modal = next(
-        item for item in report.experiment_planning.all_candidates
-        if item.hypothesis_code == "MODAL_BASS_PERSISTENCE"
-    )
-    assert planned_modal.eligible is False
-    assert "ALREADY_COMPLETED" in planned_modal.ineligibility_reasons
     multi_position = next(
         item for item in report.recommendations
         if item.code == "MEASURE_MULTIPLE_POSITIONS"
     )
-    assert multi_position.status.name == "COMPLETED"
+    assert multi_position.status.name == "ACTIVE"
     modal_domain = next(
         item for item in report.global_analysis.domains
         if item.code == "MODAL_DENSITY"
     )
     assert modal_domain.recommendation_statuses == (
-        ("MEASURE_MULTIPLE_POSITIONS", "COMPLETED"),
+        ("MEASURE_MULTIPLE_POSITIONS", "ACTIVE"),
     )
-    reasoning_diagnostic = next(
-        item for item in report.diagnostics
-        if item.title == "Raisonnement acoustique déterministe"
+    assert report.experiment_planning.recommended_candidate.hypothesis_code == (
+        "MODAL_BASS_PERSISTENCE"
     )
-    assert any(
-        "VERIFY_SPEAKER_ROOM_ASYMMETRY" in item
-        and "DEFERRED (USER_DECISION)" in item
-        for item in reasoning_diagnostic.recommendations
-    )
-    assert report.experiment_planning.recommended_candidate is None
     assert "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS" in (
         report.experiment_planning.uncovered_active_action_codes
     )
