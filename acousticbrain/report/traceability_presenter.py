@@ -23,6 +23,7 @@ class PresentedExplanationLink:
     action_codes: tuple[str, ...] = ()
     protocol_codes: tuple[str, ...] = ()
     candidate_codes: tuple[str, ...] = ()
+    verification_proposal_codes: tuple[str, ...] = ()
     ranking_codes: tuple[str, ...] = ()
     recommended_candidate_codes: tuple[str, ...] = ()
     iteration_codes: tuple[str, ...] = ()
@@ -72,6 +73,9 @@ class TraceabilityPresenter:
                     action_codes=link.action_codes,
                     protocol_codes=link.protocol_codes,
                     candidate_codes=link.candidate_codes,
+                    verification_proposal_codes=(
+                        link.verification_proposal_codes
+                    ),
                     ranking_codes=link.ranking_codes,
                     recommended_candidate_codes=(
                         link.recommended_candidate_codes

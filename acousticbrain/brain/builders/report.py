@@ -12,6 +12,7 @@ from acousticbrain.report import (
     ExperimentCampaignPresenter,
     SurfaceMaterialPresenter,
     MaterialAwareReflectionCandidatePresenter,
+    ControlledReflectionVerificationPlanningPresenter,
 )
 
 
@@ -43,6 +44,9 @@ class ReportBuilder:
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (
             MaterialAwareReflectionCandidatePresenter().present(context)
+        )
+        report.controlled_reflection_verification_planning = (
+            ControlledReflectionVerificationPlanningPresenter().present(context)
         )
 
         return report

@@ -38,4 +38,7 @@ class TraceabilityStage:
             material_aware_reflection_candidates=(
                 context.material_aware_reflection_candidate_analysis
             ),
+            controlled_reflection_verification_planning=(
+                context.controlled_reflection_verification_planning_analysis
+            ),
         )

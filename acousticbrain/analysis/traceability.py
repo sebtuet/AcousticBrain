@@ -82,6 +82,7 @@ class TraceabilityEngine:
         acoustic_reasoning: AcousticReasoningAnalysis | None = None,
         experiment_planning: ExperimentPlanningAnalysis | None = None,
         material_aware_reflection_candidates=None,
+        controlled_reflection_verification_planning=None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -150,6 +151,10 @@ class TraceabilityEngine:
             )
             evidence_references.extend(material_evidence)
             links.extend(material_links)
+        if controlled_reflection_verification_planning is not None:
+            links.extend(self._reflection_verification_planning_graph(
+                controlled_reflection_verification_planning
+            ))
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -206,6 +211,14 @@ class TraceabilityEngine:
                         if material_aware_reflection_candidates is not None
                         else ()
                     ),
+                    *(
+                        (
+                            "ControlledReflectionVerificationPlanningAnalysis",
+                            *controlled_reflection_verification_planning.source_analysis_codes,
+                        )
+                        if controlled_reflection_verification_planning is not None
+                        else ()
+                    ),
                 )
             )
         )
@@ -260,6 +273,39 @@ class TraceabilityEngine:
                 ),
             ))
         return evidence, links
+
+    @staticmethod
+    def _reflection_verification_planning_graph(analysis):
+        links = []
+        for proposal in analysis.proposals:
+            links.append(ExplanationLink(
+                code=f"explanation.{proposal.proposal_id}",
+                fact_codes=(
+                    "material_aware_reflection_candidate."
+                    f"{proposal.source_candidate_id}.overall_compatibility_score",
+                ),
+                evidence_codes=proposal.source_evidence_codes,
+                correlation_codes=(proposal.correlation_id,),
+                candidate_codes=(proposal.source_candidate_id,),
+                verification_proposal_codes=(proposal.proposal_id,),
+                ranking_codes=(
+                    f"informative_rank.{proposal.proposal_order}",
+                ),
+            ))
+        for exclusion in analysis.exclusions:
+            links.append(ExplanationLink(
+                code=(
+                    "explanation.reflection_verification_exclusion."
+                    f"{exclusion.source_candidate_id}"
+                ),
+                fact_codes=(
+                    "material_aware_reflection_candidate."
+                    f"{exclusion.source_candidate_id}.geometric_status",
+                ),
+                evidence_codes=exclusion.source_evidence_codes,
+                candidate_codes=(exclusion.source_candidate_id,),
+            ))
+        return links
 
     @staticmethod
     def _planning_graph(analysis):

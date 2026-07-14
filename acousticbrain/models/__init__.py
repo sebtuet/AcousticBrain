@@ -30,6 +30,16 @@ from .material_aware_reflection_candidate import (
     ReflectionCandidateGeometricStatus,
     ReflectionCandidateStatus,
 )
+from .reflection_verification_planning import (
+    ControlledReflectionVerificationPlanningAnalysis,
+    ReflectionCandidateVerificationExclusion,
+    ReflectionCandidateVerificationProposal,
+    ReflectionVerificationCausalityStatus,
+    ReflectionVerificationExclusionReason,
+    ReflectionVerificationExecutionStatus,
+    ReflectionVerificationImpact,
+    ReflectionVerificationMethod,
+)
 from .guided_room_description import (
     GuidedAllowedValue,
     GuidedAnswerInterpretation,
