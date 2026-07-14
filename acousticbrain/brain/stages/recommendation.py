@@ -14,6 +14,9 @@ class RecommendationStage:
         analysis = self.engine.analyze(
             stereo=context.stereo,
             sbir=context.sbir,
+            sbir_geometry_correlations=(
+                context.sbir_geometry_correlation_analysis
+            ),
             modal_density=context.modal_density,
             peak_classification=getattr(context, "peak_classification", None),
             rt60=context.rt60_analysis,
@@ -82,11 +85,23 @@ class RecommendationStage:
                 "MEASURE_MULTIPLE_POSITIONS",
                 "VERIFY_MODAL_BASS_PERSISTENCE",
             ),
+            "protocol.temporary_move_speaker.v1": (
+                "TEST_SPEAKER_DISTANCE",
+                "VERIFY_SBIR_PLACEMENT",
+            ),
+        }
+        completion_changes = {
+            "protocol.verify_modal_bass_persistence.v1": (
+                "MULTIPLE_LISTENING_POSITIONS"
+            ),
+            "protocol.temporary_move_speaker.v1": "TEMPORARY_SPEAKER_MOVE",
         }
         completed_protocols = {
-            getattr(descriptor, "source_protocol_id", None)
+            protocol
             for descriptor in descriptors
-            if "MULTIPLE_LISTENING_POSITIONS"
+            for protocol in (getattr(descriptor, "source_protocol_id", None),)
+            if protocol in completion_changes
+            and completion_changes[protocol]
             in getattr(descriptor, "declared_change_codes", ())
         }
         return {

@@ -20,6 +20,7 @@ from acousticbrain.models import (
     RecommendationPriority,
     RT60Analysis,
     SBIRAnalysis,
+    SBIRGeometryCorrelationAnalysis,
     SpatialAnalysis,
     SpatialCorrelationAnalysis,
     StereoAnalysis,
@@ -40,6 +41,7 @@ class RecommendationEngine:
         *,
         stereo: StereoAnalysis | None = None,
         sbir: SBIRAnalysis | None = None,
+        sbir_geometry_correlations: SBIRGeometryCorrelationAnalysis | None = None,
         modal_density: ModalDensityAnalysis | None = None,
         peak_classification: PeakClassificationAnalysis | None = None,
         rt60: RT60Analysis | None = None,
@@ -65,7 +67,10 @@ class RecommendationEngine:
 
         if stereo is not None:
             recommendations.extend(self._from_stereo(stereo))
-        if sbir is not None:
+        if sbir is not None and not (
+            sbir_geometry_correlations is not None
+            and sbir_geometry_correlations.best_match is not None
+        ):
             recommendations.extend(self._from_sbir(sbir))
         if modal_density is not None:
             recommendations.extend(self._from_modal_density(modal_density))

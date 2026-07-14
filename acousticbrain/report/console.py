@@ -496,6 +496,8 @@ class ConsoleReporter:
                     "GEOMETRY_TIMING_INCOMPATIBLE": "délai théorique incompatible avec l’événement observé",
                     "GEOMETRY_UNCERTAINTY_TOO_HIGH": "incertitude géométrique trop élevée",
                     "GEOMETRY_CONFIDENCE_TOO_LOW": "confiance géométrique insuffisante",
+                    "SBIR_FREQUENCY_MISMATCH_TOO_HIGH": "écart fréquentiel SBIR trop élevé",
+                    "SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH": "incertitude de prédiction SBIR trop élevée",
                     "PREREQUISITE_MISSING": "prérequis du protocole manquant",
                     "HYPOTHESIS_REFUTED": "hypothèse contredite",
                     "SOURCE_HYPOTHESIS_MISSING": "hypothèse source absente",

@@ -10,6 +10,9 @@ from acousticbrain.application import (
     ImportedExperiment,
     OptimizationSessionService,
 )
+from acousticbrain.application.automatic_experiment_comparison import (
+    ExperimentFactProjector,
+)
 from acousticbrain.models import (
     AcousticBrainState,
     ComparableExperimentFact,
@@ -379,6 +382,71 @@ def test_multi_position_protocol_projects_observed_local_decay_variation():
         "LOCAL_POSITION_EFFECT_SUPPORTED",
         "BASS_DECAY_REDUCED_AT_TARGET_BANDS",
     }
+
+
+def test_temporary_speaker_move_projects_only_discriminant_sbir_outcomes():
+    service = AutomaticExperimentComparisonService()
+    code = "sbir.target_null_frequency_hz"
+    declared = ("CONTROLLED_SPEAKER_POSITION", "TEMPORARY_SPEAKER_MOVE")
+
+    moved_deltas, _, _ = service._fact_deltas(
+        analyzed(descriptor("exp-003"), (
+            fact(85.0, code=code, unit="HERTZ", family="SBIR", threshold=2.0),
+        )),
+        analyzed(descriptor("exp-004"), (
+            fact(101.0, code=code, unit="HERTZ", family="SBIR", threshold=2.0),
+        )),
+    )
+    fixed_deltas, _, _ = service._fact_deltas(
+        analyzed(descriptor("exp-003"), (
+            fact(85.0, code=code, unit="HERTZ", family="SBIR", threshold=2.0),
+        )),
+        analyzed(descriptor("exp-004"), (
+            fact(86.0, code=code, unit="HERTZ", family="SBIR", threshold=2.0),
+        )),
+    )
+
+    moved, moved_counter = service._observations(
+        "SBIR_PLACEMENT_INTERACTION", moved_deltas, declared
+    )
+    fixed, fixed_counter = service._observations(
+        "SBIR_PLACEMENT_INTERACTION", fixed_deltas, declared
+    )
+
+    assert tuple(item.code for item in moved) == ("SBIR_MOVES_WITH_SPEAKER",)
+    assert tuple(item.code for item in fixed) == ("SBIR_REMAINS_FIXED",)
+    assert moved_counter == ()
+    assert fixed_counter == ()
+
+
+def test_snapshot_prefers_exact_geometry_sbir_target_with_its_provenance():
+    observed = SimpleNamespace(frequency=86.0, prominence=12.0)
+    geometry_match = SimpleNamespace(observed_dip=observed)
+    legacy_peak = SimpleNamespace(prominence=20.0)
+    legacy_match = SimpleNamespace(measured_frequency=60.0, peak=legacy_peak)
+    context = SimpleNamespace(
+        measurement_readiness_analysis=None,
+        global_analysis=SimpleNamespace(domains=()),
+        acoustic_reasoning_analysis=None,
+        spatial_analysis=None,
+        direct_reverberant_analysis=None,
+        bass_decay_analysis=None,
+        etc_analysis=None,
+        sbir_geometry_correlation_analysis=SimpleNamespace(
+            best_match=geometry_match
+        ),
+        sbir=SimpleNamespace(best_match=legacy_match),
+    )
+
+    facts = {
+        item.code: item for item in ExperimentFactProjector().project(context)
+    }
+
+    assert facts["sbir.target_null_frequency_hz"].value == 86.0
+    assert facts["sbir.target_null_prominence_db"].value == 12.0
+    assert facts["sbir.target_null_frequency_hz"].source_analysis == (
+        "SBIRGeometryCorrelationAnalysis"
+    )
 
 
 def test_degradation_uses_a_counter_fact_that_describes_the_actual_direction():

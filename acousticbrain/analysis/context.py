@@ -11,6 +11,7 @@ from acousticbrain.models import (
     DirectReverberantCorrelationAnalysis,
     ETCReflectionCorrelationAnalysis,
     GeometryEarlyReflectionAnalysis,
+    GeometrySBIRAnalysis,
     GlobalAnalysis,
     Measurement,
     MeasurementQualityAnalysis,
@@ -23,6 +24,7 @@ from acousticbrain.models import (
     RoomGeometry,
     RoomGeometryComparison,
     SBIRAnalysis,
+    SBIRGeometryCorrelationAnalysis,
     BinauralSpatialInterpretation,
     SpatialAnalysis,
     SpatialCorrelationAnalysis,
@@ -100,6 +102,12 @@ class AnalysisContext:
     ) = None
 
     geometry_early_reflection_analysis: GeometryEarlyReflectionAnalysis | None = None
+
+    geometry_sbir_analysis: GeometrySBIRAnalysis | None = None
+
+    sbir_geometry_correlation_analysis: (
+        SBIRGeometryCorrelationAnalysis | None
+    ) = None
 
     confidence_analysis: ConfidenceAnalysis | None = None
 

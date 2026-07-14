@@ -10,6 +10,12 @@ class ExperimentProtocolDeclarationService:
     MODAL_PROTOCOL_ID = "protocol.verify_modal_bass_persistence.v1"
     MODAL_HYPOTHESIS_CODE = "MODAL_BASS_PERSISTENCE"
     REQUIRED_FACT_CODES = ("bass_decay.maximum_decay_time_s",)
+    SBIR_PROTOCOL_ID = "protocol.temporary_move_speaker.v1"
+    SBIR_HYPOTHESIS_CODE = "SBIR_PLACEMENT_INTERACTION"
+    SBIR_REQUIRED_FACT_CODES = (
+        "sbir.target_null_frequency_hz",
+        "sbir.target_null_prominence_db",
+    )
 
     def __init__(self, repository=None):
         self.repository = repository or MeasurementRepository()
@@ -69,6 +75,81 @@ class ExperimentProtocolDeclarationService:
             self.repository.save_manifest(directory, manifest)
 
         return experiment_ids
+
+    def confirm_temporary_speaker_move(
+        self,
+        measurement_root,
+        *,
+        reference_experiment_id,
+        moved_experiment_id,
+        speaker_id,
+        surface_id,
+        geometry_candidate_id,
+        displacement_m,
+    ):
+        values = (
+            reference_experiment_id,
+            moved_experiment_id,
+            speaker_id,
+            surface_id,
+            geometry_candidate_id,
+        )
+        if any(not isinstance(value, str) or not value.strip() for value in values):
+            raise ValueError("SBIR protocol identifiers are required.")
+        if (
+            not isinstance(displacement_m, (int, float))
+            or isinstance(displacement_m, bool)
+            or not isfinite(displacement_m)
+            or displacement_m == 0.0
+        ):
+            raise ValueError("Speaker displacement must be finite and non-zero.")
+        root = Path(measurement_root)
+        reference = root / reference_experiment_id
+        moved = root / moved_experiment_id
+        missing = tuple(
+            experiment_id
+            for experiment_id, directory in (
+                (reference_experiment_id, reference),
+                (moved_experiment_id, moved),
+            )
+            if not directory.is_dir()
+        )
+        if missing:
+            raise ValueError(
+                "Unknown experiment directories: " + ", ".join(missing)
+            )
+        manifest = self.repository.load_manifest(moved) or {}
+        manifest["comparison"] = {
+            "parent_experiment_ids": [reference_experiment_id],
+            "source_protocol_id": self.SBIR_PROTOCOL_ID,
+            "source_hypothesis_code": self.SBIR_HYPOTHESIS_CODE,
+            "declared_change_codes": [
+                "CONTROLLED_SPEAKER_POSITION",
+                "TEMPORARY_SPEAKER_MOVE",
+            ],
+            "required_fact_codes": list(self.SBIR_REQUIRED_FACT_CODES),
+            "parameters": {
+                "speaker_id": speaker_id,
+                "surface_id": surface_id,
+                "geometry_candidate_id": geometry_candidate_id,
+                "speaker_displacement_m": float(displacement_m),
+                "controlled_variable_codes": [
+                    "MICROPHONE_POSITION",
+                    "LOUDSPEAKER_ORIENTATION",
+                    "OTHER_LOUDSPEAKER_POSITIONS",
+                    "SIGNAL_CHAIN_ASSIGNMENT",
+                    "MEASUREMENT_LEVEL",
+                    "ROOM_CONFIGURATION",
+                ],
+                "changed_variable_codes": ["LOUDSPEAKER_POSITION"],
+                "expected_observation_codes": [
+                    "SBIR_MOVES_WITH_SPEAKER",
+                    "SBIR_REMAINS_FIXED",
+                ],
+            },
+        }
+        self.repository.save_manifest(moved, manifest)
+        return moved_experiment_id
 
     @staticmethod
     def _validate(reference_id, parent_id, offsets):
