@@ -2,6 +2,7 @@ from itertools import combinations
 from math import isfinite
 
 from acousticbrain.models import (
+    PlanarRegionRole,
     RoomDescription,
     RoomDescriptionEntityType,
     RoomDescriptionValidationCode,
@@ -9,6 +10,13 @@ from acousticbrain.models import (
     RoomDescriptionValidationResult,
     RoomOpeningSurface,
     RoomDescriptionSurface,
+)
+from acousticbrain.geometry import (
+    PLANAR_TOLERANCE_M,
+    derive_planar_basis,
+    point_in_convex_polygon,
+    polygon_is_convex,
+    project_point,
 )
 
 
@@ -221,7 +229,100 @@ class RoomDescriptionValidator:
             )
         )
 
+        errors.extend(self._planar_errors(description))
+
         return RoomDescriptionValidationResult(errors=tuple(errors))
+
+    @classmethod
+    def _planar_errors(cls, description):
+        errors = []
+        surfaces = {}
+        for surface in sorted(
+            description.planar_surfaces, key=lambda item: item.surface_id
+        ):
+            try:
+                basis = derive_planar_basis(surface.vertices)
+                polygon = tuple(project_point(item, basis)[:2] for item in surface.vertices)
+                if not polygon_is_convex(polygon):
+                    raise ValueError("Polygon is not convex.")
+            except ValueError:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_SURFACE_INVALID_POLYGON,
+                    RoomDescriptionEntityType.PLANAR_SURFACE,
+                    (surface.surface_id,),
+                    ("vertices",),
+                ))
+                continue
+            surfaces[surface.surface_id] = (surface, basis, polygon)
+
+        feature_ids = {
+            PlanarRegionRole.COVERING: {
+                item.zone_id: item for item in description.covering_zones
+            },
+            PlanarRegionRole.TREATMENT: {
+                item.treatment_id: item for item in description.acoustic_treatments
+            },
+            PlanarRegionRole.OPENING: {
+                item.opening_id: item for item in description.openings
+            },
+        }
+        for region in sorted(
+            description.planar_regions, key=lambda item: item.region_id
+        ):
+            resolved = surfaces.get(region.surface_id)
+            if resolved is None:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_REGION_UNKNOWN_SURFACE,
+                    RoomDescriptionEntityType.PLANAR_REGION,
+                    (region.region_id,),
+                    ("surface_id",),
+                ))
+                continue
+            _, basis, surface_polygon = resolved
+            projected = tuple(project_point(item, basis) for item in region.vertices)
+            if any(abs(item[2]) > PLANAR_TOLERANCE_M for item in projected):
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_REGION_NOT_COPLANAR,
+                    RoomDescriptionEntityType.PLANAR_REGION,
+                    (region.region_id,),
+                    ("vertices",),
+                ))
+                continue
+            region_polygon = tuple(item[:2] for item in projected)
+            if not polygon_is_convex(region_polygon) or any(
+                not point_in_convex_polygon(point, surface_polygon)
+                for point in region_polygon
+            ):
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_REGION_OUTSIDE_SURFACE,
+                    RoomDescriptionEntityType.PLANAR_REGION,
+                    (region.region_id,),
+                    ("vertices",),
+                ))
+            if region.feature_id is None:
+                continue
+            feature = feature_ids[region.role].get(region.feature_id)
+            if feature is None:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_REGION_UNKNOWN_FEATURE,
+                    RoomDescriptionEntityType.PLANAR_REGION,
+                    (region.region_id,),
+                    ("feature_id",),
+                ))
+            elif cls._feature_has_legacy_placement(region.role, feature):
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.PLANAR_REGION_PLACEMENT_CONFLICT,
+                    RoomDescriptionEntityType.PLANAR_REGION,
+                    (region.region_id,),
+                    ("feature_id",),
+                ))
+        return errors
+
+    @staticmethod
+    def _feature_has_legacy_placement(role, feature):
+        if role is PlanarRegionRole.OPENING:
+            return True
+        return getattr(feature, "horizontal_offset_m", None) is not None
 
     @staticmethod
     def _rectangle_fields():
