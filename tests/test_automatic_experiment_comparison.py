@@ -202,6 +202,29 @@ def test_projects_all_deterministic_hypothesis_outcomes(
     assert result.sequence.local_comparisons[0].outcome.value != "CONFIRMED"
 
 
+def test_controlled_causal_reassignment_weakens_but_does_not_refute_generic_hypothesis(
+    monkeypatch,
+):
+    descriptors = (
+        descriptor("baseline", baseline=True),
+        descriptor(
+            "exp-001",
+            changes=("CONTROLLED_SIGNAL_CHAIN_SWAP",),
+        ),
+    )
+    evolution = comparison(
+        monkeypatch,
+        descriptors,
+        {"baseline": 79.0, "exp-001": 37.0},
+        statuses={"exp-001": "CONTRADICTED"},
+    ).sequence.local_comparisons[0]
+
+    assert evolution.outcome is ExperimentEvolutionOutcome.WEAKER
+    assert "CAUSAL_REASSIGNMENT_CANNOT_REFUTE_GENERIC_HYPOTHESIS" in (
+        evolution.applied_rule_codes
+    )
+
+
 def test_missing_protocol_never_infers_hypothesis_from_directory_name(monkeypatch):
     descriptors = (
         descriptor("baseline", baseline=True),

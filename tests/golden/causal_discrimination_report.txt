@@ -1,0 +1,46 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : causal-fixture
+
+DISCRIMINATION CAUSALE
+
+Protocole : VERIFY_SPEAKER_ROOM_ASYMMETRY
+Statut : ACTIVE
+Résultat discriminant : INCONCLUSIVE
+Étapes terminées :
+ • 0 — STEP_0_BASELINE (baseline)
+   Variables contrôlées : ROOM_CONFIGURATION, MEASUREMENT_LEVEL
+   Variables modifiées : aucune
+   Variables inconnues : aucune
+   Observations : aucune
+ • 1 — STEP_1_LEFT_RIGHT_REMEASUREMENT (exp-001)
+   Variables contrôlées : LOUDSPEAKER_ASSIGNMENT, SIGNAL_CHAIN_ASSIGNMENT, ROOM_SIDE, MICROPHONE_POSITION
+   Variables modifiées : MEASUREMENT_ACQUISITION
+   Variables inconnues : aucune
+   Observations : LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE
+ • 2 — STEP_2_SPEAKER_SWAP (exp-002)
+   Variables contrôlées : ROOM_SIDE, SIGNAL_CHAIN_ASSIGNMENT, MICROPHONE_POSITION
+   Variables modifiées : LOUDSPEAKER_ASSIGNMENT
+   Variables inconnues : aucune
+   Observations : ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Étapes restantes : STEP_3_SIGNAL_CHAIN_SWAP
+Étapes différées : aucune
+Trajectoires compatibles :
+ • ANOMALY_FOLLOWS_LOUDSPEAKER — support 100.0 / 100
+ • ANOMALY_FOLLOWS_SIGNAL_CHAIN — support 0.0 / 100
+Trajectoires contradictoires :
+ • ANOMALY_REMAINS_WITH_ROOM_SIDE — contre-preuves : ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Discriminations résolues : LOUDSPEAKER_VS_ROOM_SIDE, SIGNAL_CHAIN_VS_ROOM_SIDE
+Discriminations restantes : LOUDSPEAKER_VS_SIGNAL_CHAIN
+Nouvelles ambiguïtés : aucune
+Ambiguïtés perdues : LOUDSPEAKER_VS_ROOM_SIDE, SIGNAL_CHAIN_VS_ROOM_SIDE
+Décisions utilisateur :
+ • aucune
+Prochain protocole recommandé : STEP_3_SIGNAL_CHAIN_SWAP
+Trace : causal-trace:verify_speaker_room_asymmetry
+Observations tracées : LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE, ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Règles appliquées : CAUSAL_REQUIRE_EXPLICIT_STEPS, CAUSAL_REQUIRE_DECLARED_OBSERVATIONS, CAUSAL_REQUIRE_CONTROLLED_SWAP_VARIABLES, CAUSAL_REDUCE_ONLY_OBSERVED_DISCRIMINATIONS, CAUSAL_NEVER_CONFIRM_TRAJECTORY, CAUSAL_DETERMINISTIC_SUPPORT_COVERAGE_V1, CAUSAL_EXCLUDE_USER_DEFERRED_STEPS, SPEAKER_SWAP_ANOMALY_FOLLOWS_LOUDSPEAKER
+Décisions tracées : aucune

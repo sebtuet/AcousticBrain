@@ -3,9 +3,11 @@ from .pipeline import BrainPipeline
 from acousticbrain.application import (
     AcousticSession,
     AutomaticExperimentComparisonService,
+    CausalDiscriminationService,
 )
 from acousticbrain.report import (
     ExperimentComparisonPresenter,
+    CausalDiscriminationPresenter,
     ExperimentDiscoveryPresenter,
     Report,
 )
@@ -26,6 +28,7 @@ class AcousticBrain:
         measurement_root=None,
         compare_experiments=False,
         detailed_comparison_traceability=False,
+        analyze_causal_discrimination=False,
     ):
 
         experiment_descriptors = ()
@@ -46,6 +49,7 @@ class AcousticBrain:
                     optimization_session=(
                         session_context.session if session_context is not None else None
                     ),
+                    analyze_causal_discrimination=analyze_causal_discrimination,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -62,6 +66,11 @@ class AcousticBrain:
             raise ValueError("A project or measurement_root is required.")
         if compare_experiments:
             raise ValueError("compare_experiments requires measurement_root.")
+        if analyze_causal_discrimination:
+            raise ValueError(
+                "analyze_causal_discrimination requires measurement_root and "
+                "compare_experiments=True."
+            )
 
         return self.pipeline.run(
             project,
@@ -77,6 +86,7 @@ class AcousticBrain:
         plan_experiments,
         detailed_traceability,
         optimization_session,
+        analyze_causal_discrimination,
     ):
         contexts = {}
         current_report = None
@@ -114,7 +124,18 @@ class AcousticBrain:
             )
         else:
             current_context.experiment_comparison_analysis = comparison
+        causal_analysis = None
+        if analyze_causal_discrimination:
+            causal_analysis = CausalDiscriminationService().analyze(
+                acoustic_session.descriptors,
+                comparison,
+                detailed_traceability=detailed_traceability,
+            )
+            current_context.causal_discrimination_analysis = causal_analysis
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)
+        )
+        current_report.causal_discrimination = (
+            CausalDiscriminationPresenter().present(current_context)
         )
         return current_report

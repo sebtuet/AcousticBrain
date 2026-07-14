@@ -109,8 +109,107 @@ class ConsoleReporter:
                     comparison, comparison_analysis.detailed_traceability
                 )
 
-        if comparison_analysis is None:
+        causal = report.causal_discrimination
+        if causal is not None:
             print()
+            print("DISCRIMINATION CAUSALE")
+            print()
+            print(f"Protocole : {causal.protocol_code}")
+            print(f"Statut : {causal.status}")
+            print(f"Résultat discriminant : {causal.outcome}")
+            print("Étapes terminées :")
+            for step in causal.completed_steps:
+                print(
+                    f" • {step.step_index} — {step.step_code} "
+                    f"({step.experiment_id})"
+                )
+                print(
+                    "   Variables contrôlées : "
+                    + (", ".join(step.controlled_variable_codes) or "aucune")
+                )
+                print(
+                    "   Variables modifiées : "
+                    + (", ".join(step.changed_variable_codes) or "aucune")
+                )
+                print(
+                    "   Variables inconnues : "
+                    + (", ".join(step.unknown_variable_codes) or "aucune")
+                )
+                print(
+                    "   Observations : "
+                    + (", ".join(step.observation_codes) or "aucune")
+                )
+            print(
+                "Étapes restantes : "
+                + (", ".join(causal.remaining_step_codes) or "aucune")
+            )
+            print(
+                "Étapes différées : "
+                + (", ".join(causal.deferred_step_codes) or "aucune")
+            )
+            print("Trajectoires compatibles :")
+            for trajectory in causal.compatible_trajectories:
+                print(
+                    f" • {trajectory.trajectory_code} — support "
+                    f"{trajectory.support_score:.1f} / 100"
+                )
+            print("Trajectoires contradictoires :")
+            if causal.contradicted_trajectories:
+                for trajectory in causal.contradicted_trajectories:
+                    print(
+                        f" • {trajectory.trajectory_code} — contre-preuves : "
+                        + ", ".join(trajectory.counter_evidence_codes)
+                    )
+            else:
+                print(" • aucune")
+            print(
+                "Discriminations résolues : "
+                + (", ".join(causal.resolved_discrimination_codes) or "aucune")
+            )
+            print(
+                "Discriminations restantes : "
+                + (", ".join(causal.remaining_discrimination_codes) or "aucune")
+            )
+            print(
+                "Nouvelles ambiguïtés : "
+                + (", ".join(causal.new_ambiguity_codes) or "aucune")
+            )
+            print(
+                "Ambiguïtés perdues : "
+                + (", ".join(causal.lost_ambiguity_codes) or "aucune")
+            )
+            print("Décisions utilisateur :")
+            if causal.discrimination_decisions:
+                for decision in causal.discrimination_decisions:
+                    print(
+                        f" • {decision.discrimination_code} — {decision.status} "
+                        f"({decision.reason}, {decision.experiment_id})"
+                    )
+            else:
+                print(" • aucune")
+            print(
+                "Prochain protocole recommandé : "
+                + (causal.recommended_next_protocol or "aucun")
+            )
+            if self.detailed_traceability or causal.detailed_traceability:
+                print(f"Trace : {causal.trace_id}")
+                print(
+                    "Observations tracées : "
+                    + (", ".join(causal.trace_observation_codes) or "aucune")
+                )
+                print(
+                    "Règles appliquées : "
+                    + (", ".join(causal.trace_applied_rule_codes) or "aucune")
+                )
+                print(
+                    "Décisions tracées : "
+                    + (", ".join(causal.trace_decision_codes) or "aucune")
+                )
+
+        if comparison_analysis is None and causal is None:
+            print()
+            print()
+        elif causal is not None and report.recommendations:
             print()
 
         if report.recommendations:
@@ -122,7 +221,11 @@ class ConsoleReporter:
                 print(f" • {recommendation.code}")
                 print(f"   Action : {recommendation.action}")
                 print(f"   Cible : {recommendation.target}")
-                print(f"   Priorité : {recommendation.priority.name}")
+                if recommendation.status.name == "DEFERRED":
+                    print("   Statut : DEFERRED")
+                    print(f"   Raison : {recommendation.status_reason}")
+                else:
+                    print(f"   Priorité : {recommendation.priority.name}")
                 print(f"   Confiance : {recommendation.confidence}%")
                 print(
                     "   Provenance : "

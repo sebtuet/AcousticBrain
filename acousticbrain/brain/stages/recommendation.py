@@ -1,4 +1,7 @@
+from dataclasses import replace
+
 from acousticbrain.analysis import RecommendationEngine
+from acousticbrain.models import CausalDiscriminationDecisionStatus, RecommendationStatus
 
 
 class RecommendationStage:
@@ -8,7 +11,7 @@ class RecommendationStage:
         self.engine = engine or RecommendationEngine()
 
     def run(self, context):
-        context.recommendation_analysis = self.engine.analyze(
+        analysis = self.engine.analyze(
             stereo=context.stereo,
             sbir=context.sbir,
             modal_density=context.modal_density,
@@ -32,3 +35,33 @@ class RecommendationStage:
             measurement_readiness=context.measurement_readiness_analysis,
             acoustic_reasoning=context.acoustic_reasoning_analysis,
         )
+        deferred_actions = self._deferred_action_reasons(
+            context.experiment_descriptors
+        )
+        analysis.recommendations = [
+            replace(
+                item,
+                status=RecommendationStatus.DEFERRED,
+                status_reason=deferred_actions[item.code],
+            )
+            if item.code in deferred_actions
+            else item
+            for item in analysis.recommendations
+        ]
+        context.recommendation_analysis = analysis
+
+    @staticmethod
+    def _deferred_action_reasons(descriptors):
+        action_by_discrimination = {
+            "LOUDSPEAKER_VS_ROOM_SIDE": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        }
+        reasons = {}
+        for descriptor in descriptors:
+            for decision in descriptor.causal_discrimination_decisions:
+                action = action_by_discrimination.get(decision.discrimination_code)
+                if (
+                    action is not None
+                    and decision.status is CausalDiscriminationDecisionStatus.DEFERRED
+                ):
+                    reasons[action] = decision.reason.value
+        return reasons
