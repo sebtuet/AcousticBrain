@@ -197,6 +197,16 @@ class RoomDescriptionEditorAdapter:
         loaded = self.codec.loads(payload)
         if not loaded.is_success:
             return RoomDescriptionLoadFormResult(errors=loaded.errors)
+        if loaded.description.planar_surfaces or loaded.description.planar_regions:
+            return RoomDescriptionLoadFormResult(errors=(
+                RoomDescriptionPersistenceError(
+                    code=(
+                        RoomDescriptionPersistenceErrorCode
+                        .EDITOR_UNSUPPORTED_PLANAR_GEOMETRY
+                    ),
+                    path=("room_description", "planar_surfaces"),
+                ),
+            ))
         return RoomDescriptionLoadFormResult(
             state=self.from_description(loaded.description)
         )
