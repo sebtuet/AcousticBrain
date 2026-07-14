@@ -169,8 +169,8 @@ def test_command_selects_measurement_and_room_description_paths(
         "loaded": True,
         "project": "measurements",
         "room_description": "Described room",
-        "source_schema_version": 2,
-        "target_schema_version": 2,
+        "source_schema_version": 3,
+        "target_schema_version": 3,
         "requires_migration": False,
     }
 
