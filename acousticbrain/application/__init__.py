@@ -11,6 +11,9 @@ from .experiment_protocol_declaration import ExperimentProtocolDeclarationServic
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,
 )
+from .reflection_experiment_comparison import (
+    ControlledReflectionExperimentComparisonService,
+)
 from .experiment_campaign_synthesis import ExperimentCampaignSynthesisService
 from .acoustic_session import AcousticSession, ImportedExperiment
 from .automatic_experiment_comparison import (

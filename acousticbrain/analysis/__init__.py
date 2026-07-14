@@ -6,6 +6,9 @@ from .material_aware_reflection_candidate import (
 from .reflection_verification_planning import (
     ControlledReflectionVerificationPlanningEngine,
 )
+from .reflection_experiment_comparison import (
+    DeterministicReflectionExperimentComparisonEngine,
+)
 from .stereo import StereoAnalyzer
 from .sbir import SBIRAnalyzer
 from .modal_density import ModalDensityAnalyzer
