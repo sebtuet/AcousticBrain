@@ -14,6 +14,7 @@ from acousticbrain.report import (
     MaterialAwareReflectionCandidatePresenter,
     ControlledReflectionVerificationPlanningPresenter,
     ControlledReflectionExperimentDeclarationPresenter,
+    ControlledReflectionExperimentComparisonPresenter,
 )
 
 
@@ -51,6 +52,9 @@ class ReportBuilder:
         )
         report.controlled_reflection_experiment_declarations = (
             ControlledReflectionExperimentDeclarationPresenter().present(context)
+        )
+        report.controlled_reflection_experiment_comparisons = (
+            ControlledReflectionExperimentComparisonPresenter().present(context)
         )
 
         return report

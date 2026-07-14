@@ -21,6 +21,11 @@ from .reflection_experiment_declaration_presenter import (
     PresentedReflectionExperimentConditionDeclaration,
     PresentedReflectionExperimentMeasurementReference,
 )
+from .reflection_experiment_comparison_presenter import (
+    ControlledReflectionExperimentComparisonPresenter,
+    PresentedControlledReflectionExperimentComparison,
+    PresentedObservedReflectionDifference,
+)
 from .guided_room_description_presenter import (
     PresentedRoomDescriptionChangeProposal,
     RoomDescriptionChangeProposalPresenter,
