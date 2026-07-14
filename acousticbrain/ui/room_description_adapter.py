@@ -207,6 +207,16 @@ class RoomDescriptionEditorAdapter:
                     path=("room_description", "planar_surfaces"),
                 ),
             ))
+        if loaded.description.materials or loaded.description.material_assignments:
+            return RoomDescriptionLoadFormResult(errors=(
+                RoomDescriptionPersistenceError(
+                    code=(
+                        RoomDescriptionPersistenceErrorCode
+                        .EDITOR_UNSUPPORTED_FREQUENCY_MATERIALS
+                    ),
+                    path=("room_description", "materials"),
+                ),
+            ))
         return RoomDescriptionLoadFormResult(
             state=self.from_description(loaded.description)
         )
