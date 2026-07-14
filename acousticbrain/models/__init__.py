@@ -24,6 +24,13 @@ from .planar_geometry_description import (
     PlanarSurfaceRole,
     PlanarVertexDescription,
 )
+from .propagation_geometry import (
+    PropagationGeometry,
+    PropagationGeometryAnalysis,
+    PropagationRegion,
+    PropagationSceneSource,
+    PropagationSurface,
+)
 from .geometry_datum_quality_description import GeometryDatumQualityDescription
 from .geometry_datum_quality import GeometryDatumQuality
 from .geometry_source import GeometrySource

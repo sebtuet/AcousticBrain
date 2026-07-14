@@ -13,6 +13,12 @@ from .etc import ETCAnalyzer
 from .etc_aggregator import ETCAggregator
 from .etc_reflection_correlation import ETCReflectionCorrelationEngine
 from .geometry_early_reflection import GeometryEarlyReflectionEngine
+from .propagation_geometry import (
+    PlanarPropagationEngine,
+    PropagationGeometryBuildException,
+    PropagationGeometryEngine,
+    RectangularPropagationEngine,
+)
 from .geometry_sbir import (
     GeometrySBIRPredictionEngine,
     SBIRGeometryCorrelationEngine,
