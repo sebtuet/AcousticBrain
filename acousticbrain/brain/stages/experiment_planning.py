@@ -15,6 +15,9 @@ class ExperimentPlanningStage:
             deferred_action_codes=self._deferred_action_codes(
                 context.experiment_descriptors
             ),
+            completed_protocol_ids=self._completed_protocol_ids(
+                context.experiment_descriptors
+            ),
         )
 
     @staticmethod
@@ -28,4 +31,14 @@ class ExperimentPlanningStage:
             for item in descriptor.causal_discrimination_decisions
             if item.status is CausalDiscriminationDecisionStatus.DEFERRED
             and item.discrimination_code in action_by_discrimination
+        ))
+
+    @staticmethod
+    def _completed_protocol_ids(descriptors):
+        return tuple(dict.fromkeys(
+            descriptor.source_protocol_id
+            for descriptor in descriptors
+            if descriptor.source_protocol_id is not None
+            and "MULTIPLE_LISTENING_POSITIONS"
+            in descriptor.declared_change_codes
         ))

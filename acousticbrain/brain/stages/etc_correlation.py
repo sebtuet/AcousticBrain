@@ -11,5 +11,5 @@ class ETCCorrelationStage:
         context.etc_reflection_correlation_analysis = self.engine.analyze(
             context.etc_analysis,
             context.sbir,
+            geometry_reflections=context.geometry_early_reflection_analysis,
         )
-

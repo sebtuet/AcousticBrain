@@ -10,6 +10,7 @@ PROCHAINE EXPÉRIENCE RECOMMANDÉE
 
 Statut : READY
 Code : experiment_candidate.asymmetric_speaker_room_interaction
+Protocole : protocol.verify_speaker_room_asymmetry.v1
 Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
 Valeur informative : 26.33 / 100
 Difficulté : EASY

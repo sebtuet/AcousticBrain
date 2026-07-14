@@ -5,6 +5,10 @@ from acousticbrain.models import (
     GlobalCorrelation,
     GlobalDomainAnalysis,
     Measurement,
+    Recommendation,
+    RecommendationAnalysis,
+    RecommendationPriority,
+    RecommendationStatus,
 )
 from acousticbrain.report import ConsoleReporter, GlobalPresenter
 
@@ -63,6 +67,27 @@ def test_projects_all_global_fields_without_reordering_or_recalculation():
     ]
     assert presented.priority_domains == ("STEREO", "SBIR")
     assert presented.source_analyses == ("StereoAnalysis", "SBIRAnalysis")
+
+
+def test_projects_non_active_recommendation_status_into_global_reference():
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.global_analysis = global_analysis()
+    context.recommendation_analysis = RecommendationAnalysis([Recommendation(
+        code="CHECK_STEREO_PLACEMENT",
+        action="check_placement",
+        target="stereo_speakers",
+        priority=RecommendationPriority.HIGH,
+        confidence=70.0,
+        source_analyses=("StereoAnalysis",),
+        status=RecommendationStatus.COMPLETED,
+        status_reason="EXPERIMENT_PROTOCOL_COMPLETED",
+    )])
+
+    presented = GlobalPresenter().present(context)
+
+    assert presented.domains[0].recommendation_statuses == (
+        ("CHECK_STEREO_PLACEMENT", "COMPLETED"),
+    )
 
 
 def test_handles_an_absent_global_analysis_without_fallback_values():

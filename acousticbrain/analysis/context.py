@@ -10,6 +10,7 @@ from acousticbrain.models import (
     DirectReverberantAnalysis,
     DirectReverberantCorrelationAnalysis,
     ETCReflectionCorrelationAnalysis,
+    GeometryEarlyReflectionAnalysis,
     GlobalAnalysis,
     Measurement,
     MeasurementQualityAnalysis,
@@ -98,6 +99,8 @@ class AnalysisContext:
         ETCReflectionCorrelationAnalysis | None
     ) = None
 
+    geometry_early_reflection_analysis: GeometryEarlyReflectionAnalysis | None = None
+
     confidence_analysis: ConfidenceAnalysis | None = None
 
     recommendation_analysis: RecommendationAnalysis | None = None
@@ -105,6 +108,8 @@ class AnalysisContext:
     acoustic_reasoning_analysis: AcousticReasoningAnalysis | None = None
 
     experiment_planning_analysis: ExperimentPlanningAnalysis | None = None
+
+    experiment_campaign_analyses: tuple = ()
 
     global_analysis: GlobalAnalysis | None = None
 

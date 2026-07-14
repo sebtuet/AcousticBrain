@@ -6,6 +6,7 @@ from acousticbrain.models import (
     AcousticTreatmentDescription,
     AcousticTreatmentType,
     FurnitureType,
+    GeometryDatumQualityDescription,
     ListeningPosition,
     RoomDescription,
     RoomDescriptionLoadResult,
@@ -171,6 +172,18 @@ class RoomDescriptionJsonCodec:
                         key=lambda item: item.treatment_id,
                     )
                 ],
+                "geometry_data_quality": [
+                    {
+                        "datum_id": item.datum_id,
+                        "precision_m": item.precision_m,
+                        "confidence": item.confidence,
+                        "provenance_codes": list(item.provenance_codes),
+                    }
+                    for item in sorted(
+                        description.geometry_data_quality,
+                        key=lambda item: item.datum_id,
+                    )
+                ],
             },
         }
 
@@ -311,6 +324,52 @@ class RoomDescriptionJsonCodec:
                     self._optional_sequence(raw, "acoustic_treatments", base)
                 )
             ),
+            geometry_data_quality=tuple(
+                self._geometry_datum_quality(item, index)
+                for index, item in enumerate(
+                    self._optional_sequence(raw, "geometry_data_quality", base)
+                )
+            ),
+        )
+
+    def _geometry_datum_quality(self, value, index):
+        path = ("room_description", "geometry_data_quality", index)
+        raw = self._mapping(value, path)
+        confidence = self._number(
+            self._required(raw, "confidence", path), (*path, "confidence")
+        )
+        if not 0.0 <= confidence <= 100.0:
+            raise _DecodeFailure(
+                RoomDescriptionPersistenceErrorCode.INVALID_VALUE,
+                (*path, "confidence"),
+            )
+        precision = self._number(
+            self._required(raw, "precision_m", path), (*path, "precision_m")
+        )
+        if precision < 0.0:
+            raise _DecodeFailure(
+                RoomDescriptionPersistenceErrorCode.INVALID_VALUE,
+                (*path, "precision_m"),
+            )
+        provenance_path = (*path, "provenance_codes")
+        provenance = tuple(
+            self._string(item, (*provenance_path, item_index))
+            for item_index, item in enumerate(self._sequence(
+                self._required(raw, "provenance_codes", path), provenance_path
+            ))
+        )
+        if not provenance:
+            raise _DecodeFailure(
+                RoomDescriptionPersistenceErrorCode.INVALID_VALUE,
+                provenance_path,
+            )
+        return GeometryDatumQualityDescription(
+            datum_id=self._string(
+                self._required(raw, "datum_id", path), (*path, "datum_id")
+            ),
+            precision_m=precision,
+            confidence=confidence,
+            provenance_codes=provenance,
         )
 
     def _speaker(self, value, index, version):

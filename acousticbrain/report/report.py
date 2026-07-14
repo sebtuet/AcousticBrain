@@ -14,6 +14,7 @@ from .experiment_planning_presenter import PresentedExperimentPlanning
 from .experiment_discovery_presenter import PresentedExperimentDiscovery
 from .experiment_comparison_presenter import PresentedExperimentComparison
 from .causal_discrimination_presenter import PresentedCausalDiscrimination
+from .experiment_campaign_presenter import PresentedExperimentCampaign
 
 
 @dataclass
@@ -42,6 +43,8 @@ class Report:
     experiments_discovered: PresentedExperimentDiscovery | None = None
 
     experiment_comparison: PresentedExperimentComparison | None = None
+
+    experiment_campaigns: tuple[PresentedExperimentCampaign, ...] = ()
 
     causal_discrimination: PresentedCausalDiscrimination | None = None
 

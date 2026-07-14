@@ -1,8 +1,10 @@
 import json
+from dataclasses import replace
 
 import pytest
 
 from acousticbrain.models import (
+    GeometryDatumQualityDescription,
     ListeningPosition,
     Room,
     RoomDescription,
@@ -56,6 +58,34 @@ def test_round_trip_preserves_identifiers_types_and_geometry():
     assert json.loads(payload)["schema_version"] == 2
     assert result.source_schema_version == 2
     assert not result.requires_migration
+
+
+def test_round_trip_preserves_geometry_precision_confidence_and_provenance():
+    source = replace(
+        description(),
+        geometry_data_quality=(
+            GeometryDatumQualityDescription(
+                "LEFT",
+                precision_m=0.01,
+                confidence=88.0,
+                provenance_codes=("LASER_MEASURED", "USER_CONFIRMED"),
+            ),
+        ),
+    )
+
+    result = RoomDescriptionJsonCodec().loads(
+        RoomDescriptionJsonCodec().dumps(source)
+    )
+
+    assert result.is_success
+    assert result.description.geometry_data_quality == (
+        GeometryDatumQualityDescription(
+            "LEFT",
+            precision_m=0.01,
+            confidence=88.0,
+            provenance_codes=("LASER_MEASURED", "USER_CONFIRMED"),
+        ),
+    )
 
 
 def test_json_output_is_deterministic_and_versioned():

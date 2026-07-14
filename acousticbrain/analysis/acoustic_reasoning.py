@@ -204,6 +204,7 @@ class AcousticReasoningEngine:
         code = HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION
         supporting, counter, context, missing, rules = [], [], [], [], []
         available = 0
+        geometry_match = None
         if etc is None:
             missing.append(self._missing("etc.available_channels", "ETCAnalysis", "EARLY_REQUIRE_ETC"))
         else:
@@ -213,6 +214,61 @@ class AcousticReasoningEngine:
             missing.append(self._missing("etc_reflection.dominant_unmatched_event_count", "ETCReflectionCorrelationAnalysis", "EARLY_REQUIRE_REFLECTION_CORRELATION"))
         else:
             available += 1
+            geometry_matches = [
+                item
+                for item in etc_correlations.correlations
+                if item.surface_id is not None
+                and item.geometry_path_id is not None
+            ]
+            geometry_match = max(
+                geometry_matches,
+                key=lambda item: (
+                    item.match_score,
+                    -item.timing_error_ms,
+                    item.code,
+                ),
+                default=None,
+            )
+            if geometry_match is not None:
+                supporting.append(self._evidence(
+                    code,
+                    "geometry_match",
+                    EvidenceRole.SUPPORTING,
+                    "etc_reflection.geometry_surface_match",
+                    "ETCReflectionCorrelationAnalysis",
+                    geometry_match.surface_id,
+                    geometry_match.match_score,
+                    geometry_match.confidence,
+                    "EARLY_GEOMETRY_TIMING_COMPATIBLE",
+                    correlation=geometry_match.code,
+                ))
+                context.extend((
+                    self._evidence(
+                        code,
+                        "geometry_delay",
+                        EvidenceRole.CONTEXT,
+                        "geometry_early_reflection.theoretical_delay_ms",
+                        "GeometryEarlyReflectionAnalysis",
+                        geometry_match.theoretical_delay_ms,
+                        geometry_match.match_score,
+                        geometry_match.geometry_confidence or 0.0,
+                        "GEOMETRY_IMAGE_SOURCE_FIRST_ORDER",
+                        correlation=geometry_match.code,
+                    ),
+                    self._evidence(
+                        code,
+                        "geometry_timing_error",
+                        EvidenceRole.CONTEXT,
+                        "etc_reflection.geometry_timing_error_ms",
+                        "ETCReflectionCorrelationAnalysis",
+                        geometry_match.timing_error_ms,
+                        geometry_match.match_score,
+                        geometry_match.confidence,
+                        "EARLY_GEOMETRY_TIMING_COMPATIBLE",
+                        correlation=geometry_match.code,
+                    ),
+                ))
+                rules.append("EARLY_GEOMETRY_SURFACE_COMPATIBLE")
             important = [event for events in etc_correlations.unmatched_events.values() for event in events if event.delay_ms <= self.DOMINANT_REFLECTION_MAX_DELAY_MS and event.relative_level_db >= self.DOMINANT_REFLECTION_MIN_LEVEL_DB]
             if important:
                 supporting.append(self._evidence(code, "dominant_unmatched", EvidenceRole.SUPPORTING, "etc_reflection.dominant_unmatched_event_count", "ETCReflectionCorrelationAnalysis", len(important), min(100.0, len(important) / 10.0 * 100.0), etc_correlations.confidence, "ETC_UNMATCHED_DELAY_LTE_20_LEVEL_GTE_MINUS_20"))
@@ -224,7 +280,29 @@ class AcousticReasoningEngine:
             supporting.extend(self._evidence(code, f"drr_{index}", EvidenceRole.SUPPORTING, "direct_reverberant.correlation.LOW_DRR_DOMINANT_EARLY_REFLECTIONS", "DirectReverberantCorrelationAnalysis", item.score, item.score, item.confidence, "DRR_EARLY_REFLECTION_CORRELATION", correlation=item.code) for index, item in enumerate(matches))
             if matches:
                 rules.append("EARLY_DRR_CONCORDANCE")
-        return self._finalize(code=code, phenomenon="dominant_early_reflection", domains=("ETC", "DIRECT_REVERBERANT"), supporting=supporting, counter=counter, context=context, missing=missing, rules=rules, required_count=2, available_required_count=available, action_code="VERIFY_DOMINANT_EARLY_REFLECTION", action_type=VerificationActionType.TEMPORARY_MASK, action_target="candidate_early_reflection_surface", expected_support="verification.dominant_event_level_decreases", expected_counter="verification.dominant_event_is_unchanged")
+        parameters = {}
+        if geometry_match is not None:
+            parameters = {
+                "surface": geometry_match.surface_id,
+                "observed_channel": geometry_match.channel.value,
+                "observed_event_delay_ms": geometry_match.measured_delay_ms,
+                "observed_event_relative_level_db": (
+                    geometry_match.event.relative_level_db
+                ),
+                "observed_event_sample_index": geometry_match.event.sample_index,
+                "theoretical_delay_ms": geometry_match.theoretical_delay_ms,
+                "timing_error_ms": geometry_match.timing_error_ms,
+                "geometry_uncertainty_ms": geometry_match.geometric_uncertainty_ms,
+                "geometry_confidence": geometry_match.geometry_confidence,
+                "geometry_path_id": geometry_match.geometry_path_id,
+            }
+            if geometry_match.impact_point is not None:
+                parameters.update({
+                    "impact_x_m": geometry_match.impact_point.x_m,
+                    "impact_y_m": geometry_match.impact_point.y_m,
+                    "impact_z_m": geometry_match.impact_point.z_m,
+                })
+        return self._finalize(code=code, phenomenon="dominant_early_reflection", domains=("ETC", "DIRECT_REVERBERANT"), supporting=supporting, counter=counter, context=context, missing=missing, rules=rules, required_count=2, available_required_count=available, action_code="VERIFY_DOMINANT_EARLY_REFLECTION", action_type=VerificationActionType.TEMPORARY_MASK, action_target="candidate_early_reflection_surface", expected_support="REFLECTION_DECREASES_AFTER_MASKING", expected_counter="REFLECTION_REMAINS_UNCHANGED_AFTER_MASKING", action_parameters=parameters)
 
     def _sbir(self, sbir, etc_correlations, room_geometry):
         code = HypothesisCode.SBIR_PLACEMENT_INTERACTION

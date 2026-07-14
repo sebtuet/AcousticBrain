@@ -30,10 +30,16 @@ class _ProtocolDefinition:
     discriminated_hypothesis_codes: tuple[HypothesisCode, ...]
     prerequisite_parameters: tuple[str, ...] = ()
     geometry_parameters: tuple[str, ...] = ()
+    controlled_variable_codes: tuple[str, ...] = ()
+    changed_variable_codes: tuple[str, ...] = ()
 
 
 class ExperimentPlanner:
     """Classe des protocoles sans exécuter ni modifier le système analysé."""
+
+    MAXIMUM_GEOMETRY_TIMING_ERROR_MS = 1.0
+    MAXIMUM_GEOMETRY_UNCERTAINTY_MS = 0.5
+    MINIMUM_GEOMETRY_CONFIDENCE = 70.0
 
     RULE_CODES = (
         "PLAN_REQUIRE_STRUCTURED_SOURCE",
@@ -89,7 +95,7 @@ class ExperimentPlanner:
             ),
         ),
         _ProtocolDefinition(
-            protocol_id="protocol.verify_dominant_early_reflection.v1",
+            protocol_id="protocol.temporary_mask_surface.v1",
             hypothesis_code=HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION,
             action_code="VERIFY_DOMINANT_EARLY_REFLECTION",
             objective_code="DISCRIMINATE_CANDIDATE_EARLY_REFLECTION_SURFACE",
@@ -99,16 +105,44 @@ class ExperimentPlanner:
             reversibility=ExperimentReversibility.HIGH,
             observable_fact_codes=(
                 "etc.available_channels",
-                "etc_reflection.dominant_unmatched_event_count",
-                "verification.dominant_event_level_decreases",
-                "verification.dominant_event_is_unchanged",
+                "etc_reflection.geometry_surface_match",
+                "geometry_early_reflection.theoretical_delay_ms",
+                "etc_reflection.geometry_timing_error_ms",
+                "REFLECTION_DECREASES_AFTER_MASKING",
+                "REFLECTION_REMAINS_UNCHANGED_AFTER_MASKING",
             ),
             discriminated_hypothesis_codes=(
                 HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION,
                 HypothesisCode.ASYMMETRIC_SPEAKER_ROOM_INTERACTION,
             ),
-            prerequisite_parameters=("surface",),
-            geometry_parameters=("surface",),
+            prerequisite_parameters=(
+                "surface",
+                "observed_channel",
+                "observed_event_delay_ms",
+                "observed_event_relative_level_db",
+                "theoretical_delay_ms",
+                "timing_error_ms",
+                "geometry_uncertainty_ms",
+                "geometry_confidence",
+                "geometry_path_id",
+            ),
+            geometry_parameters=(
+                "surface",
+                "theoretical_delay_ms",
+                "timing_error_ms",
+                "geometry_uncertainty_ms",
+                "geometry_confidence",
+                "geometry_path_id",
+            ),
+            controlled_variable_codes=(
+                "MICROPHONE_POSITION",
+                "LOUDSPEAKER_POSITION",
+                "LOUDSPEAKER_ORIENTATION",
+                "SIGNAL_CHAIN_ASSIGNMENT",
+                "MEASUREMENT_LEVEL",
+                "ROOM_CONFIGURATION",
+            ),
+            changed_variable_codes=("SURFACE_MASKING_STATE",),
         ),
         _ProtocolDefinition(
             protocol_id="protocol.verify_sbir_placement.v1",
@@ -139,12 +173,19 @@ class ExperimentPlanner:
         ),
     )
 
-    def plan(self, reasoning_analysis, *, session=None, deferred_action_codes=()):
+    def plan(
+        self,
+        reasoning_analysis,
+        *,
+        session=None,
+        deferred_action_codes=(),
+        completed_protocol_ids=(),
+    ):
         hypotheses = {
             item.code: item for item in reasoning_analysis.hypotheses
         }
         candidates = tuple(
-            self._apply_deferred_decision(
+            self._apply_protocol_state(
                 self._candidate(
                     definition,
                     hypotheses.get(definition.hypothesis_code),
@@ -152,6 +193,7 @@ class ExperimentPlanner:
                 ),
                 definition,
                 deferred_action_codes,
+                completed_protocol_ids,
             )
             for definition in self.PROTOCOLS
         )
@@ -215,15 +257,22 @@ class ExperimentPlanner:
         )
 
     @staticmethod
-    def _apply_deferred_decision(candidate, definition, deferred_action_codes):
-        if definition.action_code not in deferred_action_codes:
+    def _apply_protocol_state(
+        candidate,
+        definition,
+        deferred_action_codes,
+        completed_protocol_ids,
+    ):
+        reasons = list(candidate.ineligibility_reasons)
+        if definition.action_code in deferred_action_codes:
+            reasons.append(ExperimentSelectionReason.USER_DEFERRED)
+        if definition.protocol_id in completed_protocol_ids:
+            reasons.append(ExperimentSelectionReason.ALREADY_COMPLETED)
+        if not reasons:
             return candidate
         return replace(
             candidate,
-            ineligibility_reasons=tuple(dict.fromkeys((
-                *candidate.ineligibility_reasons,
-                ExperimentSelectionReason.USER_DEFERRED,
-            ))),
+            ineligibility_reasons=tuple(dict.fromkeys(reasons)),
             eligible=False,
         )
 
@@ -300,6 +349,31 @@ class ExperimentPlanner:
             ineligibility.append(
                 ExperimentSelectionReason.GEOMETRY_PARAMETER_MISSING
             )
+        if definition.action_code == "VERIFY_DOMINANT_EARLY_REFLECTION":
+            timing_error = parameters.get("timing_error_ms")
+            uncertainty = parameters.get("geometry_uncertainty_ms")
+            geometry_confidence = parameters.get("geometry_confidence")
+            if (
+                timing_error is not None
+                and timing_error > self.MAXIMUM_GEOMETRY_TIMING_ERROR_MS
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.GEOMETRY_TIMING_INCOMPATIBLE
+                )
+            if (
+                uncertainty is not None
+                and uncertainty > self.MAXIMUM_GEOMETRY_UNCERTAINTY_MS
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.GEOMETRY_UNCERTAINTY_TOO_HIGH
+                )
+            if (
+                geometry_confidence is not None
+                and geometry_confidence < self.MINIMUM_GEOMETRY_CONFIDENCE
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.GEOMETRY_CONFIDENCE_TOO_LOW
+                )
         if hypothesis.status is HypothesisStatus.CONTRADICTED:
             ineligibility.append(
                 ExperimentSelectionReason.HYPOTHESIS_REFUTED
@@ -375,6 +449,9 @@ class ExperimentPlanner:
                 )
             ),
             eligible=not ineligibility,
+            parameters=parameters,
+            controlled_variable_codes=definition.controlled_variable_codes,
+            changed_variable_codes=definition.changed_variable_codes,
         )
 
     @staticmethod
@@ -550,4 +627,6 @@ class ExperimentPlanner:
             evidence_codes=(),
             applied_rule_codes=("PLAN_REQUIRE_STRUCTURED_SOURCE",),
             eligible=False,
+            controlled_variable_codes=definition.controlled_variable_codes,
+            changed_variable_codes=definition.changed_variable_codes,
         )

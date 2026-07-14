@@ -12,7 +12,10 @@ class PresentedExperimentEvolution:
     ineligibility_reasons: tuple[str, ...]
     source_protocol_id: str | None
     source_hypothesis_code: str | None
+    experiment_parameters: tuple[tuple[str, str | int | float | bool], ...]
     outcome: str
+    acoustic_outcome: str
+    experimental_result_labels: tuple[str, ...]
     improved_fact_codes: tuple[str, ...]
     degraded_fact_codes: tuple[str, ...]
     changed_fact_codes: tuple[str, ...]
@@ -59,6 +62,8 @@ class ExperimentComparisonPresenter:
         "LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE": "l’écart gauche/droite est reproductible",
         "CHANNEL_SPECIFIC_PATTERN_STABLE": "le motif spécifique aux canaux reste stable",
         "CHANNEL_SPECIFIC_PATTERN_CHANGED": "le motif spécifique aux canaux a changé",
+        "BASS_DECAY_VARIES_BY_LISTENING_POSITION": "la décroissance grave varie selon la position d’écoute",
+        "LOCAL_POSITION_EFFECT_SUPPORTED": "un effet local de position est soutenu par la comparaison",
     }
     DISCRIMINATION_LABELS = {
         "LOUDSPEAKER_VS_ROOM_SIDE": "la mesure ne distingue pas encore l’enceinte du côté de la pièce",
@@ -70,6 +75,11 @@ class ExperimentComparisonPresenter:
         "REFLECTION_VS_MEASUREMENT_VARIABILITY": "la réflexion reste à distinguer de la variabilité de mesure",
         "SBIR_VS_ROOM_MODE": "l’interaction SBIR reste à distinguer d’un mode de pièce",
         "CANDIDATE_SURFACE_VS_OTHER_BOUNDARY": "la surface candidate reste à distinguer des autres limites",
+    }
+    EXPERIMENTAL_RESULT_LABELS = {
+        "LOCAL_POSITION_EFFECT_SUPPORTED": (
+            "un effet local de position est soutenu"
+        ),
     }
 
     def present(self, context):
@@ -99,7 +109,13 @@ class ExperimentComparisonPresenter:
             ineligibility_reasons=tuple(reason.value for reason in item.ineligibility_reasons),
             source_protocol_id=item.source_protocol_id,
             source_hypothesis_code=item.source_hypothesis_code,
+            experiment_parameters=item.experiment_parameters,
             outcome=item.outcome.value,
+            acoustic_outcome=item.acoustic_outcome.value,
+            experimental_result_labels=tuple(
+                self.EXPERIMENTAL_RESULT_LABELS.get(code, code)
+                for code in item.experimental_result_codes
+            ),
             improved_fact_codes=changes["IMPROVED"],
             degraded_fact_codes=changes["DEGRADED"],
             changed_fact_codes=changes["CHANGED"],

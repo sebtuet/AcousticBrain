@@ -6,6 +6,7 @@ from acousticbrain.models import (
     GeometryBox,
     GeometryCoordinate,
     GeometryCoveringZone,
+    GeometryDatumQuality,
     GeometryFurniture,
     GeometryFurnitureType,
     GeometryMaterialType,
@@ -185,6 +186,18 @@ class RoomGeometryBuilder:
                 key=lambda item: item.treatment_id,
             )
         )
+        data_quality = tuple(
+            GeometryDatumQuality(
+                datum_id=item.datum_id,
+                precision_m=item.precision_m,
+                confidence=item.confidence,
+                provenance_codes=item.provenance_codes,
+            )
+            for item in sorted(
+                description.geometry_data_quality,
+                key=lambda item: item.datum_id,
+            )
+        )
 
         return self._geometry(
             dimensions=dimensions,
@@ -205,6 +218,7 @@ class RoomGeometryBuilder:
                 furniture,
                 acoustic_treatments,
             ),
+            data_quality=data_quality,
         )
 
     def from_legacy_room(self, room: Room) -> RoomGeometry:
@@ -253,6 +267,7 @@ class RoomGeometryBuilder:
         furniture=(),
         acoustic_treatments=(),
         feature_completeness=None,
+        data_quality=(),
     ):
         return RoomGeometry(
             dimensions=dimensions,
@@ -270,6 +285,7 @@ class RoomGeometryBuilder:
             furniture=furniture,
             acoustic_treatments=acoustic_treatments,
             feature_completeness=feature_completeness,
+            data_quality=data_quality,
         )
 
     @classmethod

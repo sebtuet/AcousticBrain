@@ -10,7 +10,9 @@ from acousticbrain.models import (
     DirectReverberantCorrelation,
     DirectReverberantCorrelationAnalysis,
     ETCAnalysis,
+    ETCReflectionCorrelation,
     ETCReflectionCorrelationAnalysis,
+    GeometryCoordinate,
     HypothesisCode,
     HypothesisStatus,
     ImpulseChannel,
@@ -199,6 +201,59 @@ def test_early_reflection_rule_requires_dominant_structured_events():
         "direct_reverberant.correlation.LOW_DRR_DOMINANT_EARLY_REFLECTIONS",
     }
     assert hypothesis.verification_actions[0].definitive is False
+
+
+def test_early_reflection_action_names_the_testable_geometry_surface():
+    observed = reflection(delay=3.0)
+    correlation = ETCReflectionCorrelation(
+        code="etc_geometry_reflection.left.100.left_side_wall_panel_02",
+        channel=ImpulseChannel.LEFT,
+        event=observed,
+        surface=ReflectionSurface.LEFT_WALL,
+        theoretical_delay_ms=2.86,
+        measured_delay_ms=3.0,
+        timing_error_ms=0.14,
+        acoustic_path_difference_m=observed.acoustic_path_difference_m,
+        match_score=88.0,
+        confidence=86.0,
+        source_analyses=("ETCAnalysis", "GeometryEarlyReflectionAnalysis"),
+        surface_id="LEFT_SIDE_WALL_PANEL_02",
+        impact_point=GeometryCoordinate(2.0, 0.0, 1.0),
+        geometric_uncertainty_ms=0.2,
+        geometry_confidence=88.0,
+        geometry_path_id=(
+            "geometry_reflection.LEFT.MIC.LEFT_SIDE_WALL_PANEL_02"
+        ),
+        provenance_codes=("LASER_MEASURED",),
+    )
+    correlations = ETCReflectionCorrelationAnalysis(
+        correlations=[correlation],
+        unmatched_events={ImpulseChannel.LEFT: []},
+        evaluated_event_count=1,
+        matched_event_count=1,
+        confidence=86.0,
+    )
+
+    hypothesis = AcousticReasoningEngine().analyze(
+        etc=ETCAnalysis(
+            available_channels=[ImpulseChannel.LEFT], confidence=90.0
+        ),
+        etc_reflection_correlations=correlations,
+    ).hypotheses[2]
+
+    action = hypothesis.verification_actions[0]
+    assert action.parameters["surface"] == "LEFT_SIDE_WALL_PANEL_02"
+    assert action.parameters["observed_event_delay_ms"] == 3.0
+    assert action.parameters["observed_event_relative_level_db"] == -10.0
+    assert action.parameters["theoretical_delay_ms"] == 2.86
+    assert action.parameters["timing_error_ms"] == 0.14
+    assert action.parameters["geometry_confidence"] == 88.0
+    assert action.expected_supporting_fact_codes == (
+        "REFLECTION_DECREASES_AFTER_MASKING",
+    )
+    assert action.expected_counter_fact_codes == (
+        "REFLECTION_REMAINS_UNCHANGED_AFTER_MASKING",
+    )
 
 
 def test_sbir_rule_keeps_geometry_and_frequency_context_and_verification_parameters():

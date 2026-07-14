@@ -4,7 +4,9 @@ from dataclasses import asdict, dataclass
 @dataclass(frozen=True)
 class PresentedExperimentCandidate:
     candidate_id: str
+    source_protocol_id: str
     hypothesis_code: str
+    source_action_code: str | None
     informative_value: float
     difficulty: str
     reversibility: str
@@ -17,6 +19,9 @@ class PresentedExperimentCandidate:
     primary_selection_reason: str | None
     eligible: bool
     ineligibility_reasons: tuple[str, ...]
+    parameters: dict[str, object]
+    controlled_variable_codes: tuple[str, ...]
+    changed_variable_codes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -28,6 +33,7 @@ class PresentedExperimentPlanning:
     applied_rule_codes: tuple[str, ...]
     technical_confidence: float | None
     source_analysis_codes: tuple[str, ...]
+    uncovered_active_action_codes: tuple[str, ...]
 
     def to_dict(self):
         return asdict(self)
@@ -43,6 +49,21 @@ class ExperimentPlanningPresenter:
         if analysis is None:
             return None
         plan = analysis.plan
+        candidate_action_codes = {
+            item.source_action_code
+            for item in (*plan.ordered_candidates, *plan.ineligible_candidates)
+            if item.source_action_code is not None
+        }
+        recommendation_analysis = getattr(context, "recommendation_analysis", None)
+        uncovered = tuple(
+            item.code
+            for item in (
+                recommendation_analysis.recommendations
+                if recommendation_analysis is not None else ()
+            )
+            if item.status.value == "ACTIVE"
+            and item.code not in candidate_action_codes
+        )
         return PresentedExperimentPlanning(
             status=analysis.status.value,
             recommended_candidate=(
@@ -64,13 +85,16 @@ class ExperimentPlanningPresenter:
             applied_rule_codes=plan.applied_rule_codes,
             technical_confidence=plan.technical_confidence,
             source_analysis_codes=plan.source_analysis_codes,
+            uncovered_active_action_codes=uncovered,
         )
 
     @staticmethod
     def _candidate(candidate):
         return PresentedExperimentCandidate(
             candidate_id=candidate.candidate_id,
+            source_protocol_id=candidate.source_protocol_id,
             hypothesis_code=candidate.hypothesis_code,
+            source_action_code=candidate.source_action_code,
             informative_value=candidate.informative_value,
             difficulty=candidate.difficulty.name,
             reversibility=candidate.reversibility.name,
@@ -89,4 +113,7 @@ class ExperimentPlanningPresenter:
             ineligibility_reasons=tuple(
                 item.value for item in candidate.ineligibility_reasons
             ),
+            parameters=dict(candidate.parameters),
+            controlled_variable_codes=candidate.controlled_variable_codes,
+            changed_variable_codes=candidate.changed_variable_codes,
         )

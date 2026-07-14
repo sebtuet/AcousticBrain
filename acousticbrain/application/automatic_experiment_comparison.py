@@ -9,6 +9,7 @@ from acousticbrain.models import (
     ExperimentComparisonTrace,
     ExperimentComparisonType,
     ExperimentCounterFact,
+    ExperimentAcousticOutcome,
     ExperimentEvolutionOutcome,
     ExperimentEvolutionResult,
     ExperimentFactChange,
@@ -183,7 +184,10 @@ class AutomaticExperimentComparisonService:
             ("SIGNAL_CHAIN_VS_ROOM_SIDE", "CONTROLLED_SIGNAL_CHAIN_SWAP"),
         ),
         "MODAL_BASS_PERSISTENCE": (
-            ("LOCAL_POSITION_EFFECT_VS_GLOBAL_MODE", "MULTIPLE_LISTENING_POSITIONS"),
+            (
+                "LOCAL_POSITION_EFFECT_VS_GLOBAL_MODE",
+                "CONTROLLED_SOURCE_AND_LISTENER_MATRIX",
+            ),
             ("SOURCE_EXCITATION_VS_LISTENER_POSITION", "CONTROLLED_SOURCE_POSITION"),
         ),
         "DOMINANT_EARLY_REFLECTION_INTERACTION": (
@@ -290,6 +294,7 @@ class AutomaticExperimentComparisonService:
                 descriptor.source_hypothesis_code,
                 descriptor.declared_change_codes,
                 descriptor.required_comparison_fact_codes,
+                descriptor.comparison_parameters,
             )
         if optimization_session is not None:
             matches = [
@@ -303,8 +308,15 @@ class AutomaticExperimentComparisonService:
                     protocol.hypothesis_code,
                     (),
                     protocol.fact_codes,
+                    (),
                 )
-        return (None, None, (), descriptor.required_comparison_fact_codes)
+        return (
+            None,
+            None,
+            (),
+            descriptor.required_comparison_fact_codes,
+            descriptor.comparison_parameters,
+        )
 
     def _compare(self, before, after, comparison_type, initial_reasons, metadata):
         before_id = before.descriptor.experiment_id if before else "UNRESOLVED"
@@ -320,7 +332,13 @@ class AutomaticExperimentComparisonService:
             reasons.append(ComparisonIneligibilityReason.EXPERIMENT_INCOMPLETE)
         deltas, fact_reasons, unavailable = self._fact_deltas(before, after)
         reasons.extend(fact_reasons)
-        source_protocol, hypothesis, declared_changes, required_facts = metadata
+        (
+            source_protocol,
+            hypothesis,
+            declared_changes,
+            required_facts,
+            experiment_parameters,
+        ) = metadata
         comparable_codes = {item.fact_code for item in deltas}
         if any(code not in comparable_codes for code in required_facts):
             reasons.append(ComparisonIneligibilityReason.REQUIRED_FACT_UNAVAILABLE)
@@ -332,11 +350,20 @@ class AutomaticExperimentComparisonService:
             reasons.append(ComparisonIneligibilityReason.IDENTICAL_CONTENT)
         reasons = tuple(dict.fromkeys(reasons))
         observed, counters = self._observations(
-            hypothesis, deltas, declared_changes
+            hypothesis,
+            deltas,
+            declared_changes,
+            protocol_observations=(
+                comparison_type is ExperimentComparisonType.LOCAL
+            ),
         )
         outcome, initial_status = self._outcome(
             hypothesis, before, after, deltas, reasons, declared_changes
         )
+        acoustic_outcome = self._acoustic_outcome(
+            deltas, reasons, required_facts
+        )
+        experimental_result_codes = self._experimental_results(observed)
         causal_reassignment = bool(
             hypothesis == "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
             and {
@@ -364,6 +391,8 @@ class AutomaticExperimentComparisonService:
             observed_fact_codes=tuple(item.code for item in observed),
             hypothesis_code=hypothesis,
             evolution_outcome=outcome,
+            acoustic_outcome=acoustic_outcome,
+            experimental_result_codes=experimental_result_codes,
             unresolved_discrimination_codes=tuple(item.code for item in unresolved),
         )
         confidence_values = tuple(
@@ -379,8 +408,11 @@ class AutomaticExperimentComparisonService:
             comparison_type=comparison_type,
             source_protocol_id=source_protocol,
             source_hypothesis_code=hypothesis,
+            experiment_parameters=experiment_parameters,
             initial_hypothesis_status=initial_status,
             outcome=outcome,
+            acoustic_outcome=acoustic_outcome,
+            experimental_result_codes=experimental_result_codes,
             eligibility=eligibility,
             ineligibility_reasons=reasons,
             fact_deltas=deltas,
@@ -466,7 +498,13 @@ class AutomaticExperimentComparisonService:
         return None
 
     @staticmethod
-    def _observations(hypothesis, deltas, declared_changes=()):
+    def _observations(
+        hypothesis,
+        deltas,
+        declared_changes=(),
+        *,
+        protocol_observations=True,
+    ):
         if hypothesis is None:
             return (), ()
         mapping = {
@@ -568,7 +606,64 @@ class AutomaticExperimentComparisonService:
                     tuple(item.fact_code for item in asymmetry),
                     provenance,
                 ))
+        if (
+            hypothesis == "MODAL_BASS_PERSISTENCE"
+            and "MULTIPLE_LISTENING_POSITIONS" in declared_changes
+            and protocol_observations
+        ):
+            decay = next((
+                item for item in deltas
+                if item.fact_code == "bass_decay.maximum_decay_time_s"
+            ), None)
+            if decay is not None and decay.change is not ExperimentFactChange.UNCHANGED:
+                observed.extend((
+                    ObservedExperimentFact(
+                        "BASS_DECAY_VARIES_BY_LISTENING_POSITION",
+                        (decay.fact_code,),
+                        decay.source_analysis_codes,
+                    ),
+                    ObservedExperimentFact(
+                        "LOCAL_POSITION_EFFECT_SUPPORTED",
+                        (decay.fact_code,),
+                        decay.source_analysis_codes,
+                    ),
+                ))
         return tuple(observed), tuple(counters)
+
+    @staticmethod
+    def _acoustic_outcome(deltas, reasons, required_fact_codes=()):
+        if reasons:
+            return ExperimentAcousticOutcome.INCONCLUSIVE
+        required = set(required_fact_codes)
+        scoped = tuple(
+            item for item in deltas
+            if item.fact_code in required
+        ) if required else tuple(
+            item for item in deltas
+            if not item.fact_code.startswith("hypothesis.")
+        )
+        if not scoped:
+            return ExperimentAcousticOutcome.INCONCLUSIVE
+        changes = {item.change for item in scoped}
+        improved = ExperimentFactChange.IMPROVED in changes
+        degraded = ExperimentFactChange.DEGRADED in changes
+        if improved and degraded:
+            return ExperimentAcousticOutcome.MIXED
+        if improved:
+            return ExperimentAcousticOutcome.IMPROVED
+        if degraded:
+            return ExperimentAcousticOutcome.DEGRADED
+        if changes <= {ExperimentFactChange.UNCHANGED}:
+            return ExperimentAcousticOutcome.UNCHANGED
+        return ExperimentAcousticOutcome.MIXED
+
+    @staticmethod
+    def _experimental_results(observed):
+        discriminating_codes = (
+            "LOCAL_POSITION_EFFECT_SUPPORTED",
+        )
+        available = {item.code for item in observed}
+        return tuple(code for code in discriminating_codes if code in available)
 
     @staticmethod
     def _outcome(hypothesis, before, after, deltas, reasons, declared_changes=()):

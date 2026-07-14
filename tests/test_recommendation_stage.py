@@ -37,6 +37,18 @@ class VerificationEngine:
         )])
 
 
+class MultiPositionEngine:
+    def analyze(self, **inputs):
+        return RecommendationAnalysis([Recommendation(
+            code="MEASURE_MULTIPLE_POSITIONS",
+            action="measure",
+            target="listening_area",
+            priority=RecommendationPriority.HIGH,
+            confidence=75.0,
+            source_analyses=("ModalDensityAnalysis",),
+        )])
+
+
 def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
     context.stereo = StereoAnalysis()
@@ -87,3 +99,18 @@ def test_stage_marks_user_deferred_verification_without_removing_traceability():
     assert recommendation.code == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
     assert recommendation.status is RecommendationStatus.DEFERRED
     assert recommendation.status_reason == "USER_DECISION"
+
+
+def test_stage_marks_completed_physical_protocol_recommendation():
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.experiment_descriptors = (SimpleNamespace(
+        source_protocol_id="protocol.verify_modal_bass_persistence.v1",
+        declared_change_codes=("MULTIPLE_LISTENING_POSITIONS",),
+        causal_discrimination_decisions=(),
+    ),)
+
+    RecommendationStage(MultiPositionEngine()).run(context)
+
+    recommendation = context.recommendation_analysis.recommendations[0]
+    assert recommendation.status is RecommendationStatus.COMPLETED
+    assert recommendation.status_reason == "EXPERIMENT_PROTOCOL_COMPLETED"

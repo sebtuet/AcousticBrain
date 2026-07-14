@@ -118,17 +118,32 @@ class ETCDiagnostic(DiagnosticBase):
                 for item in correlations.correlations
                 if item.confidence >= cls.RELIABLE_CORRELATION_CONFIDENCE
             ]
+            geometry_reliable = [
+                item for item in reliable if item.surface_id is not None
+            ]
+            sbir_reliable = [
+                item for item in reliable if item.surface_id is None
+            ]
             observations.append(
-                f"Corrélations ETC-SBIR fiables : {len(reliable)}."
+                "Corrélations fiables : "
+                f"géométrie {len(geometry_reliable)} ; "
+                f"SBIR {len(sbir_reliable)}."
             )
             observations.extend(
                 (
-                    f"Surface candidate {item.surface.name} sur "
+                    f"Surface candidate {item.surface_id or item.surface.name} sur "
                     f"{item.channel.value} : délai mesuré "
                     f"{item.measured_delay_ms:.2f} ms, théorique "
                     f"{item.theoretical_delay_ms:.2f} ms, erreur "
                     f"{item.timing_error_ms:.2f} ms, confiance "
-                    f"{item.confidence:.0f} %."
+                    f"{item.confidence:.0f} %"
+                    + (
+                        f", confiance géométrique {item.geometry_confidence:.0f} %, "
+                        f"incertitude {item.geometric_uncertainty_ms:.2f} ms."
+                        if item.geometry_confidence is not None
+                        and item.geometric_uncertainty_ms is not None
+                        else "."
+                    )
                 )
                 for item in reliable[: cls.MAXIMUM_PRESENTED_EVENTS]
             )
@@ -167,7 +182,7 @@ class ETCDiagnostic(DiagnosticBase):
             causes.append("Événements temporels spécifiques à un canal")
         if correlations is not None:
             reliable_surfaces = {
-                item.surface.name
+                item.surface_id or item.surface.name
                 for item in correlations.correlations
                 if item.confidence >= cls.RELIABLE_CORRELATION_CONFIDENCE
             }
@@ -195,4 +210,3 @@ class ETCDiagnostic(DiagnosticBase):
                 "Conserver la mesure ETC comme référence temporelle."
             )
         return recommendations
-

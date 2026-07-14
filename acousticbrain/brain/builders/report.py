@@ -9,6 +9,7 @@ from acousticbrain.report import (
     ExperimentDiscoveryPresenter,
     ExperimentComparisonPresenter,
     CausalDiscriminationPresenter,
+    ExperimentCampaignPresenter,
 )
 
 
@@ -35,6 +36,7 @@ class ReportBuilder:
         report.experiment_planning = ExperimentPlanningPresenter().present(context)
         report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
         report.experiment_comparison = ExperimentComparisonPresenter().present(context)
+        report.experiment_campaigns = ExperimentCampaignPresenter().present(context)
         report.causal_discrimination = CausalDiscriminationPresenter().present(context)
 
         return report

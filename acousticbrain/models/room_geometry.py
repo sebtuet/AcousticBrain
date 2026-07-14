@@ -13,6 +13,7 @@ from .geometry_covering_zone import GeometryCoveringZone
 from .geometry_furniture import GeometryFurniture
 from .geometry_acoustic_treatment import GeometryAcousticTreatment
 from .room_feature_geometry_completeness import RoomFeatureGeometryCompleteness
+from .geometry_datum_quality import GeometryDatumQuality
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class RoomGeometry:
     furniture: tuple[GeometryFurniture, ...] = ()
     acoustic_treatments: tuple[GeometryAcousticTreatment, ...] = ()
     feature_completeness: RoomFeatureGeometryCompleteness | None = None
+    data_quality: tuple[GeometryDatumQuality, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.dimensions, RoomDimensions):
@@ -48,6 +50,7 @@ class RoomGeometry:
             ("covering zones", self.covering_zones, GeometryCoveringZone),
             ("furniture", self.furniture, GeometryFurniture),
             ("acoustic treatments", self.acoustic_treatments, GeometryAcousticTreatment),
+            ("data quality", self.data_quality, GeometryDatumQuality),
         )
         for name, collection, expected_type in typed_collections:
             if not isinstance(collection, tuple):
@@ -105,6 +108,10 @@ class RoomGeometry:
         self._require_unique(
             (item.treatment_id for item in self.acoustic_treatments),
             "acoustic-treatment",
+        )
+        self._require_unique(
+            (item.datum_id for item in self.data_quality),
+            "geometry-datum-quality",
         )
         speaker_ids = {speaker.point_id for speaker in self.speakers}
         if any(

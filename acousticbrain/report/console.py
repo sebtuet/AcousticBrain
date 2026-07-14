@@ -109,6 +109,89 @@ class ConsoleReporter:
                     comparison, comparison_analysis.detailed_traceability
                 )
 
+        if report.experiment_campaigns:
+            print()
+            print("CAMPAGNES EXPÉRIMENTALES")
+            for campaign in report.experiment_campaigns:
+                print()
+                print(f"Campagne : {campaign.campaign_code}")
+                print(f"Protocole : {campaign.protocol_id}")
+                print(f"Hypothèse : {campaign.hypothesis_code}")
+                print(f"Objectif : {campaign.objective_label}")
+                print(f"Statut : {campaign.status}")
+                print("Mesures :")
+                for measurement in campaign.measurements:
+                    sign = "+" if measurement.offset_m > 0.0 else ""
+                    print(
+                        f" ✓ {measurement.experiment_id} — {measurement.role} "
+                        f"({sign}{measurement.offset_m:.2f} m) — {measurement.state}"
+                    )
+                print("Résultats par position :")
+                for branch in campaign.branch_results:
+                    sign = "+" if branch.offset_m > 0.0 else ""
+                    print(
+                        f" • {branch.role} ({sign}{branch.offset_m:.2f} m, "
+                        f"{branch.experiment_id}) — évolution acoustique "
+                        f"{branch.acoustic_outcome}"
+                    )
+                    if (
+                        branch.reference_value is not None
+                        and branch.observed_value is not None
+                    ):
+                        print(
+                            "   Décroissance maximale : "
+                            f"{branch.reference_value:.3f} → "
+                            f"{branch.observed_value:.3f} s"
+                        )
+                    for label in branch.result_labels:
+                        print(f"   - {label}")
+                print("Conclusion actuelle :")
+                for conclusion in campaign.conclusions:
+                    marker = "✓" if conclusion.established else "✗"
+                    print(f" {marker} {conclusion.label}")
+                for metric in campaign.metrics:
+                    if metric.code == "MAXIMUM_BASS_DECAY_REDUCTION":
+                        print(
+                            "Diminution maximale observée : "
+                            f"{metric.reference_value:.3f} → {metric.best_value:.3f} s "
+                            f"({metric.improvement_percent:.1f} %, "
+                            f"{metric.best_experiment_id})"
+                        )
+                print(
+                    "Discriminations restantes : "
+                    + (
+                        ", ".join(campaign.unresolved_discrimination_labels)
+                        or "aucune"
+                    )
+                )
+                print(
+                    "Prochaine discrimination nécessaire : "
+                    + (campaign.next_discrimination_label or "aucune")
+                )
+                if self.detailed_traceability or campaign.detailed_traceability:
+                    print(f"Trace : {campaign.trace_id}")
+                    print(
+                        "Comparaisons sources : "
+                        + (
+                            ", ".join(campaign.trace_comparison_result_ids)
+                            or "aucune"
+                        )
+                    )
+                    print(
+                        "Observations sources : "
+                        + (
+                            ", ".join(campaign.trace_observation_codes)
+                            or "aucune"
+                        )
+                    )
+                    print(
+                        "Règles appliquées : "
+                        + (
+                            ", ".join(campaign.trace_applied_rule_codes)
+                            or "aucune"
+                        )
+                    )
+
         causal = report.causal_discrimination
         if causal is not None:
             print()
@@ -206,7 +289,11 @@ class ConsoleReporter:
                     + (", ".join(causal.trace_decision_codes) or "aucune")
                 )
 
-        if comparison_analysis is None and causal is None:
+        if (
+            comparison_analysis is None
+            and causal is None
+            and not report.experiment_campaigns
+        ):
             print()
             print()
         elif causal is not None and report.recommendations:
@@ -221,8 +308,8 @@ class ConsoleReporter:
                 print(f" • {recommendation.code}")
                 print(f"   Action : {recommendation.action}")
                 print(f"   Cible : {recommendation.target}")
-                if recommendation.status.name == "DEFERRED":
-                    print("   Statut : DEFERRED")
+                if recommendation.status.name != "ACTIVE":
+                    print(f"   Statut : {recommendation.status.name}")
                     print(f"   Raison : {recommendation.status_reason}")
                 else:
                     print(f"   Priorité : {recommendation.priority.name}")
@@ -306,9 +393,15 @@ class ConsoleReporter:
                     + ("oui" if domain.contributes_to_acoustic_score else "non")
                 )
                 if domain.recommendation_codes:
+                    status_by_code = dict(domain.recommendation_statuses)
                     print(
                         "   Références d'action : "
-                        + ", ".join(domain.recommendation_codes)
+                        + ", ".join(
+                            code
+                            if status_by_code.get(code, "ACTIVE") == "ACTIVE"
+                            else f"{code} — {status_by_code[code]}"
+                            for code in domain.recommendation_codes
+                        )
                     )
 
             if global_analysis.domains:
@@ -395,8 +488,36 @@ class ConsoleReporter:
             candidate = planning.recommended_candidate
             if candidate is None:
                 print("Code : aucune")
+                print("Pourquoi aucun candidat n’est éligible :")
+                reason_labels = {
+                    "ALREADY_COMPLETED": "campagne déjà terminée",
+                    "USER_DEFERRED": "investigation différée par décision utilisateur",
+                    "GEOMETRY_PARAMETER_MISSING": "géométrie précise manquante",
+                    "GEOMETRY_TIMING_INCOMPATIBLE": "délai théorique incompatible avec l’événement observé",
+                    "GEOMETRY_UNCERTAINTY_TOO_HIGH": "incertitude géométrique trop élevée",
+                    "GEOMETRY_CONFIDENCE_TOO_LOW": "confiance géométrique insuffisante",
+                    "PREREQUISITE_MISSING": "prérequis du protocole manquant",
+                    "HYPOTHESIS_REFUTED": "hypothèse contredite",
+                    "SOURCE_HYPOTHESIS_MISSING": "hypothèse source absente",
+                    "INCOMPLETE_PROVENANCE": "provenance structurée insuffisante",
+                }
+                for item in planning.all_candidates:
+                    if item.eligible:
+                        continue
+                    name = item.source_action_code or item.candidate_id
+                    labels = tuple(
+                        reason_labels.get(reason, reason)
+                        for reason in item.ineligibility_reasons
+                    )
+                    print(f" • {name} — {', '.join(labels)}")
+                if planning.uncovered_active_action_codes:
+                    print(
+                        " • Actions actives sans protocole planifiable : "
+                        + ", ".join(planning.uncovered_active_action_codes)
+                    )
             else:
                 print(f"Code : {candidate.candidate_id}")
+                print(f"Protocole : {candidate.source_protocol_id}")
                 print(f"Hypothèse : {candidate.hypothesis_code}")
                 print(
                     "Valeur informative : "
@@ -424,6 +545,20 @@ class ConsoleReporter:
                     "Prérequis : "
                     + (", ".join(candidate.prerequisite_codes) or "aucun")
                 )
+                if candidate.parameters:
+                    print("Paramètres discriminants :")
+                    for name, value in candidate.parameters.items():
+                        print(f" • {name} : {value}")
+                if candidate.changed_variable_codes:
+                    print(
+                        "Variables modifiées : "
+                        + ", ".join(candidate.changed_variable_codes)
+                    )
+                if candidate.controlled_variable_codes:
+                    print(
+                        "Variables contrôlées : "
+                        + ", ".join(candidate.controlled_variable_codes)
+                    )
                 print("Alternatives classées :")
                 for alternative in planning.alternatives:
                     print(
@@ -587,7 +722,13 @@ class ConsoleReporter:
 
     def _print_experiment_evolution(self, comparison, detailed_traceability=False):
         print()
-        print(f"Expérience {comparison.after_experiment_id}")
+        if comparison.comparison_type == "CUMULATIVE":
+            print(
+                "Comparaison cumulative depuis baseline — "
+                f"{comparison.after_experiment_id}"
+            )
+        else:
+            print(f"Expérience {comparison.after_experiment_id}")
         print(f"Avant : {comparison.before_experiment_id}")
         print(f"Après : {comparison.after_experiment_id}")
         print(f"Comparabilité : {comparison.eligibility}")
@@ -595,7 +736,15 @@ class ConsoleReporter:
             print("Raisons : " + ", ".join(comparison.ineligibility_reasons))
         print(f"Protocole : {comparison.source_protocol_id or 'non déclaré'}")
         print(f"Hypothèse : {comparison.source_hypothesis_code or 'non déclarée'}")
-        print(f"Évolution : {comparison.outcome}")
+        for name, value in comparison.experiment_parameters:
+            print(f"{name} : {value}")
+        print(f"Évolution acoustique : {comparison.acoustic_outcome}")
+        print(f"Évolution de l’hypothèse : {comparison.outcome}")
+        if comparison.experimental_result_labels:
+            print(
+                "Résultat expérimental : "
+                + ", ".join(comparison.experimental_result_labels)
+            )
         print("Faits améliorés : " + (", ".join(comparison.improved_fact_codes) or "aucun"))
         print("Faits dégradés : " + (", ".join(comparison.degraded_fact_codes) or "aucun"))
         print("Faits modifiés sans direction : " + (", ".join(comparison.changed_fact_codes) or "aucun"))

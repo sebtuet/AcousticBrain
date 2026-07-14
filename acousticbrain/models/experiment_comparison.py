@@ -40,6 +40,14 @@ class ExperimentEvolutionOutcome(Enum):
     CONTRADICTED = "CONTRADICTED"
 
 
+class ExperimentAcousticOutcome(Enum):
+    IMPROVED = "IMPROVED"
+    DEGRADED = "DEGRADED"
+    MIXED = "MIXED"
+    UNCHANGED = "UNCHANGED"
+    INCONCLUSIVE = "INCONCLUSIVE"
+
+
 class ExperimentFactChange(Enum):
     IMPROVED = "IMPROVED"
     DEGRADED = "DEGRADED"
@@ -118,6 +126,8 @@ class ExperimentComparisonTrace:
     observed_fact_codes: tuple[str, ...]
     hypothesis_code: str | None
     evolution_outcome: ExperimentEvolutionOutcome
+    acoustic_outcome: ExperimentAcousticOutcome
+    experimental_result_codes: tuple[str, ...]
     unresolved_discrimination_codes: tuple[str, ...]
 
 
@@ -129,8 +139,11 @@ class ExperimentEvolutionResult:
     comparison_type: ExperimentComparisonType
     source_protocol_id: str | None
     source_hypothesis_code: str | None
+    experiment_parameters: tuple[tuple[str, ComparisonValue], ...]
     initial_hypothesis_status: str | None
     outcome: ExperimentEvolutionOutcome
+    acoustic_outcome: ExperimentAcousticOutcome
+    experimental_result_codes: tuple[str, ...]
     eligibility: ComparisonEligibilityStatus
     ineligibility_reasons: tuple[ComparisonIneligibilityReason, ...]
     fact_deltas: tuple[ExperimentFactDelta, ...]
@@ -146,7 +159,9 @@ class ExperimentEvolutionResult:
 
     def __post_init__(self):
         collections = (
-            self.ineligibility_reasons, self.fact_deltas, self.observed_facts,
+            self.experiment_parameters, self.ineligibility_reasons,
+            self.experimental_result_codes,
+            self.fact_deltas, self.observed_facts,
             self.counter_facts, self.unavailable_fact_codes,
             self.unresolved_discriminations, self.applied_rule_codes,
             self.applied_threshold_codes, self.provenance_codes,

@@ -344,6 +344,43 @@ def test_repeated_pair_produces_reproducibility_facts_without_confirming_a_cause
     }
 
 
+def test_multi_position_protocol_projects_observed_local_decay_variation():
+    service = AutomaticExperimentComparisonService()
+    code = "bass_decay.maximum_decay_time_s"
+    deltas, _, _ = service._fact_deltas(
+        analyzed(descriptor("exp-003"), (
+            replace(fact(
+                0.767,
+                code=code,
+                unit="SECONDS",
+                family="BASS_DECAY",
+                threshold=0.05,
+            ), higher_is_better=False),
+        )),
+        analyzed(descriptor("exp-005"), (
+            replace(fact(
+                0.636,
+                code=code,
+                unit="SECONDS",
+                family="BASS_DECAY",
+                threshold=0.05,
+            ), higher_is_better=False),
+        )),
+    )
+
+    observed, _ = service._observations(
+        "MODAL_BASS_PERSISTENCE",
+        deltas,
+        ("CONTROLLED_LISTENING_POSITION_OFFSET", "MULTIPLE_LISTENING_POSITIONS"),
+    )
+
+    assert {item.code for item in observed} >= {
+        "BASS_DECAY_VARIES_BY_LISTENING_POSITION",
+        "LOCAL_POSITION_EFFECT_SUPPORTED",
+        "BASS_DECAY_REDUCED_AT_TARGET_BANDS",
+    }
+
+
 def test_degradation_uses_a_counter_fact_that_describes_the_actual_direction():
     service = AutomaticExperimentComparisonService()
     code = "bass_decay.left_right.maximum_difference_abs_s"
