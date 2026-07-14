@@ -8,5 +8,5 @@ class GeometrySBIRStage:
     def run(self, context):
         context.geometry_sbir_analysis = self.engine.analyze(
             context.geometry_early_reflection_analysis,
-            context.room_geometry,
+            context.propagation_geometry or context.room_geometry,
         )

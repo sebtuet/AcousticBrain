@@ -15,7 +15,7 @@ class GeometrySBIRPredictionEngine:
         "SBIR_GEOMETRY_CONSUME_FIRST_ORDER_PATHS",
         "SBIR_GEOMETRY_FIRST_CANCELLATION_V1",
         "SBIR_GEOMETRY_PRESERVE_PATH_UNCERTAINTY",
-        "SBIR_GEOMETRY_RECTANGULAR_SURFACES_ONLY",
+        "SBIR_GEOMETRY_CONSUME_PATH_SURFACE_DISTANCE",
     )
     _BASE_RELATIONSHIPS = {
         ReflectionSurface.FRONT_WALL: "FRONT_WALL",
@@ -67,13 +67,14 @@ class GeometrySBIRPredictionEngine:
                 relationship_code=self._relationship(
                     path.surface,
                     orientations.get(path.speaker_id),
+                    path.path_geometry,
                 ),
                 impact_point=path.impact_point,
                 direct_path_m=path.direct_path_m,
                 reflected_path_m=path.reflected_path_m,
                 extra_distance_m=extra,
                 speaker_boundary_distance_m=self._boundary_distance(
-                    path.surface, speaker, room_geometry.dimensions
+                    path, speaker, room_geometry
                 ),
                 expected_cancellation_frequency_hz=frequency,
                 distance_uncertainty_m=distance_uncertainty,
@@ -91,7 +92,7 @@ class GeometrySBIRPredictionEngine:
         )
 
     @classmethod
-    def _relationship(cls, surface, yaw_degrees):
+    def _relationship(cls, surface, yaw_degrees, path_geometry=None):
         relationship = cls._BASE_RELATIONSHIPS[surface]
         if yaw_degrees is None or surface in {
             ReflectionSurface.FLOOR,
@@ -99,12 +100,16 @@ class GeometrySBIRPredictionEngine:
         }:
             return relationship
         forward = (cos(radians(yaw_degrees)), sin(radians(yaw_degrees)))
-        direction = {
-            ReflectionSurface.FRONT_WALL: (-1.0, 0.0),
-            ReflectionSurface.REAR_WALL: (1.0, 0.0),
-            ReflectionSurface.LEFT_WALL: (0.0, -1.0),
-            ReflectionSurface.RIGHT_WALL: (0.0, 1.0),
-        }[surface]
+        direction = (
+            path_geometry.speaker_to_surface_direction[:2]
+            if path_geometry is not None
+            else {
+                ReflectionSurface.FRONT_WALL: (-1.0, 0.0),
+                ReflectionSurface.REAR_WALL: (1.0, 0.0),
+                ReflectionSurface.LEFT_WALL: (0.0, -1.0),
+                ReflectionSurface.RIGHT_WALL: (0.0, 1.0),
+            }[surface]
+        )
         return (
             "WALL_BEHIND_SPEAKER"
             if forward[0] * direction[0] + forward[1] * direction[1] < -0.707
@@ -112,7 +117,11 @@ class GeometrySBIRPredictionEngine:
         )
 
     @staticmethod
-    def _boundary_distance(surface, speaker, dimensions):
+    def _boundary_distance(path, speaker, geometry):
+        if path.path_geometry is not None:
+            return path.path_geometry.speaker_surface_distance_m
+        surface = path.surface
+        dimensions = geometry.dimensions
         return {
             ReflectionSurface.FRONT_WALL: speaker.x_m,
             ReflectionSurface.REAR_WALL: dimensions.length_m - speaker.x_m,
