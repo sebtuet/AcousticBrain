@@ -3,6 +3,9 @@ from .surface_material import SurfaceMaterialAnalyzer
 from .material_aware_reflection_candidate import (
     ReflectionCandidateCompatibilityEngine,
 )
+from .reflection_verification_planning import (
+    ControlledReflectionVerificationPlanningEngine,
+)
 from .stereo import StereoAnalyzer
 from .sbir import SBIRAnalyzer
 from .modal_density import ModalDensityAnalyzer

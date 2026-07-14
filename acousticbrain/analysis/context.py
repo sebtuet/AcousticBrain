@@ -37,6 +37,7 @@ from acousticbrain.models import (
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
     MaterialAwareReflectionCandidateAnalysis,
+    ControlledReflectionVerificationPlanningAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -141,6 +142,10 @@ class AnalysisContext:
 
     material_aware_reflection_candidate_analysis: (
         MaterialAwareReflectionCandidateAnalysis | None
+    ) = None
+
+    controlled_reflection_verification_planning_analysis: (
+        ControlledReflectionVerificationPlanningAnalysis | None
     ) = None
 
     project: Project | None = None
