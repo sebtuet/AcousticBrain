@@ -8,6 +8,9 @@ from .optimization_session import (
 )
 from .experiment_discovery import ExperimentDiscoveryService
 from .experiment_protocol_declaration import ExperimentProtocolDeclarationService
+from .reflection_experiment_declaration import (
+    ControlledReflectionExperimentDeclarationService,
+)
 from .experiment_campaign_synthesis import ExperimentCampaignSynthesisService
 from .acoustic_session import AcousticSession, ImportedExperiment
 from .automatic_experiment_comparison import (

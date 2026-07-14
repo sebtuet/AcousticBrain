@@ -38,6 +38,7 @@ from acousticbrain.models import (
     SurfaceMaterialAnalysis,
     MaterialAwareReflectionCandidateAnalysis,
     ControlledReflectionVerificationPlanningAnalysis,
+    ControlledReflectionExperimentDeclaration,
 )
 
 from acousticbrain.project import Project
@@ -147,6 +148,10 @@ class AnalysisContext:
     controlled_reflection_verification_planning_analysis: (
         ControlledReflectionVerificationPlanningAnalysis | None
     ) = None
+
+    controlled_reflection_experiment_declarations: tuple[
+        ControlledReflectionExperimentDeclaration, ...
+    ] = ()
 
     project: Project | None = None
 

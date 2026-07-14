@@ -10,6 +10,7 @@ from acousticbrain.models import (
     RoomGeometryComparison,
     PropagationGeometry,
     SurfaceMaterialAnalysis,
+    ControlledReflectionExperimentDeclaration,
     Speaker,
 )
 
@@ -38,6 +39,10 @@ class Project:
     propagation_geometry: PropagationGeometry | None = None
 
     surface_material_analysis: SurfaceMaterialAnalysis | None = None
+
+    controlled_reflection_experiment_declarations: tuple[
+        ControlledReflectionExperimentDeclaration, ...
+    ] = ()
 
     def add_measurement(
         self,

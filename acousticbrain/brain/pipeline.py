@@ -41,6 +41,9 @@ from .stages.material_aware_reflection_candidate import (
 from .stages.reflection_verification_planning import (
     ControlledReflectionVerificationPlanningStage,
 )
+from .stages.reflection_experiment_declaration import (
+    ControlledReflectionExperimentDeclarationStage,
+)
 from .stages.geometry_early_reflection import GeometryEarlyReflectionStage
 from .stages.geometry_sbir import GeometrySBIRStage
 from .stages.sbir_geometry_correlation import SBIRGeometryCorrelationStage
@@ -212,6 +215,11 @@ class BrainPipeline:
         )
 
         ControlledReflectionVerificationPlanningStage().run(
+            context,
+        )
+
+        ControlledReflectionExperimentDeclarationStage().run(
+            project,
             context,
         )
 
