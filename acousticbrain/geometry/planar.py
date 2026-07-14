@@ -89,7 +89,12 @@ def derive_planar_basis(vertices, *, tolerance=PLANAR_TOLERANCE_M):
 
 def project_point(point, basis):
     coordinates = _coordinates(point) if hasattr(point, "x_m") else tuple(point)
-    relative = _subtract(coordinates, basis.origin)
+    origin = (
+        _coordinates(basis.origin)
+        if hasattr(basis.origin, "x_m")
+        else basis.origin
+    )
+    relative = _subtract(coordinates, origin)
     return (
         _dot(relative, basis.u_axis),
         _dot(relative, basis.v_axis),

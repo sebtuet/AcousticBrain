@@ -40,6 +40,7 @@ from .room_surface import RoomSurface, RoomSurfaceKind
 from .geometry_opening import GeometryOpening
 from .room_geometry import RoomGeometry
 from .geometry_reflection_path import GeometryReflectionPath
+from .reflection_path_geometry import ReflectionPathGeometry
 from .geometry_early_reflection_analysis import GeometryEarlyReflectionAnalysis
 from .geometry_sbir_candidate import GeometrySBIRCandidate, GeometrySBIRAnalysis
 from .sbir_geometry_correlation import (

@@ -7,5 +7,5 @@ class GeometryEarlyReflectionStage:
 
     def run(self, context):
         context.geometry_early_reflection_analysis = self.engine.analyze(
-            context.room_geometry
+            context.propagation_geometry
         )

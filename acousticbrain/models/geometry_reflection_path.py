@@ -3,6 +3,7 @@ from math import isfinite
 
 from .geometry_coordinate import GeometryCoordinate
 from .reflection_surface import ReflectionSurface
+from .reflection_path_geometry import ReflectionPathGeometry
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class GeometryReflectionPath:
     uncertainty_ms: float | None
     confidence: float | None
     provenance_codes: tuple[str, ...]
+    path_geometry: ReflectionPathGeometry | None = None
 
     def __post_init__(self):
         identifiers = (
@@ -54,3 +56,7 @@ class GeometryReflectionPath:
             raise ValueError("Geometry reflection confidence must be bounded.")
         if not isinstance(self.provenance_codes, tuple):
             raise ValueError("Geometry reflection provenance must be a tuple.")
+        if self.path_geometry is not None and not isinstance(
+            self.path_geometry, ReflectionPathGeometry
+        ):
+            raise ValueError("Geometry reflection path geometry has an invalid type.")
