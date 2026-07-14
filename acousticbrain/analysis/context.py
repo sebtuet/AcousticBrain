@@ -35,6 +35,7 @@ from acousticbrain.models import (
     ExperimentPlanningAnalysis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
+    SurfaceMaterialAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -134,6 +135,8 @@ class AnalysisContext:
     propagation_geometry: PropagationGeometry | None = None
 
     propagation_geometry_analysis: PropagationGeometryAnalysis | None = None
+
+    surface_material_analysis: SurfaceMaterialAnalysis | None = None
 
     project: Project | None = None
 

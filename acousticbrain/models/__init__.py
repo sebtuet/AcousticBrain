@@ -15,6 +15,10 @@ from .surface_material_description import (
     SurfaceMaterialSource,
 )
 from .surface_material_assignment import SurfaceMaterialAssignment
+from .surface_material_analysis import (
+    SurfaceMaterialAnalysis,
+    SurfaceMaterialTargetAvailability,
+)
 from .surface_covering_zone import SurfaceCoveringZone
 from .furniture_type import FurnitureType
 from .room_furniture_description import RoomFurnitureDescription

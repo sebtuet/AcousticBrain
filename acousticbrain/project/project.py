@@ -9,6 +9,7 @@ from acousticbrain.models import (
     RoomGeometry,
     RoomGeometryComparison,
     PropagationGeometry,
+    SurfaceMaterialAnalysis,
     Speaker,
 )
 
@@ -35,6 +36,8 @@ class Project:
     room_geometry_comparison: RoomGeometryComparison | None = None
 
     propagation_geometry: PropagationGeometry | None = None
+
+    surface_material_analysis: SurfaceMaterialAnalysis | None = None
 
     def add_measurement(
         self,

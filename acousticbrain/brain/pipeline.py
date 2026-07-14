@@ -27,6 +27,7 @@ from .stages.measurement_quality import MeasurementQualityStage
 from .stages.measurement_readiness import MeasurementReadinessStage
 from .stages.room_geometry import RoomGeometryStage
 from .stages.propagation_geometry import PropagationGeometryStage
+from .stages.surface_material import SurfaceMaterialStage
 from .stages.spatial_analysis import SpatialAnalysisStage
 from .stages.direct_reverberant_correlation import (
     DirectReverberantCorrelationStage,
@@ -134,6 +135,11 @@ class BrainPipeline:
         )
 
         PropagationGeometryStage().run(
+            project,
+            context,
+        )
+
+        SurfaceMaterialStage().run(
             project,
             context,
         )
