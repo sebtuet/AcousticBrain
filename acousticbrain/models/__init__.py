@@ -58,6 +58,13 @@ from .reflection_experiment_comparison import (
     ReflectionComparisonObservation,
     ReflectionExperimentComparisonStatus,
 )
+from .reflection_hypothesis_status_update import (
+    ControlledReflectionHypothesisStatusUpdate,
+    ControlledReflectionHypothesisStatusUpdateRegistry,
+    ReflectionHypothesisCausalityStatus,
+    ReflectionHypothesisImpact,
+    ReflectionHypothesisObservationStatus,
+)
 from .guided_room_description import (
     GuidedAllowedValue,
     GuidedAnswerInterpretation,

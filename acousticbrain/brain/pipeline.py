@@ -47,6 +47,9 @@ from .stages.reflection_experiment_declaration import (
 from .stages.reflection_experiment_comparison import (
     ControlledReflectionExperimentComparisonStage,
 )
+from .stages.reflection_hypothesis_status_update import (
+    ControlledReflectionHypothesisStatusUpdateStage,
+)
 from .stages.geometry_early_reflection import GeometryEarlyReflectionStage
 from .stages.geometry_sbir import GeometrySBIRStage
 from .stages.sbir_geometry_correlation import SBIRGeometryCorrelationStage
@@ -227,6 +230,11 @@ class BrainPipeline:
         )
 
         ControlledReflectionExperimentComparisonStage().run(
+            project,
+            context,
+        )
+
+        ControlledReflectionHypothesisStatusUpdateStage().run(
             project,
             context,
         )

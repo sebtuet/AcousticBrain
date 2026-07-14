@@ -8,6 +8,10 @@ from .reflection_experiment_comparison_json import (
     ControlledReflectionExperimentComparisonJsonCodec,
     ControlledReflectionExperimentComparisonJsonRepository,
 )
+from .reflection_hypothesis_status_json import (
+    ControlledReflectionHypothesisStatusJsonCodec,
+    ControlledReflectionHypothesisStatusJsonRepository,
+)
 from .measurement_repository import (
     InspectedMeasurementFile,
     MeasurementRepository,

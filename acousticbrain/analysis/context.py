@@ -40,6 +40,7 @@ from acousticbrain.models import (
     ControlledReflectionVerificationPlanningAnalysis,
     ControlledReflectionExperimentDeclaration,
     ControlledReflectionExperimentComparison,
+    ControlledReflectionHypothesisStatusUpdate,
 )
 
 from acousticbrain.project import Project
@@ -156,6 +157,10 @@ class AnalysisContext:
 
     controlled_reflection_experiment_comparisons: tuple[
         ControlledReflectionExperimentComparison, ...
+    ] = ()
+
+    controlled_reflection_hypothesis_status_updates: tuple[
+        ControlledReflectionHypothesisStatusUpdate, ...
     ] = ()
 
     project: Project | None = None

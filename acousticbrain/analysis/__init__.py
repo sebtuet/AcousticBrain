@@ -9,6 +9,9 @@ from .reflection_verification_planning import (
 from .reflection_experiment_comparison import (
     DeterministicReflectionExperimentComparisonEngine,
 )
+from .reflection_hypothesis_status_update import (
+    ControlledReflectionHypothesisStatusUpdateEngine,
+)
 from .stereo import StereoAnalyzer
 from .sbir import SBIRAnalyzer
 from .modal_density import ModalDensityAnalyzer
