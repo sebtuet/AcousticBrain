@@ -27,6 +27,7 @@ from acousticbrain.models import (
     SpeakerOrientation,
     SurfaceCoveringZone,
     SurfaceMaterialDescription,
+    SurfaceMaterialDescriptionSource,
     SurfaceMaterialAssignment,
     SurfaceMaterialCoefficient,
     SurfaceMaterialPrecision,
@@ -46,8 +47,8 @@ class _DecodeFailure(Exception):
 class RoomDescriptionJsonCodec:
     """Sérialise le contrat RoomDescription dans une enveloppe versionnée."""
 
-    SCHEMA_VERSION = 4
-    SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4)
+    SCHEMA_VERSION = 5
+    SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4, 5)
 
     def __init__(self, validator=None):
         self.validator = validator or RoomDescriptionValidator()
@@ -237,6 +238,7 @@ class RoomDescriptionJsonCodec:
                         "quality": item.quality.value,
                         "precision": item.precision.value,
                         "provenance_codes": list(item.provenance_codes),
+                        "catalog_entry_id": item.catalog_entry_id,
                     }
                     for item in sorted(
                         description.materials, key=lambda item: item.material_id
@@ -248,6 +250,9 @@ class RoomDescriptionJsonCodec:
                         "material_id": item.material_id,
                         "surface_id": item.surface_id,
                         "region_id": item.region_id,
+                        "description_source": item.description_source.value,
+                        "description_confidence": item.description_confidence,
+                        "provenance_codes": list(item.provenance_codes),
                     }
                     for item in sorted(
                         description.material_assignments,
@@ -429,14 +434,14 @@ class RoomDescriptionJsonCodec:
                 )
             ),
             materials=tuple(
-                self._frequency_material(item, index)
+                self._frequency_material(item, index, version)
                 for index, item in enumerate(
                     self._optional_sequence(raw, "materials", base)
                     if version >= 4 else ()
                 )
             ),
             material_assignments=tuple(
-                self._material_assignment(item, index)
+                self._material_assignment(item, index, version)
                 for index, item in enumerate(
                     self._optional_sequence(raw, "material_assignments", base)
                     if version >= 4 else ()
@@ -444,7 +449,7 @@ class RoomDescriptionJsonCodec:
             ),
         )
 
-    def _frequency_material(self, value, index):
+    def _frequency_material(self, value, index, version):
         path = ("room_description", "materials", index)
         raw = self._mapping(value, path)
         transmission = raw.get("transmission_coefficients")
@@ -493,6 +498,12 @@ class RoomDescriptionJsonCodec:
                     (*path, "provenance_codes"),
                 ))
             ),
+            catalog_entry_id=(
+                self._nullable_string(
+                    raw.get("catalog_entry_id"), (*path, "catalog_entry_id")
+                )
+                if version >= 5 else None
+            ),
         )
 
     def _coefficients(self, raw, field, path):
@@ -519,7 +530,7 @@ class RoomDescriptionJsonCodec:
             ),
         )
 
-    def _material_assignment(self, value, index):
+    def _material_assignment(self, value, index, version):
         path = ("room_description", "material_assignments", index)
         raw = self._mapping(value, path)
         return SurfaceMaterialAssignment(
@@ -531,6 +542,32 @@ class RoomDescriptionJsonCodec:
             ),
             surface_id=self._nullable_string(raw.get("surface_id"), (*path, "surface_id")),
             region_id=self._nullable_string(raw.get("region_id"), (*path, "region_id")),
+            description_source=(
+                self._enum(
+                    SurfaceMaterialDescriptionSource,
+                    self._required(raw, "description_source", path),
+                    (*path, "description_source"),
+                )
+                if version >= 5
+                else SurfaceMaterialDescriptionSource.IMPORTED_PROJECT_DATA
+            ),
+            description_confidence=(
+                self._bounded_number(
+                    self._required(raw, "description_confidence", path),
+                    (*path, "description_confidence"), 0.0, 100.0,
+                )
+                if version >= 5 else 0.0
+            ),
+            provenance_codes=(
+                tuple(
+                    self._string(item, (*path, "provenance_codes", item_index))
+                    for item_index, item in enumerate(self._sequence(
+                        self._required(raw, "provenance_codes", path),
+                        (*path, "provenance_codes"),
+                    ))
+                )
+                if version >= 5 else ()
+            ),
         )
 
     def _planar_surface(self, value, index):

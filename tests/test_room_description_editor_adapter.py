@@ -122,7 +122,7 @@ def test_serialize_and_load_round_trip_through_room_description_codec():
     loaded = adapter.load(serialized.payload)
 
     assert serialized.is_success
-    assert json.loads(serialized.payload)["schema_version"] == 4
+    assert json.loads(serialized.payload)["schema_version"] == 5
     assert loaded.is_success
     assert loaded.state == valid_state()
 
