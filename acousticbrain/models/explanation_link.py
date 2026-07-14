@@ -15,6 +15,7 @@ class ExplanationLink:
     protocol_codes: tuple[str, ...] = ()
     candidate_codes: tuple[str, ...] = ()
     verification_proposal_codes: tuple[str, ...] = ()
+    experiment_declaration_codes: tuple[str, ...] = ()
     ranking_codes: tuple[str, ...] = ()
     recommended_candidate_codes: tuple[str, ...] = ()
     iteration_codes: tuple[str, ...] = ()

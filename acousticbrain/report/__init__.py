@@ -14,6 +14,13 @@ from .reflection_verification_planning_presenter import (
     PresentedReflectionCandidateVerificationExclusion,
     PresentedReflectionCandidateVerificationProposal,
 )
+from .reflection_experiment_declaration_presenter import (
+    ControlledReflectionExperimentDeclarationPresenter,
+    PresentedControlledReflectionExperimentDeclaration,
+    PresentedReflectionDeclarationFieldProvenance,
+    PresentedReflectionExperimentConditionDeclaration,
+    PresentedReflectionExperimentMeasurementReference,
+)
 from .guided_room_description_presenter import (
     PresentedRoomDescriptionChangeProposal,
     RoomDescriptionChangeProposalPresenter,

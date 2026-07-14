@@ -22,6 +22,9 @@ from .material_aware_reflection_candidate_presenter import (
 from .reflection_verification_planning_presenter import (
     PresentedControlledReflectionVerificationPlanningAnalysis,
 )
+from .reflection_experiment_declaration_presenter import (
+    PresentedControlledReflectionExperimentDeclaration,
+)
 
 
 @dataclass
@@ -64,6 +67,10 @@ class Report:
     controlled_reflection_verification_planning: (
         PresentedControlledReflectionVerificationPlanningAnalysis | None
     ) = None
+
+    controlled_reflection_experiment_declarations: tuple[
+        PresentedControlledReflectionExperimentDeclaration, ...
+    ] = ()
 
     def add(self, diagnostic):
 

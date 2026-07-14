@@ -13,6 +13,7 @@ from acousticbrain.report import (
     SurfaceMaterialPresenter,
     MaterialAwareReflectionCandidatePresenter,
     ControlledReflectionVerificationPlanningPresenter,
+    ControlledReflectionExperimentDeclarationPresenter,
 )
 
 
@@ -47,6 +48,9 @@ class ReportBuilder:
         )
         report.controlled_reflection_verification_planning = (
             ControlledReflectionVerificationPlanningPresenter().present(context)
+        )
+        report.controlled_reflection_experiment_declarations = (
+            ControlledReflectionExperimentDeclarationPresenter().present(context)
         )
 
         return report

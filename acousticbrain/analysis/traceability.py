@@ -83,6 +83,7 @@ class TraceabilityEngine:
         experiment_planning: ExperimentPlanningAnalysis | None = None,
         material_aware_reflection_candidates=None,
         controlled_reflection_verification_planning=None,
+        controlled_reflection_experiment_declarations=(),
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -155,6 +156,10 @@ class TraceabilityEngine:
             links.extend(self._reflection_verification_planning_graph(
                 controlled_reflection_verification_planning
             ))
+        if controlled_reflection_experiment_declarations:
+            links.extend(self._reflection_experiment_declaration_graph(
+                controlled_reflection_experiment_declarations
+            ))
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -217,6 +222,11 @@ class TraceabilityEngine:
                             *controlled_reflection_verification_planning.source_analysis_codes,
                         )
                         if controlled_reflection_verification_planning is not None
+                        else ()
+                    ),
+                    *(
+                        ("ControlledReflectionExperimentDeclaration",)
+                        if controlled_reflection_experiment_declarations
                         else ()
                     ),
                 )
@@ -306,6 +316,22 @@ class TraceabilityEngine:
                 candidate_codes=(exclusion.source_candidate_id,),
             ))
         return links
+
+    @staticmethod
+    def _reflection_experiment_declaration_graph(declarations):
+        return [
+            ExplanationLink(
+                code=f"explanation.{declaration.declaration_id}",
+                fact_codes=(),
+                evidence_codes=(),
+                verification_proposal_codes=(declaration.proposal_id,),
+                experiment_declaration_codes=(declaration.declaration_id,),
+            )
+            for declaration in sorted(
+                declarations,
+                key=lambda item: item.declaration_id,
+            )
+        ]
 
     @staticmethod
     def _planning_graph(analysis):
