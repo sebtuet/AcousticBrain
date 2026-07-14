@@ -73,6 +73,23 @@ class PropagationRegion:
 
 
 @dataclass(frozen=True)
+class PropagationMaterialReference:
+    assignment_id: str
+    material_id: str
+    surface_id: str | None = None
+    region_id: str | None = None
+
+    def __post_init__(self):
+        if any(
+            not isinstance(value, str) or not value.strip()
+            for value in (self.assignment_id, self.material_id)
+        ):
+            raise ValueError("Propagation-material identifiers are required.")
+        if sum(value is not None for value in (self.surface_id, self.region_id)) != 1:
+            raise ValueError("Propagation material requires exactly one target reference.")
+
+
+@dataclass(frozen=True)
 class PropagationGeometry:
     scene_id: str
     scene_version: int
@@ -85,6 +102,7 @@ class PropagationGeometry:
     furniture: tuple[GeometryFurniture, ...] = ()
     data_quality: tuple[GeometryDatumQuality, ...] = ()
     completeness: float = 0.0
+    material_references: tuple[PropagationMaterialReference, ...] = ()
 
     def __post_init__(self):
         prefix, separator, digest = self.scene_id.partition(":")
@@ -104,6 +122,7 @@ class PropagationGeometry:
             (self.speaker_orientations, GeometrySpeakerOrientation),
             (self.furniture, GeometryFurniture),
             (self.data_quality, GeometryDatumQuality),
+            (self.material_references, PropagationMaterialReference),
         )
         for collection, expected in typed:
             if not isinstance(collection, tuple) or any(
@@ -114,6 +133,10 @@ class PropagationGeometry:
             raise ValueError("Propagation completeness must be bounded.")
         self._unique((item.surface_id for item in self.surfaces), "surface")
         self._unique((item.region_id for item in self.regions), "region")
+        self._unique(
+            (item.assignment_id for item in self.material_references),
+            "material-reference",
+        )
 
     @staticmethod
     def _unique(values, kind):

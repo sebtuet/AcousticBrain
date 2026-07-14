@@ -34,6 +34,7 @@ from .planar_geometry_description import (
 from .propagation_geometry import (
     PropagationGeometry,
     PropagationGeometryAnalysis,
+    PropagationMaterialReference,
     PropagationRegion,
     PropagationSceneSource,
     PropagationSurface,

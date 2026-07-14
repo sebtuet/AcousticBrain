@@ -10,6 +10,7 @@ from acousticbrain.models import (
     PlanarSurfaceRole,
     PropagationGeometry,
     PropagationGeometryAnalysis,
+    PropagationMaterialReference,
     PropagationRegion,
     PropagationSceneSource,
     PropagationSurface,
@@ -52,7 +53,7 @@ class PropagationGeometryEngine(ABC):
         )
 
     @classmethod
-    def _analysis(cls, source, surfaces, regions, room_geometry):
+    def _analysis(cls, source, surfaces, regions, room_geometry, room_description=None):
         surfaces = tuple(sorted(surfaces, key=lambda item: item.surface_id))
         regions = tuple(sorted(regions, key=lambda item: item.region_id))
         scene_id = cls._scene_id(
@@ -79,6 +80,21 @@ class PropagationGeometryEngine(ABC):
             furniture=room_geometry.furniture,
             data_quality=room_geometry.data_quality,
             completeness=100.0 * len(available_roles) / len(expected_roles),
+            material_references=tuple(
+                PropagationMaterialReference(
+                    assignment_id=item.assignment_id,
+                    material_id=item.material_id,
+                    surface_id=item.surface_id,
+                    region_id=item.region_id,
+                )
+                for item in sorted(
+                    (
+                        room_description.material_assignments
+                        if room_description is not None else ()
+                    ),
+                    key=lambda item: item.assignment_id,
+                )
+            ),
         )
         return PropagationGeometryAnalysis(
             geometry=geometry,
@@ -195,6 +211,7 @@ class PlanarPropagationEngine(PropagationGeometryEngine):
             surfaces,
             regions,
             room_geometry,
+            room_description,
         )
 
 
@@ -258,6 +275,7 @@ class RectangularPropagationEngine(PropagationGeometryEngine):
             surfaces,
             tuple(regions),
             room_geometry,
+            room_description,
         )
 
     @classmethod
