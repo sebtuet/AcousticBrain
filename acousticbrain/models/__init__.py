@@ -7,7 +7,14 @@ from .speaker_position import SpeakerPosition
 from .speaker_orientation import SpeakerOrientation
 from .room_description_surface import RoomDescriptionSurface
 from .surface_material_type import SurfaceMaterialType
-from .surface_material_description import SurfaceMaterialDescription
+from .surface_material_description import (
+    SurfaceMaterialCoefficient,
+    SurfaceMaterialDescription,
+    SurfaceMaterialPrecision,
+    SurfaceMaterialQuality,
+    SurfaceMaterialSource,
+)
+from .surface_material_assignment import SurfaceMaterialAssignment
 from .surface_covering_zone import SurfaceCoveringZone
 from .furniture_type import FurnitureType
 from .room_furniture_description import RoomFurnitureDescription
