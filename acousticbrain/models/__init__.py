@@ -49,6 +49,15 @@ from .reflection_experiment_declaration import (
     ReflectionExperimentDeclarationStatus,
     ReflectionExperimentMeasurementReference,
 )
+from .reflection_experiment_comparison import (
+    ControlledReflectionExperimentComparison,
+    ControlledReflectionExperimentComparisonRegistry,
+    ObservedReflectionDifference,
+    ReflectionComparisonCausalityStatus,
+    ReflectionComparisonImpact,
+    ReflectionComparisonObservation,
+    ReflectionExperimentComparisonStatus,
+)
 from .guided_room_description import (
     GuidedAllowedValue,
     GuidedAnswerInterpretation,

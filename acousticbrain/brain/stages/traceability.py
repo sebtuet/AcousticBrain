@@ -44,4 +44,7 @@ class TraceabilityStage:
             controlled_reflection_experiment_declarations=(
                 context.controlled_reflection_experiment_declarations
             ),
+            controlled_reflection_experiment_comparisons=(
+                context.controlled_reflection_experiment_comparisons
+            ),
         )

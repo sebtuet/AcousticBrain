@@ -25,6 +25,9 @@ from .reflection_verification_planning_presenter import (
 from .reflection_experiment_declaration_presenter import (
     PresentedControlledReflectionExperimentDeclaration,
 )
+from .reflection_experiment_comparison_presenter import (
+    PresentedControlledReflectionExperimentComparison,
+)
 
 
 @dataclass
@@ -70,6 +73,10 @@ class Report:
 
     controlled_reflection_experiment_declarations: tuple[
         PresentedControlledReflectionExperimentDeclaration, ...
+    ] = ()
+
+    controlled_reflection_experiment_comparisons: tuple[
+        PresentedControlledReflectionExperimentComparison, ...
     ] = ()
 
     def add(self, diagnostic):

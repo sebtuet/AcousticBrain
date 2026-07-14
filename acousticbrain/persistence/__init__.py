@@ -4,6 +4,10 @@ from .reflection_experiment_json import (
     ControlledReflectionExperimentJsonCodec,
     ControlledReflectionExperimentJsonRepository,
 )
+from .reflection_experiment_comparison_json import (
+    ControlledReflectionExperimentComparisonJsonCodec,
+    ControlledReflectionExperimentComparisonJsonRepository,
+)
 from .measurement_repository import (
     InspectedMeasurementFile,
     MeasurementRepository,

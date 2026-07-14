@@ -44,6 +44,9 @@ from .stages.reflection_verification_planning import (
 from .stages.reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationStage,
 )
+from .stages.reflection_experiment_comparison import (
+    ControlledReflectionExperimentComparisonStage,
+)
 from .stages.geometry_early_reflection import GeometryEarlyReflectionStage
 from .stages.geometry_sbir import GeometrySBIRStage
 from .stages.sbir_geometry_correlation import SBIRGeometryCorrelationStage
@@ -219,6 +222,11 @@ class BrainPipeline:
         )
 
         ControlledReflectionExperimentDeclarationStage().run(
+            project,
+            context,
+        )
+
+        ControlledReflectionExperimentComparisonStage().run(
             project,
             context,
         )

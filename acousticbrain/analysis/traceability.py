@@ -84,6 +84,7 @@ class TraceabilityEngine:
         material_aware_reflection_candidates=None,
         controlled_reflection_verification_planning=None,
         controlled_reflection_experiment_declarations=(),
+        controlled_reflection_experiment_comparisons=(),
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -160,6 +161,10 @@ class TraceabilityEngine:
             links.extend(self._reflection_experiment_declaration_graph(
                 controlled_reflection_experiment_declarations
             ))
+        if controlled_reflection_experiment_comparisons:
+            links.extend(self._reflection_experiment_comparison_graph(
+                controlled_reflection_experiment_comparisons
+            ))
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -227,6 +232,11 @@ class TraceabilityEngine:
                     *(
                         ("ControlledReflectionExperimentDeclaration",)
                         if controlled_reflection_experiment_declarations
+                        else ()
+                    ),
+                    *(
+                        ("ControlledReflectionExperimentComparison",)
+                        if controlled_reflection_experiment_comparisons
                         else ()
                     ),
                 )
@@ -330,6 +340,28 @@ class TraceabilityEngine:
             for declaration in sorted(
                 declarations,
                 key=lambda item: item.declaration_id,
+            )
+        ]
+
+    @staticmethod
+    def _reflection_experiment_comparison_graph(comparisons):
+        return [
+            ExplanationLink(
+                code=f"explanation.{comparison.comparison_id}",
+                fact_codes=tuple(
+                    f"{comparison.comparison_id}.{item.observable_code}.difference"
+                    for item in comparison.observed_differences
+                ),
+                evidence_codes=(),
+                verification_proposal_codes=(comparison.proposal_id,),
+                experiment_declaration_codes=(
+                    comparison.experiment_declaration_id,
+                ),
+                experiment_comparison_codes=(comparison.comparison_id,),
+            )
+            for comparison in sorted(
+                comparisons,
+                key=lambda item: item.comparison_id,
             )
         ]
 

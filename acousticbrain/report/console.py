@@ -287,6 +287,42 @@ class ConsoleReporter:
                 print("Ranking impact: NONE")
                 print("Recommendation impact: NONE")
 
+        reflection_comparisons = (
+            report.controlled_reflection_experiment_comparisons
+        )
+        if reflection_comparisons:
+            print()
+            print("Deterministic reflection experiment comparisons")
+            for comparison in reflection_comparisons:
+                print()
+                print(f"Comparison: {comparison.comparison_id}")
+                print(f"Declaration: {comparison.experiment_declaration_id}")
+                print(f"Proposal: {comparison.proposal_id}")
+                print(f"Temporal window: {comparison.temporal_window_code}")
+                print(f"Status: {comparison.status}")
+                if comparison.reason_codes:
+                    print("Reasons: " + ", ".join(comparison.reason_codes))
+                for difference in comparison.observed_differences:
+                    print(
+                        f" • {difference.observable_code}: "
+                        f"{difference.baseline_value:g} -> "
+                        f"{difference.intervention_value:g} "
+                        f"{difference.unit}; delta "
+                        f"{difference.signed_difference:+g}"
+                    )
+                    print(
+                        "   Baseline provenance: "
+                        + ", ".join(difference.baseline_provenance_codes)
+                    )
+                    print(
+                        "   Intervention provenance: "
+                        + ", ".join(difference.intervention_provenance_codes)
+                    )
+                print(f"Causality: {comparison.causality_status}")
+                print(f"Ranking impact: {comparison.ranking_impact}")
+                print(f"Recommendation impact: {comparison.recommendation_impact}")
+                print(f"Eligibility impact: {comparison.eligibility_impact}")
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()
