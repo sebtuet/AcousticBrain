@@ -80,12 +80,14 @@ def test_scene_id_is_winding_independent_but_changes_with_geometry():
     reversed_source = description(reverse=True)
     changed = description(delta=0.1)
 
-    identifiers = [
-        PlanarPropagationEngine().analyze(geometry(item), item).geometry.scene_id
+    scenes = [
+        PlanarPropagationEngine().analyze(geometry(item), item).geometry
         for item in (normal, reversed_source, changed)
     ]
+    identifiers = [item.scene_id for item in scenes]
 
     assert identifiers[0] == identifiers[1]
+    assert scenes[0].surfaces[0] == scenes[1].surfaces[0]
     assert identifiers[0] != identifiers[2]
 
 

@@ -32,12 +32,13 @@ class PropagationGeometryEngine(ABC):
 
     @classmethod
     def _surface(cls, surface_id, role, vertices):
-        coordinates = tuple(
+        raw_coordinates = tuple(
             item if isinstance(item, GeometryCoordinate) else GeometryCoordinate(
                 item.x_m, item.y_m, item.z_m
             )
             for item in vertices
         )
+        coordinates = cls._canonical_coordinates(raw_coordinates)
         basis = derive_planar_basis(coordinates)
         return PropagationSurface(
             surface_id=surface_id,
@@ -100,6 +101,12 @@ class PropagationGeometryEngine(ABC):
         for candidate in (values, tuple(reversed(values))):
             variants.extend(candidate[index:] + candidate[:index] for index in range(len(candidate)))
         return min(variants)
+
+    @classmethod
+    def _canonical_coordinates(cls, vertices):
+        return tuple(
+            GeometryCoordinate(*value) for value in cls._canonical_polygon(vertices)
+        )
 
     @classmethod
     def _scene_id(
@@ -174,8 +181,10 @@ class PlanarPropagationEngine(PropagationGeometryEngine):
                 surface_id=item.surface_id,
                 role=item.role,
                 vertices=tuple(
-                    GeometryCoordinate(vertex.x_m, vertex.y_m, vertex.z_m)
-                    for vertex in item.vertices
+                    self._canonical_coordinates(tuple(
+                        GeometryCoordinate(vertex.x_m, vertex.y_m, vertex.z_m)
+                        for vertex in item.vertices
+                    ))
                 ),
                 feature_id=item.feature_id,
             )
