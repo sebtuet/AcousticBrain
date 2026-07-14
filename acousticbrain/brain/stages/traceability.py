@@ -41,4 +41,7 @@ class TraceabilityStage:
             controlled_reflection_verification_planning=(
                 context.controlled_reflection_verification_planning_analysis
             ),
+            controlled_reflection_experiment_declarations=(
+                context.controlled_reflection_experiment_declarations
+            ),
         )

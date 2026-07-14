@@ -40,6 +40,15 @@ from .reflection_verification_planning import (
     ReflectionVerificationImpact,
     ReflectionVerificationMethod,
 )
+from .reflection_experiment_declaration import (
+    ControlledReflectionExperimentDeclaration,
+    ControlledReflectionExperimentDeclarationRegistry,
+    ReflectionDeclarationFieldProvenance,
+    ReflectionDeclarationProvenanceSource,
+    ReflectionExperimentConditionDeclaration,
+    ReflectionExperimentDeclarationStatus,
+    ReflectionExperimentMeasurementReference,
+)
 from .guided_room_description import (
     GuidedAllowedValue,
     GuidedAnswerInterpretation,

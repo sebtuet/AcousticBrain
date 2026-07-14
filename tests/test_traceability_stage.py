@@ -52,6 +52,9 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
             "controlled_reflection_verification_planning": (
                 context.controlled_reflection_verification_planning_analysis
             ),
+            "controlled_reflection_experiment_declarations": (
+                context.controlled_reflection_experiment_declarations
+            ),
         }
 
 

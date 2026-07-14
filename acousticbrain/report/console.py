@@ -252,6 +252,41 @@ class ConsoleReporter:
                     )
                 )
 
+        reflection_declarations = (
+            report.controlled_reflection_experiment_declarations
+        )
+        if reflection_declarations:
+            print()
+            print("Controlled reflection experiment declarations")
+            for declaration in reflection_declarations:
+                print()
+                print(f"Declaration: {declaration.declaration_id}")
+                print(f"Proposal: {declaration.proposal_id}")
+                print(f"Status: {declaration.status}")
+                if declaration.status_reason_code is not None:
+                    print(f"Status reason: {declaration.status_reason_code}")
+                for label, condition in (
+                    ("Baseline", declaration.reference_condition),
+                    ("Intervention", declaration.intervention_condition),
+                ):
+                    print(f"{label} condition: {condition.condition_code}")
+                    if condition.measurement_references:
+                        for reference in condition.measurement_references:
+                            content_hash = reference.content_hash or "none"
+                            print(
+                                " • Measurement "
+                                f"{reference.reference_id}: "
+                                f"{reference.experiment_id}/"
+                                f"{reference.measurement_name}; "
+                                f"hash {content_hash}"
+                            )
+                    else:
+                        print(" • Measurements: none")
+                print("Result interpretation: NONE")
+                print("Causality: NOT_ESTABLISHED")
+                print("Ranking impact: NONE")
+                print("Recommendation impact: NONE")
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()
