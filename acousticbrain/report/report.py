@@ -19,6 +19,9 @@ from .surface_material_presenter import PresentedSurfaceMaterialAnalysis
 from .material_aware_reflection_candidate_presenter import (
     PresentedMaterialAwareReflectionCandidateAnalysis,
 )
+from .reflection_verification_planning_presenter import (
+    PresentedControlledReflectionVerificationPlanningAnalysis,
+)
 
 
 @dataclass
@@ -56,6 +59,10 @@ class Report:
 
     material_aware_reflection_candidates: (
         PresentedMaterialAwareReflectionCandidateAnalysis | None
+    ) = None
+
+    controlled_reflection_verification_planning: (
+        PresentedControlledReflectionVerificationPlanningAnalysis | None
     ) = None
 
     def add(self, diagnostic):

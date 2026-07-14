@@ -8,6 +8,12 @@ from .material_aware_reflection_candidate_presenter import (
     PresentedMaterialAwareReflectionCandidate,
     PresentedMaterialAwareReflectionCandidateAnalysis,
 )
+from .reflection_verification_planning_presenter import (
+    ControlledReflectionVerificationPlanningPresenter,
+    PresentedControlledReflectionVerificationPlanningAnalysis,
+    PresentedReflectionCandidateVerificationExclusion,
+    PresentedReflectionCandidateVerificationProposal,
+)
 from .guided_room_description_presenter import (
     PresentedRoomDescriptionChangeProposal,
     RoomDescriptionChangeProposalPresenter,

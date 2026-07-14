@@ -184,6 +184,74 @@ class ConsoleReporter:
                 print(f"Eligibility impact: {candidate.eligibility_impact}")
                 print("Limitations: " + ", ".join(candidate.limitations))
 
+        reflection_planning = report.controlled_reflection_verification_planning
+        if reflection_planning is not None:
+            print()
+            print("Controlled reflection verification proposals")
+            for proposal in reflection_planning.proposals:
+                print()
+                print(
+                    f"Proposal {proposal.proposal_order}: {proposal.proposal_id}"
+                )
+                print(f"Source candidate: {proposal.source_candidate_id}")
+                print(
+                    f"Target: {proposal.target_kind.lower()} {proposal.target_id}"
+                )
+                print(f"Method: {proposal.method}")
+                print(
+                    "Conditions: "
+                    f"{proposal.reference_condition_code} -> "
+                    f"{proposal.intervention_condition_code}"
+                )
+                print(
+                    "Controlled variables: "
+                    + ", ".join(proposal.controlled_variable_codes)
+                )
+                print(
+                    "Changed variables: "
+                    + ", ".join(proposal.changed_variable_codes)
+                )
+                print(
+                    "Observables: " + ", ".join(proposal.observable_fact_codes)
+                )
+                print(f"Execution: {proposal.execution_status}")
+                print(f"Causality: {proposal.causality_status}")
+                print(f"Eligibility impact: {proposal.eligibility_impact}")
+                print(f"Recommendation impact: {proposal.recommendation_impact}")
+                print(
+                    "Source evidence: "
+                    + ", ".join(proposal.source_evidence_codes)
+                )
+                print(
+                    "Source provenance: "
+                    + (
+                        ", ".join(proposal.source_provenance_codes)
+                        or "none"
+                    )
+                )
+                print(
+                    "Planning rules: "
+                    + ", ".join(proposal.planning_rule_codes)
+                )
+                print("Limitations: " + ", ".join(proposal.limitations))
+            for exclusion in reflection_planning.exclusions:
+                print()
+                print(
+                    "Excluded candidate: "
+                    f"{exclusion.source_candidate_id} — {exclusion.reason}"
+                )
+                print(
+                    "Source evidence: "
+                    + ", ".join(exclusion.source_evidence_codes)
+                )
+                print(
+                    "Source provenance: "
+                    + (
+                        ", ".join(exclusion.source_provenance_codes)
+                        or "none"
+                    )
+                )
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()
