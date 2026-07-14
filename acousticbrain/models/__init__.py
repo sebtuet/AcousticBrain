@@ -27,6 +27,11 @@ from .geometry_opening import GeometryOpening
 from .room_geometry import RoomGeometry
 from .geometry_reflection_path import GeometryReflectionPath
 from .geometry_early_reflection_analysis import GeometryEarlyReflectionAnalysis
+from .geometry_sbir_candidate import GeometrySBIRCandidate, GeometrySBIRAnalysis
+from .sbir_geometry_correlation import (
+    SBIRGeometryCorrelation,
+    SBIRGeometryCorrelationAnalysis,
+)
 from .geometry_coordinate import GeometryCoordinate
 from .geometry_speaker_orientation import GeometrySpeakerOrientation
 from .geometry_material_type import GeometryMaterialType

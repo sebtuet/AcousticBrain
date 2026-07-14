@@ -53,9 +53,20 @@ ACTION_DATA = {
         "VERIFY_SBIR_PLACEMENT",
         VerificationActionType.TEMPORARY_MOVE,
         {
-            "surface": "FRONT_WALL",
-            "measured_frequency_hz": 85.0,
+            "surface": "front_wall",
+            "speaker_id": "LEFT",
+            "listening_position_id": "MIC",
+            "geometry_candidate_id": (
+                "geometry_sbir.geometry_reflection.LEFT.MIC.front_wall"
+            ),
+            "geometry_path_id": "geometry_reflection.LEFT.MIC.front_wall",
+            "measured_frequency_hz": 86.0,
+            "predicted_frequency_hz": 85.75,
+            "frequency_error_percent": 0.29,
+            "frequency_uncertainty_percent": 4.0,
+            "geometry_confidence": 88.0,
             "current_distance_m": 1.0,
+            "proposed_displacement_m": 0.1,
         },
     ),
 }
@@ -204,6 +215,55 @@ def test_early_reflection_protocol_preserves_testable_surface_parameters():
     assert item.changed_variable_codes == ("SURFACE_MASKING_STATE",)
     assert "MICROPHONE_POSITION" in item.controlled_variable_codes
     assert "LOUDSPEAKER_ORIENTATION" in item.controlled_variable_codes
+
+
+@pytest.mark.parametrize(
+    ("override", "reason"),
+    (
+        (
+            {"frequency_error_percent": 15.01},
+            ExperimentSelectionReason.SBIR_FREQUENCY_MISMATCH_TOO_HIGH,
+        ),
+        (
+            {"frequency_uncertainty_percent": 10.01},
+            ExperimentSelectionReason.SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH,
+        ),
+        (
+            {"geometry_confidence": 69.9},
+            ExperimentSelectionReason.GEOMETRY_CONFIDENCE_TOO_LOW,
+        ),
+    ),
+)
+def test_sbir_protocol_enforces_geometry_and_prediction_quality(
+    override, reason
+):
+    parameters = dict(
+        ACTION_DATA[HypothesisCode.SBIR_PLACEMENT_INTERACTION][2]
+    )
+    parameters.update(override)
+    result = ExperimentPlanner().plan(analysis(hypothesis(
+        HypothesisCode.SBIR_PLACEMENT_INTERACTION,
+        parameters=parameters,
+    )))
+
+    item = candidate(result, HypothesisCode.SBIR_PLACEMENT_INTERACTION)
+
+    assert item.eligible is False
+    assert reason in item.ineligibility_reasons
+
+
+def test_sbir_protocol_preserves_explicit_experimental_variables():
+    result = ExperimentPlanner().plan(analysis(hypothesis(
+        HypothesisCode.SBIR_PLACEMENT_INTERACTION,
+    )))
+
+    item = candidate(result, HypothesisCode.SBIR_PLACEMENT_INTERACTION)
+
+    assert item.eligible is True
+    assert item.source_protocol_id == "protocol.temporary_move_speaker.v1"
+    assert item.changed_variable_codes == ("LOUDSPEAKER_POSITION",)
+    assert "MICROPHONE_POSITION" in item.controlled_variable_codes
+    assert item.parameters["proposed_displacement_m"] == 0.1
 
 
 def test_planner_classifies_the_four_initial_experiments():

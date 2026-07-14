@@ -35,10 +35,16 @@ class ExperimentPlanningStage:
 
     @staticmethod
     def _completed_protocol_ids(descriptors):
+        completion_changes = {
+            "protocol.verify_modal_bass_persistence.v1": (
+                "MULTIPLE_LISTENING_POSITIONS"
+            ),
+            "protocol.temporary_move_speaker.v1": "TEMPORARY_SPEAKER_MOVE",
+        }
         return tuple(dict.fromkeys(
             descriptor.source_protocol_id
             for descriptor in descriptors
             if descriptor.source_protocol_id is not None
-            and "MULTIPLE_LISTENING_POSITIONS"
+            and completion_changes.get(descriptor.source_protocol_id)
             in descriptor.declared_change_codes
         ))

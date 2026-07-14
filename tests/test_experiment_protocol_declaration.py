@@ -62,3 +62,95 @@ def test_confirmation_rejects_missing_or_invented_protocol_facts(tmp_path):
             reference_parent_experiment_id="exp-002",
             listening_position_offsets_m={"exp-003": 0.0, "exp-004": -0.3},
         )
+
+
+def test_user_confirmation_declares_auditable_temporary_speaker_move(tmp_path):
+    for experiment_id in ("reference", "speaker-moved"):
+        directory = tmp_path / experiment_id
+        directory.mkdir()
+        (directory / "manifest.json").write_text(
+            json.dumps({"experiment_id": experiment_id, "files": []}),
+            encoding="utf-8",
+        )
+
+    result = ExperimentProtocolDeclarationService().confirm_temporary_speaker_move(
+        tmp_path,
+        reference_experiment_id="reference",
+        moved_experiment_id="speaker-moved",
+        speaker_id="LEFT",
+        surface_id="FRONT_WALL",
+        geometry_candidate_id="sbir-path-left-front",
+        displacement_m=0.10,
+    )
+
+    assert result == "speaker-moved"
+    reference = json.loads((tmp_path / "reference/manifest.json").read_text())
+    moved = json.loads((tmp_path / "speaker-moved/manifest.json").read_text())
+    assert reference == {"experiment_id": "reference", "files": []}
+    assert moved["experiment_id"] == "speaker-moved"
+    assert moved["files"] == []
+    comparison = moved["comparison"]
+    assert comparison["parent_experiment_ids"] == ["reference"]
+    assert comparison["source_protocol_id"] == "protocol.temporary_move_speaker.v1"
+    assert comparison["source_hypothesis_code"] == "SBIR_PLACEMENT_INTERACTION"
+    assert comparison["declared_change_codes"] == [
+        "CONTROLLED_SPEAKER_POSITION",
+        "TEMPORARY_SPEAKER_MOVE",
+    ]
+    assert comparison["required_fact_codes"] == [
+        "sbir.target_null_frequency_hz",
+        "sbir.target_null_prominence_db",
+    ]
+    parameters = comparison["parameters"]
+    assert parameters["speaker_id"] == "LEFT"
+    assert parameters["surface_id"] == "FRONT_WALL"
+    assert parameters["geometry_candidate_id"] == "sbir-path-left-front"
+    assert parameters["speaker_displacement_m"] == 0.10
+    assert parameters["controlled_variable_codes"] == [
+        "MICROPHONE_POSITION",
+        "LOUDSPEAKER_ORIENTATION",
+        "OTHER_LOUDSPEAKER_POSITIONS",
+        "SIGNAL_CHAIN_ASSIGNMENT",
+        "MEASUREMENT_LEVEL",
+        "ROOM_CONFIGURATION",
+    ]
+    assert parameters["changed_variable_codes"] == ["LOUDSPEAKER_POSITION"]
+    assert parameters["expected_observation_codes"] == [
+        "SBIR_MOVES_WITH_SPEAKER",
+        "SBIR_REMAINS_FIXED",
+    ]
+
+
+@pytest.mark.parametrize("displacement", [0.0, float("inf"), True, "0.1"])
+def test_temporary_speaker_move_rejects_invalid_displacement(
+    tmp_path,
+    displacement,
+):
+    (tmp_path / "reference").mkdir()
+    (tmp_path / "speaker-moved").mkdir()
+
+    with pytest.raises(ValueError, match="finite and non-zero"):
+        ExperimentProtocolDeclarationService().confirm_temporary_speaker_move(
+            tmp_path,
+            reference_experiment_id="reference",
+            moved_experiment_id="speaker-moved",
+            speaker_id="LEFT",
+            surface_id="FRONT_WALL",
+            geometry_candidate_id="candidate",
+            displacement_m=displacement,
+        )
+
+
+def test_temporary_speaker_move_requires_existing_measurements(tmp_path):
+    (tmp_path / "reference").mkdir()
+
+    with pytest.raises(ValueError, match="speaker-moved"):
+        ExperimentProtocolDeclarationService().confirm_temporary_speaker_move(
+            tmp_path,
+            reference_experiment_id="reference",
+            moved_experiment_id="speaker-moved",
+            speaker_id="LEFT",
+            surface_id="FRONT_WALL",
+            geometry_candidate_id="candidate",
+            displacement_m=0.1,
+        )

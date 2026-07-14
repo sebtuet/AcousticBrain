@@ -44,6 +44,7 @@ class AcousticReasoningEngine:
         bass_decay_correlations=None,
         modal_density=None,
         sbir=None,
+        sbir_geometry_correlations=None,
         room_geometry=None,
     ):
         hypotheses = (
@@ -68,6 +69,7 @@ class AcousticReasoningEngine:
             ),
             self._sbir(
                 sbir,
+                sbir_geometry_correlations,
                 etc_reflection_correlations,
                 room_geometry,
             ),
@@ -304,13 +306,26 @@ class AcousticReasoningEngine:
                 })
         return self._finalize(code=code, phenomenon="dominant_early_reflection", domains=("ETC", "DIRECT_REVERBERANT"), supporting=supporting, counter=counter, context=context, missing=missing, rules=rules, required_count=2, available_required_count=available, action_code="VERIFY_DOMINANT_EARLY_REFLECTION", action_type=VerificationActionType.TEMPORARY_MASK, action_target="candidate_early_reflection_surface", expected_support="REFLECTION_DECREASES_AFTER_MASKING", expected_counter="REFLECTION_REMAINS_UNCHANGED_AFTER_MASKING", action_parameters=parameters)
 
-    def _sbir(self, sbir, etc_correlations, room_geometry):
+    def _sbir(
+        self,
+        sbir,
+        sbir_geometry_correlations,
+        etc_correlations,
+        room_geometry,
+    ):
         code = HypothesisCode.SBIR_PLACEMENT_INTERACTION
         supporting, counter, context, missing, rules = [], [], [], [], []
         available = 0
         best = None
+        geometry_match = (
+            sbir_geometry_correlations.best_match
+            if sbir_geometry_correlations is not None else None
+        )
         if sbir is None:
-            missing.append(self._missing("sbir.best_match", "SBIRAnalysis", "SBIR_REQUIRE_ANALYSIS"))
+            if geometry_match is None:
+                missing.append(self._missing("sbir.best_match", "SBIRAnalysis", "SBIR_REQUIRE_ANALYSIS"))
+            else:
+                available += 1
         else:
             available += 1
             best = sbir.best_match
@@ -323,6 +338,68 @@ class AcousticReasoningEngine:
                 rules.append("SBIR_BEST_MATCH_SUPPORT")
             elif sbir.confidence >= 70.0:
                 counter.append(self._evidence(code, "best_match", EvidenceRole.COUNTER_EVIDENCE, "sbir.best_match_available", "SBIRAnalysis", False, 100.0, sbir.confidence, "SBIR_NO_MATCH_HIGH_CONFIDENCE"))
+        if sbir_geometry_correlations is not None:
+            if geometry_match is not None:
+                candidate = geometry_match.candidate
+                supporting.append(self._evidence(
+                    code,
+                    "geometry_frequency_match",
+                    EvidenceRole.SUPPORTING,
+                    "sbir.geometry_frequency_match",
+                    "SBIRGeometryCorrelationAnalysis",
+                    geometry_match.match_score,
+                    geometry_match.match_score,
+                    geometry_match.confidence,
+                    "SBIR_GEOMETRY_FREQUENCY_COMPATIBLE",
+                    correlation=geometry_match.code,
+                ))
+                context.extend((
+                    self._evidence(
+                        code,
+                        "geometry_surface",
+                        EvidenceRole.CONTEXT,
+                        "sbir.geometry_surface_id",
+                        "GeometrySBIRAnalysis",
+                        candidate.surface_id,
+                        100.0,
+                        candidate.confidence or 0.0,
+                        "SBIR_GEOMETRY_SURFACE_CONTEXT",
+                        correlation=geometry_match.code,
+                    ),
+                    self._evidence(
+                        code,
+                        "geometry_prediction",
+                        EvidenceRole.CONTEXT,
+                        "sbir.predicted_cancellation_frequency_hz",
+                        "GeometrySBIRAnalysis",
+                        candidate.expected_cancellation_frequency_hz,
+                        geometry_match.match_score,
+                        candidate.confidence or 0.0,
+                        "SBIR_GEOMETRY_FIRST_CANCELLATION_V1",
+                        correlation=geometry_match.code,
+                    ),
+                    self._evidence(
+                        code,
+                        "geometry_error",
+                        EvidenceRole.CONTEXT,
+                        "sbir.geometry_frequency_error_percent",
+                        "SBIRGeometryCorrelationAnalysis",
+                        geometry_match.frequency_error_percent,
+                        geometry_match.match_score,
+                        geometry_match.confidence,
+                        "SBIR_GEOMETRY_FREQUENCY_COMPATIBLE",
+                        correlation=geometry_match.code,
+                    ),
+                ))
+                rules.extend((
+                    "SBIR_GEOMETRY_COMPATIBILITY_SUPPORT",
+                    "SBIR_GEOMETRY_COMPATIBILITY_NON_CAUSAL",
+                ))
+                missing.append(self._missing(
+                    "verification.sbir_response_to_speaker_move",
+                    "AutomaticExperimentComparison",
+                    "SBIR_REQUIRE_DISCRIMINATING_PROTOCOL",
+                ))
         if etc_correlations is not None and best is not None:
             matched = [item for item in etc_correlations.correlations if item.surface is best.surface]
             if matched:
@@ -334,9 +411,38 @@ class AcousticReasoningEngine:
             available += 1
             context.append(self._evidence(code, "geometry_source", EvidenceRole.CONTEXT, "room_geometry.source", "RoomGeometry", room_geometry.source.value, 100.0, 100.0, "SBIR_GEOMETRY_SOURCE"))
         parameters = {}
-        if best is not None:
+        if geometry_match is not None:
+            candidate = geometry_match.candidate
+            uncertainty_percent = (
+                candidate.frequency_uncertainty_hz
+                / candidate.expected_cancellation_frequency_hz * 100.0
+                if candidate.frequency_uncertainty_hz is not None else None
+            )
+            parameters = {
+                "surface": candidate.surface_id,
+                "base_surface": candidate.base_surface_id,
+                "speaker_id": candidate.speaker_id,
+                "listening_position_id": candidate.listening_position_id,
+                "relationship_code": candidate.relationship_code,
+                "geometry_candidate_id": candidate.candidate_id,
+                "geometry_path_id": candidate.geometry_path_id,
+                "current_distance_m": candidate.speaker_boundary_distance_m,
+                "extra_distance_m": candidate.extra_distance_m,
+                "predicted_frequency_hz": (
+                    candidate.expected_cancellation_frequency_hz
+                ),
+                "measured_frequency_hz": geometry_match.observed_dip.frequency,
+                "observed_prominence_db": geometry_match.observed_dip.prominence,
+                "frequency_error_hz": geometry_match.frequency_error_hz,
+                "frequency_error_percent": geometry_match.frequency_error_percent,
+                "frequency_uncertainty_hz": candidate.frequency_uncertainty_hz,
+                "frequency_uncertainty_percent": uncertainty_percent,
+                "geometry_confidence": candidate.confidence,
+                "proposed_displacement_m": 0.10,
+            }
+        elif best is not None:
             parameters = {"surface": best.surface.name, "measured_frequency_hz": best.measured_frequency, "current_distance_m": best.distance_m}
-        return self._finalize(code=code, phenomenon="sbir_placement", domains=("SBIR", "ETC"), supporting=supporting, counter=counter, context=context, missing=missing, rules=rules, required_count=2, available_required_count=available, action_code="VERIFY_SBIR_PLACEMENT", action_type=VerificationActionType.TEMPORARY_MOVE, action_target="speaker_distance_to_candidate_surface", expected_support="verification.sbir_frequency_moves_with_distance", expected_counter="verification.sbir_frequency_is_unchanged", action_parameters=parameters)
+        return self._finalize(code=code, phenomenon="sbir_placement", domains=("SBIR", "ETC"), supporting=supporting, counter=counter, context=context, missing=missing, rules=rules, required_count=2, available_required_count=available, action_code="VERIFY_SBIR_PLACEMENT", action_type=VerificationActionType.TEMPORARY_MOVE, action_target="speaker_distance_to_candidate_surface", expected_support="SBIR_MOVES_WITH_SPEAKER", expected_counter="SBIR_REMAINS_FIXED", action_parameters=parameters)
 
     def _finalize(self, *, code, phenomenon, domains, supporting, counter, context, missing, rules, required_count, available_required_count, action_code, action_type, action_target, expected_support, expected_counter, action_parameters=None):
         support_strength = fmean(item.strength for item in supporting) if supporting else 0.0

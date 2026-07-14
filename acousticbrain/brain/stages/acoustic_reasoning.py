@@ -24,5 +24,8 @@ class AcousticReasoningStage:
             bass_decay_correlations=context.bass_decay_correlation_analysis,
             modal_density=context.modal_density,
             sbir=context.sbir,
+            sbir_geometry_correlations=(
+                context.sbir_geometry_correlation_analysis
+            ),
             room_geometry=context.room_geometry,
         )

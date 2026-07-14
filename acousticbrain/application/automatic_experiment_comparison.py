@@ -152,8 +152,27 @@ class ExperimentFactProjector:
                 "COUNT", "ETC", "ETCAnalysis", 1.0, False,
                 readiness.get("ETC", "AVAILABLE"),
             ))
+        sbir_geometry = getattr(
+            context, "sbir_geometry_correlation_analysis", None
+        )
+        geometry_match = (
+            sbir_geometry.best_match if sbir_geometry is not None else None
+        )
         sbir = context.sbir
-        if sbir is not None:
+        if geometry_match is not None:
+            facts.append(self._fact(
+                "sbir.target_null_frequency_hz",
+                geometry_match.observed_dip.frequency,
+                "HZ", "SBIR", "SBIRGeometryCorrelationAnalysis", 2.0, None,
+                readiness.get("FREQUENCY", "AVAILABLE"),
+            ))
+            facts.append(self._fact(
+                "sbir.target_null_prominence_db",
+                geometry_match.observed_dip.prominence,
+                "DB", "SBIR", "SBIRGeometryCorrelationAnalysis", 1.0, False,
+                readiness.get("FREQUENCY", "AVAILABLE"),
+            ))
+        elif sbir is not None:
             facts.append(self._fact(
                 "sbir.target_null_frequency_hz",
                 sbir.best_match.measured_frequency if sbir.best_match else None,
@@ -539,13 +558,26 @@ class AutomaticExperimentComparisonService:
             if code is None:
                 continue
             if code == "TARGET_NULL_FREQUENCY_SHIFTED":
+                controlled_speaker_move = bool({
+                    "CONTROLLED_SPEAKER_POSITION",
+                    "TEMPORARY_SPEAKER_MOVE",
+                }.intersection(declared_changes))
                 if delta.change is not ExperimentFactChange.UNCHANGED:
                     observed.append(ObservedExperimentFact(
-                        code, (delta.fact_code,), delta.source_analysis_codes
+                        (
+                            "SBIR_MOVES_WITH_SPEAKER"
+                            if controlled_speaker_move else code
+                        ),
+                        (delta.fact_code,),
+                        delta.source_analysis_codes,
                     ))
                 else:
                     observed.append(ObservedExperimentFact(
-                        "TARGET_NULL_UNCHANGED",
+                        (
+                            "SBIR_REMAINS_FIXED"
+                            if controlled_speaker_move
+                            else "TARGET_NULL_UNCHANGED"
+                        ),
                         (delta.fact_code,),
                         delta.source_analysis_codes,
                     ))

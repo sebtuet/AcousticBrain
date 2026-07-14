@@ -40,6 +40,8 @@ class ExperimentPlanner:
     MAXIMUM_GEOMETRY_TIMING_ERROR_MS = 1.0
     MAXIMUM_GEOMETRY_UNCERTAINTY_MS = 0.5
     MINIMUM_GEOMETRY_CONFIDENCE = 70.0
+    MAXIMUM_SBIR_FREQUENCY_ERROR_PERCENT = 15.0
+    MAXIMUM_SBIR_PREDICTION_UNCERTAINTY_PERCENT = 10.0
 
     RULE_CODES = (
         "PLAN_REQUIRE_STRUCTURED_SOURCE",
@@ -145,7 +147,7 @@ class ExperimentPlanner:
             changed_variable_codes=("SURFACE_MASKING_STATE",),
         ),
         _ProtocolDefinition(
-            protocol_id="protocol.verify_sbir_placement.v1",
+            protocol_id="protocol.temporary_move_speaker.v1",
             hypothesis_code=HypothesisCode.SBIR_PLACEMENT_INTERACTION,
             action_code="VERIFY_SBIR_PLACEMENT",
             objective_code="DISCRIMINATE_SBIR_PLACEMENT_INTERACTION",
@@ -154,11 +156,12 @@ class ExperimentPlanner:
             cost=ExperimentCostCategory.LOW,
             reversibility=ExperimentReversibility.HIGH,
             observable_fact_codes=(
-                "sbir.best_match",
-                "sbir.reflection_surface",
-                "sbir.measured_frequency_hz",
-                "verification.sbir_frequency_moves_with_distance",
-                "verification.sbir_frequency_is_unchanged",
+                "sbir.geometry_frequency_match",
+                "sbir.geometry_surface_id",
+                "sbir.predicted_cancellation_frequency_hz",
+                "sbir.geometry_frequency_error_percent",
+                "SBIR_MOVES_WITH_SPEAKER",
+                "SBIR_REMAINS_FIXED",
             ),
             discriminated_hypothesis_codes=(
                 HypothesisCode.SBIR_PLACEMENT_INTERACTION,
@@ -166,10 +169,38 @@ class ExperimentPlanner:
             ),
             prerequisite_parameters=(
                 "surface",
+                "speaker_id",
+                "listening_position_id",
+                "geometry_candidate_id",
+                "geometry_path_id",
                 "measured_frequency_hz",
+                "predicted_frequency_hz",
+                "frequency_error_percent",
+                "frequency_uncertainty_percent",
+                "geometry_confidence",
+                "current_distance_m",
+                "proposed_displacement_m",
+            ),
+            geometry_parameters=(
+                "surface",
+                "speaker_id",
+                "listening_position_id",
+                "geometry_candidate_id",
+                "geometry_path_id",
+                "predicted_frequency_hz",
+                "frequency_uncertainty_percent",
+                "geometry_confidence",
                 "current_distance_m",
             ),
-            geometry_parameters=("surface", "current_distance_m"),
+            controlled_variable_codes=(
+                "MICROPHONE_POSITION",
+                "LOUDSPEAKER_ORIENTATION",
+                "OTHER_LOUDSPEAKER_POSITIONS",
+                "SIGNAL_CHAIN_ASSIGNMENT",
+                "MEASUREMENT_LEVEL",
+                "ROOM_CONFIGURATION",
+            ),
+            changed_variable_codes=("LOUDSPEAKER_POSITION",),
         ),
     )
 
@@ -366,6 +397,35 @@ class ExperimentPlanner:
             ):
                 ineligibility.append(
                     ExperimentSelectionReason.GEOMETRY_UNCERTAINTY_TOO_HIGH
+                )
+            if (
+                geometry_confidence is not None
+                and geometry_confidence < self.MINIMUM_GEOMETRY_CONFIDENCE
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.GEOMETRY_CONFIDENCE_TOO_LOW
+                )
+        if definition.action_code == "VERIFY_SBIR_PLACEMENT":
+            frequency_error = parameters.get("frequency_error_percent")
+            prediction_uncertainty = parameters.get(
+                "frequency_uncertainty_percent"
+            )
+            geometry_confidence = parameters.get("geometry_confidence")
+            if (
+                frequency_error is not None
+                and frequency_error
+                > self.MAXIMUM_SBIR_FREQUENCY_ERROR_PERCENT
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.SBIR_FREQUENCY_MISMATCH_TOO_HIGH
+                )
+            if (
+                prediction_uncertainty is not None
+                and prediction_uncertainty
+                > self.MAXIMUM_SBIR_PREDICTION_UNCERTAINTY_PERCENT
+            ):
+                ineligibility.append(
+                    ExperimentSelectionReason.SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH
                 )
             if (
                 geometry_confidence is not None

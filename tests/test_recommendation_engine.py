@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from types import SimpleNamespace
 
 from acousticbrain.analysis import RecommendationEngine
 from acousticbrain.models import (
@@ -92,6 +93,36 @@ def test_recommends_testing_distance_for_an_sbir_match():
     assert recommendation.code == "TEST_SPEAKER_DISTANCE"
     assert recommendation.priority is RecommendationPriority.HIGH
     assert recommendation.parameters["current_distance_m"] == 1.2
+
+
+def test_geometry_sbir_match_suppresses_unstructured_legacy_action():
+    peak = Peak(frequency=70.0, spl=70.0, index=0, prominence=8.0)
+    candidate = SBIRCandidate(
+        surface=ReflectionSurface.FRONT_WALL,
+        measured_frequency=70.0,
+        theoretical_frequency=72.0,
+        distance_m=1.2,
+        delay_ms=7.0,
+        frequency_error_hz=2.0,
+        match_score=80.0,
+        peak=peak,
+    )
+    analysis = SBIRAnalysis(
+        candidates=[candidate],
+        best_match=candidate,
+        reflection_surface=ReflectionSurface.FRONT_WALL,
+        reflection_distance_m=1.2,
+        delay_ms=7.0,
+        confidence=82.0,
+        score=55.0,
+    )
+
+    result = RecommendationEngine().analyze(
+        sbir=analysis,
+        sbir_geometry_correlations=SimpleNamespace(best_match=object()),
+    )
+
+    assert result.recommendations == []
 
 
 def test_deduplicates_actions_and_combines_their_analysis_provenance():

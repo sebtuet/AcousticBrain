@@ -49,6 +49,19 @@ class MultiPositionEngine:
         )])
 
 
+class SBIRVerificationEngine:
+    def analyze(self, **inputs):
+        return RecommendationAnalysis([Recommendation(
+            code="VERIFY_SBIR_PLACEMENT",
+            action="temporary_move",
+            target="speaker_distance_to_candidate_surface",
+            priority=RecommendationPriority.HIGH,
+            confidence=78.0,
+            source_analyses=("AcousticReasoningAnalysis",),
+            verification_action=True,
+        )])
+
+
 def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
     context.stereo = StereoAnalysis()
@@ -61,6 +74,7 @@ def test_recommendation_stage_stores_the_engine_result_from_explicit_analyses():
     assert engine.inputs == {
         "stereo": context.stereo,
         "sbir": None,
+        "sbir_geometry_correlations": None,
         "modal_density": None,
         "peak_classification": None,
         "rt60": None,
@@ -110,6 +124,21 @@ def test_stage_marks_completed_physical_protocol_recommendation():
     ),)
 
     RecommendationStage(MultiPositionEngine()).run(context)
+
+    recommendation = context.recommendation_analysis.recommendations[0]
+    assert recommendation.status is RecommendationStatus.COMPLETED
+    assert recommendation.status_reason == "EXPERIMENT_PROTOCOL_COMPLETED"
+
+
+def test_stage_marks_completed_temporary_speaker_move_recommendation():
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.experiment_descriptors = (SimpleNamespace(
+        source_protocol_id="protocol.temporary_move_speaker.v1",
+        declared_change_codes=("TEMPORARY_SPEAKER_MOVE",),
+        causal_discrimination_decisions=(),
+    ),)
+
+    RecommendationStage(SBIRVerificationEngine()).run(context)
 
     recommendation = context.recommendation_analysis.recommendations[0]
     assert recommendation.status is RecommendationStatus.COMPLETED
