@@ -46,6 +46,9 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
             "propagation_geometry": context.propagation_geometry,
             "acoustic_reasoning": context.acoustic_reasoning_analysis,
             "experiment_planning": context.experiment_planning_analysis,
+            "material_aware_reflection_candidates": (
+                context.material_aware_reflection_candidate_analysis
+            ),
         }
 
 
