@@ -20,6 +20,16 @@ from .surface_material_analysis import (
     SurfaceMaterialAnalysis,
     SurfaceMaterialTargetAvailability,
 )
+from .material_aware_reflection_candidate import (
+    MaterialAssessment,
+    MaterialAwareReflectionCandidateAnalysis,
+    ReflectionCandidateAssessment,
+    ReflectionCandidateCausalityStatus,
+    ReflectionCandidateEligibilityImpact,
+    ReflectionCandidateEvidenceLink,
+    ReflectionCandidateGeometricStatus,
+    ReflectionCandidateStatus,
+)
 from .guided_room_description import (
     GuidedAllowedValue,
     GuidedAnswerInterpretation,

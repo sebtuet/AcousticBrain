@@ -36,6 +36,7 @@ from acousticbrain.models import (
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
+    MaterialAwareReflectionCandidateAnalysis,
 )
 
 from acousticbrain.project import Project
@@ -137,6 +138,10 @@ class AnalysisContext:
     propagation_geometry_analysis: PropagationGeometryAnalysis | None = None
 
     surface_material_analysis: SurfaceMaterialAnalysis | None = None
+
+    material_aware_reflection_candidate_analysis: (
+        MaterialAwareReflectionCandidateAnalysis | None
+    ) = None
 
     project: Project | None = None
 
