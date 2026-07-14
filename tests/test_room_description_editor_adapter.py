@@ -1,10 +1,16 @@
 import json
 
 from acousticbrain.models import (
+    PlanarSurfaceDescription,
+    PlanarSurfaceRole,
+    PlanarVertexDescription,
+    RoomDescription,
     RoomDescriptionPersistenceErrorCode,
+    RoomDimensions,
     RoomDescriptionValidationCode,
     RoomOpeningSurface,
 )
+from acousticbrain.persistence import RoomDescriptionJsonCodec
 from acousticbrain.ui import (
     ListeningPositionFormRow,
     RoomDescriptionEditorAdapter,
@@ -116,7 +122,7 @@ def test_serialize_and_load_round_trip_through_room_description_codec():
     loaded = adapter.load(serialized.payload)
 
     assert serialized.is_success
-    assert json.loads(serialized.payload)["schema_version"] == 2
+    assert json.loads(serialized.payload)["schema_version"] == 3
     assert loaded.is_success
     assert loaded.state == valid_state()
 
@@ -143,4 +149,30 @@ def test_load_errors_are_forwarded_without_partial_form_state():
     assert result.state is None
     assert result.errors[0].code is (
         RoomDescriptionPersistenceErrorCode.UNKNOWN_SCHEMA_VERSION
+    )
+
+
+def test_editor_refuses_planar_scene_instead_of_losing_it_on_round_trip():
+    description = RoomDescription(
+        "Planar",
+        RoomDimensions(5, 4, 3),
+        planar_surfaces=(PlanarSurfaceDescription(
+            "wall",
+            PlanarSurfaceRole.FRONT_WALL,
+            (
+                PlanarVertexDescription(0, 0, 0),
+                PlanarVertexDescription(0, 4, 0),
+                PlanarVertexDescription(0, 4, 3),
+            ),
+        ),),
+    )
+
+    result = RoomDescriptionEditorAdapter().load(
+        RoomDescriptionJsonCodec().dumps(description)
+    )
+
+    assert not result.is_success
+    assert result.state is None
+    assert result.errors[0].code is (
+        RoomDescriptionPersistenceErrorCode.EDITOR_UNSUPPORTED_PLANAR_GEOMETRY
     )

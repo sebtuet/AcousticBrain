@@ -24,6 +24,7 @@ from acousticbrain.models import (
     MeasurementReadinessAnalysis,
     RoomGeometry,
     RoomGeometryComparison,
+    PropagationGeometry,
     AcousticReasoningAnalysis,
     ExperimentPlanningAnalysis,
 )
@@ -77,6 +78,7 @@ class TraceabilityEngine:
         measurement_readiness: MeasurementReadinessAnalysis | None = None,
         room_geometry: RoomGeometry | None = None,
         room_geometry_comparison: RoomGeometryComparison | None = None,
+        propagation_geometry: PropagationGeometry | None = None,
         acoustic_reasoning: AcousticReasoningAnalysis | None = None,
         experiment_planning: ExperimentPlanningAnalysis | None = None,
     ) -> TraceabilityAnalysis:
@@ -110,6 +112,7 @@ class TraceabilityEngine:
             measurement_readiness=measurement_readiness,
             room_geometry=room_geometry,
             room_geometry_comparison=room_geometry_comparison,
+            propagation_geometry=propagation_geometry,
         )
         evidence_references.extend(physical_evidence)
         for item in physical_evidence:
@@ -316,6 +319,7 @@ class TraceabilityEngine:
         measurement_readiness,
         room_geometry,
         room_geometry_comparison,
+        propagation_geometry,
     ):
         evidence = []
         if rt60 is not None:
@@ -551,6 +555,49 @@ class TraceabilityEngine:
                     room_geometry_comparison.absolute_differences_m.items()
                 )
             )
+        if propagation_geometry is not None:
+            source = SourceAnalysisCode.PROPAGATION_GEOMETRY
+            values = (
+                ("scene_id", propagation_geometry.scene_id),
+                ("scene_version", propagation_geometry.scene_version),
+                ("scene_source", propagation_geometry.scene_source.value),
+                ("surface_count", len(propagation_geometry.surfaces)),
+                ("region_count", len(propagation_geometry.regions)),
+                ("completeness", propagation_geometry.completeness),
+            )
+            evidence.extend(
+                cls._evidence(
+                    f"evidence.propagation_geometry.{name}",
+                    source,
+                    f"propagation_geometry.{name}",
+                    value,
+                )
+                for name, value in values
+            )
+            for surface in propagation_geometry.surfaces:
+                prefix = f"propagation_geometry.surface.{surface.surface_id}"
+                evidence.extend((
+                    cls._evidence(
+                        f"evidence.{prefix}.role", source, f"{prefix}.role",
+                        surface.role.value,
+                    ),
+                    cls._evidence(
+                        f"evidence.{prefix}.area_m2", source, f"{prefix}.area_m2",
+                        surface.area_m2,
+                    ),
+                ))
+            for region in propagation_geometry.regions:
+                prefix = f"propagation_geometry.region.{region.region_id}"
+                evidence.extend((
+                    cls._evidence(
+                        f"evidence.{prefix}.surface_id", source,
+                        f"{prefix}.surface_id", region.surface_id,
+                    ),
+                    cls._evidence(
+                        f"evidence.{prefix}.role", source, f"{prefix}.role",
+                        region.role.value,
+                    ),
+                ))
         return evidence
 
     @classmethod

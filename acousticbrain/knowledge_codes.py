@@ -10,6 +10,7 @@ class GlobalDomainCode:
 
 class SourceAnalysisCode:
     ROOM_GEOMETRY = "RoomGeometry"
+    PROPAGATION_GEOMETRY = "PropagationGeometryAnalysis"
     MEASUREMENT_QUALITY = "MeasurementQualityAnalysis"
     MEASUREMENT_READINESS = "MeasurementReadinessAnalysis"
     GLOBAL = "GlobalAnalysis"

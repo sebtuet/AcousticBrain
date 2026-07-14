@@ -69,6 +69,21 @@ class ConsoleReporter:
                     "Avertissement : RoomDescription et Room legacy divergent "
                     "sur " + ", ".join(geometry.differing_fields)
                 )
+            if geometry.propagation_scene_id is not None:
+                print()
+                print("Géométrie de propagation")
+                print(f"Source de scène : {geometry.propagation_scene_source}")
+                print(f"Version de scène : {geometry.propagation_scene_version}")
+                print(f"Identifiant de scène : {geometry.propagation_scene_id}")
+                print(
+                    "Éléments : "
+                    f"{geometry.propagation_surface_count} surfaces, "
+                    f"{geometry.propagation_region_count} régions"
+                )
+                print(
+                    "Complétude de propagation : "
+                    f"{geometry.propagation_completeness:.0f} %"
+                )
 
         discovery = report.experiments_discovered
         if discovery is not None:

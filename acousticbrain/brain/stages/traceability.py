@@ -32,6 +32,7 @@ class TraceabilityStage:
             measurement_readiness=context.measurement_readiness_analysis,
             room_geometry=context.room_geometry,
             room_geometry_comparison=context.room_geometry_comparison,
+            propagation_geometry=context.propagation_geometry,
             acoustic_reasoning=context.acoustic_reasoning_analysis,
             experiment_planning=context.experiment_planning_analysis,
         )

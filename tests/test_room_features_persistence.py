@@ -128,7 +128,7 @@ def v1_payload():
     return payload
 
 
-def test_v2_round_trip_preserves_all_enriched_models_and_none_values():
+def test_v3_round_trip_preserves_all_enriched_models_and_none_values():
     codec = RoomDescriptionJsonCodec()
     source = enriched_description()
 
@@ -138,9 +138,9 @@ def test_v2_round_trip_preserves_all_enriched_models_and_none_values():
 
     assert result.is_success
     assert result.description == source
-    assert result.source_schema_version == 2
+    assert result.source_schema_version == 3
     assert not result.requires_migration
-    assert raw["schema_version"] == 2
+    assert raw["schema_version"] == 3
     assert raw["room_description"]["covering_zones"][0]["width_m"] is None
     assert raw["room_description"]["furniture"][0]["x_m"] is None
     assert raw["room_description"]["acoustic_treatments"][0]["surface"] is None
@@ -164,12 +164,12 @@ def test_v1_is_read_completely_and_migration_is_never_silent():
     assert result.description.acoustic_treatments == ()
 
     rewritten = json.loads(codec.dumps(result.description))
-    assert rewritten["schema_version"] == 2
+    assert rewritten["schema_version"] == 3
     assert rewritten["room_description"]["surface_materials"] == []
     assert rewritten["room_description"]["speakers"][0]["orientation"] is None
 
 
-def test_v2_writer_canonicalizes_collection_order_by_stable_identity():
+def test_v3_writer_canonicalizes_collection_order_by_stable_identity():
     codec = RoomDescriptionJsonCodec()
 
     canonical = codec.dumps(enriched_description(), indent=2)
@@ -183,17 +183,19 @@ def test_v2_writer_canonicalizes_collection_order_by_stable_identity():
     assert [item["treatment_id"] for item in raw["acoustic_treatments"]] == ["CLOUD", "PANEL"]
 
 
-def test_v2_reader_accepts_absent_new_optional_fields_and_writer_materializes_them():
+def test_v2_reader_migrates_absent_planar_fields_and_writer_materializes_them():
     payload = v1_payload()
     payload["schema_version"] = 2
 
     result = RoomDescriptionJsonCodec().from_dict(payload)
 
     assert result.is_success
-    assert not result.requires_migration
+    assert result.requires_migration
     rewritten = RoomDescriptionJsonCodec().to_dict(result.description)
     assert rewritten["room_description"]["covering_zones"] == []
     assert rewritten["room_description"]["speakers"][0]["orientation"] is None
+    assert rewritten["room_description"]["planar_surfaces"] == []
+    assert rewritten["room_description"]["planar_regions"] == []
 
 
 @pytest.mark.parametrize(
@@ -221,7 +223,7 @@ def test_v2_invalid_feature_values_return_structured_errors(path, value):
     assert result.errors[0].path == ("room_description", *path)
 
 
-def test_v2_relational_errors_withhold_partial_data_and_keep_provenance():
+def test_v3_relational_errors_withhold_partial_data_and_keep_provenance():
     payload = RoomDescriptionJsonCodec().to_dict(enriched_description())
     payload["room_description"]["covering_zones"][1].update(
         {
@@ -244,7 +246,7 @@ def test_v2_relational_errors_withhold_partial_data_and_keep_provenance():
     result = RoomDescriptionJsonCodec().from_dict(payload)
 
     assert result.description is None
-    assert result.source_schema_version == 2
+    assert result.source_schema_version == 3
     assert result.errors[0].code is RoomDescriptionPersistenceErrorCode.INVALID_GEOMETRY
     assert result.errors[0].validation_code is RoomDescriptionValidationCode.COVERING_ZONE_OVERLAP
     assert result.errors[0].entity_ids == ("RUG", "WALL_FABRIC")

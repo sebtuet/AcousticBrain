@@ -17,6 +17,20 @@ from .listening_position import ListeningPosition
 from .room_opening_surface import RoomOpeningSurface
 from .room_opening import RoomOpening
 from .room_description import RoomDescription
+from .planar_geometry_description import (
+    PlanarRegionDescription,
+    PlanarRegionRole,
+    PlanarSurfaceDescription,
+    PlanarSurfaceRole,
+    PlanarVertexDescription,
+)
+from .propagation_geometry import (
+    PropagationGeometry,
+    PropagationGeometryAnalysis,
+    PropagationRegion,
+    PropagationSceneSource,
+    PropagationSurface,
+)
 from .geometry_datum_quality_description import GeometryDatumQualityDescription
 from .geometry_datum_quality import GeometryDatumQuality
 from .geometry_source import GeometrySource
@@ -26,6 +40,7 @@ from .room_surface import RoomSurface, RoomSurfaceKind
 from .geometry_opening import GeometryOpening
 from .room_geometry import RoomGeometry
 from .geometry_reflection_path import GeometryReflectionPath
+from .reflection_path_geometry import ReflectionPathGeometry
 from .geometry_early_reflection_analysis import GeometryEarlyReflectionAnalysis
 from .geometry_sbir_candidate import GeometrySBIRCandidate, GeometrySBIRAnalysis
 from .sbir_geometry_correlation import (

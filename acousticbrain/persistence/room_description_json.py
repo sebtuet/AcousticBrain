@@ -8,6 +8,11 @@ from acousticbrain.models import (
     FurnitureType,
     GeometryDatumQualityDescription,
     ListeningPosition,
+    PlanarRegionDescription,
+    PlanarRegionRole,
+    PlanarSurfaceDescription,
+    PlanarSurfaceRole,
+    PlanarVertexDescription,
     RoomDescription,
     RoomDescriptionLoadResult,
     RoomDescriptionPersistenceError,
@@ -36,8 +41,8 @@ class _DecodeFailure(Exception):
 class RoomDescriptionJsonCodec:
     """Sérialise le contrat RoomDescription dans une enveloppe versionnée."""
 
-    SCHEMA_VERSION = 2
-    SUPPORTED_SCHEMA_VERSIONS = (1, 2)
+    SCHEMA_VERSION = 3
+    SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
 
     def __init__(self, validator=None):
         self.validator = validator or RoomDescriptionValidator()
@@ -184,8 +189,36 @@ class RoomDescriptionJsonCodec:
                         key=lambda item: item.datum_id,
                     )
                 ],
+                "planar_surfaces": [
+                    {
+                        "surface_id": item.surface_id,
+                        "role": item.role.value,
+                        "vertices": [self._vertex_dict(vertex) for vertex in item.vertices],
+                    }
+                    for item in sorted(
+                        description.planar_surfaces,
+                        key=lambda item: item.surface_id,
+                    )
+                ],
+                "planar_regions": [
+                    {
+                        "region_id": item.region_id,
+                        "surface_id": item.surface_id,
+                        "role": item.role.value,
+                        "feature_id": item.feature_id,
+                        "vertices": [self._vertex_dict(vertex) for vertex in item.vertices],
+                    }
+                    for item in sorted(
+                        description.planar_regions,
+                        key=lambda item: item.region_id,
+                    )
+                ],
             },
         }
+
+    @staticmethod
+    def _vertex_dict(vertex):
+        return {"x_m": vertex.x_m, "y_m": vertex.y_m, "z_m": vertex.z_m}
 
     def loads(self, payload: str) -> RoomDescriptionLoadResult:
         try:
@@ -330,6 +363,73 @@ class RoomDescriptionJsonCodec:
                     self._optional_sequence(raw, "geometry_data_quality", base)
                 )
             ),
+            planar_surfaces=tuple(
+                self._planar_surface(item, index)
+                for index, item in enumerate(
+                    self._optional_sequence(raw, "planar_surfaces", base)
+                    if version >= 3 else ()
+                )
+            ),
+            planar_regions=tuple(
+                self._planar_region(item, index)
+                for index, item in enumerate(
+                    self._optional_sequence(raw, "planar_regions", base)
+                    if version >= 3 else ()
+                )
+            ),
+        )
+
+    def _planar_surface(self, value, index):
+        path = ("room_description", "planar_surfaces", index)
+        raw = self._mapping(value, path)
+        return PlanarSurfaceDescription(
+            surface_id=self._string(
+                self._required(raw, "surface_id", path), (*path, "surface_id")
+            ),
+            role=self._enum(
+                PlanarSurfaceRole,
+                self._required(raw, "role", path),
+                (*path, "role"),
+            ),
+            vertices=self._planar_vertices(raw, path),
+        )
+
+    def _planar_region(self, value, index):
+        path = ("room_description", "planar_regions", index)
+        raw = self._mapping(value, path)
+        return PlanarRegionDescription(
+            region_id=self._string(
+                self._required(raw, "region_id", path), (*path, "region_id")
+            ),
+            surface_id=self._string(
+                self._required(raw, "surface_id", path), (*path, "surface_id")
+            ),
+            role=self._enum(
+                PlanarRegionRole,
+                self._required(raw, "role", path),
+                (*path, "role"),
+            ),
+            vertices=self._planar_vertices(raw, path),
+            feature_id=self._nullable_string(
+                raw.get("feature_id"), (*path, "feature_id")
+            ),
+        )
+
+    def _planar_vertices(self, raw, path):
+        vertices_path = (*path, "vertices")
+        return tuple(
+            self._planar_vertex(item, (*vertices_path, index))
+            for index, item in enumerate(self._sequence(
+                self._required(raw, "vertices", path), vertices_path
+            ))
+        )
+
+    def _planar_vertex(self, value, path):
+        raw = self._mapping(value, path)
+        return PlanarVertexDescription(
+            x_m=self._coordinate(raw, "x_m", path),
+            y_m=self._coordinate(raw, "y_m", path),
+            z_m=self._coordinate(raw, "z_m", path),
         )
 
     def _geometry_datum_quality(self, value, index):
