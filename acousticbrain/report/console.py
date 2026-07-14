@@ -140,6 +140,50 @@ class ConsoleReporter:
                 ) or "none")
             )
 
+        material_candidates = report.material_aware_reflection_candidates
+        if material_candidates is not None:
+            print()
+            print("Material-aware reflection candidates")
+            for candidate in material_candidates.candidates:
+                print()
+                print(f"Candidate: {candidate.candidate_id}")
+                print(f"Path: {candidate.path_id}")
+                print(f"Correlation: {candidate.correlation_id or 'none'}")
+                print(
+                    "Target: "
+                    + (
+                        f"region {candidate.region_id} on {candidate.surface_id}"
+                        if candidate.region_id is not None
+                        else f"surface {candidate.surface_id}"
+                    )
+                )
+                if candidate.theoretical_delay_ms is not None:
+                    print(
+                        "Timing: "
+                        f"theoretical {candidate.theoretical_delay_ms:.3f} ms; "
+                        f"observed {candidate.measured_delay_ms:.3f} ms; "
+                        f"difference {candidate.timing_error_ms:.3f} ms"
+                    )
+                print(
+                    "Geometry: "
+                    f"{candidate.geometric_status}; "
+                    f"score {candidate.geometric_temporal_score:.1f} / 100"
+                )
+                print(
+                    "Material: "
+                    f"{candidate.material_assessment}; "
+                    f"id {candidate.material_id or 'unknown'}"
+                )
+                print(
+                    "Informative ranking: "
+                    f"{candidate.informative_rank or 'none'}; "
+                    f"score {candidate.overall_compatibility_score:.1f} / 100; "
+                    f"status {candidate.status}"
+                )
+                print(f"Causality: {candidate.causality_status}")
+                print(f"Eligibility impact: {candidate.eligibility_impact}")
+                print("Limitations: " + ", ".join(candidate.limitations))
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()

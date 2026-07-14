@@ -35,4 +35,7 @@ class TraceabilityStage:
             propagation_geometry=context.propagation_geometry,
             acoustic_reasoning=context.acoustic_reasoning_analysis,
             experiment_planning=context.experiment_planning_analysis,
+            material_aware_reflection_candidates=(
+                context.material_aware_reflection_candidate_analysis
+            ),
         )

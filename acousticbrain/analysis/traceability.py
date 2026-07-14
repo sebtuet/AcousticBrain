@@ -81,6 +81,7 @@ class TraceabilityEngine:
         propagation_geometry: PropagationGeometry | None = None,
         acoustic_reasoning: AcousticReasoningAnalysis | None = None,
         experiment_planning: ExperimentPlanningAnalysis | None = None,
+        material_aware_reflection_candidates=None,
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -143,6 +144,12 @@ class TraceabilityEngine:
             links.extend(reasoning_links)
         if experiment_planning is not None:
             links.extend(self._planning_graph(experiment_planning))
+        if material_aware_reflection_candidates is not None:
+            material_evidence, material_links = self._material_candidate_graph(
+                material_aware_reflection_candidates
+            )
+            evidence_references.extend(material_evidence)
+            links.extend(material_links)
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -191,6 +198,14 @@ class TraceabilityEngine:
                         else ()
                     ),
                     *(("ConfidenceAnalysis",) if confidence is not None else ()),
+                    *(
+                        (
+                            "MaterialAwareReflectionCandidateAnalysis",
+                            *material_aware_reflection_candidates.source_analysis_codes,
+                        )
+                        if material_aware_reflection_candidates is not None
+                        else ()
+                    ),
                 )
             )
         )
@@ -200,6 +215,51 @@ class TraceabilityEngine:
             links=links,
             source_analyses=sources,
         )
+
+    @staticmethod
+    def _material_candidate_graph(analysis):
+        evidence = []
+        links = []
+        for candidate in analysis.candidates:
+            evidence_code = f"evidence.{candidate.candidate_id}.overall_compatibility"
+            fact_code = (
+                f"material_aware_reflection_candidate.{candidate.candidate_id}."
+                "overall_compatibility_score"
+            )
+            evidence.append(EvidenceReference(
+                code=evidence_code,
+                source_analysis="MaterialAwareReflectionCandidateAnalysis",
+                fact_code=fact_code,
+                evidence_level=EvidenceLevel.CALCULATED,
+                value=candidate.overall_compatibility_score,
+            ))
+            evidence.extend(
+                EvidenceReference(
+                    code=item.code,
+                    source_analysis=item.source_analysis,
+                    fact_code=item.fact_code,
+                    evidence_level=EvidenceLevel.CALCULATED,
+                )
+                for item in candidate.evidence_links
+            )
+            links.append(ExplanationLink(
+                code=f"explanation.{candidate.candidate_id}",
+                fact_codes=(fact_code,),
+                evidence_codes=(
+                    evidence_code,
+                    *(item.code for item in candidate.evidence_links),
+                ),
+                correlation_codes=(
+                    (candidate.correlation_id,)
+                    if candidate.correlation_id is not None else ()
+                ),
+                candidate_codes=(candidate.candidate_id,),
+                ranking_codes=(
+                    (f"informative_rank.{candidate.informative_rank}",)
+                    if candidate.informative_rank is not None else ()
+                ),
+            ))
+        return evidence, links
 
     @staticmethod
     def _planning_graph(analysis):
