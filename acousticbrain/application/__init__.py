@@ -17,6 +17,7 @@ from .automatic_experiment_comparison import (
 )
 from .causal_discrimination import CausalDiscriminationService
 from .guided_room_description import (
+    ControlledVocabularyRoomDescriptionInterpreter,
     GuidedRoomDescriptionApplyResult,
     GuidedRoomDescriptionWorkflow,
     RoomDescriptionProposalService,

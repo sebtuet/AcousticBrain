@@ -1,6 +1,7 @@
 from dataclasses import dataclass, replace
 from hashlib import sha256
 import json
+import unicodedata
 
 from acousticbrain.analysis.surface_material import SurfaceMaterialAnalyzer
 from acousticbrain.catalogs import BuiltInSurfaceMaterialCatalog
@@ -126,6 +127,72 @@ class StructuredRoomDescriptionInterpreter:
             confidence=confidence,
             ambiguity_codes=ambiguities,
             provenance_codes=("USER_STRUCTURED_INPUT",),
+        )
+
+
+class ControlledVocabularyRoomDescriptionInterpreter:
+    """Interprète quelques libellés exacts sans inférence acoustique."""
+
+    VALUE_ALIASES = {
+        "beton": "CONCRETE",
+        "brique": "BRICK",
+        "plaque de platre": "GYPSUM_BOARD_PAINTED",
+        "plaque de platre peinte": "GYPSUM_BOARD_PAINTED",
+        "placo": "GYPSUM_BOARD_PAINTED",
+        "placo peint": "GYPSUM_BOARD_PAINTED",
+        "bois": "WOOD",
+        "verre": "GLAZING",
+        "vitrage": "GLAZING",
+        "inconnu": "UNKNOWN",
+    }
+
+    def interpret(self, question, answer, *, target_id=None):
+        if not isinstance(answer, str) or not answer.strip():
+            return self._unresolved(
+                GuidedInterpretationStatus.INSUFFICIENT,
+                "MATERIAL_DESCRIPTION_MISSING",
+                target_id,
+            )
+        normalized = self._normalize(answer)
+        value_id = self.VALUE_ALIASES.get(normalized)
+        allowed = {item.value_id for item in question.allowed_values}
+        if value_id is None or value_id not in allowed:
+            return self._unresolved(
+                GuidedInterpretationStatus.AMBIGUOUS,
+                "MATERIAL_DESCRIPTION_AMBIGUOUS",
+                target_id,
+            )
+        return GuidedAnswerInterpretation(
+            status=GuidedInterpretationStatus.CANDIDATE,
+            candidate_value_ids=(value_id,),
+            target_id=target_id,
+            confidence=100.0,
+            ambiguity_codes=(),
+            provenance_codes=("USER_DESCRIPTION_INTERPRETED",),
+        )
+
+    @staticmethod
+    def _normalize(value):
+        decomposed = unicodedata.normalize("NFKD", value.strip().lower())
+        return " ".join(
+            "".join(
+                character
+                for character in decomposed
+                if not unicodedata.combining(character)
+            )
+            .replace("-", " ")
+            .split()
+        )
+
+    @staticmethod
+    def _unresolved(status, code, target_id):
+        return GuidedAnswerInterpretation(
+            status=status,
+            candidate_value_ids=(),
+            target_id=target_id,
+            confidence=0.0,
+            ambiguity_codes=(code,),
+            provenance_codes=("USER_DESCRIPTION_INTERPRETED",),
         )
 
 

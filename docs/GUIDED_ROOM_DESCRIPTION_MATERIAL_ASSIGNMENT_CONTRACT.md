@@ -70,3 +70,31 @@ additive. Legacy projects gain no inferred material, profile or provenance.
 - no automatic application without confirmation;
 - no second-order reflections, diffraction or probabilistic hypothesis ranking;
 - no dependency on Ollama for deterministic tests or structured input.
+
+## Isolated end-to-end review demo
+
+The guided workflow is deliberately separate from the automatic behavior of
+`main.py`. Reviewers can exercise the complete vertical slice with no access to
+local measurement folders and no project-file writes:
+
+```bash
+.venv/bin/python -m acousticbrain.commands.demo_guided_room_description --scenario confirmed
+```
+
+This scenario constructs a synthetic project in memory, plans the next material
+question, interprets `plaque de plâtre` through the controlled vocabulary,
+shows that serialized room data is unchanged before confirmation, confirms and
+applies the proposal, then invokes the real `AcousticBrain.analyze()` pipeline
+exactly once on the updated project.
+
+The conservative ambiguity path is available separately:
+
+```bash
+.venv/bin/python -m acousticbrain.commands.demo_guided_room_description --scenario ambiguous
+```
+
+It must return `NEEDS_CLARIFICATION`, select no catalog entry, persist nothing,
+and trigger no new analysis. Both commands print structured JSON evidence,
+including immutable catalog identity, distinct descriptive/profile provenance,
+confirmation and application states, and the disclaimer that projected
+capabilities are not eligibility results.
