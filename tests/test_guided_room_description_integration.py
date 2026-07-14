@@ -160,6 +160,27 @@ def test_workflow_never_mutates_scientific_conclusions_directly():
     assert project.acoustic_reasoning_analysis == "old-conclusions"
 
 
+def test_persistence_failure_keeps_proposal_confirmed_and_project_unchanged():
+    description, proposal = confirmed_proposal()
+    project = SimpleNamespace(room_description=description)
+
+    class FailingCodec:
+        def dumps(self, value, indent=None):
+            raise OSError("simulated persistence failure")
+
+    workflow = GuidedRoomDescriptionWorkflow(codec=FailingCodec())
+
+    try:
+        workflow.apply(project, proposal, lambda _: "must-not-run")
+    except OSError as error:
+        assert str(error) == "simulated persistence failure"
+    else:
+        raise AssertionError("The simulated persistence failure must propagate.")
+
+    assert proposal.status is RoomDescriptionChangeProposalStatus.CONFIRMED
+    assert project.room_description is description
+
+
 def test_deterministic_mode_has_no_ollama_dependency():
     planned = question()
     result = StructuredRoomDescriptionInterpreter().interpret(
