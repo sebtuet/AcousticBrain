@@ -22,6 +22,12 @@ class PresentedRoomGeometry:
     treatment_count: int = 0
     placed_treatment_count: int = 0
     feature_completeness: float | None = None
+    propagation_scene_id: str | None = None
+    propagation_scene_version: int | None = None
+    propagation_scene_source: str | None = None
+    propagation_surface_count: int = 0
+    propagation_region_count: int = 0
+    propagation_completeness: float | None = None
 
 
 class RoomGeometryPresenter:
@@ -33,6 +39,7 @@ class RoomGeometryPresenter:
         if geometry is None:
             return None
         dimensions = geometry.dimensions
+        propagation = getattr(context, "propagation_geometry", None)
         return PresentedRoomGeometry(
             source=geometry.source.value,
             model=geometry.model.value,
@@ -72,5 +79,23 @@ class RoomGeometryPresenter:
                 geometry.feature_completeness.score
                 if geometry.feature_completeness is not None
                 else None
+            ),
+            propagation_scene_id=(
+                propagation.scene_id if propagation is not None else None
+            ),
+            propagation_scene_version=(
+                propagation.scene_version if propagation is not None else None
+            ),
+            propagation_scene_source=(
+                propagation.scene_source.value if propagation is not None else None
+            ),
+            propagation_surface_count=(
+                len(propagation.surfaces) if propagation is not None else 0
+            ),
+            propagation_region_count=(
+                len(propagation.regions) if propagation is not None else 0
+            ),
+            propagation_completeness=(
+                propagation.completeness if propagation is not None else None
             ),
         )

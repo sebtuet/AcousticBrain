@@ -3,6 +3,7 @@ import pytest
 from acousticbrain.analysis import AnalysisContext, TraceabilityEngine
 from acousticbrain.brain.builders.report import ReportBuilder
 from acousticbrain.brain.stages.room_geometry import RoomGeometryStage
+from acousticbrain.brain.stages.propagation_geometry import PropagationGeometryStage
 from acousticbrain.models import (
     GlobalAnalysis,
     Measurement,
@@ -114,6 +115,34 @@ def test_presenter_returns_none_before_geometry_resolution():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
 
     assert RoomGeometryPresenter().present(context) is None
+
+
+def test_report_and_traceability_expose_propagation_scene_identity(capsys):
+    description = RoomDescription("Declared", RoomDimensions(5.0, 4.0, 2.5))
+    project = Project(
+        "Propagation", Room("Legacy", 5.0, 4.0, 2.5),
+        room_description=description,
+    )
+    context = context_for(project)
+    PropagationGeometryStage().run(project, context)
+    report = ReportBuilder().build(project, context)
+
+    ConsoleReporter().print(report)
+    output = capsys.readouterr().out
+    traceability = TraceabilityEngine().analyze(
+        global_analysis=GlobalAnalysis(),
+        recommendation_analysis=RecommendationAnalysis(),
+        room_geometry=context.room_geometry,
+        propagation_geometry=context.propagation_geometry,
+    )
+    evidence = {item.fact_code: item.value for item in traceability.evidence_references}
+
+    assert "Géométrie de propagation" in output
+    assert "Source de scène : RECTANGULAR_ADAPTER" in output
+    assert context.propagation_geometry.scene_id in output
+    assert evidence["propagation_geometry.scene_id"] == context.propagation_geometry.scene_id
+    assert evidence["propagation_geometry.surface_count"] == 6
+    assert "PropagationGeometryAnalysis" in traceability.source_analyses
 
 
 def test_presenter_and_traceability_summarize_available_room_features():
