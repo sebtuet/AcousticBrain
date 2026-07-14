@@ -26,6 +26,10 @@ class PresentedSurfaceMaterialTarget:
     target_kind: str
     target_id: str
     material_id: str | None
+    description_source: str | None
+    description_confidence: float | None
+    provenance_codes: tuple[str, ...]
+    description_provenance_codes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -47,7 +51,13 @@ class SurfaceMaterialPresenter:
             materials=tuple(self._material(item) for item in analysis.materials),
             targets=tuple(
                 PresentedSurfaceMaterialTarget(
-                    item.target_kind, item.target_id, item.material_id
+                    item.target_kind,
+                    item.target_id,
+                    item.material_id,
+                    item.description_source,
+                    item.description_confidence,
+                    item.provenance_codes,
+                    item.description_provenance_codes,
                 )
                 for item in analysis.target_availability
             ),

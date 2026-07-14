@@ -11,6 +11,9 @@ class SurfaceMaterialTargetAvailability:
     target_id: str
     material_id: str | None
     provenance_codes: tuple[str, ...] = ()
+    description_provenance_codes: tuple[str, ...] = ()
+    description_source: str | None = None
+    description_confidence: float | None = None
 
     def __post_init__(self):
         if self.target_kind not in {"SURFACE", "REGION"}:
@@ -21,8 +24,20 @@ class SurfaceMaterialTargetAvailability:
             not isinstance(self.material_id, str) or not self.material_id.strip()
         ):
             raise ValueError("Material availability has an invalid material identifier.")
-        if not isinstance(self.provenance_codes, tuple):
+        if not isinstance(self.provenance_codes, tuple) or not isinstance(
+            self.description_provenance_codes, tuple
+        ):
             raise ValueError("Material-availability provenance must be a tuple.")
+        if self.description_source is not None and (
+            not isinstance(self.description_source, str)
+            or not self.description_source.strip()
+        ):
+            raise ValueError("Material availability has an invalid description source.")
+        if self.description_confidence is not None and (
+            not isfinite(self.description_confidence)
+            or not 0.0 <= self.description_confidence <= 100.0
+        ):
+            raise ValueError("Material availability confidence must be bounded.")
 
 
 @dataclass(frozen=True)

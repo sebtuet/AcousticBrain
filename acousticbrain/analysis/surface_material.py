@@ -27,6 +27,8 @@ class SurfaceMaterialAnalyzer:
         targets = tuple(sorted(targets))
         availability = []
         missing_targets = []
+        facts = []
+        missing_facts = []
         for kind, target_id in targets:
             assignment = assignment_by_target.get((kind, target_id))
             material = material_by_id.get(assignment.material_id) if assignment else None
@@ -36,12 +38,24 @@ class SurfaceMaterialAnalyzer:
                 target_id=target_id,
                 material_id=material.material_id if material is not None else None,
                 provenance_codes=provenance,
+                description_provenance_codes=(
+                    assignment.provenance_codes if assignment is not None else ()
+                ),
+                description_source=(
+                    assignment.description_source.value if assignment is not None else None
+                ),
+                description_confidence=(
+                    assignment.description_confidence if assignment is not None else None
+                ),
             ))
             if material is None:
                 missing_targets.append(f"MATERIAL_MISSING.{kind}.{target_id}")
-
-        facts = []
-        missing_facts = []
+            else:
+                facts.extend((
+                    f"surface_material_assignment.{kind}.{target_id}.description_source",
+                    f"surface_material_assignment.{kind}.{target_id}.description_confidence",
+                    f"surface_material_assignment.{kind}.{target_id}.provenance",
+                ))
         for material in materials:
             prefix = f"surface_material.{material.material_id}"
             facts.extend((

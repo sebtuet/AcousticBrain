@@ -116,6 +116,18 @@ class ConsoleReporter:
                     f" • {target.target_kind} {target.target_id}: "
                     f"{target.material_id or 'missing'}"
                 )
+                if target.material_id is not None:
+                    print(
+                        f"   Description source: {target.description_source}; "
+                        f"confidence: {target.description_confidence:.1f} %"
+                    )
+                    print(
+                        "   Description provenance: "
+                        + (
+                            ", ".join(target.description_provenance_codes)
+                            or "none"
+                        )
+                    )
             print(
                 "Available facts: "
                 + (", ".join(materials.available_fact_codes) or "none")
