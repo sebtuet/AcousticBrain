@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .impulse_channel import ImpulseChannel
-from .causal_discrimination import CausalProtocolStep
+from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolStep
 
 
 class ExperimentType(Enum):
@@ -52,6 +52,7 @@ class ExperimentDescriptor:
     declared_change_codes: tuple[str, ...] = ()
     required_comparison_fact_codes: tuple[str, ...] = ()
     causal_protocol_step: CausalProtocolStep | None = None
+    causal_discrimination_decisions: tuple[CausalDiscriminationDecision, ...] = ()
 
     def __post_init__(self):
         collections = (
@@ -62,6 +63,7 @@ class ExperimentDescriptor:
             self.parent_experiment_ids,
             self.declared_change_codes,
             self.required_comparison_fact_codes,
+            self.causal_discrimination_decisions,
         )
         if any(not isinstance(collection, tuple) for collection in collections):
             raise ValueError("Experiment descriptor collections must be tuples.")

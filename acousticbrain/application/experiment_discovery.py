@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from acousticbrain.models import (
+    CausalDiscriminationDecision,
+    CausalDiscriminationDecisionReason,
+    CausalDiscriminationDecisionStatus,
     ExperimentDescriptor,
     ExperimentFileDescriptor,
     ExperimentFileType,
@@ -73,6 +76,7 @@ class ExperimentDiscoveryService:
             imported_at = self.clock().isoformat()
         comparison_metadata = self._comparison_metadata(existing)
         causal_step = self._causal_step(existing, directory.name)
+        causal_decisions = self._causal_decisions(existing, directory.name)
         detected_assignments = {
             item.path.relative_to(directory).as_posix(): item.channel.value
             for item in inspected
@@ -111,6 +115,16 @@ class ExperimentDiscoveryService:
                 "unknown_variable_codes": list(causal_step.unknown_variable_codes),
                 "observation_codes": list(causal_step.observation_codes),
             }
+        if causal_decisions:
+            manifest["causal_discrimination_decisions"] = [
+                {
+                    "protocol_code": item.protocol_code,
+                    "discrimination_code": item.discrimination_code,
+                    "status": item.status.value,
+                    "reason": item.reason.value,
+                }
+                for item in causal_decisions
+            ]
         self.repository.save_manifest(directory, manifest)
         files = tuple(
             ExperimentFileDescriptor(
@@ -170,7 +184,43 @@ class ExperimentDiscoveryService:
                 comparison_metadata.get("required_fact_codes")
             ),
             causal_protocol_step=causal_step,
+            causal_discrimination_decisions=causal_decisions,
         )
+
+    @classmethod
+    def _causal_decisions(cls, manifest, experiment_id):
+        values = manifest.get("causal_discrimination_decisions", [])
+        if not isinstance(values, list):
+            raise ValueError(
+                "Causal discrimination decisions manifest entry must be a list."
+            )
+        decisions = []
+        for value in values:
+            if not isinstance(value, dict):
+                raise ValueError("Causal discrimination decision must be an object.")
+            protocol_code = cls._optional_string(value.get("protocol_code"))
+            discrimination_code = cls._optional_string(
+                value.get("discrimination_code")
+            )
+            if protocol_code is None or discrimination_code is None:
+                raise ValueError("Causal discrimination decision codes are required.")
+            try:
+                status = CausalDiscriminationDecisionStatus(value.get("status"))
+                reason = CausalDiscriminationDecisionReason(value.get("reason"))
+            except ValueError as error:
+                raise ValueError(
+                    "Unsupported causal discrimination decision status or reason."
+                ) from error
+            decisions.append(CausalDiscriminationDecision(
+                protocol_code=protocol_code,
+                discrimination_code=discrimination_code,
+                status=status,
+                reason=reason,
+                experiment_id=experiment_id,
+            ))
+        if len({item.discrimination_code for item in decisions}) != len(decisions):
+            raise ValueError("Causal discrimination decisions must be unique.")
+        return tuple(decisions)
 
     @classmethod
     def _causal_step(cls, manifest, experiment_id):

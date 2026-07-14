@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from statistics import fmean
 
 from acousticbrain.models import (
@@ -40,6 +40,7 @@ class ExperimentPlanner:
         "PLAN_REQUIRE_OBSERVABLE_FACTS",
         "PLAN_EXCLUDE_COMPLETED",
         "PLAN_EXCLUDE_CONTRADICTED",
+        "PLAN_EXCLUDE_USER_DEFERRED",
         "PLAN_REQUIRE_REVERSIBLE",
         "PLAN_INFORMATION_VALUE_V1",
         "PLAN_DETERMINISTIC_ORDER_V1",
@@ -138,15 +139,19 @@ class ExperimentPlanner:
         ),
     )
 
-    def plan(self, reasoning_analysis, *, session=None):
+    def plan(self, reasoning_analysis, *, session=None, deferred_action_codes=()):
         hypotheses = {
             item.code: item for item in reasoning_analysis.hypotheses
         }
         candidates = tuple(
-            self._candidate(
+            self._apply_deferred_decision(
+                self._candidate(
+                    definition,
+                    hypotheses.get(definition.hypothesis_code),
+                    session,
+                ),
                 definition,
-                hypotheses.get(definition.hypothesis_code),
-                session,
+                deferred_action_codes,
             )
             for definition in self.PROTOCOLS
         )
@@ -207,6 +212,19 @@ class ExperimentPlanner:
             ),
             plan=plan,
             trace_links=trace_links,
+        )
+
+    @staticmethod
+    def _apply_deferred_decision(candidate, definition, deferred_action_codes):
+        if definition.action_code not in deferred_action_codes:
+            return candidate
+        return replace(
+            candidate,
+            ineligibility_reasons=tuple(dict.fromkeys((
+                *candidate.ineligibility_reasons,
+                ExperimentSelectionReason.USER_DEFERRED,
+            ))),
+            eligible=False,
         )
 
     def _candidate(self, definition, hypothesis, session):

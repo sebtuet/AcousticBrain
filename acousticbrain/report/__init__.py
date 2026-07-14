@@ -41,6 +41,7 @@ from .experiment_comparison_presenter import (
 from .causal_discrimination_presenter import (
     CausalDiscriminationPresenter,
     PresentedCausalDiscrimination,
+    PresentedCausalDiscriminationDecision,
     PresentedCausalProtocolStep,
     PresentedCausalTrajectory,
 )

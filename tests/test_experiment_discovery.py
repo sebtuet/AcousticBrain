@@ -136,6 +136,28 @@ def test_discovery_preserves_explicit_causal_protocol_step(tmp_path):
     ]
 
 
+def test_discovery_preserves_explicit_deferred_causal_discrimination(tmp_path):
+    directory = tmp_path / "exp-002"
+    complete_experiment(directory)
+    (directory / "manifest.json").write_text(json.dumps({
+        "causal_discrimination_decisions": [{
+            "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+            "discrimination_code": "LOUDSPEAKER_VS_ROOM_SIDE",
+            "status": "DEFERRED",
+            "reason": "USER_DECISION",
+        }]
+    }), encoding="utf-8")
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    decision = descriptor.causal_discrimination_decisions[0]
+
+    assert decision.discrimination_code == "LOUDSPEAKER_VS_ROOM_SIDE"
+    assert decision.status.value == "DEFERRED"
+    assert decision.reason.value == "USER_DECISION"
+    persisted = json.loads((directory / "manifest.json").read_text())
+    assert persisted["causal_discrimination_decisions"][0]["status"] == "DEFERRED"
+
+
 def test_identical_manifest_is_not_rewritten(tmp_path):
     directory = tmp_path / "baseline"
     complete_experiment(directory)

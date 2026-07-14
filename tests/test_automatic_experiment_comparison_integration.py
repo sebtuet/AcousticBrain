@@ -16,9 +16,11 @@ def test_explicit_mode_analyzes_discovered_experiments_without_business_history(
         detailed_comparison_traceability=True,
     )
 
-    assert report.experiment_comparison.chronology == ("baseline", "exp-001")
-    assert len(report.experiment_comparison.local_comparisons) == 1
-    assert len(report.experiment_comparison.cumulative_comparisons) == 1
+    assert report.experiment_comparison.chronology == (
+        "baseline", "exp-001", "exp-002"
+    )
+    assert len(report.experiment_comparison.local_comparisons) == 2
+    assert len(report.experiment_comparison.cumulative_comparisons) == 2
     assert report.experiment_comparison.local_comparisons[0].trace_id
     assert report.optimization_session is None
 
@@ -30,15 +32,50 @@ def test_comparison_is_absent_when_explicit_mode_is_disabled():
     assert report.optimization_session is None
 
 
-def test_causal_mode_never_invents_protocol_steps_from_comparison_metadata():
+def test_causal_mode_projects_only_explicit_repository_steps():
     report = AcousticBrain().analyze(
         measurement_root=ROOT / "measurements",
         compare_experiments=True,
         analyze_causal_discrimination=True,
+        plan_experiments=True,
     )
 
     assert report.experiment_comparison is not None
-    assert report.causal_discrimination is None
+    assert report.causal_discrimination is not None
+    assert tuple(
+        item.step_code for item in report.causal_discrimination.completed_steps
+    ) == (
+        "STEP_0_BASELINE",
+        "STEP_1_LEFT_RIGHT_REMEASUREMENT",
+        "STEP_3_SIGNAL_CHAIN_SWAP",
+    )
+    assert report.causal_discrimination.remaining_discrimination_codes == (
+        "LOUDSPEAKER_VS_ROOM_SIDE",
+    )
+    assert report.causal_discrimination.remaining_step_codes == ()
+    assert report.causal_discrimination.deferred_step_codes == (
+        "STEP_2_SPEAKER_SWAP",
+    )
+    assert report.causal_discrimination.recommended_next_protocol is None
+    assert report.causal_discrimination.status == "DEFERRED"
+    decision = report.causal_discrimination.discrimination_decisions[0]
+    assert (decision.discrimination_code, decision.status, decision.reason) == (
+        "LOUDSPEAKER_VS_ROOM_SIDE", "DEFERRED", "USER_DECISION"
+    )
+    assert report.causal_discrimination.outcome == "INCONCLUSIVE"
+    assert report.experiment_comparison.local_comparisons[-1].outcome == "WEAKER"
+    deferred_recommendation = next(
+        item for item in report.recommendations
+        if item.code == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    )
+    assert deferred_recommendation.status.name == "DEFERRED"
+    assert deferred_recommendation.status_reason == "USER_DECISION"
+    planned_asymmetry = next(
+        item for item in report.experiment_planning.all_candidates
+        if item.hypothesis_code == "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
+    )
+    assert planned_asymmetry.eligible is False
+    assert "USER_DEFERRED" in planned_asymmetry.ineligibility_reasons
     assert report.optimization_session is None
 
 

@@ -39,6 +39,11 @@ def test_presenter_is_a_pure_projection():
     assert first == second
     assert repr(analysis) == snapshot
     assert first.recommended_next_protocol == "STEP_3_SIGNAL_CHAIN_SWAP"
+    assert first.outcome == "INCONCLUSIVE"
+    assert "DISCRIMINATION_INCONCLUSIVE" not in {
+        item.trajectory_code
+        for item in (*first.compatible_trajectories, *first.contradicted_trajectories)
+    }
     assert {item.trajectory_code for item in first.contradicted_trajectories} == {
         "ANOMALY_REMAINS_WITH_ROOM_SIDE"
     }

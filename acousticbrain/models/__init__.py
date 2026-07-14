@@ -68,7 +68,11 @@ from .confidence_factor import ConfidenceFactor
 from .confidence_analysis import ConfidenceAnalysis
 from .prioritized_diagnostic import PrioritizedDiagnostic
 from .diagnostic_priority_analysis import DiagnosticPriorityAnalysis
-from .recommendation import Recommendation, RecommendationParameter
+from .recommendation import (
+    Recommendation,
+    RecommendationParameter,
+    RecommendationStatus,
+)
 from .recommendation_analysis import RecommendationAnalysis
 from .recommendation_priority import RecommendationPriority
 from .global_domain_analysis import GlobalDomainAnalysis, GlobalDomainKind
@@ -203,6 +207,10 @@ from .experiment_comparison import (
 )
 from .causal_discrimination import (
     CausalDiscriminationAnalysis,
+    CausalDiscriminationDecision,
+    CausalDiscriminationDecisionReason,
+    CausalDiscriminationDecisionStatus,
+    CausalDiscriminationOutcome,
     CausalDiscriminationTrace,
     CausalProtocolStatus,
     CausalProtocolStep,

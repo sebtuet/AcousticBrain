@@ -334,7 +334,17 @@ class AutomaticExperimentComparisonService:
         observed, counters = self._observations(
             hypothesis, deltas, declared_changes
         )
-        outcome, initial_status = self._outcome(hypothesis, before, after, deltas, reasons)
+        outcome, initial_status = self._outcome(
+            hypothesis, before, after, deltas, reasons, declared_changes
+        )
+        causal_reassignment = bool(
+            hypothesis == "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
+            and {
+                "CONTROLLED_SIGNAL_CHAIN_SWAP",
+                "CONTROLLED_LOUDSPEAKER_SWAP",
+            }
+            & set(declared_changes)
+        )
         unresolved = self._unresolved(hypothesis, declared_changes)
         eligibility = (
             ComparisonEligibilityStatus.NOT_COMPARABLE
@@ -378,7 +388,11 @@ class AutomaticExperimentComparisonService:
             counter_facts=counters,
             unavailable_fact_codes=unavailable,
             unresolved_discriminations=unresolved,
-            applied_rule_codes=self.RULES,
+            applied_rule_codes=(
+                *self.RULES,
+                *(("CAUSAL_REASSIGNMENT_CANNOT_REFUTE_GENERIC_HYPOTHESIS",)
+                  if causal_reassignment else ()),
+            ),
             applied_threshold_codes=tuple(
                 f"{item.fact_code}:{item.threshold:g}" for item in deltas
             ),
@@ -557,7 +571,7 @@ class AutomaticExperimentComparisonService:
         return tuple(observed), tuple(counters)
 
     @staticmethod
-    def _outcome(hypothesis, before, after, deltas, reasons):
+    def _outcome(hypothesis, before, after, deltas, reasons, declared_changes=()):
         if reasons or hypothesis is None or before is None or before.state is None or after.state is None:
             return ExperimentEvolutionOutcome.INCONCLUSIVE, None
         old = next((item for item in before.state.hypotheses if item.code == hypothesis), None)
@@ -570,6 +584,22 @@ class AutomaticExperimentComparisonService:
         evolution = OptimizationSessionService.compare_hypothesis(
             hypothesis, before.state, after.state
         )
+        causal_reassignment = bool(
+            hypothesis == "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
+            and {
+                "CONTROLLED_SIGNAL_CHAIN_SWAP",
+                "CONTROLLED_LOUDSPEAKER_SWAP",
+            }
+            & set(declared_changes)
+        )
+        if new is not None and new.status == "CONTRADICTED" and causal_reassignment:
+            return (
+                ExperimentEvolutionOutcome.WEAKER
+                if support_delta is not None
+                and support_delta.change is ExperimentFactChange.DEGRADED
+                else ExperimentEvolutionOutcome.INCONCLUSIVE,
+                initial_status,
+            )
         if new is not None and new.status == "CONTRADICTED":
             return ExperimentEvolutionOutcome.CONTRADICTED, initial_status
         if support_delta is not None and support_delta.change is ExperimentFactChange.UNCHANGED \

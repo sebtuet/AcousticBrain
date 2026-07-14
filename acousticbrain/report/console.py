@@ -116,6 +116,7 @@ class ConsoleReporter:
             print()
             print(f"Protocole : {causal.protocol_code}")
             print(f"Statut : {causal.status}")
+            print(f"Résultat discriminant : {causal.outcome}")
             print("Étapes terminées :")
             for step in causal.completed_steps:
                 print(
@@ -141,6 +142,10 @@ class ConsoleReporter:
             print(
                 "Étapes restantes : "
                 + (", ".join(causal.remaining_step_codes) or "aucune")
+            )
+            print(
+                "Étapes différées : "
+                + (", ".join(causal.deferred_step_codes) or "aucune")
             )
             print("Trajectoires compatibles :")
             for trajectory in causal.compatible_trajectories:
@@ -173,6 +178,15 @@ class ConsoleReporter:
                 "Ambiguïtés perdues : "
                 + (", ".join(causal.lost_ambiguity_codes) or "aucune")
             )
+            print("Décisions utilisateur :")
+            if causal.discrimination_decisions:
+                for decision in causal.discrimination_decisions:
+                    print(
+                        f" • {decision.discrimination_code} — {decision.status} "
+                        f"({decision.reason}, {decision.experiment_id})"
+                    )
+            else:
+                print(" • aucune")
             print(
                 "Prochain protocole recommandé : "
                 + (causal.recommended_next_protocol or "aucun")
@@ -187,11 +201,15 @@ class ConsoleReporter:
                     "Règles appliquées : "
                     + (", ".join(causal.trace_applied_rule_codes) or "aucune")
                 )
+                print(
+                    "Décisions tracées : "
+                    + (", ".join(causal.trace_decision_codes) or "aucune")
+                )
 
         if comparison_analysis is None and causal is None:
             print()
             print()
-        elif causal is not None:
+        elif causal is not None and report.recommendations:
             print()
 
         if report.recommendations:
@@ -203,7 +221,11 @@ class ConsoleReporter:
                 print(f" • {recommendation.code}")
                 print(f"   Action : {recommendation.action}")
                 print(f"   Cible : {recommendation.target}")
-                print(f"   Priorité : {recommendation.priority.name}")
+                if recommendation.status.name == "DEFERRED":
+                    print("   Statut : DEFERRED")
+                    print(f"   Raison : {recommendation.status_reason}")
+                else:
+                    print(f"   Priorité : {recommendation.priority.name}")
                 print(f"   Confiance : {recommendation.confidence}%")
                 print(
                     "   Provenance : "

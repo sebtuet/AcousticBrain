@@ -1,5 +1,7 @@
 from dataclasses import asdict, dataclass
 
+from acousticbrain.models import CausalTrajectoryCode
+
 
 @dataclass(frozen=True)
 class PresentedCausalProtocolStep:
@@ -22,21 +24,33 @@ class PresentedCausalTrajectory:
 
 
 @dataclass(frozen=True)
+class PresentedCausalDiscriminationDecision:
+    discrimination_code: str
+    status: str
+    reason: str
+    experiment_id: str
+
+
+@dataclass(frozen=True)
 class PresentedCausalDiscrimination:
     protocol_code: str
     status: str
+    outcome: str
     completed_steps: tuple[PresentedCausalProtocolStep, ...]
     remaining_step_codes: tuple[str, ...]
+    deferred_step_codes: tuple[str, ...]
     compatible_trajectories: tuple[PresentedCausalTrajectory, ...]
     contradicted_trajectories: tuple[PresentedCausalTrajectory, ...]
     resolved_discrimination_codes: tuple[str, ...]
     remaining_discrimination_codes: tuple[str, ...]
     new_ambiguity_codes: tuple[str, ...]
     lost_ambiguity_codes: tuple[str, ...]
+    discrimination_decisions: tuple[PresentedCausalDiscriminationDecision, ...]
     recommended_next_protocol: str | None
     trace_id: str
     trace_observation_codes: tuple[str, ...]
     trace_applied_rule_codes: tuple[str, ...]
+    trace_decision_codes: tuple[str, ...]
     detailed_traceability: bool
 
     def to_dict(self):
@@ -54,6 +68,7 @@ class CausalDiscriminationPresenter:
         return PresentedCausalDiscrimination(
             protocol_code=analysis.protocol_code,
             status=analysis.status.value,
+            outcome=analysis.outcome.value,
             completed_steps=tuple(
                 PresentedCausalProtocolStep(
                     step_index=item.step_index,
@@ -67,22 +82,37 @@ class CausalDiscriminationPresenter:
                 for item in analysis.completed_steps
             ),
             remaining_step_codes=analysis.remaining_step_codes,
+            deferred_step_codes=analysis.deferred_step_codes,
             compatible_trajectories=tuple(
                 item for source, item in zip(analysis.trajectory_assessments, trajectories)
                 if source.status.value == "COMPATIBLE"
+                and source.trajectory_code
+                is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
             ),
             contradicted_trajectories=tuple(
                 item for source, item in zip(analysis.trajectory_assessments, trajectories)
                 if source.status.value == "CONTRADICTED"
+                and source.trajectory_code
+                is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
             ),
             resolved_discrimination_codes=analysis.resolved_discrimination_codes,
             remaining_discrimination_codes=analysis.remaining_discrimination_codes,
             new_ambiguity_codes=analysis.new_ambiguity_codes,
             lost_ambiguity_codes=analysis.lost_ambiguity_codes,
+            discrimination_decisions=tuple(
+                PresentedCausalDiscriminationDecision(
+                    discrimination_code=item.discrimination_code,
+                    status=item.status.value,
+                    reason=item.reason.value,
+                    experiment_id=item.experiment_id,
+                )
+                for item in analysis.discrimination_decisions
+            ),
             recommended_next_protocol=analysis.recommended_next_protocol,
             trace_id=analysis.trace.trace_id,
             trace_observation_codes=analysis.trace.observation_codes,
             trace_applied_rule_codes=analysis.trace.applied_rule_codes,
+            trace_decision_codes=analysis.trace.decision_codes,
             detailed_traceability=analysis.detailed_traceability,
         )
 

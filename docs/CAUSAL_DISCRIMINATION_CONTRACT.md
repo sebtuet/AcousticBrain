@@ -68,14 +68,27 @@ Les trajectoires disponibles sont :
 
 - `ANOMALY_FOLLOWS_LOUDSPEAKER` ;
 - `ANOMALY_FOLLOWS_SIGNAL_CHAIN` ;
-- `ANOMALY_REMAINS_WITH_ROOM_SIDE` ;
-- `DISCRIMINATION_INCONCLUSIVE`.
+- `ANOMALY_REMAINS_WITH_ROOM_SIDE`.
+
+`DISCRIMINATION_INCONCLUSIVE` est conservé comme code interne de traçabilité
+et de compatibilité. Il n'est pas présenté comme une trajectoire causale. Le
+résultat global du protocole vaut `INCONCLUSIVE` tant qu'une discrimination ou
+une nouvelle ambiguïté subsiste, `DISCRIMINATED` lorsque toutes les
+discriminations sont réduites, ou `CONTRADICTORY` en présence d'observations
+incompatibles.
 
 Une trajectoire est `COMPATIBLE` ou `CONTRADICTED`. Il n’existe aucun statut
 `CONFIRMED`. Son support est un score de couverture déterministe : nombre
 d’observations structurées qui la soutiennent divisé par le nombre d’étapes
 discriminantes contrôlées réalisées. Ce score n’est ni une probabilité ni une
 estimation bayésienne.
+
+Une permutation contrôlée peut faire diminuer le support numérique de
+l'hypothèse acoustique générique de PR-028 tout en apportant une information
+causale plus précise. Dans ce cas, le statut acoustique `CONTRADICTED` de
+l'état après permutation est projeté comme une évolution `WEAKER` si le score
+de support diminue, sinon `INCONCLUSIVE`. La réfutation d'une trajectoire
+causale reste exclusivement portée par les observations structurées de PR-029.
 
 Les seules réductions initiales sont celles encore ouvertes dans PR-028 :
 
@@ -87,12 +100,53 @@ Les seules réductions initiales sont celles encore ouvertes dans PR-028 :
   et contredit les trajectoires enceinte et côté de pièce ;
 - `ANOMALY_REMAINED_WITH_LOUDSPEAKER_AFTER_SIGNAL_CHAIN_SWAP` soutient la
   trajectoire enceinte et contredit la trajectoire de chaîne ;
-- deux discriminations pairwise structurées permettent de déduire la troisième
-  sans confirmer aucune trajectoire.
+- `ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP`
+  exclut la chaîne tout en conservant explicitement l’ambiguïté enceinte contre
+  côté de pièce ;
+- une discrimination reste ouverte tant que ses deux trajectoires restent
+  compatibles. Elle est résolue seulement lorsqu’au moins l’une d’elles est
+  contredite sans conflit de preuves.
 
 Une observation contradictoire conserve ses preuves et place le protocole dans
 l’état `CONTRADICTORY`. Une mesure non reproductible ajoute
 `MEASUREMENT_VARIABILITY_VS_CAUSAL_PATTERN` au lieu de choisir une cause.
+
+## Clôture volontaire
+
+Une discrimination encore ouverte peut être explicitement différée dans le
+manifest d'une expérience :
+
+```json
+{
+  "causal_discrimination_decisions": [
+    {
+      "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+      "discrimination_code": "LOUDSPEAKER_VS_ROOM_SIDE",
+      "status": "DEFERRED",
+      "reason": "USER_DECISION"
+    }
+  ]
+}
+```
+
+`DEFERRED` n'est ni `RESOLVED`, ni `CONTRADICTED`, ni une confirmation. La
+discrimination demeure dans les ambiguïtés scientifiques restantes et le
+résultat global reste `INCONCLUSIVE`. En revanche, l'étape uniquement destinée
+à cette discrimination passe dans les étapes différées et n'est plus
+recommandée. Lorsque toutes les discriminations restantes sont différées, le
+protocole prend le statut opérationnel `DEFERRED`. Cette décision est reprise
+dans le diagnostic et dans la trace.
+
+La même décision est propagée aux couches applicatives : une recommandation de
+vérification correspondante reste visible pour conserver sa provenance, mais
+porte le statut `DEFERRED`, la raison `USER_DECISION` et aucune priorité active
+n'est affichée. Le candidat du planificateur est inéligible avec la raison
+`USER_DEFERRED`. Les autres recommandations acoustiques restent classées selon
+leurs règles habituelles.
+
+La première version accepte uniquement la combinaison explicite
+`DEFERRED / USER_DECISION`. Aucun abandon n'est inféré depuis l'absence d'une
+mesure ou depuis le nom d'un dossier.
 
 ## Ambiguïtés et traçabilité
 
@@ -103,11 +157,12 @@ Le résultat conserve séparément :
 - nouvelles ambiguïtés ;
 - ambiguïtés perdues ;
 - trajectoires compatibles et contradictoires ;
+- décisions utilisateur et étapes différées ;
 - règles appliquées et observations sources.
 
 La chaîne de traçabilité est :
 
-`manifest → étape → variables contrôlées/modifiées/inconnues → observation → règle → trajectoire → discrimination résolue/restante`.
+`manifest → étape ou décision → variables contrôlées/modifiées/inconnues → observation → règle → trajectoire → discrimination résolue/restante/différée`.
 
 Le presenter ne calcule aucune règle. Il projette ces structures dans la section
 `DISCRIMINATION CAUSALE` et n’affiche la trace détaillée que sur demande.

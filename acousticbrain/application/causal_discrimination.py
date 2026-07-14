@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from acousticbrain.models import (
     CausalDiscriminationAnalysis,
+    CausalDiscriminationDecisionStatus,
+    CausalDiscriminationOutcome,
     CausalDiscriminationTrace,
     CausalProtocolStatus,
     CausalTrajectoryAssessment,
@@ -42,6 +44,7 @@ class CausalDiscriminationService:
         "CAUSAL_REDUCE_ONLY_OBSERVED_DISCRIMINATIONS",
         "CAUSAL_NEVER_CONFIRM_TRAJECTORY",
         "CAUSAL_DETERMINISTIC_SUPPORT_COVERAGE_V1",
+        "CAUSAL_EXCLUDE_USER_DEFERRED_STEPS",
     )
     OBSERVATION_RULES = (
         _ObservationRule(
@@ -81,6 +84,22 @@ class CausalDiscriminationService:
             CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER,
             (CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN,),
             ("LOUDSPEAKER_VS_SIGNAL_CHAIN",),
+        ),
+        _ObservationRule(
+            "SIGNAL_SWAP_ANOMALY_REMAINS_WITH_LOUDSPEAKER_OR_ROOM_SIDE_LOUDSPEAKER",
+            "STEP_3_SIGNAL_CHAIN_SWAP",
+            "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP",
+            CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER,
+            (CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN,),
+            ("LOUDSPEAKER_VS_SIGNAL_CHAIN",),
+        ),
+        _ObservationRule(
+            "SIGNAL_SWAP_ANOMALY_REMAINS_WITH_LOUDSPEAKER_OR_ROOM_SIDE_ROOM",
+            "STEP_3_SIGNAL_CHAIN_SWAP",
+            "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP",
+            CausalTrajectoryCode.ANOMALY_REMAINS_WITH_ROOM_SIDE,
+            (CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN,),
+            ("SIGNAL_CHAIN_VS_ROOM_SIDE",),
         ),
         _ObservationRule(
             "SIGNAL_SWAP_ANOMALY_REMAINS_WITH_ROOM_SIDE",
@@ -127,6 +146,23 @@ class CausalDiscriminationService:
             raise ValueError(f"Unsupported causal protocol: {protocol_code}")
         if len({item.step_index for item in steps}) != len(steps):
             raise ValueError("Causal protocol step indices must be unique.")
+
+        decisions_by_code = {}
+        for descriptor in descriptors:
+            for decision in getattr(
+                descriptor, "causal_discrimination_decisions", ()
+            ):
+                if decision.protocol_code != protocol_code:
+                    raise ValueError(
+                        "Causal discrimination decision protocol must match steps."
+                    )
+                if decision.discrimination_code not in self.INITIAL_DISCRIMINATIONS:
+                    raise ValueError(
+                        "Unsupported causal discrimination decision code: "
+                        f"{decision.discrimination_code}"
+                    )
+                decisions_by_code[decision.discrimination_code] = decision
+        decisions = tuple(decisions_by_code.values())
 
         initial = self._initial_discriminations(experiment_comparison_analysis)
         supporting = {item: [] for item in CausalTrajectoryCode}
@@ -185,6 +221,7 @@ class CausalDiscriminationService:
                     "ANOMALY_MOVED_WITH_SWAPPED_SIGNAL_CHAIN",
                     "ANOMALY_REMAINED_WITH_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP",
                     "ANOMALY_REMAINED_WITH_LOUDSPEAKER_AFTER_SIGNAL_CHAIN_SWAP",
+                    "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP",
                 },
             ),
         )
@@ -194,35 +231,48 @@ class CausalDiscriminationService:
                 new_ambiguities.append("CONTRADICTORY_OBSERVATIONS")
                 applied_rules.append("KEEP_CONTRADICTORY_DISCRIMINATION_OPEN")
 
-        pairwise = set(resolved)
-        closure_rules = (
-            (
-                {"LOUDSPEAKER_VS_ROOM_SIDE", "SIGNAL_CHAIN_VS_ROOM_SIDE"},
-                "LOUDSPEAKER_VS_SIGNAL_CHAIN",
-            ),
-            (
-                {"LOUDSPEAKER_VS_ROOM_SIDE", "LOUDSPEAKER_VS_SIGNAL_CHAIN"},
-                "SIGNAL_CHAIN_VS_ROOM_SIDE",
-            ),
-            (
-                {"SIGNAL_CHAIN_VS_ROOM_SIDE", "LOUDSPEAKER_VS_SIGNAL_CHAIN"},
-                "LOUDSPEAKER_VS_ROOM_SIDE",
-            ),
+        conflicted_trajectories = {
+            item for item in CausalTrajectoryCode
+            if item is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
+            and supporting[item] and counters[item]
+        }
+        contradictory = bool(conflicted_trajectories)
+        excluded_trajectories = {
+            item for item in CausalTrajectoryCode
+            if item is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
+            and counters[item] and not supporting[item]
+        }
+        possible_trajectories = {
+            item for item in CausalTrajectoryCode
+            if item is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
+            and item not in excluded_trajectories
+        }
+        discrimination_trajectories = {
+            "LOUDSPEAKER_VS_ROOM_SIDE": {
+                CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER,
+                CausalTrajectoryCode.ANOMALY_REMAINS_WITH_ROOM_SIDE,
+            },
+            "LOUDSPEAKER_VS_SIGNAL_CHAIN": {
+                CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER,
+                CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN,
+            },
+            "SIGNAL_CHAIN_VS_ROOM_SIDE": {
+                CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN,
+                CausalTrajectoryCode.ANOMALY_REMAINS_WITH_ROOM_SIDE,
+            },
+        }
+        remaining = tuple(
+            code for code in initial
+            if discrimination_trajectories[code].issubset(possible_trajectories)
         )
-        for required, inferred in closure_rules:
-            if required.issubset(pairwise) and inferred not in pairwise:
-                resolved.append(inferred)
-                pairwise.add(inferred)
-                applied_rules.append("COMPLETE_PAIRWISE_CAUSAL_DISCRIMINATION")
-
-        resolved = tuple(code for code in initial if code in set(resolved))
-        remaining = tuple(code for code in initial if code not in resolved)
+        resolved = tuple(code for code in initial if code not in remaining)
         new_ambiguities = tuple(dict.fromkeys(new_ambiguities))
-        contradictory = any(
+        if any(
             supporting[item] and counters[item]
             for item in CausalTrajectoryCode
             if item is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
-        )
+        ):
+            contradictory = True
         if contradictory:
             new_ambiguities = tuple(dict.fromkeys((
                 *new_ambiguities,
@@ -260,16 +310,47 @@ class CausalDiscriminationService:
             for trajectory in CausalTrajectoryCode
         )
         completed_codes = {item.step_code for item in steps}
-        remaining_steps = tuple(
-            code for code in self.STEP_CODES if code not in completed_codes
+        deferred_discriminations = {
+            item.discrimination_code
+            for item in decisions
+            if item.status is CausalDiscriminationDecisionStatus.DEFERRED
+            and item.discrimination_code in remaining
+        }
+        step_discriminations = {
+            "STEP_2_SPEAKER_SWAP": {"LOUDSPEAKER_VS_ROOM_SIDE"},
+            "STEP_3_SIGNAL_CHAIN_SWAP": {
+                "SIGNAL_CHAIN_VS_ROOM_SIDE",
+                "LOUDSPEAKER_VS_SIGNAL_CHAIN",
+            },
+        }
+        deferred_steps = tuple(
+            code for code, addressed in step_discriminations.items()
+            if code not in completed_codes
+            and bool(set(remaining) & addressed)
+            and (set(remaining) & addressed).issubset(deferred_discriminations)
         )
-        recommendation = self._next_step(remaining, completed_codes)
+        remaining_steps = tuple(
+            code for code in self.STEP_CODES
+            if code not in completed_codes and code not in deferred_steps
+        )
+        recommendation = self._next_step(
+            remaining, completed_codes, deferred_discriminations
+        )
         status = (
             CausalProtocolStatus.CONTRADICTORY
             if contradictory
+            else CausalProtocolStatus.DEFERRED
+            if remaining and set(remaining).issubset(deferred_discriminations)
             else CausalProtocolStatus.ACTIVE
             if valid_discriminating_steps
             else CausalProtocolStatus.INCOMPLETE
+        )
+        outcome = (
+            CausalDiscriminationOutcome.CONTRADICTORY
+            if contradictory
+            else CausalDiscriminationOutcome.INCONCLUSIVE
+            if remaining or new_ambiguities
+            else CausalDiscriminationOutcome.DISCRIMINATED
         )
         applied_rules = tuple(dict.fromkeys(applied_rules))
         trace = CausalDiscriminationTrace(
@@ -290,17 +371,24 @@ class CausalDiscriminationService:
             trajectory_codes=tuple(item.trajectory_code.value for item in assessments),
             resolved_discrimination_codes=resolved,
             remaining_discrimination_codes=remaining,
+            decision_codes=tuple(
+                f"{item.discrimination_code}:{item.status.value}:{item.reason.value}"
+                for item in decisions
+            ),
         )
         return CausalDiscriminationAnalysis(
             protocol_code=protocol_code,
             status=status,
+            outcome=outcome,
             completed_steps=steps,
             remaining_step_codes=remaining_steps,
+            deferred_step_codes=deferred_steps,
             trajectory_assessments=assessments,
             resolved_discrimination_codes=resolved,
             remaining_discrimination_codes=remaining,
             new_ambiguity_codes=new_ambiguities,
             lost_ambiguity_codes=resolved,
+            discrimination_decisions=decisions,
             recommended_next_protocol=recommendation,
             applied_rule_codes=applied_rules,
             trace=trace,
@@ -332,17 +420,22 @@ class CausalDiscriminationService:
         return tuple(code for code in cls.INITIAL_DISCRIMINATIONS if code in codes)
 
     @staticmethod
-    def _next_step(remaining, completed_codes):
+    def _next_step(remaining, completed_codes, deferred_discriminations=()):
         if (
             "LOUDSPEAKER_VS_ROOM_SIDE" in remaining
+            and "LOUDSPEAKER_VS_ROOM_SIDE" not in deferred_discriminations
             and "STEP_2_SPEAKER_SWAP" not in completed_codes
         ):
             return "STEP_2_SPEAKER_SWAP"
         if (
-            set(remaining) & {
-                "SIGNAL_CHAIN_VS_ROOM_SIDE",
-                "LOUDSPEAKER_VS_SIGNAL_CHAIN",
-            }
+            (
+                set(remaining)
+                & {
+                    "SIGNAL_CHAIN_VS_ROOM_SIDE",
+                    "LOUDSPEAKER_VS_SIGNAL_CHAIN",
+                }
+            )
+            - set(deferred_discriminations)
             and "STEP_3_SIGNAL_CHAIN_SWAP" not in completed_codes
         ):
             return "STEP_3_SIGNAL_CHAIN_SWAP"

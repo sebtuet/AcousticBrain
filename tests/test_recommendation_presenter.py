@@ -34,6 +34,8 @@ def test_projects_every_structured_field_without_recalculation():
     assert presented.confidence == 12.5
     assert presented.source_analyses == source.source_analyses
     assert presented.parameters == source.parameters
+    assert presented.status is source.status
+    assert presented.status_reason is None
 
 
 def test_preserves_order_and_duplicates_from_the_engine_result():

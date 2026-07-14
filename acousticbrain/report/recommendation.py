@@ -1,6 +1,10 @@
 from dataclasses import dataclass, field
 
-from acousticbrain.models import RecommendationParameter, RecommendationPriority
+from acousticbrain.models import (
+    RecommendationParameter,
+    RecommendationPriority,
+    RecommendationStatus,
+)
 
 
 @dataclass(frozen=True)
@@ -16,6 +20,8 @@ class PresentedRecommendation:
     parameters: dict[str, RecommendationParameter] = field(default_factory=dict)
     hypothesis_codes: tuple[str, ...] = ()
     verification_action: bool = False
+    status: RecommendationStatus = RecommendationStatus.ACTIVE
+    status_reason: str | None = None
 
 
 class RecommendationPresenter:
@@ -37,6 +43,8 @@ class RecommendationPresenter:
                 parameters=dict(recommendation.parameters),
                 hypothesis_codes=recommendation.hypothesis_codes,
                 verification_action=recommendation.verification_action,
+                status=recommendation.status,
+                status_reason=recommendation.status_reason,
             )
             for recommendation in analysis.recommendations
         ]

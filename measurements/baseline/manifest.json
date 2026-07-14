@@ -1,4 +1,16 @@
 {
+  "causal_protocol_step": {
+    "changed_variable_codes": [],
+    "controlled_variable_codes": [
+      "ROOM_CONFIGURATION",
+      "MEASUREMENT_LEVEL"
+    ],
+    "observation_codes": [],
+    "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+    "step_code": "STEP_0_BASELINE",
+    "step_index": 0,
+    "unknown_variable_codes": []
+  },
   "channel_assignments": {
     "impulse/L retour sans eq Jul 7.wav": "LEFT",
     "impulse/L+R retour sans eq Jul 7.wav": "STEREO",

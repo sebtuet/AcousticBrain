@@ -12,6 +12,7 @@ from acousticbrain.models import (
     ExperimentDifficulty,
     ExperimentProtocol,
     ExperimentReversibility,
+    ExperimentSelectionReason,
     HypothesisCode,
     HypothesisStatus,
     MissingReasoningFact,
@@ -157,6 +158,22 @@ def test_planner_classifies_the_four_initial_experiments():
     assert result.plan.recommended_candidate.hypothesis_code == (
         HypothesisCode.ASYMMETRIC_SPEAKER_ROOM_INTERACTION.value
     )
+
+
+def test_planner_excludes_action_explicitly_deferred_by_user():
+    result = ExperimentPlanner().plan(
+        AcousticReasoningEngine().analyze(),
+        deferred_action_codes=("VERIFY_SPEAKER_ROOM_ASYMMETRY",),
+    )
+
+    asymmetry = candidate(
+        result, HypothesisCode.ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+    )
+    assert asymmetry.eligible is False
+    assert ExperimentSelectionReason.USER_DEFERRED in (
+        asymmetry.ineligibility_reasons
+    )
+    assert result.plan.recommended_candidate is not asymmetry
 
 
 def test_information_value_is_not_the_support_score():

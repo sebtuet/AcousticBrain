@@ -6,7 +6,22 @@ from math import isfinite
 class CausalProtocolStatus(Enum):
     INCOMPLETE = "INCOMPLETE"
     ACTIVE = "ACTIVE"
+    DEFERRED = "DEFERRED"
     CONTRADICTORY = "CONTRADICTORY"
+
+
+class CausalDiscriminationOutcome(Enum):
+    INCONCLUSIVE = "INCONCLUSIVE"
+    DISCRIMINATED = "DISCRIMINATED"
+    CONTRADICTORY = "CONTRADICTORY"
+
+
+class CausalDiscriminationDecisionStatus(Enum):
+    DEFERRED = "DEFERRED"
+
+
+class CausalDiscriminationDecisionReason(Enum):
+    USER_DECISION = "USER_DECISION"
 
 
 class CausalTrajectoryCode(Enum):
@@ -67,6 +82,28 @@ class CausalProtocolStep:
 
 
 @dataclass(frozen=True)
+class CausalDiscriminationDecision:
+    protocol_code: str
+    discrimination_code: str
+    status: CausalDiscriminationDecisionStatus
+    reason: CausalDiscriminationDecisionReason
+    experiment_id: str
+
+    def __post_init__(self):
+        for value in (
+            self.protocol_code,
+            self.discrimination_code,
+            self.experiment_id,
+        ):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError("Causal discrimination decision identifiers are required.")
+        if not isinstance(self.status, CausalDiscriminationDecisionStatus):
+            raise ValueError("Causal discrimination decision status is invalid.")
+        if not isinstance(self.reason, CausalDiscriminationDecisionReason):
+            raise ValueError("Causal discrimination decision reason is invalid.")
+
+
+@dataclass(frozen=True)
 class CausalTrajectoryAssessment:
     trajectory_code: CausalTrajectoryCode
     status: CausalTrajectoryStatus
@@ -109,19 +146,23 @@ class CausalDiscriminationTrace:
     trajectory_codes: tuple[str, ...]
     resolved_discrimination_codes: tuple[str, ...]
     remaining_discrimination_codes: tuple[str, ...]
+    decision_codes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
 class CausalDiscriminationAnalysis:
     protocol_code: str
     status: CausalProtocolStatus
+    outcome: CausalDiscriminationOutcome
     completed_steps: tuple[CausalProtocolStep, ...]
     remaining_step_codes: tuple[str, ...]
+    deferred_step_codes: tuple[str, ...]
     trajectory_assessments: tuple[CausalTrajectoryAssessment, ...]
     resolved_discrimination_codes: tuple[str, ...]
     remaining_discrimination_codes: tuple[str, ...]
     new_ambiguity_codes: tuple[str, ...]
     lost_ambiguity_codes: tuple[str, ...]
+    discrimination_decisions: tuple[CausalDiscriminationDecision, ...]
     recommended_next_protocol: str | None
     applied_rule_codes: tuple[str, ...]
     trace: CausalDiscriminationTrace
@@ -131,11 +172,13 @@ class CausalDiscriminationAnalysis:
         collections = (
             self.completed_steps,
             self.remaining_step_codes,
+            self.deferred_step_codes,
             self.trajectory_assessments,
             self.resolved_discrimination_codes,
             self.remaining_discrimination_codes,
             self.new_ambiguity_codes,
             self.lost_ambiguity_codes,
+            self.discrimination_decisions,
             self.applied_rule_codes,
         )
         if any(not isinstance(value, tuple) for value in collections):

@@ -4,6 +4,10 @@ import pytest
 
 from acousticbrain.application import CausalDiscriminationService
 from acousticbrain.models import (
+    CausalDiscriminationDecision,
+    CausalDiscriminationDecisionReason,
+    CausalDiscriminationDecisionStatus,
+    CausalDiscriminationOutcome,
     CausalProtocolStatus,
     CausalProtocolStep,
     CausalTrajectoryCode,
@@ -92,8 +96,11 @@ def signal_swap(*observations):
     )
 
 
-def descriptor(value):
-    return SimpleNamespace(causal_protocol_step=value)
+def descriptor(value, decisions=()):
+    return SimpleNamespace(
+        causal_protocol_step=value,
+        causal_discrimination_decisions=decisions,
+    )
 
 
 def comparison():
@@ -110,6 +117,16 @@ def analyze(*steps):
         tuple(descriptor(item) for item in steps),
         comparison(),
         detailed_traceability=True,
+    )
+
+
+def deferred(discrimination_code="LOUDSPEAKER_VS_ROOM_SIDE"):
+    return CausalDiscriminationDecision(
+        protocol_code=PROTOCOL,
+        discrimination_code=discrimination_code,
+        status=CausalDiscriminationDecisionStatus.DEFERRED,
+        reason=CausalDiscriminationDecisionReason.USER_DECISION,
+        experiment_id="exp-002",
     )
 
 
@@ -174,6 +191,7 @@ def test_speaker_swap_following_loudspeaker_reduces_only_observed_ambiguity():
     assert signal.status is CausalTrajectoryStatus.COMPATIBLE
     assert result.resolved_discrimination_codes == (
         "LOUDSPEAKER_VS_ROOM_SIDE",
+        "SIGNAL_CHAIN_VS_ROOM_SIDE",
     )
     assert result.recommended_next_protocol == "STEP_3_SIGNAL_CHAIN_SWAP"
 
@@ -241,6 +259,7 @@ def test_two_controlled_swaps_can_resolve_all_declared_discriminations():
         "SIGNAL_CHAIN_VS_ROOM_SIDE",
     )
     assert result.remaining_discrimination_codes == ()
+    assert result.outcome is CausalDiscriminationOutcome.DISCRIMINATED
     assert result.recommended_next_protocol is None
     assert trajectory(
         result, CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
@@ -261,6 +280,7 @@ def test_contradictory_observations_make_protocol_structurally_contradictory():
     )
 
     assert result.status is CausalProtocolStatus.CONTRADICTORY
+    assert result.outcome is CausalDiscriminationOutcome.CONTRADICTORY
     assert "LOUDSPEAKER_VS_ROOM_SIDE" in result.remaining_discrimination_codes
     assert "CONTRADICTORY_OBSERVATIONS" in result.new_ambiguity_codes
     assert trajectory(
@@ -294,6 +314,7 @@ def test_non_reproducible_observation_creates_new_ambiguity():
     )
 
     assert "MEASUREMENT_VARIABILITY_VS_CAUSAL_PATTERN" in result.new_ambiguity_codes
+    assert result.outcome is CausalDiscriminationOutcome.INCONCLUSIVE
     assert trajectory(
         result, CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
     ).support_score == 100.0
@@ -316,6 +337,64 @@ def test_trace_preserves_steps_observations_rules_and_reductions():
     )
     assert result.trace.resolved_discrimination_codes == (
         "LOUDSPEAKER_VS_ROOM_SIDE",
+        "SIGNAL_CHAIN_VS_ROOM_SIDE",
+    )
+
+
+def test_signal_swap_can_exclude_chain_without_separating_speaker_from_room():
+    result = analyze(
+        baseline(),
+        remeasurement(),
+        signal_swap(
+            "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP"
+        ),
+    )
+
+    assert trajectory(
+        result, CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN
+    ).status is CausalTrajectoryStatus.CONTRADICTED
+    assert trajectory(
+        result, CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER
+    ).status is CausalTrajectoryStatus.COMPATIBLE
+    assert trajectory(
+        result, CausalTrajectoryCode.ANOMALY_REMAINS_WITH_ROOM_SIDE
+    ).status is CausalTrajectoryStatus.COMPATIBLE
+    assert result.remaining_discrimination_codes == (
+        "LOUDSPEAKER_VS_ROOM_SIDE",
+    )
+    assert result.recommended_next_protocol == "STEP_2_SPEAKER_SWAP"
+
+
+def test_user_can_defer_remaining_discrimination_without_resolving_it():
+    result = CausalDiscriminationService().analyze(
+        (
+            descriptor(baseline()),
+            descriptor(remeasurement()),
+            descriptor(
+                signal_swap(
+                    "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP"
+                ),
+                (deferred(),),
+            ),
+        ),
+        comparison(),
+        detailed_traceability=True,
+    )
+
+    assert result.remaining_discrimination_codes == (
+        "LOUDSPEAKER_VS_ROOM_SIDE",
+    )
+    assert result.resolved_discrimination_codes == (
+        "LOUDSPEAKER_VS_SIGNAL_CHAIN",
+        "SIGNAL_CHAIN_VS_ROOM_SIDE",
+    )
+    assert result.deferred_step_codes == ("STEP_2_SPEAKER_SWAP",)
+    assert result.remaining_step_codes == ()
+    assert result.recommended_next_protocol is None
+    assert result.status is CausalProtocolStatus.DEFERRED
+    assert result.outcome is CausalDiscriminationOutcome.INCONCLUSIVE
+    assert result.trace.decision_codes == (
+        "LOUDSPEAKER_VS_ROOM_SIDE:DEFERRED:USER_DECISION",
     )
 
 

@@ -1,0 +1,98 @@
+{
+  "causal_discrimination_decisions": [
+    {
+      "discrimination_code": "LOUDSPEAKER_VS_ROOM_SIDE",
+      "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+      "reason": "USER_DECISION",
+      "status": "DEFERRED"
+    }
+  ],
+  "causal_protocol_step": {
+    "changed_variable_codes": [
+      "SIGNAL_CHAIN_ASSIGNMENT"
+    ],
+    "controlled_variable_codes": [
+      "ROOM_SIDE",
+      "LOUDSPEAKER_ASSIGNMENT",
+      "MICROPHONE_POSITION",
+      "MEASUREMENT_LEVEL",
+      "ROOM_CONFIGURATION"
+    ],
+    "observation_codes": [
+      "ANOMALY_REMAINED_WITH_LOUDSPEAKER_OR_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP"
+    ],
+    "protocol_code": "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+    "step_code": "STEP_3_SIGNAL_CHAIN_SWAP",
+    "step_index": 3,
+    "unknown_variable_codes": []
+  },
+  "channel_assignments": {
+    "impulse/L exp002 Jul 14.wav": "LEFT",
+    "impulse/L+R exp002 Jul 14.wav": "STEREO",
+    "impulse/R exp002 Jul 14.wav": "RIGHT",
+    "measurements/L exp002 Jul 14.txt": "LEFT",
+    "measurements/L+R exp002 Jul 14.txt": "STEREO",
+    "measurements/R exp002 Jul 14.txt": "RIGHT"
+  },
+  "comparison": {
+    "declared_change_codes": [
+      "CONTROLLED_SIGNAL_CHAIN_SWAP"
+    ],
+    "parent_experiment_ids": [
+      "exp-001"
+    ],
+    "source_hypothesis_code": "ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+    "source_protocol_id": "protocol.verify_speaker_room_asymmetry.v1"
+  },
+  "content_hash": "f4a171773c40ae7e184dd2421cb7c0c471d9291a15cae374eaeb3e757e461f17",
+  "experiment_id": "exp-002",
+  "experiment_type": "EXPERIMENT",
+  "files": [
+    {
+      "channel": "LEFT",
+      "path": "impulse/L exp002 Jul 14.wav",
+      "sha256": "7b7d07a03c0dcbdd25416adaf2a3d7da6a8f96272ba8d53fbb66203f01bff122",
+      "type": "WAV"
+    },
+    {
+      "channel": "STEREO",
+      "path": "impulse/L+R exp002 Jul 14.wav",
+      "sha256": "c2fe201d3550414fd02982cae53933fb124d1dac917719ea927a37c225ab9e58",
+      "type": "WAV"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "impulse/R exp002 Jul 14.wav",
+      "sha256": "01a72dc5fbddcd119da5b414e144ba70fdd689d26c21f70a1588af7c311998af",
+      "type": "WAV"
+    },
+    {
+      "channel": "LEFT",
+      "path": "measurements/L exp002 Jul 14.txt",
+      "sha256": "e7043213dc6198645e4b9505f287ef3b6e0e65e06d2a92a44c6353a751dc6b1b",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "STEREO",
+      "path": "measurements/L+R exp002 Jul 14.txt",
+      "sha256": "99ab41545657fbf1faf63e58da5f6f46172c8f456fdc48e61619f8d59ae750dd",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": "RIGHT",
+      "path": "measurements/R exp002 Jul 14.txt",
+      "sha256": "c7386c4f8444cc6d4caba94f474bb0e3089c29a68aaeb48b69ddf3e150dcf02c",
+      "type": "TXT_MEASUREMENT"
+    },
+    {
+      "channel": null,
+      "path": "rew/exp-002.mdat",
+      "sha256": "f79c799bcc48c4e3f2c6797f4f62c34760fe76ae4a32faa31fd61f27647fb173",
+      "type": "MDAT"
+    }
+  ],
+  "imported_at": "2026-07-14T07:46:54.199184+00:00",
+  "schema_version": 1,
+  "state": "READY",
+  "timestamp": "2026-07-14T09:43:21"
+}
