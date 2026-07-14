@@ -138,9 +138,9 @@ def test_v3_round_trip_preserves_all_enriched_models_and_none_values():
 
     assert result.is_success
     assert result.description == source
-    assert result.source_schema_version == 3
+    assert result.source_schema_version == 4
     assert not result.requires_migration
-    assert raw["schema_version"] == 3
+    assert raw["schema_version"] == 4
     assert raw["room_description"]["covering_zones"][0]["width_m"] is None
     assert raw["room_description"]["furniture"][0]["x_m"] is None
     assert raw["room_description"]["acoustic_treatments"][0]["surface"] is None
@@ -164,7 +164,7 @@ def test_v1_is_read_completely_and_migration_is_never_silent():
     assert result.description.acoustic_treatments == ()
 
     rewritten = json.loads(codec.dumps(result.description))
-    assert rewritten["schema_version"] == 3
+    assert rewritten["schema_version"] == 4
     assert rewritten["room_description"]["surface_materials"] == []
     assert rewritten["room_description"]["speakers"][0]["orientation"] is None
 
@@ -246,14 +246,14 @@ def test_v3_relational_errors_withhold_partial_data_and_keep_provenance():
     result = RoomDescriptionJsonCodec().from_dict(payload)
 
     assert result.description is None
-    assert result.source_schema_version == 3
+    assert result.source_schema_version == 4
     assert result.errors[0].code is RoomDescriptionPersistenceErrorCode.INVALID_GEOMETRY
     assert result.errors[0].validation_code is RoomDescriptionValidationCode.COVERING_ZONE_OVERLAP
     assert result.errors[0].entity_ids == ("RUG", "WALL_FABRIC")
 
 
 def test_v2_payload_contains_no_invented_acoustic_coefficients():
-    payload = RoomDescriptionJsonCodec().dumps(enriched_description())
+    payload = RoomDescriptionJsonCodec().to_dict(enriched_description())
 
-    assert "absorption_coefficient" not in payload
-    assert "diffusion_coefficient" not in payload
+    assert payload["room_description"]["materials"] == []
+    assert payload["room_description"]["material_assignments"] == []

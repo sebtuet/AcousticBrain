@@ -230,8 +230,56 @@ class RoomDescriptionValidator:
         )
 
         errors.extend(self._planar_errors(description))
+        errors.extend(self._material_assignment_errors(description))
 
         return RoomDescriptionValidationResult(errors=tuple(errors))
+
+    @classmethod
+    def _material_assignment_errors(cls, description):
+        errors = []
+        material_ids = {item.material_id for item in description.materials}
+        surface_ids = {item.surface_id for item in description.planar_surfaces}
+        if not surface_ids:
+            surface_ids = {
+                "front_wall", "rear_wall", "left_wall", "right_wall",
+                "floor", "ceiling",
+            }
+        region_ids = {item.region_id for item in description.planar_regions}
+        targets = {}
+        for assignment in sorted(
+            description.material_assignments, key=lambda item: item.assignment_id
+        ):
+            if assignment.material_id not in material_ids:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.MATERIAL_ASSIGNMENT_UNKNOWN_MATERIAL,
+                    RoomDescriptionEntityType.MATERIAL_ASSIGNMENT,
+                    (assignment.assignment_id,),
+                    ("material_id",),
+                ))
+            target_id = assignment.target_id
+            known = (
+                target_id in surface_ids
+                if assignment.surface_id is not None else target_id in region_ids
+            )
+            if not known:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.MATERIAL_ASSIGNMENT_UNKNOWN_TARGET,
+                    RoomDescriptionEntityType.MATERIAL_ASSIGNMENT,
+                    (assignment.assignment_id,),
+                    ("surface_id" if assignment.surface_id is not None else "region_id",),
+                ))
+            target_key = (assignment.target_kind, target_id)
+            previous = targets.get(target_key)
+            if previous is not None:
+                errors.append(cls._error(
+                    RoomDescriptionValidationCode.MATERIAL_ASSIGNMENT_DUPLICATE_TARGET,
+                    RoomDescriptionEntityType.MATERIAL_ASSIGNMENT,
+                    tuple(sorted((previous, assignment.assignment_id))),
+                    ("surface_id" if assignment.surface_id is not None else "region_id",),
+                ))
+            else:
+                targets[target_key] = assignment.assignment_id
+        return errors
 
     @classmethod
     def _planar_errors(cls, description):

@@ -27,6 +27,11 @@ from acousticbrain.models import (
     SpeakerOrientation,
     SurfaceCoveringZone,
     SurfaceMaterialDescription,
+    SurfaceMaterialAssignment,
+    SurfaceMaterialCoefficient,
+    SurfaceMaterialPrecision,
+    SurfaceMaterialQuality,
+    SurfaceMaterialSource,
     SurfaceMaterialType,
 )
 from acousticbrain.validation import RoomDescriptionValidator
@@ -41,8 +46,8 @@ class _DecodeFailure(Exception):
 class RoomDescriptionJsonCodec:
     """Sérialise le contrat RoomDescription dans une enveloppe versionnée."""
 
-    SCHEMA_VERSION = 3
-    SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3)
+    SCHEMA_VERSION = 4
+    SUPPORTED_SCHEMA_VERSIONS = (1, 2, 3, 4)
 
     def __init__(self, validator=None):
         self.validator = validator or RoomDescriptionValidator()
@@ -213,8 +218,54 @@ class RoomDescriptionJsonCodec:
                         key=lambda item: item.region_id,
                     )
                 ],
+                "materials": [
+                    {
+                        "material_id": item.material_id,
+                        "display_name": item.display_name,
+                        "absorption_coefficients": self._coefficient_dicts(
+                            item.absorption_coefficients
+                        ),
+                        "diffusion_coefficients": self._coefficient_dicts(
+                            item.diffusion_coefficients
+                        ),
+                        "transmission_coefficients": (
+                            self._coefficient_dicts(item.transmission_coefficients)
+                            if item.transmission_coefficients is not None else None
+                        ),
+                        "source": item.source.value,
+                        "confidence": item.confidence,
+                        "quality": item.quality.value,
+                        "precision": item.precision.value,
+                        "provenance_codes": list(item.provenance_codes),
+                    }
+                    for item in sorted(
+                        description.materials, key=lambda item: item.material_id
+                    )
+                ],
+                "material_assignments": [
+                    {
+                        "assignment_id": item.assignment_id,
+                        "material_id": item.material_id,
+                        "surface_id": item.surface_id,
+                        "region_id": item.region_id,
+                    }
+                    for item in sorted(
+                        description.material_assignments,
+                        key=lambda item: item.assignment_id,
+                    )
+                ],
             },
         }
+
+    @staticmethod
+    def _coefficient_dicts(coefficients):
+        return [
+            {
+                "center_frequency_hz": item.center_frequency_hz,
+                "coefficient": item.coefficient,
+            }
+            for item in coefficients
+        ]
 
     @staticmethod
     def _vertex_dict(vertex):
@@ -377,6 +428,109 @@ class RoomDescriptionJsonCodec:
                     if version >= 3 else ()
                 )
             ),
+            materials=tuple(
+                self._frequency_material(item, index)
+                for index, item in enumerate(
+                    self._optional_sequence(raw, "materials", base)
+                    if version >= 4 else ()
+                )
+            ),
+            material_assignments=tuple(
+                self._material_assignment(item, index)
+                for index, item in enumerate(
+                    self._optional_sequence(raw, "material_assignments", base)
+                    if version >= 4 else ()
+                )
+            ),
+        )
+
+    def _frequency_material(self, value, index):
+        path = ("room_description", "materials", index)
+        raw = self._mapping(value, path)
+        transmission = raw.get("transmission_coefficients")
+        return SurfaceMaterialDescription(
+            material_id=self._string(
+                self._required(raw, "material_id", path), (*path, "material_id")
+            ),
+            display_name=self._string(
+                self._required(raw, "display_name", path), (*path, "display_name")
+            ),
+            absorption_coefficients=self._coefficients(
+                raw, "absorption_coefficients", path
+            ),
+            diffusion_coefficients=self._coefficients(
+                raw, "diffusion_coefficients", path
+            ),
+            transmission_coefficients=(
+                None if transmission is None
+                else self._coefficient_sequence(
+                    transmission, (*path, "transmission_coefficients")
+                )
+            ),
+            source=self._enum(
+                SurfaceMaterialSource,
+                self._required(raw, "source", path),
+                (*path, "source"),
+            ),
+            confidence=self._bounded_number(
+                self._required(raw, "confidence", path),
+                (*path, "confidence"), 0.0, 100.0,
+            ),
+            quality=self._enum(
+                SurfaceMaterialQuality,
+                self._required(raw, "quality", path),
+                (*path, "quality"),
+            ),
+            precision=self._enum(
+                SurfaceMaterialPrecision,
+                self._required(raw, "precision", path),
+                (*path, "precision"),
+            ),
+            provenance_codes=tuple(
+                self._string(item, (*path, "provenance_codes", item_index))
+                for item_index, item in enumerate(self._sequence(
+                    self._required(raw, "provenance_codes", path),
+                    (*path, "provenance_codes"),
+                ))
+            ),
+        )
+
+    def _coefficients(self, raw, field, path):
+        return self._coefficient_sequence(
+            self._required(raw, field, path), (*path, field)
+        )
+
+    def _coefficient_sequence(self, value, path):
+        return tuple(
+            self._coefficient(item, (*path, index))
+            for index, item in enumerate(self._sequence(value, path))
+        )
+
+    def _coefficient(self, value, path):
+        raw = self._mapping(value, path)
+        return SurfaceMaterialCoefficient(
+            center_frequency_hz=self._positive_number(
+                self._required(raw, "center_frequency_hz", path),
+                (*path, "center_frequency_hz"),
+            ),
+            coefficient=self._bounded_number(
+                self._required(raw, "coefficient", path),
+                (*path, "coefficient"), 0.0, 1.0,
+            ),
+        )
+
+    def _material_assignment(self, value, index):
+        path = ("room_description", "material_assignments", index)
+        raw = self._mapping(value, path)
+        return SurfaceMaterialAssignment(
+            assignment_id=self._string(
+                self._required(raw, "assignment_id", path), (*path, "assignment_id")
+            ),
+            material_id=self._string(
+                self._required(raw, "material_id", path), (*path, "material_id")
+            ),
+            surface_id=self._nullable_string(raw.get("surface_id"), (*path, "surface_id")),
+            region_id=self._nullable_string(raw.get("region_id"), (*path, "region_id")),
         )
 
     def _planar_surface(self, value, index):
@@ -730,6 +884,15 @@ class RoomDescriptionJsonCodec:
             raise _DecodeFailure(
                 RoomDescriptionPersistenceErrorCode.INVALID_VALUE,
                 path,
+            )
+        return number
+
+    @classmethod
+    def _bounded_number(cls, value, path, minimum, maximum):
+        number = cls._number(value, path)
+        if not minimum <= number <= maximum:
+            raise _DecodeFailure(
+                RoomDescriptionPersistenceErrorCode.INVALID_VALUE, path
             )
         return number
 
