@@ -58,6 +58,9 @@ def test_traceability_stage_stores_result_from_explicit_knowledge_layers():
             "controlled_reflection_experiment_comparisons": (
                 context.controlled_reflection_experiment_comparisons
             ),
+            "controlled_reflection_hypothesis_status_updates": (
+                context.controlled_reflection_hypothesis_status_updates
+            ),
         }
 
 
