@@ -26,6 +26,10 @@ from .reflection_experiment_comparison_presenter import (
     PresentedControlledReflectionExperimentComparison,
     PresentedObservedReflectionDifference,
 )
+from .reflection_hypothesis_status_presenter import (
+    ControlledReflectionHypothesisStatusPresenter,
+    PresentedControlledReflectionHypothesisStatusUpdate,
+)
 from .guided_room_description_presenter import (
     PresentedRoomDescriptionChangeProposal,
     RoomDescriptionChangeProposalPresenter,

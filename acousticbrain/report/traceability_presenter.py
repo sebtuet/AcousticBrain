@@ -26,6 +26,7 @@ class PresentedExplanationLink:
     verification_proposal_codes: tuple[str, ...] = ()
     experiment_declaration_codes: tuple[str, ...] = ()
     experiment_comparison_codes: tuple[str, ...] = ()
+    hypothesis_status_update_codes: tuple[str, ...] = ()
     ranking_codes: tuple[str, ...] = ()
     recommended_candidate_codes: tuple[str, ...] = ()
     iteration_codes: tuple[str, ...] = ()
@@ -83,6 +84,9 @@ class TraceabilityPresenter:
                     ),
                     experiment_comparison_codes=(
                         link.experiment_comparison_codes
+                    ),
+                    hypothesis_status_update_codes=(
+                        link.hypothesis_status_update_codes
                     ),
                     ranking_codes=link.ranking_codes,
                     recommended_candidate_codes=(
