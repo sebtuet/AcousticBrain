@@ -14,6 +14,9 @@ from .reflection_experiment_declaration import (
 from .reflection_experiment_comparison import (
     ControlledReflectionExperimentComparisonService,
 )
+from .reflection_hypothesis_status_update import (
+    ControlledReflectionHypothesisStatusUpdateService,
+)
 from .experiment_campaign_synthesis import ExperimentCampaignSynthesisService
 from .acoustic_session import AcousticSession, ImportedExperiment
 from .automatic_experiment_comparison import (

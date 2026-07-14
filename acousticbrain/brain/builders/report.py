@@ -15,6 +15,7 @@ from acousticbrain.report import (
     ControlledReflectionVerificationPlanningPresenter,
     ControlledReflectionExperimentDeclarationPresenter,
     ControlledReflectionExperimentComparisonPresenter,
+    ControlledReflectionHypothesisStatusPresenter,
 )
 
 
@@ -55,6 +56,9 @@ class ReportBuilder:
         )
         report.controlled_reflection_experiment_comparisons = (
             ControlledReflectionExperimentComparisonPresenter().present(context)
+        )
+        report.controlled_reflection_hypothesis_status_updates = (
+            ControlledReflectionHypothesisStatusPresenter().present(context)
         )
 
         return report

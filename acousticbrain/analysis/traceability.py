@@ -85,6 +85,7 @@ class TraceabilityEngine:
         controlled_reflection_verification_planning=None,
         controlled_reflection_experiment_declarations=(),
         controlled_reflection_experiment_comparisons=(),
+        controlled_reflection_hypothesis_status_updates=(),
     ) -> TraceabilityAnalysis:
         domain_evidence = {
             domain.source_analysis: EvidenceReference(
@@ -165,6 +166,10 @@ class TraceabilityEngine:
             links.extend(self._reflection_experiment_comparison_graph(
                 controlled_reflection_experiment_comparisons
             ))
+        if controlled_reflection_hypothesis_status_updates:
+            links.extend(self._reflection_hypothesis_status_update_graph(
+                controlled_reflection_hypothesis_status_updates
+            ))
 
         if confidence is not None:
             confidence_evidence = EvidenceReference(
@@ -237,6 +242,11 @@ class TraceabilityEngine:
                     *(
                         ("ControlledReflectionExperimentComparison",)
                         if controlled_reflection_experiment_comparisons
+                        else ()
+                    ),
+                    *(
+                        ("ControlledReflectionHypothesisStatusUpdate",)
+                        if controlled_reflection_hypothesis_status_updates
                         else ()
                     ),
                 )
@@ -363,6 +373,27 @@ class TraceabilityEngine:
                 comparisons,
                 key=lambda item: item.comparison_id,
             )
+        ]
+
+    @staticmethod
+    def _reflection_hypothesis_status_update_graph(updates):
+        return [
+            ExplanationLink(
+                code=f"explanation.{update.update_id}",
+                fact_codes=update.measured_fact_codes,
+                evidence_codes=(),
+                candidate_codes=(update.target_id,),
+                verification_proposal_codes=(update.proposal_id,),
+                experiment_declaration_codes=(
+                    update.experiment_declaration_id,
+                ),
+                experiment_comparison_codes=(
+                    (update.comparison_id,)
+                    if update.comparison_id is not None else ()
+                ),
+                hypothesis_status_update_codes=(update.update_id,),
+            )
+            for update in sorted(updates, key=lambda item: item.update_id)
         ]
 
     @staticmethod

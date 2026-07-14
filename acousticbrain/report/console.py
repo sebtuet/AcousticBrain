@@ -323,6 +323,36 @@ class ConsoleReporter:
                 print(f"Recommendation impact: {comparison.recommendation_impact}")
                 print(f"Eligibility impact: {comparison.eligibility_impact}")
 
+        hypothesis_updates = (
+            report.controlled_reflection_hypothesis_status_updates
+        )
+        if hypothesis_updates:
+            print()
+            print("Controlled reflection hypothesis observation status")
+            for update in hypothesis_updates:
+                print()
+                print(f"Update: {update.update_id}")
+                print(f"Target: {update.target_kind} {update.target_id}")
+                print(f"Proposal: {update.proposal_id}")
+                print(f"Declaration: {update.experiment_declaration_id}")
+                print(f"Comparison: {update.comparison_id or 'none'}")
+                print(f"Observation status: {update.status}")
+                print(
+                    "Measured facts: "
+                    + (", ".join(update.measured_fact_codes) or "none")
+                )
+                print(
+                    "Comparison results: "
+                    + (", ".join(update.comparison_result_codes) or "none")
+                )
+                print("Transition rules: " + ", ".join(update.transition_rule_codes))
+                print("Status provenance: " + ", ".join(update.status_provenance_codes))
+                print("Justification: " + ", ".join(update.justification_codes))
+                print(f"Causality: {update.causality_status}")
+                print(f"Recommendation impact: {update.recommendation_impact}")
+                print(f"Ranking impact: {update.ranking_impact}")
+                print(f"Eligibility impact: {update.eligibility_impact}")
+
         discovery = report.experiments_discovered
         if discovery is not None:
             print()
