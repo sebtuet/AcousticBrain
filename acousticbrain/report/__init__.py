@@ -3,6 +3,11 @@ from .surface_material_presenter import (
     PresentedSurfaceMaterialAnalysis,
     SurfaceMaterialPresenter,
 )
+from .material_aware_reflection_candidate_presenter import (
+    MaterialAwareReflectionCandidatePresenter,
+    PresentedMaterialAwareReflectionCandidate,
+    PresentedMaterialAwareReflectionCandidateAnalysis,
+)
 from .guided_room_description_presenter import (
     PresentedRoomDescriptionChangeProposal,
     RoomDescriptionChangeProposalPresenter,

@@ -35,6 +35,9 @@ from .stages.direct_reverberant_correlation import (
 from .stages.bass_decay_correlation import BassDecayCorrelationStage
 from .stages.confidence import ConfidenceStage
 from .stages.etc_correlation import ETCCorrelationStage
+from .stages.material_aware_reflection_candidate import (
+    MaterialAwareReflectionCandidateStage,
+)
 from .stages.geometry_early_reflection import GeometryEarlyReflectionStage
 from .stages.geometry_sbir import GeometrySBIRStage
 from .stages.sbir_geometry_correlation import SBIRGeometryCorrelationStage
@@ -198,6 +201,10 @@ class BrainPipeline:
         )
 
         ETCCorrelationStage().run(
+            context,
+        )
+
+        MaterialAwareReflectionCandidateStage().run(
             context,
         )
 

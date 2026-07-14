@@ -16,6 +16,9 @@ from .experiment_comparison_presenter import PresentedExperimentComparison
 from .causal_discrimination_presenter import PresentedCausalDiscrimination
 from .experiment_campaign_presenter import PresentedExperimentCampaign
 from .surface_material_presenter import PresentedSurfaceMaterialAnalysis
+from .material_aware_reflection_candidate_presenter import (
+    PresentedMaterialAwareReflectionCandidateAnalysis,
+)
 
 
 @dataclass
@@ -50,6 +53,10 @@ class Report:
     causal_discrimination: PresentedCausalDiscrimination | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
+
+    material_aware_reflection_candidates: (
+        PresentedMaterialAwareReflectionCandidateAnalysis | None
+    ) = None
 
     def add(self, diagnostic):
 
