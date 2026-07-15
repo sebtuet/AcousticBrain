@@ -238,6 +238,11 @@ class ActionOrientedPositioningPresenter:
             "RIGHT_SPEAKER": "l’enceinte droite",
             "BOTH_SPEAKERS": "les deux enceintes",
         }[target_code]
+        movement_target = (
+            "des deux enceintes"
+            if target_code == "BOTH_SPEAKERS"
+            else f"de {target}"
+        )
         direction = {
             "FORWARD": "vers l’avant",
             "BACKWARD": "vers l’arrière",
@@ -247,7 +252,7 @@ class ActionOrientedPositioningPresenter:
         amplitude = f"{proposal.step_distance_m * 100:g} cm"
         return _Action(
             action=(
-                f"Testez un déplacement réversible de {target} de {amplitude} "
+                f"Testez un déplacement réversible {movement_target} de {amplitude} "
                 f"{direction}."
             ),
             target=target,

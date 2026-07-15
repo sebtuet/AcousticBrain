@@ -483,6 +483,11 @@ class DecisionFirstReportPresenter:
             "RIGHT_SPEAKER": "l’enceinte droite",
             "BOTH_SPEAKERS": "les deux enceintes",
         }[target_code]
+        movement_target = (
+            "des deux enceintes"
+            if target_code == "BOTH_SPEAKERS"
+            else f"de {target}"
+        )
         direction = {
             "FORWARD": "vers l’avant",
             "BACKWARD": "vers l’arrière",
@@ -496,7 +501,7 @@ class DecisionFirstReportPresenter:
                 "d’enceinte déjà orienté par les données structurées."
             ),
             action=(
-                f"Testez un déplacement réversible de {target} de {amplitude} "
+                f"Testez un déplacement réversible {movement_target} de {amplitude} "
                 f"{direction}."
             ),
             target=target,

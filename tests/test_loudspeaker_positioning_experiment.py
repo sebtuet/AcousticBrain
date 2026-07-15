@@ -315,7 +315,7 @@ def presented_analysis(result):
 def test_all_three_report_levels_present_a_positive_proposal_as_experimental():
     report = Report(project_name="synthetic")
     report.loudspeaker_positioning_experiment = presented_analysis(
-        analyze(recommendation(speaker_id="LEFT", direction="OUTWARD"))
+        analyze(recommendation(speaker_id="STEREO", direction="FORWARD"))
     )
     action = ActionOrientedPositioningPresenter().present(report)
     decision = DecisionFirstReportPresenter().present(report)
@@ -330,12 +330,14 @@ def test_all_three_report_levels_present_a_positive_proposal_as_experimental():
 def test_positive_console_requires_position_record_and_declaration(capsys):
     report = Report(project_name="synthetic")
     report.loudspeaker_positioning_experiment = presented_analysis(
-        analyze(recommendation(speaker_id="LEFT", direction="OUTWARD"))
+        analyze(recommendation(speaker_id="STEREO", direction="FORWARD"))
     )
     ConsoleReporter().print(report)
     output = capsys.readouterr().out.lower()
     assert "position physique avant et après" in output
     assert "déclarez l’expérience contrôlée" in output
+    assert "déplacement réversible des deux enceintes" in output
+    assert "de les deux enceintes" not in output
     forbidden_claims = (
         "est la position optimale",
         "amélioration garantie",
