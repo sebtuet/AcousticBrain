@@ -34,6 +34,9 @@ from .reflection_hypothesis_status_presenter import (
 from .loudspeaker_positioning_experiment_presenter import (
     PresentedLoudspeakerPositioningExperimentAnalysis,
 )
+from .longitudinal_experimental_learning_presenter import (
+    PresentedLongitudinalExperimentalLearningAnalysis,
+)
 
 
 @dataclass
@@ -70,6 +73,10 @@ class Report:
     experiment_campaigns: tuple[PresentedExperimentCampaign, ...] = ()
 
     causal_discrimination: PresentedCausalDiscrimination | None = None
+
+    longitudinal_experimental_learning: (
+        PresentedLongitudinalExperimentalLearningAnalysis | None
+    ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 

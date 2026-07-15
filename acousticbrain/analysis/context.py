@@ -132,6 +132,8 @@ class AnalysisContext:
 
     experiment_campaign_analyses: tuple = ()
 
+    longitudinal_experimental_learning_analysis = None
+
     global_analysis: GlobalAnalysis | None = None
 
     traceability_analysis: TraceabilityAnalysis | None = None

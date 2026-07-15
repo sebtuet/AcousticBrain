@@ -11,7 +11,11 @@ from acousticbrain.report import (
     CausalDiscriminationPresenter,
     ExperimentDiscoveryPresenter,
     ExperimentCampaignPresenter,
+    LongitudinalExperimentalLearningPresenter,
     Report,
+)
+from .stages.longitudinal_experimental_learning import (
+    LongitudinalExperimentalLearningStage,
 )
 
 
@@ -140,6 +144,7 @@ class AcousticBrain:
                 detailed_traceability=detailed_traceability,
             )
             current_context.causal_discrimination_analysis = causal_analysis
+        LongitudinalExperimentalLearningStage().run(current_context)
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)
         )
@@ -148,5 +153,8 @@ class AcousticBrain:
         )
         current_report.causal_discrimination = (
             CausalDiscriminationPresenter().present(current_context)
+        )
+        current_report.longitudinal_experimental_learning = (
+            LongitudinalExperimentalLearningPresenter().present(current_context)
         )
         return current_report

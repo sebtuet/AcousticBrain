@@ -587,6 +587,54 @@ class ConsoleReporter:
                     + (", ".join(causal.trace_decision_codes) or "aucune")
                 )
 
+        learning = report.longitudinal_experimental_learning
+        if learning is not None and learning.states:
+            print()
+            print("APPRENTISSAGE EXPÉRIMENTAL")
+            for state in learning.states:
+                print()
+                print(f"Hypothèse : {state.hypothesis_code}")
+                print(f"État de campagne : {state.learning_status}")
+                print(
+                    "Expériences utilisées : "
+                    + (", ".join(state.used_experiment_codes) or "aucune")
+                )
+                print("Expériences exclues :")
+                if state.excluded_experiment_codes:
+                    for code, reason in state.excluded_experiment_codes:
+                        print(f" • {code} — {reason}")
+                else:
+                    print(" • aucune")
+                print(
+                    "Observations favorables : "
+                    + (", ".join(state.supporting_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations contradictoires : "
+                    + (", ".join(state.contradicting_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations inchangées : "
+                    + (", ".join(state.unchanged_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations inconclusives : "
+                    + (", ".join(state.inconclusive_observation_ids) or "aucune")
+                )
+                print(
+                    "Ambiguïtés résolues : "
+                    + (", ".join(state.resolved_ambiguities) or "aucune")
+                )
+                print(
+                    "Ambiguïtés restantes : "
+                    + (", ".join(state.remaining_ambiguities) or "aucune")
+                )
+                print(
+                    "Prochaine information nécessaire : "
+                    + state.next_information_need
+                )
+                print(f"Causalité : {state.causality_status}")
+
         if (
             comparison_analysis is None
             and causal is None

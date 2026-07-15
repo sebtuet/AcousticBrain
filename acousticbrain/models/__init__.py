@@ -8,6 +8,13 @@ from .loudspeaker_positioning_experiment import (
     LoudspeakerPositioningProposalStatus,
     LoudspeakerPositioningTarget,
 )
+from .longitudinal_experimental_learning import (
+    ExperimentInformationAssessment,
+    ExperimentInformationStatus,
+    LongitudinalExperimentalLearningAnalysis,
+    LongitudinalExperimentalLearningState,
+    LongitudinalLearningStatus,
+)
 from .peak import Peak
 from .band import FrequencyBand
 from .room import Room

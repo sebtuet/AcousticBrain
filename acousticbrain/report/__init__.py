@@ -4,6 +4,11 @@ from .loudspeaker_positioning_experiment_presenter import (
     PresentedLoudspeakerPositioningExperimentAnalysis,
     PresentedLoudspeakerPositioningExperimentProposal,
 )
+from .longitudinal_experimental_learning_presenter import (
+    LongitudinalExperimentalLearningPresenter,
+    PresentedLongitudinalExperimentalLearningAnalysis,
+    PresentedLongitudinalExperimentalLearningState,
+)
 from .action_oriented_positioning_presenter import (
     ActionOrientedPositioningPresenter,
     PresentedActionOrientedPositioning,
