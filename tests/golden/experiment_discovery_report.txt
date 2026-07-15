@@ -5,6 +5,27 @@ ACOUSTICBRAIN REPORT
 
 Projet : measurements
 
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Aucun objectif expérimental prioritaire n’est actuellement établi.
+
+Verdict
+La dernière expérience ne peut pas être comparée de manière fiable.
+ • Aucune comparaison d’expérience n’est disponible.
+
+Prochaine action
+Aucun déplacement fiable ne peut être recommandé actuellement.
+
+Ce que l’on ne sait pas encore
+ • La dernière comparaison n’est pas établie.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Non établi.
+ • Action : Non établi.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
 PROCHAINE ÉTAPE DE POSITIONNEMENT
 
 Situation actuelle

@@ -5,6 +5,37 @@ ACOUSTICBRAIN REPORT
 
 Projet : Studio
 
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Comprendre l’origine de l’asymétrie entre les enceintes.
+
+Verdict
+La dernière expérience ne peut pas être comparée de manière fiable.
+ • Aucune comparaison d’expérience n’est disponible.
+
+Prochaine action
+Une piste a été identifiée, mais le déplacement exact n’est pas encore déterminé.
+
+À maintenir inchangé
+ • la position du microphone
+ • le volume de mesure
+
+Mesure suivante
+ • Réalisez une nouvelle expérience REW : L, R, L+R.
+ • Conservez la position du microphone et le volume.
+ • Ne modifiez aucune autre variable.
+ • Enregistrez précisément l’unique modification réalisée.
+
+Ce que l’on ne sait pas encore
+ • La dernière comparaison n’est pas établie.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Non établi.
+ • Action : Explication possible.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
 PROCHAINE ÉTAPE DE POSITIONNEMENT
 
 Situation actuelle
