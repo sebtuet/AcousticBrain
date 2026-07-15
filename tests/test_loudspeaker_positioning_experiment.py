@@ -20,6 +20,7 @@ from acousticbrain.models import (
 )
 from acousticbrain.report import (
     ActionOrientedPositioningPresenter,
+    ConsoleReporter,
     DecisionFirstReportPresenter,
     LoudspeakerPositioningExperimentPresenter,
     OneMinuteExecutiveSummaryPresenter,
@@ -324,6 +325,25 @@ def test_all_three_report_levels_present_a_positive_proposal_as_experimental():
     assert decision.positioning_proposal_id is not None
     assert any("pas une position optimale" in item for item in minute.reasons)
     assert "amélioration non garantie" in minute.confidence[2]
+
+
+def test_positive_console_requires_position_record_and_declaration(capsys):
+    report = Report(project_name="synthetic")
+    report.loudspeaker_positioning_experiment = presented_analysis(
+        analyze(recommendation(speaker_id="LEFT", direction="OUTWARD"))
+    )
+    ConsoleReporter().print(report)
+    output = capsys.readouterr().out.lower()
+    assert "position physique avant et après" in output
+    assert "déclarez l’expérience contrôlée" in output
+    forbidden_claims = (
+        "est la position optimale",
+        "amélioration garantie",
+        "cause confirmée",
+        "ce déplacement corrigera",
+        "cette enceinte provoque",
+    )
+    assert all(value not in output for value in forbidden_claims)
 
 
 def test_report_missing_direction_does_not_fall_back_to_generic_placement_advice():

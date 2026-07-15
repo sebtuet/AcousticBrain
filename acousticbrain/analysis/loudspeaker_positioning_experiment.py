@@ -208,6 +208,10 @@ class LoudspeakerPositioningExperimentEngine:
                 "Le test modifie uniquement la position des enceintes ciblées.",
                 "Le pas est une granularité expérimentale réversible, pas une "
                 "position optimale prédite.",
+                "La position physique doit être mesurée et consignée avant et "
+                "après le déplacement.",
+                "L’expérience contrôlée doit être déclarée explicitement avant "
+                "ou après l’acquisition.",
             ),
             confidence=source.confidence,
             causality_status="NOT_ESTABLISHED",
