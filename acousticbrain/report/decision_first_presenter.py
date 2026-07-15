@@ -30,6 +30,12 @@ class PresentedDecisionFirstReport:
     comparison_acoustic_outcome: str | None
     tested_conditions_declared: bool
     measurement_status: str
+    experiment_kind: str
+    reference_experiment_code: str | None
+    modified_variables: tuple[str, ...]
+    controlled_variables: tuple[str, ...]
+    declaration_user_note: str | None
+    configuration_declared_unchanged: bool
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,14 @@ class DecisionFirstReportPresenter:
     MAXIMUM_FACTS = 3
     MAXIMUM_LIMITS = 2
     REQUIRED_MEASUREMENTS = ("L", "R", "L+R")
+    REPEAT_CONFIGURATION_VARIABLES = {
+        "LISTENING_POSITION",
+        "LOUDSPEAKER_POSITION",
+        "MEASUREMENT_LEVEL",
+        "MICROPHONE_POSITION",
+        "REW_MEASUREMENT_PARAMETERS",
+        "ROOM_CONFIGURATION",
+    }
 
     OBJECTIVE_LABELS = {
         "DISCRIMINATE_CHANNEL_AND_ROOM_ASYMMETRY": (
@@ -111,6 +125,7 @@ class DecisionFirstReportPresenter:
     CONTROL_LABELS = {
         "MICROPHONE_POSITION": "la position du microphone",
         "MEASUREMENT_LEVEL": "le volume de mesure",
+        "REW_MEASUREMENT_PARAMETERS": "les paramètres de mesure REW",
         "LOUDSPEAKER_ORIENTATION": "l’orientation des enceintes",
         "LOUDSPEAKER_POSITION": "la position des enceintes",
         "OTHER_LOUDSPEAKER_POSITIONS": "la position de l’autre enceinte",
@@ -120,9 +135,15 @@ class DecisionFirstReportPresenter:
 
     def present(self, report):
         comparison = self._latest_comparison(report)
+        repeat = self._is_repeat(comparison)
+        unchanged_repeat = self._configuration_declared_unchanged(comparison)
         verdict_lines, verdict_confidence = self._verdict(comparison)
         verdict = " ".join(verdict_lines)
-        if comparison is not None and comparison.acoustic_outcome == "MIXED":
+        if (
+            comparison is not None
+            and comparison.acoustic_outcome == "MIXED"
+            and not self._is_repeat(comparison)
+        ):
             verdict = (
                 "La dernière expérience présente des améliorations et des "
                 "dégradations. Aucun verdict global simple n’est possible."
@@ -132,6 +153,9 @@ class DecisionFirstReportPresenter:
         deferred = self._deferred_messages(report)
 
         action, action_status = self._select_action(report)
+        if repeat:
+            action = None
+            action_status = "REPEAT_CONTROL"
         action_reasons = self._action_reasons(
             report,
             action_status,
@@ -144,14 +168,34 @@ class DecisionFirstReportPresenter:
             undeclared,
             deferred,
         )
+        if repeat:
+            action_reasons = (
+                "Aucune modification volontaire de placement n’a été déclarée.",
+            )
+            unblock_steps = (
+                "Vérifiez que le microphone, le volume et les paramètres REW "
+                "sont identiques.",
+                "Réalisez éventuellement une nouvelle répétition de contrôle.",
+            )
         facts = self._established_facts(report, comparison)
         limits = self._active_limits(comparison, undeclared, deferred)
 
         if action is None:
-            objective = "Aucun objectif expérimental prioritaire n’est actuellement établi."
-            action_text = self._unavailable_action_text(action_status)
+            objective = (
+                "Contrôler la répétition de mesure déclarée."
+                if repeat
+                else "Aucun objectif expérimental prioritaire n’est actuellement établi."
+            )
+            action_text = (
+                "Ne déplacez pas encore les enceintes."
+                if repeat
+                else self._unavailable_action_text(action_status)
+            )
             target = direction = amplitude = tested_variable = None
-            unchanged_items = required_measurements = ()
+            unchanged_items = self._declared_unchanged_items(
+                comparison.controlled_variables if repeat else ()
+            ) if repeat else ()
+            required_measurements = self.REQUIRED_MEASUREMENTS if repeat else ()
             source_codes = self._comparison_sources(comparison)
         else:
             objective = action.objective
@@ -206,6 +250,23 @@ class DecisionFirstReportPresenter:
                 comparison is not None and not undeclared
             ),
             measurement_status=self._measurement_status(report),
+            experiment_kind=(
+                comparison.experiment_kind if comparison is not None else "UNKNOWN"
+            ),
+            reference_experiment_code=(
+                comparison.reference_experiment_code
+                if comparison is not None else None
+            ),
+            modified_variables=(
+                comparison.modified_variables if comparison is not None else ()
+            ),
+            controlled_variables=(
+                comparison.controlled_variables if comparison is not None else ()
+            ),
+            declaration_user_note=(
+                comparison.declaration_user_note if comparison is not None else None
+            ),
+            configuration_declared_unchanged=unchanged_repeat,
         )
 
     @staticmethod
@@ -223,6 +284,29 @@ class DecisionFirstReportPresenter:
                     "La dernière expérience ne peut pas être comparée de manière fiable.",
                 ),
                 "Non établi",
+            )
+        if cls._is_repeat(comparison):
+            if comparison.acoustic_outcome == "UNCHANGED":
+                return (
+                    ("Aucun changement acoustique significatif n’a été observé.",),
+                    "Établi par les mesures",
+                )
+            if comparison.acoustic_outcome == "INCONCLUSIVE":
+                return (
+                    ("La répétition ne permet pas de conclure sur les écarts mesurés.",),
+                    "Établi par les mesures",
+                )
+            label = (
+                "Certaines mesures diffèrent malgré une configuration "
+                "déclarée identique."
+                if cls._configuration_declared_unchanged(comparison)
+                else "Certaines mesures diffèrent entre les acquisitions répétées."
+            )
+            return (
+                (
+                    label,
+                ),
+                "Établi par les mesures",
             )
         labels = {
             "IMPROVED": (
@@ -273,22 +357,40 @@ class DecisionFirstReportPresenter:
         if comparison is None:
             return ("Aucune comparaison d’expérience n’est disponible.",)
         protocol = comparison.source_protocol_id or "non déclaré"
-        return (
+        values = [
             (
                 f"Comparaison : {comparison.before_experiment_id} → "
                 f"{comparison.after_experiment_id}."
             ),
             f"Protocole : {protocol}.",
             "Le verdict porte uniquement sur le périmètre mesuré.",
-        )
+        ]
+        if DecisionFirstReportPresenter._configuration_declared_unchanged(comparison):
+            values.append("Configuration déclarée inchangée.")
+        elif DecisionFirstReportPresenter._is_repeat(comparison):
+            values.append("Répétition de mesure déclarée.")
+        return tuple(values)
 
     @staticmethod
     def _undeclared_change(comparison):
         if comparison is None:
             return False
+        if DecisionFirstReportPresenter._is_repeat(comparison):
+            return False
         return (
             comparison.source_protocol_id is None
             or comparison.source_hypothesis_code is None
+        )
+
+    @staticmethod
+    def _is_repeat(comparison):
+        return comparison is not None and comparison.experiment_kind == "MEASUREMENT_REPEAT"
+
+    @classmethod
+    def _configuration_declared_unchanged(cls, comparison):
+        return cls._is_repeat(comparison) and (
+            set(comparison.controlled_variables) >= cls.REPEAT_CONFIGURATION_VARIABLES
+            and comparison.modified_variables == ("MEASUREMENT_ACQUISITION",)
         )
 
     def _select_action(self, report):
@@ -503,6 +605,11 @@ class DecisionFirstReportPresenter:
 
     def _active_limits(self, comparison, undeclared, deferred):
         values = []
+        if self._is_repeat(comparison):
+            values.append(
+                "Les écarts observés renseignent sur la répétition du protocole, "
+                "sans établir leur cause ni une modification de placement."
+            )
         if undeclared:
             values.append(
                 "AcousticBrain ne sait pas formellement quelle variable était "
@@ -510,7 +617,7 @@ class DecisionFirstReportPresenter:
             )
         if comparison is None or comparison.eligibility != "COMPARABLE":
             values.append("La dernière comparaison n’est pas établie.")
-        elif comparison.acoustic_outcome == "MIXED":
+        elif comparison.acoustic_outcome == "MIXED" and not self._is_repeat(comparison):
             values.append("La dernière expérience présente des effets contradictoires.")
         elif comparison.outcome == "INCONCLUSIVE":
             values.append("Le résultat de la dernière expérience reste inconclusif.")
@@ -571,6 +678,12 @@ class DecisionFirstReportPresenter:
             *(cls.CONTROL_LABELS[code] for code in codes if code in cls.CONTROL_LABELS),
         )
         return tuple(dict.fromkeys(values))
+
+    @classmethod
+    def _declared_unchanged_items(cls, codes):
+        return tuple(dict.fromkeys(
+            cls.CONTROL_LABELS[code] for code in codes if code in cls.CONTROL_LABELS
+        ))
 
     @staticmethod
     def _speaker_label(value):

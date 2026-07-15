@@ -7,6 +7,7 @@ from .optimization_session import (
     OptimizationSessionService,
 )
 from .experiment_discovery import ExperimentDiscoveryService
+from .experiment_declaration import ExperimentDeclarationService
 from .experiment_protocol_declaration import ExperimentProtocolDeclarationService
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,

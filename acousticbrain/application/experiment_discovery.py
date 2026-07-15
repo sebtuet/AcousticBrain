@@ -11,6 +11,8 @@ from acousticbrain.models import (
     ExperimentFileType,
     ExperimentState,
     ExperimentType,
+    ExperimentDeclaration,
+    ExperimentKind,
     ImpulseChannel,
     CausalProtocolStep,
 )
@@ -75,6 +77,15 @@ class ExperimentDiscoveryService:
         if not isinstance(imported_at, str) or not imported_at:
             imported_at = self.clock().isoformat()
         comparison_metadata = self._comparison_metadata(existing)
+        declaration = self._experiment_declaration(existing)
+        if (
+            declaration.experiment_kind is not ExperimentKind.UNKNOWN
+            and declaration.reference_experiment_code
+            and "parent_experiment_ids" not in comparison_metadata
+        ):
+            comparison_metadata["parent_experiment_ids"] = [
+                declaration.reference_experiment_code
+            ]
         causal_step = self._causal_step(existing, directory.name)
         causal_decisions = self._causal_decisions(existing, directory.name)
         detected_assignments = {
@@ -103,6 +114,10 @@ class ExperimentDiscoveryService:
         }
         if comparison_metadata:
             manifest["comparison"] = comparison_metadata
+        if declaration.experiment_kind is not ExperimentKind.UNKNOWN:
+            manifest["experiment_declaration"] = self._serialize_declaration(
+                declaration
+            )
         if causal_step is not None:
             manifest["causal_protocol_step"] = {
                 "protocol_code": causal_step.protocol_code,
@@ -188,7 +203,56 @@ class ExperimentDiscoveryService:
             ),
             causal_protocol_step=causal_step,
             causal_discrimination_decisions=causal_decisions,
+            experiment_declaration=declaration,
         )
+
+    @classmethod
+    def _experiment_declaration(cls, manifest):
+        value = manifest.get("experiment_declaration")
+        if value is None:
+            return ExperimentDeclaration.unknown()
+        if not isinstance(value, dict):
+            raise ValueError("Experiment declaration manifest entry must be an object.")
+        try:
+            kind = ExperimentKind(value.get("experiment_kind"))
+        except ValueError as error:
+            raise ValueError("Unsupported experiment kind.") from error
+        provenance = value.get("field_provenance", {})
+        if not isinstance(provenance, dict):
+            raise ValueError("Experiment declaration provenance must be an object.")
+        return ExperimentDeclaration(
+            schema_version=value.get("schema_version"),
+            experiment_kind=kind,
+            reference_experiment_code=cls._optional_string(
+                value.get("reference_experiment_code")
+            ),
+            modified_variables=tuple(sorted(cls._string_tuple(
+                value.get("modified_variables")
+            ))),
+            controlled_variables=tuple(sorted(cls._string_tuple(
+                value.get("controlled_variables")
+            ))),
+            user_note=cls._optional_string(value.get("user_note")),
+            field_provenance=tuple(sorted(
+                (key, source)
+                for key, raw_source in provenance.items()
+                if isinstance(key, str)
+                and key
+                and (source := cls._optional_string(raw_source)) is not None
+            )),
+        )
+
+    @staticmethod
+    def _serialize_declaration(declaration):
+        return {
+            "schema_version": declaration.schema_version,
+            "experiment_kind": declaration.experiment_kind.value,
+            "reference_experiment_code": declaration.reference_experiment_code,
+            "modified_variables": list(declaration.modified_variables),
+            "controlled_variables": list(declaration.controlled_variables),
+            "user_note": declaration.user_note,
+            "field_provenance": dict(declaration.field_provenance),
+        }
 
     @classmethod
     def _causal_decisions(cls, manifest, experiment_id):

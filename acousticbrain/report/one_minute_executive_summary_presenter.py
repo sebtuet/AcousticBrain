@@ -48,6 +48,12 @@ class OneMinuteExecutiveSummaryPresenter:
                 f"{decision.comparison_after_experiment_id}."
             )
         ]
+        if decision.configuration_declared_unchanged:
+            values.append("Configuration déclarée inchangée.")
+            return tuple(values)
+        if decision.experiment_kind == "MEASUREMENT_REPEAT":
+            values.append("Répétition de mesure déclarée.")
+            return tuple(values)
         if not decision.tested_conditions_declared:
             values.append(
                 "La variable testée, ou l’absence de changement volontaire, "
@@ -69,6 +75,18 @@ class OneMinuteExecutiveSummaryPresenter:
             return "Non.", "Aucune comparaison fiable n’est disponible."
         if not decision.comparison_comparable:
             return "Non.", "Les expériences ne sont pas comparables."
+        if decision.experiment_kind == "MEASUREMENT_REPEAT":
+            if decision.configuration_declared_unchanged:
+                return (
+                    "Partiellement.",
+                    "Ces écarts renseignent sur la répétition du protocole, "
+                    "pas sur un changement de positionnement.",
+                )
+            return (
+                "Partiellement.",
+                "La répétition est déclarée, mais toutes les variables contrôlées "
+                "ne le sont pas.",
+            )
         if not decision.tested_conditions_declared:
             return "Non.", "AcousticBrain ne sait pas formellement ce qui était testé."
         if decision.comparison_acoustic_outcome in {"MIXED", "INCONCLUSIVE"}:
@@ -86,6 +104,25 @@ class OneMinuteExecutiveSummaryPresenter:
 
     @classmethod
     def _actions(cls, decision):
+        if decision.experiment_kind == "MEASUREMENT_REPEAT":
+            labels = tuple(
+                label for code, label in (
+                    ("MICROPHONE_POSITION", "le microphone"),
+                    ("MEASUREMENT_LEVEL", "le volume"),
+                    ("REW_MEASUREMENT_PARAMETERS", "les paramètres REW"),
+                )
+                if code in decision.controlled_variables
+            )
+            control = (
+                "Vérifiez que " + cls._join_labels(labels) + " sont identiques."
+                if labels
+                else "Complétez la déclaration des variables maintenues inchangées."
+            )
+            return (
+                "Ne déplacez pas encore les enceintes.",
+                control,
+                "Réalisez éventuellement une nouvelle répétition de contrôle.",
+            )
         if decision.action_status == "AVAILABLE":
             values = [cls._precise_action(decision)]
             if decision.unchanged_items:
@@ -126,10 +163,18 @@ class OneMinuteExecutiveSummaryPresenter:
     def _join_labels(values):
         if len(values) == 1:
             return values[0]
-        return " et ".join(values)
+        if len(values) == 2:
+            return " et ".join(values)
+        return ", ".join(values[:-1]) + " et " + values[-1]
 
     @staticmethod
     def _reasons(decision):
+        if decision.experiment_kind == "MEASUREMENT_REPEAT":
+            return (
+                "Aucune modification volontaire de placement n’a été déclarée.",
+                "Les différences observées ne peuvent donc pas être attribuées "
+                "à un déplacement.",
+            )
         if not decision.tested_conditions_declared and decision.comparison_available:
             if decision.comparison_acoustic_outcome == "MIXED":
                 return (

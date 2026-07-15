@@ -1,8 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from .impulse_channel import ImpulseChannel
 from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolStep
+from .experiment_declaration import ExperimentDeclaration
 
 
 ExperimentParameterValue = str | int | float | bool
@@ -57,6 +58,9 @@ class ExperimentDescriptor:
     comparison_parameters: tuple[tuple[str, ExperimentParameterValue], ...] = ()
     causal_protocol_step: CausalProtocolStep | None = None
     causal_discrimination_decisions: tuple[CausalDiscriminationDecision, ...] = ()
+    experiment_declaration: ExperimentDeclaration = field(
+        default_factory=ExperimentDeclaration.unknown
+    )
 
     def __post_init__(self):
         collections = (
