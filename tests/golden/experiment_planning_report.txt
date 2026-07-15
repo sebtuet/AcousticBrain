@@ -5,6 +5,31 @@ ACOUSTICBRAIN REPORT
 
 Projet : Studio
 
+EN UNE MINUTE
+
+Situation
+Première mesure disponible : aucune expérience précédente comparable.
+
+Verdict
+Aucune comparaison avec une expérience précédente n’est disponible.
+
+Puis-je conclure ?
+Non.
+Aucune comparaison fiable n’est disponible.
+
+Ce que je fais maintenant
+• Une piste a été identifiée, mais le déplacement exact n’est pas encore déterminé.
+• Conservez la position du microphone et le volume de mesure inchangés.
+• Reprenez L, R, L+R.
+
+Pourquoi
+Une action structurée est déjà disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : non établi.
+Cause : non établie (NOT_ESTABLISHED).
+
 DÉCISION ACOUSTIQUE
 
 Objectif actuel
