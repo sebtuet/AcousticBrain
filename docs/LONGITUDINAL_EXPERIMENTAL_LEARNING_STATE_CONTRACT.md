@@ -49,6 +49,22 @@ contribue aux observations longitudinales que si sa comparaison et sa
 comparabilité sont explicites et si sa déclaration est exploitable. Chaque
 observation conserve l'identifiant de sa comparaison source.
 
+Le modèle distingue sans recouvrement sémantique implicite :
+
+- `historical_context_experiment_codes`, qui inventorie les expériences citées
+  par une comparaison, une campagne ou une discrimination;
+- `evidence_contributing_experiment_codes`, limité aux comparaisons admissibles
+  de déclarations `CONTROLLED_INTERVENTION` ou `MEASUREMENT_REPEAT`;
+- `campaign_source_experiment_codes`, transporté depuis
+  `ExperimentCampaignTrace.experiment_ids`;
+- `discrimination_source_experiment_codes`, transporté depuis
+  `CausalDiscriminationTrace.experiment_ids`;
+- `historical_experiment_declaration_statuses`, qui conserve le statut PR-043
+  disponible, `UNKNOWN_DECLARATION` ou `DECLARATION_UNAVAILABLE`.
+
+Les champs génériques `experiment_codes` et `used_experiment_codes` ne sont pas
+employés dans ce contrat, car ils confondraient historique et preuve admissible.
+
 ## Inclusion et exclusion
 
 - `CONTROLLED_INTERVENTION` peut alimenter soutien ou contradiction uniquement
@@ -95,6 +111,15 @@ besoin suivant reprend, par ordre déterministe, une déclaration manquante, une
 comparabilité manquante, une répétition supplémentaire, une discrimination
 existante ou l'absence explicite de nouvelle discrimination.
 
+Pour une ambiguïté résolue, `resolved_ambiguity_provenance` transporte le code
+du protocole, l'identifiant de la trace causale et les expériences de cette
+trace. Cette provenance est directe au niveau de la discrimination. Le modèle
+source ne conserve pas de relation individuelle entre chaque ambiguïté et
+chaque étape : PR-045 ne déduit donc pas qu'une expérience particulière a, à
+elle seule, résolu l'ambiguïté. Si la trace ne contient aucun identifiant
+d'expérience, la provenance du protocole reste visible et la source
+expérimentale est déclarée indisponible.
+
 Il ne crée jamais une direction ou une amplitude de déplacement.
 
 ## Information nouvelle et répétition
@@ -120,6 +145,11 @@ Un chemin est épuisé uniquement lorsqu'une campagne ou discrimination existant
 n'expose plus d'ambiguïté ni de protocole suivant. Cela signifie qu'aucune
 nouvelle discrimination n'est disponible dans le périmètre structuré actuel,
 pas que toute recherche acoustique est terminée.
+
+La présence technique d'un chemin épuisé ne prend pas le pas sur une déclaration
+`UNKNOWN` ou une provenance expérimentale absente. Dans ces cas, l'état reste
+`INSUFFICIENT_DECLARATION` et le besoin suivant demande la déclaration ou la
+provenance manquante.
 
 ## Limites causales et décisionnelles
 

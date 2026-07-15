@@ -11,6 +11,7 @@ from .loudspeaker_positioning_experiment import (
 from .longitudinal_experimental_learning import (
     ExperimentInformationAssessment,
     ExperimentInformationStatus,
+    LongitudinalAmbiguityProvenance,
     LongitudinalExperimentalLearningAnalysis,
     LongitudinalExperimentalLearningState,
     LongitudinalLearningStatus,

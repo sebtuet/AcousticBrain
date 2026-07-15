@@ -5,6 +5,7 @@ from acousticbrain.models import (
     ExperimentInformationAssessment,
     ExperimentInformationStatus,
     ExperimentKind,
+    LongitudinalAmbiguityProvenance,
     LongitudinalExperimentalLearningAnalysis,
     LongitudinalExperimentalLearningState,
     LongitudinalLearningStatus,
@@ -23,6 +24,8 @@ class LongitudinalExperimentalLearningEngine:
         "LONGITUDINAL_REQUIRE_EXPLICIT_COMPARABILITY",
         "LONGITUDINAL_REQUIRE_DECLARED_INTERVENTION_FOR_HYPOTHESIS_EVIDENCE",
         "LONGITUDINAL_REPEAT_INFORMS_REPEATABILITY_ONLY",
+        "LONGITUDINAL_SEPARATE_HISTORICAL_CONTEXT_FROM_EVIDENCE",
+        "LONGITUDINAL_PRESERVE_SOURCE_TRACE_WITHOUT_REQUALIFICATION",
         "LONGITUDINAL_NEVER_SUM_SUPPORT_SCORES",
         "LONGITUDINAL_NEVER_ESTABLISH_CAUSALITY",
     )
@@ -88,17 +91,34 @@ class LongitudinalExperimentalLearningEngine:
             and self.CAUSAL_HYPOTHESIS_BY_PROTOCOL.get(causal.protocol_code) == hypothesis
             else None
         )
-        experiment_codes = set()
+        historical_experiment_codes = set()
+        evidence_contributing_experiments = set()
+        campaign_source_experiments = set()
+        discrimination_source_experiments = set()
         protocols = set()
         for item in comparisons:
-            experiment_codes.add(item.after_experiment_id)
+            historical_experiment_codes.add(item.after_experiment_id)
             if item.source_protocol_id:
                 protocols.add(item.source_protocol_id)
         for campaign in campaigns:
-            experiment_codes.update(item.experiment_id for item in campaign.measurements)
+            trace_experiments = tuple(getattr(campaign.trace, "experiment_ids", ()))
+            source_experiments = trace_experiments or tuple(
+                item.experiment_id for item in campaign.measurements
+            )
+            campaign_source_experiments.update(source_experiments)
+            historical_experiment_codes.update(source_experiments)
             protocols.add(campaign.protocol_id)
         if relevant_causal is not None:
-            experiment_codes.update(item.experiment_id for item in relevant_causal.completed_steps)
+            trace_experiments = tuple(getattr(
+                relevant_causal.trace,
+                "experiment_ids",
+                (),
+            ))
+            source_experiments = trace_experiments or tuple(
+                item.experiment_id for item in relevant_causal.completed_steps
+            )
+            discrimination_source_experiments.update(source_experiments)
+            historical_experiment_codes.update(source_experiments)
             protocols.add(relevant_causal.protocol_code)
 
         comparable, non_comparable = set(), set()
@@ -124,6 +144,7 @@ class LongitudinalExperimentalLearningEngine:
                 continue
             prefix = f"{item.result_id}:"
             if kind is ExperimentKind.CONTROLLED_INTERVENTION:
+                evidence_contributing_experiments.add(code)
                 if item.outcome is ExperimentEvolutionOutcome.STRONGER:
                     supporting.update(prefix + fact.code for fact in item.observed_facts)
                     if item.observed_facts:
@@ -145,6 +166,7 @@ class LongitudinalExperimentalLearningEngine:
                         if delta.change is ExperimentFactChange.UNCHANGED
                     )
             elif kind is ExperimentKind.MEASUREMENT_REPEAT:
+                evidence_contributing_experiments.add(code)
                 if item.outcome is ExperimentEvolutionOutcome.UNCHANGED:
                     unchanged.update(
                         prefix + delta.fact_code
@@ -154,7 +176,18 @@ class LongitudinalExperimentalLearningEngine:
                 else:
                     inconclusive.add(prefix + "REPEATABILITY_NOT_ESTABLISHED")
 
+        declaration_statuses = tuple(
+            (code, self._declaration_status(descriptor_by_code.get(code)))
+            for code in sorted(historical_experiment_codes)
+        )
+        unknown.update(
+            code
+            for code, status in declaration_statuses
+            if status in {"UNKNOWN_DECLARATION", "DECLARATION_UNAVAILABLE"}
+        )
+
         resolved, remaining, deferred, completed, exhausted = set(), set(), set(), set(), set()
+        ambiguity_provenance = []
         campaign_ids = []
         next_needs = []
         for campaign in campaigns:
@@ -168,6 +201,18 @@ class LongitudinalExperimentalLearningEngine:
         if relevant_causal is not None:
             causal_id = relevant_causal.trace.trace_id
             resolved.update(relevant_causal.resolved_discrimination_codes)
+            ambiguity_provenance.extend(
+                LongitudinalAmbiguityProvenance(
+                    ambiguity_code=code,
+                    source_analysis_code="CausalDiscriminationAnalysis",
+                    source_id=relevant_causal.trace.trace_id,
+                    protocol_code=relevant_causal.protocol_code,
+                    source_experiment_codes=tuple(sorted(
+                        discrimination_source_experiments
+                    )),
+                )
+                for code in relevant_causal.resolved_discrimination_codes
+            )
             completed.update(relevant_causal.resolved_discrimination_codes)
             remaining.update(relevant_causal.remaining_discrimination_codes)
             deferred.update(
@@ -182,7 +227,8 @@ class LongitudinalExperimentalLearningEngine:
                 exhausted.add(relevant_causal.protocol_code)
 
         status = self._status(
-            experiment_codes=experiment_codes,
+            historical_experiment_codes=historical_experiment_codes,
+            has_historical_analysis=bool(campaigns or relevant_causal is not None),
             controlled=controlled,
             unknown=unknown,
             non_comparable=non_comparable,
@@ -208,14 +254,27 @@ class LongitudinalExperimentalLearningEngine:
             ("causal_discrimination", ((causal_id,) if causal_id else ())),
             ("comparisons", tuple(sorted(comparison_ids))),
             ("declarations", tuple(sorted(
-                code for code in experiment_codes if code in descriptor_by_code
+                code for code in historical_experiment_codes
+                if code in descriptor_by_code
             ))),
         )
         return LongitudinalExperimentalLearningState(
             state_id=f"longitudinal-learning:{hypothesis.lower()}",
             hypothesis_code=hypothesis,
             protocol_codes=tuple(sorted(protocols)),
-            experiment_codes=tuple(sorted(experiment_codes)),
+            historical_context_experiment_codes=tuple(sorted(
+                historical_experiment_codes
+            )),
+            evidence_contributing_experiment_codes=tuple(sorted(
+                evidence_contributing_experiments
+            )),
+            campaign_source_experiment_codes=tuple(sorted(
+                campaign_source_experiments
+            )),
+            discrimination_source_experiment_codes=tuple(sorted(
+                discrimination_source_experiments
+            )),
+            historical_experiment_declaration_statuses=declaration_statuses,
             comparable_experiment_codes=tuple(sorted(comparable)),
             non_comparable_experiment_codes=tuple(sorted(non_comparable)),
             controlled_intervention_codes=tuple(sorted(controlled)),
@@ -226,6 +285,10 @@ class LongitudinalExperimentalLearningEngine:
             unchanged_observation_ids=tuple(sorted(unchanged)),
             inconclusive_observation_ids=tuple(sorted(inconclusive)),
             resolved_ambiguities=tuple(sorted(resolved)),
+            resolved_ambiguity_provenance=tuple(sorted(
+                ambiguity_provenance,
+                key=lambda item: item.ambiguity_code,
+            )),
             remaining_ambiguities=tuple(sorted(remaining)),
             deferred_discriminations=tuple(sorted(deferred)),
             completed_discriminations=tuple(sorted(completed)),
@@ -243,10 +306,11 @@ class LongitudinalExperimentalLearningEngine:
         )
 
     @staticmethod
-    def _status(*, experiment_codes, controlled, unknown, non_comparable,
+    def _status(*, historical_experiment_codes, has_historical_analysis,
+                controlled, unknown, non_comparable,
                 supporting, contradicting, supporting_experiments,
                 contradicting_experiments, remaining, deferred, exhausted):
-        if not experiment_codes:
+        if not historical_experiment_codes and not has_historical_analysis:
             return LongitudinalLearningStatus.NOT_TESTED
         if deferred:
             return LongitudinalLearningStatus.DEFERRED_BY_USER
@@ -259,6 +323,8 @@ class LongitudinalExperimentalLearningEngine:
         if supporting or contradicting:
             return LongitudinalLearningStatus.EVIDENCE_ACCUMULATING
         if unknown:
+            return LongitudinalLearningStatus.INSUFFICIENT_DECLARATION
+        if not historical_experiment_codes and has_historical_analysis:
             return LongitudinalLearningStatus.INSUFFICIENT_DECLARATION
         if non_comparable:
             return LongitudinalLearningStatus.INSUFFICIENT_COMPARABILITY
@@ -277,6 +343,8 @@ class LongitudinalExperimentalLearningEngine:
             return "DECLARE_TESTED_VARIABLE_OR_UNCHANGED_CONFIGURATION"
         if non_comparable:
             return "RESTORE_EXPLICIT_EXPERIMENT_COMPARABILITY"
+        if status is LongitudinalLearningStatus.INSUFFICIENT_DECLARATION:
+            return "DECLARE_HISTORICAL_EXPERIMENT_PROVENANCE"
         if len(repeats) == 1:
             return "ADDITIONAL_REPEAT_FOR_STABILITY"
         if explicit:
@@ -288,6 +356,18 @@ class LongitudinalExperimentalLearningEngine:
         if status is LongitudinalLearningStatus.NOT_TESTED:
             return "CONTROLLED_SINGLE_VARIABLE_INTERVENTION"
         return "REVIEW_EXISTING_EXPERIMENTAL_EVIDENCE"
+
+    @staticmethod
+    def _declaration_status(descriptor):
+        if descriptor is None:
+            return "DECLARATION_UNAVAILABLE"
+        declaration = getattr(descriptor, "experiment_declaration", None)
+        if declaration is None:
+            return "DECLARATION_UNAVAILABLE"
+        kind = declaration.experiment_kind
+        if kind is ExperimentKind.UNKNOWN:
+            return "UNKNOWN_DECLARATION"
+        return kind.value
 
     @staticmethod
     def assess_proposal(

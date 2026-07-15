@@ -137,19 +137,24 @@ def state(result, hypothesis=HYPOTHESIS):
     return next(item for item in result.states if item.hypothesis_code == hypothesis)
 
 
-def campaign(*, unresolved=(), next_code=None, status="RESOLVED"):
+def campaign(*, unresolved=(), next_code=None, status="RESOLVED",
+             experiments=("exp-campaign",)):
     return SimpleNamespace(
         campaign_code="TEST_CAMPAIGN",
         protocol_id=PROTOCOL,
         hypothesis_code=HYPOTHESIS,
-        measurements=(SimpleNamespace(experiment_id="exp-campaign"),),
+        measurements=tuple(
+            SimpleNamespace(experiment_id=code) for code in experiments
+        ),
         unresolved_discrimination_codes=unresolved,
         next_discrimination_code=next_code,
         status=SimpleNamespace(value=status),
+        trace=SimpleNamespace(experiment_ids=experiments),
     )
 
 
-def causal(*, remaining=(), resolved=(), deferred=(), recommended=None):
+def causal(*, remaining=(), resolved=(), deferred=(), recommended=None,
+           experiments=("exp-causal",)):
     decisions = tuple(
         SimpleNamespace(
             discrimination_code=value,
@@ -159,19 +164,24 @@ def causal(*, remaining=(), resolved=(), deferred=(), recommended=None):
     )
     return SimpleNamespace(
         protocol_code="VERIFY_SPEAKER_ROOM_ASYMMETRY",
-        completed_steps=(SimpleNamespace(experiment_id="exp-causal"),),
+        completed_steps=tuple(
+            SimpleNamespace(experiment_id=code) for code in experiments
+        ),
         resolved_discrimination_codes=resolved,
         remaining_discrimination_codes=remaining,
         discrimination_decisions=decisions,
         recommended_next_protocol=recommended,
-        trace=SimpleNamespace(trace_id="causal-trace:test"),
+        trace=SimpleNamespace(
+            trace_id="causal-trace:test",
+            experiment_ids=experiments,
+        ),
     )
 
 
 def test_no_experiment_and_never_tested_hypothesis():
     value = state(run())
     assert value.learning_status is LongitudinalLearningStatus.NOT_TESTED
-    assert value.experiment_codes == ()
+    assert value.historical_context_experiment_codes == ()
 
 
 def test_comparable_controlled_intervention_accumulates_only_explicit_observations():
@@ -306,9 +316,73 @@ def test_resolved_remaining_deferred_completed_and_exhausted_discriminations():
     assert value.deferred_discriminations == ("ROOM_OPEN",)
     assert value.learning_status is LongitudinalLearningStatus.DEFERRED_BY_USER
 
-    exhausted = state(run(campaigns=(campaign(),)))
+    exhausted = state(run(
+        campaigns=(campaign(),),
+        descriptors=(descriptor("exp-campaign"),),
+    ))
     assert exhausted.exhausted_discriminations == ("TEST_CAMPAIGN",)
     assert exhausted.learning_status is LongitudinalLearningStatus.EXPERIMENTAL_PATH_EXHAUSTED
+
+
+def test_unknown_discrimination_sources_remain_historical_not_evidence():
+    source = causal(
+        remaining=("ROOM_OPEN",),
+        resolved=("CHAIN_RESOLVED",),
+        experiments=("exp-001", "exp-002"),
+    )
+    descriptors = (
+        descriptor("exp-001", ExperimentKind.UNKNOWN),
+        descriptor("exp-002", ExperimentKind.UNKNOWN),
+    )
+    value = state(run(
+        descriptors=descriptors,
+        causal=source,
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.evidence_contributing_experiment_codes == ()
+    assert value.discrimination_source_experiment_codes == (
+        "exp-001",
+        "exp-002",
+    )
+    assert value.unknown_declaration_codes == ("exp-001", "exp-002")
+    assert value.controlled_intervention_codes == ()
+    assert value.supporting_observation_ids == ()
+    provenance = value.resolved_ambiguity_provenance[0]
+    assert provenance.ambiguity_code == "CHAIN_RESOLVED"
+    assert provenance.protocol_code == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    assert provenance.source_id == "causal-trace:test"
+    assert provenance.source_experiment_codes == ("exp-001", "exp-002")
+
+
+def test_resolved_ambiguity_preserves_trace_when_experiments_are_unavailable():
+    value = state(run(
+        causal=causal(resolved=("CHAIN_RESOLVED",), experiments=()),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    provenance = value.resolved_ambiguity_provenance[0]
+    assert provenance.source_id == "causal-trace:test"
+    assert provenance.source_experiment_codes == ()
+    assert value.learning_status is LongitudinalLearningStatus.INSUFFICIENT_DECLARATION
+    assert value.next_information_need == "DECLARE_HISTORICAL_EXPERIMENT_PROVENANCE"
+
+
+def test_unknown_campaign_sources_are_historical_and_block_exhaustion():
+    value = state(run(
+        campaigns=(campaign(),),
+        descriptors=(descriptor("exp-campaign", ExperimentKind.UNKNOWN),),
+    ))
+
+    assert value.campaign_source_experiment_codes == ("exp-campaign",)
+    assert value.evidence_contributing_experiment_codes == ()
+    assert value.unknown_declaration_codes == ("exp-campaign",)
+    assert value.exhausted_discriminations == ("TEST_CAMPAIGN",)
+    assert value.learning_status is LongitudinalLearningStatus.INSUFFICIENT_DECLARATION
+    assert (
+        value.next_information_need
+        == "DECLARE_TESTED_VARIABLE_OR_UNCHANGED_CONFIGURATION"
+    )
 
 
 def test_different_hypotheses_are_never_aggregated_and_order_is_deterministic():
@@ -416,6 +490,40 @@ def test_technical_report_is_deterministic_non_causal_and_not_duplicated():
         "position optimale",
     )
     assert all(value not in output.lower() for value in forbidden)
+
+
+def test_report_separates_historical_discrimination_from_evidence_contributors():
+    result = run(
+        descriptors=(
+            descriptor("exp-001", ExperimentKind.UNKNOWN),
+            descriptor("exp-002", ExperimentKind.UNKNOWN),
+        ),
+        causal=causal(
+            remaining=("ROOM_OPEN",),
+            resolved=("CHAIN_RESOLVED",),
+            experiments=("exp-001", "exp-002"),
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    )
+    context = SimpleNamespace(longitudinal_experimental_learning_analysis=result)
+    report = Report(project_name="historical-discrimination")
+    report.longitudinal_experimental_learning = (
+        LongitudinalExperimentalLearningPresenter().present(context)
+    )
+    stream = StringIO()
+    with redirect_stdout(stream):
+        ConsoleReporter().print(report)
+    output = stream.getvalue()
+
+    assert "Expériences contribuant aux preuves longitudinales : aucune" in output
+    assert "Expériences utilisées par la discrimination historique :" in output
+    assert "exp-001 — déclaration expérimentale historique non disponible" in output
+    assert "Expériences exclues de l’agrégation longitudinale :" in output
+    assert "CHAIN_RESOLVED" in output
+    assert "VERIFY_SPEAKER_ROOM_ASYMMETRY — causal-trace:test" in output
+    assert "Historique expérimental de la trace : exp-001, exp-002" in output
+    assert "ne sont pas requalifiées comme interventions contrôlées" in output
+    assert "Expériences utilisées : aucune" not in output
 
 
 def test_precomputed_learning_state_is_exposed_before_experiment_planning():
