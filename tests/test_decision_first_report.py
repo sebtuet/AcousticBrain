@@ -309,7 +309,7 @@ def test_deferred_action_is_not_reactivated():
     ("protocol", "hypothesis"),
     ((None, "HYPOTHESIS_TEST"), ("protocol.test.v1", None), (None, None)),
 )
-def test_missing_protocol_or_hypothesis_marks_the_change_as_undeclared(
+def test_missing_protocol_or_hypothesis_marks_the_tested_conditions_as_undeclared(
     protocol,
     hypothesis,
 ):
@@ -321,7 +321,7 @@ def test_missing_protocol_or_hypothesis_marks_the_change_as_undeclared(
     decision = DecisionFirstReportPresenter().present(value)
 
     assert any("n’a pas été déclarée" in item for item in decision.action_reasons)
-    assert any("ne sait pas précisément" in item for item in decision.active_limits)
+    assert any("ne sait pas formellement" in item for item in decision.active_limits)
 
 
 def test_missing_direction_and_distance_are_not_invented():
@@ -474,10 +474,12 @@ def test_exp006_analogue_is_honest_and_actionable_without_inventing_a_move():
 
     assert "améliorations et des dégradations" in output
     assert "Aucun verdict global simple" in output
-    assert "modification de la dernière expérience n’a pas été déclarée" in output
+    assert "variable testée, ou l’absence de changement volontaire" in output
     assert "Aucune expérience contrôlée n’est actuellement éligible" in output
     assert "décider de reprendre" in output
-    assert "Déclarez précisément ce qui a été modifié" in output
+    assert "Déclarez si la configuration devait rester inchangée" in output
+    assert "déplacement a eu lieu" not in output
+    assert "nouvelle position" not in output
     assert "déplacez" not in output.lower()
 
 

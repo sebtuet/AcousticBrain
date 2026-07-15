@@ -35,8 +35,8 @@ Dans le contexte `exp-006` fourni pour PR-041 :
 
 Le verdict n’était donc pas visible dans les premières lignes. Plusieurs
 recommandations concurrentes étaient visibles sans décision unique, et le
-rapport ne reliait pas immédiatement l’absence d’action à la modification non
-déclarée, à l’inéligibilité du plan et à la décision différée.
+rapport ne reliait pas immédiatement l’absence d’action aux conditions de test
+non déclarées, à l’inéligibilité du plan et à la décision différée.
 
 ## Hiérarchie du rapport
 
@@ -132,9 +132,14 @@ action active. La page indique :
 ## Expériences non déclarées
 
 Si la dernière comparaison ne possède pas de protocole ou d’hypothèse source,
-la page indique que la modification n’a pas été déclarée et qu’AcousticBrain ne
-sait pas précisément ce qui a changé. La déclaration de la modification devient
-alors une étape de déblocage, pas une interprétation acoustique.
+la page indique qu’AcousticBrain ne sait pas formellement quelle variable était
+testée, ni si la configuration devait rester inchangée. La déclaration de ces
+conditions devient alors une étape de déblocage, pas une interprétation
+acoustique.
+
+L’absence de déclaration ne prouve pas qu’un déplacement ou une modification a
+eu lieu. Le présentateur ne qualifie donc pas l’expérience de « nouvelle
+position » et ne crée aucun modèle de répétabilité implicite.
 
 ## Faits, limites et confiance
 

@@ -205,7 +205,7 @@ class DecisionFirstReportPresenter:
             ),
             "UNCHANGED": "Aucun changement acoustique significatif n’a été observé.",
             "INCONCLUSIVE": (
-                "Les mesures ne permettent pas de conclure sur la dernière modification."
+                "Les mesures ne permettent pas de conclure sur la dernière expérience."
             ),
         }
         status = comparison.acoustic_outcome
@@ -213,7 +213,7 @@ class DecisionFirstReportPresenter:
             status = "INCONCLUSIVE"
         return labels.get(
             status,
-            "Les mesures ne permettent pas de conclure sur la dernière modification.",
+            "Les mesures ne permettent pas de conclure sur la dernière expérience.",
         ), "Établi par les mesures"
 
     @staticmethod
@@ -374,7 +374,8 @@ class DecisionFirstReportPresenter:
         reasons = []
         if undeclared:
             reasons.append(
-                "La modification de la dernière expérience n’a pas été déclarée."
+                "La variable testée, ou l’absence de changement volontaire, "
+                "n’a pas été déclarée."
             )
         planning = report.experiment_planning
         if planning is not None and planning.recommended_candidate is None:
@@ -402,7 +403,8 @@ class DecisionFirstReportPresenter:
         steps = []
         if undeclared:
             steps.append(
-                "Déclarez précisément ce qui a été modifié pendant la dernière expérience."
+                "Déclarez si la configuration devait rester inchangée ou quelle "
+                "variable était testée pendant la dernière expérience."
             )
         if deferred:
             steps.append(
@@ -451,15 +453,15 @@ class DecisionFirstReportPresenter:
         values = []
         if undeclared:
             values.append(
-                "AcousticBrain ne sait pas précisément ce qui a été modifié "
-                "pendant cette expérience."
+                "AcousticBrain ne sait pas formellement quelle variable était "
+                "testée ni si la configuration devait rester inchangée."
             )
         if comparison is None or comparison.eligibility != "COMPARABLE":
             values.append("La dernière comparaison n’est pas établie.")
         elif comparison.acoustic_outcome == "MIXED":
-            values.append("La dernière modification produit des effets contradictoires.")
+            values.append("La dernière expérience présente des effets contradictoires.")
         elif comparison.outcome == "INCONCLUSIVE":
-            values.append("L’effet de la dernière modification reste inconclusif.")
+            values.append("Le résultat de la dernière expérience reste inconclusif.")
         values.extend(deferred[:1])
         return tuple(dict.fromkeys(values))[: self.MAXIMUM_LIMITS]
 
