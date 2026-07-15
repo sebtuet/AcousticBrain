@@ -5,6 +5,31 @@ ACOUSTICBRAIN REPORT
 
 Projet : comparison-fixture
 
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Aucun objectif expérimental prioritaire n’est actuellement établi.
+
+Verdict
+La dernière expérience montre une amélioration mesurable dans le périmètre testé.
+ • Comparaison : baseline → exp-001.
+ • Protocole : protocol.repeat-pair.
+ • Le verdict porte uniquement sur le périmètre mesuré.
+
+Prochaine action
+Aucun déplacement fiable ne peut être recommandé actuellement.
+
+Ce que l’on sait
+ • l’asymétrie spatiale diminue
+
+Ce que l’on ne sait pas encore
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Établi par les mesures.
+ • Action : Non établi.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
 PROCHAINE ÉTAPE DE POSITIONNEMENT
 
 Situation actuelle

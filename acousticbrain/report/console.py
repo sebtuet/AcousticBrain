@@ -2,6 +2,7 @@ from .report import Report
 from .action_oriented_positioning_presenter import (
     ActionOrientedPositioningPresenter,
 )
+from .decision_first_presenter import DecisionFirstReportPresenter
 
 
 class ConsoleReporter:
@@ -18,6 +19,9 @@ class ConsoleReporter:
         print()
 
         print(f"Projet : {report.project_name}")
+        self._print_decision_first(
+            DecisionFirstReportPresenter().present(report)
+        )
         self._print_action_oriented_positioning(
             ActionOrientedPositioningPresenter().present(report)
         )
@@ -1065,6 +1069,83 @@ class ConsoleReporter:
             print("Deltas : " + (", ".join(comparison.trace_delta_fact_codes) or "aucun"))
             print("Faits expérimentaux : " + (", ".join(comparison.trace_observed_fact_codes) or "aucun"))
             print("Discriminations ouvertes : " + (", ".join(comparison.trace_unresolved_discrimination_codes) or "aucune"))
+
+    @staticmethod
+    def _print_decision_first(decision):
+        print()
+        print("DÉCISION ACOUSTIQUE")
+        print()
+        print("Objectif actuel")
+        print(decision.objective)
+
+        print()
+        print("Verdict")
+        print(decision.verdict)
+        for item in decision.comparison_context:
+            print(f" • {item}")
+
+        print()
+        print("Prochaine action")
+        print(decision.action)
+        if decision.target is not None:
+            print(f"Objet à modifier : {decision.target}.")
+        if decision.direction is not None:
+            print(f"Direction : {decision.direction}.")
+        if decision.amplitude is not None:
+            print(f"Amplitude : {decision.amplitude}.")
+        if decision.tested_variable is not None:
+            print(f"Variable testée : {decision.tested_variable}.")
+
+        if decision.unchanged_items:
+            print()
+            print("À maintenir inchangé")
+            for item in decision.unchanged_items:
+                print(f" • {item}")
+
+        if decision.required_measurements:
+            print()
+            print("Mesure suivante")
+            print(
+                " • Réalisez une nouvelle expérience REW : "
+                + ", ".join(decision.required_measurements)
+                + "."
+            )
+            print(" • Conservez la position du microphone et le volume.")
+            print(" • Ne modifiez aucune autre variable.")
+            print(" • Enregistrez précisément l’unique modification réalisée.")
+
+        if decision.action_reasons:
+            print()
+            print("Pourquoi")
+            for item in decision.action_reasons:
+                print(f" • {item}")
+
+        if decision.unblock_steps:
+            print()
+            print("À faire avant de poursuivre")
+            for item in decision.unblock_steps:
+                print(f" • {item}")
+
+        if decision.established_facts:
+            print()
+            print("Ce que l’on sait")
+            for item in decision.established_facts:
+                print(f" • {item}")
+
+        print()
+        print("Ce que l’on ne sait pas encore")
+        for item in decision.active_limits:
+            print(f" • {item}")
+        print(" • L’origine causale exacte n’est pas établie.")
+
+        print()
+        print("Statut de confiance")
+        print(f" • Verdict : {decision.verdict_confidence}.")
+        print(f" • Action : {decision.action_confidence}.")
+        print(
+            " • Causalité : Non établi "
+            f"({decision.causality_status})."
+        )
 
     @staticmethod
     def _print_action_oriented_positioning(positioning):
