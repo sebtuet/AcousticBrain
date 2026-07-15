@@ -60,3 +60,6 @@ from .room_geometry_builder import (
 )
 from .acoustic_reasoning import AcousticReasoningEngine
 from .experiment_planning import ExperimentPlanner
+from .loudspeaker_positioning_experiment import (
+    LoudspeakerPositioningExperimentEngine,
+)

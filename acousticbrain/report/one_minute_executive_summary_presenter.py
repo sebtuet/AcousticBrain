@@ -158,6 +158,8 @@ class OneMinuteExecutiveSummaryPresenter:
 
     @staticmethod
     def _precise_action(decision):
+        if decision.positioning_proposal_id is not None:
+            return decision.action
         if decision.target is None or (
             decision.direction is None and decision.amplitude is None
         ):
@@ -203,6 +205,20 @@ class OneMinuteExecutiveSummaryPresenter:
                 "Les améliorations et dégradations observées se compensent.",
             )
         if decision.action_status == "AVAILABLE":
+            if decision.positioning_proposal_id is not None:
+                observables = ", ".join(
+                    decision.positioning_expected_observables[:2]
+                )
+                detail = (
+                    f" Les observables suivis seront : {observables}."
+                    if observables
+                    else ""
+                )
+                return (
+                    "Une seule variable est modifiée dans un pas expérimental réversible.",
+                    "Ce test n’est pas une position optimale prédite et ne promet "
+                    "aucune amélioration." + detail,
+                )
             return ("Une action structurée est déjà disponible.",)
         if decision.action_reasons:
             return (decision.action_reasons[0],)
@@ -228,4 +244,10 @@ class OneMinuteExecutiveSummaryPresenter:
             verdict = "Verdict : incertain."
         else:
             verdict = "Verdict : établi par les mesures."
-        return measurement, verdict, "Cause : non établie (NOT_ESTABLISHED)."
+        cause = "Cause : non établie (NOT_ESTABLISHED)."
+        if decision.positioning_proposal_id is not None:
+            cause = (
+                "Action : expérience réversible proposée ; amélioration non garantie. "
+                "Cause : non établie (NOT_ESTABLISHED)."
+            )
+        return measurement, verdict, cause

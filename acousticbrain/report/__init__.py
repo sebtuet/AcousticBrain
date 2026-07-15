@@ -1,4 +1,9 @@
 from .report import Report
+from .loudspeaker_positioning_experiment_presenter import (
+    LoudspeakerPositioningExperimentPresenter,
+    PresentedLoudspeakerPositioningExperimentAnalysis,
+    PresentedLoudspeakerPositioningExperimentProposal,
+)
 from .action_oriented_positioning_presenter import (
     ActionOrientedPositioningPresenter,
     PresentedActionOrientedPositioning,

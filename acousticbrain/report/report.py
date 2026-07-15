@@ -31,6 +31,9 @@ from .reflection_experiment_comparison_presenter import (
 from .reflection_hypothesis_status_presenter import (
     PresentedControlledReflectionHypothesisStatusUpdate,
 )
+from .loudspeaker_positioning_experiment_presenter import (
+    PresentedLoudspeakerPositioningExperimentAnalysis,
+)
 
 
 @dataclass
@@ -55,6 +58,10 @@ class Report:
     optimization_session: PresentedOptimizationSession | None = None
 
     experiment_planning: PresentedExperimentPlanning | None = None
+
+    loudspeaker_positioning_experiment: (
+        PresentedLoudspeakerPositioningExperimentAnalysis | None
+    ) = None
 
     experiments_discovered: PresentedExperimentDiscovery | None = None
 

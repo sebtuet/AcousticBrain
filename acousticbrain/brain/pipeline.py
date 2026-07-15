@@ -61,6 +61,9 @@ from .stages.global_synthesis import GlobalSynthesisStage
 from .stages.traceability import TraceabilityStage
 from .stages.acoustic_reasoning import AcousticReasoningStage
 from .stages.experiment_planning import ExperimentPlanningStage
+from .stages.loudspeaker_positioning_experiment import (
+    LoudspeakerPositioningExperimentStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -266,6 +269,10 @@ class BrainPipeline:
         )
 
         RecommendationStage().run(
+            context,
+        )
+
+        LoudspeakerPositioningExperimentStage().run(
             context,
         )
 

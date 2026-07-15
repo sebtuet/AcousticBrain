@@ -52,6 +52,47 @@ class ActionOrientedPositioningPresenter:
         facts = self._facts(priority)
         previous_result = self._previous_result(report)
 
+        positioning = getattr(report, "loudspeaker_positioning_experiment", None)
+        if positioning is not None:
+            proposal = getattr(positioning, "proposal", None)
+            if proposal is None:
+                return self._unavailable_positioning(
+                    positioning,
+                    situation,
+                    certainty,
+                    facts,
+                    previous_result,
+                    priority,
+                )
+            action = self._positioning_action(proposal)
+            return PresentedActionOrientedPositioning(
+                status="ACTION_AVAILABLE",
+                situation=situation,
+                certainty=certainty,
+                measured_facts=facts,
+                possible_explanations=proposal.rationale,
+                action=action.action,
+                target=action.target,
+                direction=action.direction,
+                amplitude=action.amplitude,
+                unchanged_items=self._unchanged_items(
+                    action.controlled_variable_codes,
+                    action.target,
+                ),
+                required_measurements=self.REQUIRED_MEASUREMENTS,
+                comparison_criteria=self._comparison_criteria(
+                    action.observable_fact_codes
+                ),
+                previous_result=previous_result,
+                missing_information=(),
+                limitations=(
+                    "Il s’agit d’un pas expérimental réversible, pas d’une position optimale prédite.",
+                    *self.DEFAULT_LIMITATIONS,
+                ),
+                causality_status=action.causality_status,
+                source_codes=action.source_codes,
+            )
+
         action = self._planned_action(report)
         if action is None:
             action = self._declared_reflection_action(report)
@@ -139,6 +180,143 @@ class ActionOrientedPositioningPresenter:
             source_codes=tuple(dict.fromkeys(
                 (*action.source_codes, *self._priority_source_codes(priority))
             )),
+        )
+
+    def _unavailable_positioning(
+        self, analysis, situation, certainty, facts, previous_result, priority
+    ):
+        status = getattr(analysis.proposal_status, "value", analysis.proposal_status)
+        messages = {
+            "MISSING_DIRECTION": (
+                "Une expérience de positionnement semble pertinente. Cependant, "
+                "les observations disponibles ne permettent pas de choisir entre "
+                "un déplacement vers l’avant, l’arrière, l’intérieur ou l’extérieur "
+                "sans formuler une hypothèse non démontrée. Aucune direction n’est "
+                "donc proposée."
+            ),
+            "MISSING_GEOMETRY": (
+                "La géométrie disponible ne permet pas de définir honnêtement "
+                "un déplacement d’enceinte."
+            ),
+            "AMBIGUOUS": (
+                "Plusieurs expériences de positionnement restent également "
+                "plausibles. AcousticBrain ne peut pas en sélectionner une seule."
+            ),
+            "BLOCKED_BY_USER_DECISION": (
+                "L’expérience de positionnement correspondante est différée par "
+                "une décision utilisateur."
+            ),
+        }
+        limitations = self.DEFAULT_LIMITATIONS
+        if status == "MISSING_DIRECTION":
+            limitations = tuple(
+                item
+                for item in self.DEFAULT_LIMITATIONS
+                if item != "Une nouvelle mesure est nécessaire."
+            ) + (
+                "Les mesures REW disponibles ne sont pas la cause de ce blocage.",
+            )
+        return PresentedActionOrientedPositioning(
+            status=status,
+            situation=situation,
+            certainty=certainty,
+            measured_facts=facts,
+            possible_explanations=self._possible_explanations(priority),
+            action=messages.get(
+                status,
+                "Aucune expérience de positionnement déterministe n’est éligible avec les données actuelles.",
+            ),
+            target=None,
+            direction=None,
+            amplitude=None,
+            unchanged_items=(),
+            required_measurements=(),
+            comparison_criteria=(),
+            previous_result=previous_result,
+            missing_information=self._user_missing_information(
+                analysis.blocking_reason_codes
+            ),
+            limitations=limitations,
+            causality_status="NOT_ESTABLISHED",
+            source_codes=tuple(analysis.considered_source_ids),
+        )
+
+    @staticmethod
+    def _user_missing_information(reason_codes):
+        labels = {
+            "EXPLICIT_MOVEMENT_DIRECTION_MISSING": (
+                "Des critères scientifiques permettant de choisir une direction "
+                "de test sans supposer une cause non démontrée."
+            ),
+            "SOURCE_GEOMETRY_MISSING": (
+                "Une description géométrique suffisamment précise pour relier "
+                "le test à la configuration de la pièce."
+            ),
+            "LOUDSPEAKER_TARGET_AMBIGUOUS": (
+                "Une enceinte cible définie sans ambiguïté."
+            ),
+            "SOURCE_NOT_REVERSIBLE": (
+                "Un protocole de déplacement court et réversible."
+            ),
+            "L_R_STEREO_MEASUREMENTS_UNAVAILABLE": (
+                "Les mesures L, R et L+R nécessaires à la comparaison."
+            ),
+            "OBSERVABLE_FACTS_MISSING": (
+                "Des indicateurs existants permettant de comparer le test."
+            ),
+            "EQUAL_PRIORITY_POSITIONING_SOURCES": (
+                "Un critère permettant de départager les expériences possibles."
+            ),
+            "SOURCE_DEFERRED_BY_USER": (
+                "La reprise de l’investigation précédemment différée."
+            ),
+            "NO_ACTIVE_LOUDSPEAKER_POSITIONING_SOURCE": (
+                "Une piste active concernant explicitement le placement des enceintes."
+            ),
+        }
+        return tuple(dict.fromkeys(
+            labels.get(
+                code,
+                "Les critères scientifiques nécessaires pour définir un test précis.",
+            )
+            for code in reason_codes
+        ))
+
+    @classmethod
+    def _positioning_action(cls, proposal):
+        target_code = getattr(proposal.target, "value", proposal.target)
+        direction_code = getattr(
+            proposal.movement_direction, "value", proposal.movement_direction
+        )
+        target = {
+            "LEFT_SPEAKER": "l’enceinte gauche",
+            "RIGHT_SPEAKER": "l’enceinte droite",
+            "BOTH_SPEAKERS": "les deux enceintes",
+        }[target_code]
+        movement_target = (
+            "des deux enceintes"
+            if target_code == "BOTH_SPEAKERS"
+            else f"de {target}"
+        )
+        direction = {
+            "FORWARD": "vers l’avant",
+            "BACKWARD": "vers l’arrière",
+            "INWARD": "vers l’intérieur",
+            "OUTWARD": "vers l’extérieur",
+        }[direction_code]
+        amplitude = f"{proposal.step_distance_m * 100:g} cm"
+        return _Action(
+            action=(
+                f"Testez un déplacement réversible {movement_target} de {amplitude} "
+                f"{direction}."
+            ),
+            target=target,
+            direction=direction,
+            amplitude=amplitude,
+            controlled_variable_codes=proposal.controlled_variables,
+            observable_fact_codes=proposal.expected_observables,
+            source_codes=(proposal.proposal_id, *proposal.source_recommendation_ids),
+            causality_status=proposal.causality_status,
         )
 
     @staticmethod
@@ -346,6 +524,12 @@ class ActionOrientedPositioningPresenter:
             "ROOM_CONFIGURATION": "les traitements et la configuration de la pièce",
             "LOUDSPEAKER_POSITION": "la position des enceintes",
             "OTHER_LOUDSPEAKER_POSITIONS": "la position de l’autre enceinte",
+            "LISTENING_POSITION": "la position d’écoute",
+            "REW_MEASUREMENT_PARAMETERS": "les paramètres de mesure REW",
+            "LOUDSPEAKER_SEPARATION": "l’écartement entre les enceintes",
+            "LOUDSPEAKER_PAIR_SYMMETRY": (
+                "un déplacement identique et symétrique des deux enceintes"
+            ),
         }
         values = [
             "la position du microphone",

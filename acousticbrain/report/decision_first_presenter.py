@@ -36,6 +36,9 @@ class PresentedDecisionFirstReport:
     controlled_variables: tuple[str, ...]
     declaration_user_note: str | None
     configuration_declared_unchanged: bool
+    positioning_proposal_status: str
+    positioning_proposal_id: str | None
+    positioning_expected_observables: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -129,6 +132,9 @@ class DecisionFirstReportPresenter:
         "LOUDSPEAKER_ORIENTATION": "l’orientation des enceintes",
         "LOUDSPEAKER_POSITION": "la position des enceintes",
         "OTHER_LOUDSPEAKER_POSITIONS": "la position de l’autre enceinte",
+        "LOUDSPEAKER_PAIR_SYMMETRY": (
+            "un déplacement identique et symétrique des deux enceintes"
+        ),
         "SIGNAL_CHAIN_ASSIGNMENT": "les branchements et canaux",
         "ROOM_CONFIGURATION": "la configuration de la pièce",
     }
@@ -162,6 +168,13 @@ class DecisionFirstReportPresenter:
             undeclared,
             deferred,
         )
+        positioning = getattr(report, "loudspeaker_positioning_experiment", None)
+        if (
+            action is not None
+            and positioning is not None
+            and positioning.proposal is not None
+        ):
+            action_reasons = positioning.proposal.rationale
         unblock_steps = self._unblock_steps(
             report,
             action_status,
@@ -229,7 +242,15 @@ class DecisionFirstReportPresenter:
             active_limits=limits,
             verdict_confidence=verdict_confidence,
             action_confidence=(
-                "Explication possible" if action is not None else "Non établi"
+                (
+                    f"Proposition expérimentale ({positioning.proposal.confidence:.1f} %) "
+                    "— amélioration non garantie"
+                    if action is not None
+                    and positioning is not None
+                    and positioning.proposal is not None
+                    else "Explication possible"
+                )
+                if action is not None else "Non établi"
             ),
             causality_status="NOT_ESTABLISHED",
             source_codes=source_codes,
@@ -268,6 +289,21 @@ class DecisionFirstReportPresenter:
                 comparison.declaration_user_note if comparison is not None else None
             ),
             configuration_declared_unchanged=unchanged_repeat,
+            positioning_proposal_status=self._positioning_status(report),
+            positioning_proposal_id=(
+                report.loudspeaker_positioning_experiment.proposal.proposal_id
+                if getattr(report, "loudspeaker_positioning_experiment", None) is not None
+                and report.loudspeaker_positioning_experiment.proposal is not None
+                and not repeat
+                else None
+            ),
+            positioning_expected_observables=(
+                report.loudspeaker_positioning_experiment.proposal.expected_observables
+                if getattr(report, "loudspeaker_positioning_experiment", None) is not None
+                and report.loudspeaker_positioning_experiment.proposal is not None
+                and not repeat
+                else ()
+            ),
         )
 
     @staticmethod
@@ -402,6 +438,14 @@ class DecisionFirstReportPresenter:
         )
 
     def _select_action(self, report):
+        positioning = getattr(report, "loudspeaker_positioning_experiment", None)
+        if positioning is not None:
+            if positioning.proposal is not None:
+                return self._positioning_action(positioning.proposal), "AVAILABLE"
+            return None, getattr(
+                positioning.proposal_status, "value", positioning.proposal_status
+            )
+
         declared = self._declared_actions(report)
         if len(declared) > 1:
             return None, "TIED"
@@ -428,6 +472,54 @@ class DecisionFirstReportPresenter:
             return self._recommendation_action(top[0]), "AVAILABLE"
 
         return None, "UNAVAILABLE"
+
+    def _positioning_action(self, proposal):
+        target_code = getattr(proposal.target, "value", proposal.target)
+        direction_code = getattr(
+            proposal.movement_direction, "value", proposal.movement_direction
+        )
+        target = {
+            "LEFT_SPEAKER": "l’enceinte gauche",
+            "RIGHT_SPEAKER": "l’enceinte droite",
+            "BOTH_SPEAKERS": "les deux enceintes",
+        }[target_code]
+        movement_target = (
+            "des deux enceintes"
+            if target_code == "BOTH_SPEAKERS"
+            else f"de {target}"
+        )
+        direction = {
+            "FORWARD": "vers l’avant",
+            "BACKWARD": "vers l’arrière",
+            "INWARD": "vers l’intérieur",
+            "OUTWARD": "vers l’extérieur",
+        }[direction_code]
+        amplitude = f"{proposal.step_distance_m * 100:g} cm"
+        return _DecisionAction(
+            objective=(
+                "Tester de manière réversible l’influence d’un déplacement "
+                "d’enceinte déjà orienté par les données structurées."
+            ),
+            action=(
+                f"Testez un déplacement réversible {movement_target} de {amplitude} "
+                f"{direction}."
+            ),
+            target=target,
+            direction=direction,
+            amplitude=amplitude,
+            tested_variable=self.VARIABLE_LABELS[proposal.tested_variable],
+            unchanged_items=self._unchanged_items(proposal.controlled_variables),
+            required_measurements=proposal.required_measurements,
+            source_codes=(proposal.proposal_id, *proposal.source_recommendation_ids),
+        )
+
+    @staticmethod
+    def _positioning_status(report):
+        analysis = getattr(report, "loudspeaker_positioning_experiment", None)
+        return (
+            getattr(analysis.proposal_status, "value", analysis.proposal_status)
+            if analysis is not None else "NOT_EVALUATED"
+        )
 
     def _declared_actions(self, report):
         declarations = tuple(
@@ -547,6 +639,28 @@ class DecisionFirstReportPresenter:
                 "Plusieurs actions restent également prioritaires et ne "
                 "peuvent pas être départagées."
             )
+        positioning_reasons = {
+            "MISSING_DIRECTION": (
+                "Les observations acoustiques sont disponibles, mais aucune règle "
+                "démontrée ne permet de les traduire en une direction de déplacement. "
+                "AcousticBrain s’arrête donc avant d’inventer une relation de cause "
+                "à effet."
+            ),
+            "MISSING_GEOMETRY": (
+                "La géométrie requise pour ce test de positionnement est manquante."
+            ),
+            "AMBIGUOUS": (
+                "Plusieurs expériences de positionnement restent également prioritaires."
+            ),
+            "BLOCKED_BY_USER_DECISION": (
+                "La piste de positionnement est différée par décision utilisateur."
+            ),
+            "NOT_ELIGIBLE": (
+                "Aucune source structurée ne rend un déplacement d’enceinte éligible."
+            ),
+        }
+        if status in positioning_reasons:
+            reasons.append(positioning_reasons[status])
         reasons.extend(deferred[:1])
         return tuple(dict.fromkeys(reasons))
 
@@ -557,6 +671,22 @@ class DecisionFirstReportPresenter:
                 "Plusieurs actions restent également prioritaires. AcousticBrain "
                 "ne peut pas en sélectionner une seule sans information supplémentaire."
             )
+        if status == "MISSING_DIRECTION":
+            return (
+                "Une expérience de positionnement semble pertinente. Cependant, "
+                "AcousticBrain ne peut pas choisir entre un déplacement vers l’avant, "
+                "l’arrière, l’intérieur ou l’extérieur sans formuler une hypothèse "
+                "non démontrée. Aucune direction n’est donc proposée."
+            )
+        if status == "MISSING_GEOMETRY":
+            return "La géométrie disponible ne permet pas de définir ce déplacement."
+        if status == "AMBIGUOUS":
+            return (
+                "Plusieurs expériences de positionnement restent également plausibles. "
+                "AcousticBrain ne peut pas en sélectionner une seule."
+            )
+        if status == "BLOCKED_BY_USER_DECISION":
+            return "L’expérience de positionnement est différée par décision utilisateur."
         return "Aucun déplacement fiable ne peut être recommandé actuellement."
 
     def _unblock_steps(self, report, status, undeclared, deferred):

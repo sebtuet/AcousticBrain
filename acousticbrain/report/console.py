@@ -1135,7 +1135,16 @@ class ConsoleReporter:
             )
             print(" • Conservez la position du microphone et le volume.")
             print(" • Ne modifiez aucune autre variable.")
+            if decision.positioning_proposal_id is not None:
+                print(
+                    " • Mesurez et consignez la position physique avant et après "
+                    "le déplacement."
+                )
             print(" • Enregistrez précisément l’unique modification réalisée.")
+            if decision.positioning_proposal_id is not None:
+                print(
+                    " • Déclarez l’expérience contrôlée avant ou après l’acquisition."
+                )
 
         if decision.action_reasons:
             print()
@@ -1237,7 +1246,14 @@ class ConsoleReporter:
                 + "."
             )
             print(" • Conservez le microphone et le volume strictement inchangés.")
+            print(
+                " • Mesurez et consignez la position physique avant et après "
+                "le déplacement."
+            )
             print(" • Notez précisément l’unique élément modifié.")
+            print(
+                " • Déclarez l’expérience contrôlée avant ou après l’acquisition."
+            )
             print(" • Consultez le guide REW pour les détails d’acquisition et d’export.")
 
             print()
