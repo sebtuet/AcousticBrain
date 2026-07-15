@@ -314,6 +314,7 @@ class AutomaticExperimentComparisonService:
                 descriptor.declared_change_codes,
                 descriptor.required_comparison_fact_codes,
                 descriptor.comparison_parameters,
+                descriptor.experiment_declaration,
             )
         if optimization_session is not None:
             matches = [
@@ -328,6 +329,7 @@ class AutomaticExperimentComparisonService:
                     (),
                     protocol.fact_codes,
                     (),
+                    descriptor.experiment_declaration,
                 )
         return (
             None,
@@ -335,6 +337,7 @@ class AutomaticExperimentComparisonService:
             (),
             descriptor.required_comparison_fact_codes,
             descriptor.comparison_parameters,
+            descriptor.experiment_declaration,
         )
 
     def _compare(self, before, after, comparison_type, initial_reasons, metadata):
@@ -357,6 +360,7 @@ class AutomaticExperimentComparisonService:
             declared_changes,
             required_facts,
             experiment_parameters,
+            declaration,
         ) = metadata
         comparable_codes = {item.fact_code for item in deltas}
         if any(code not in comparable_codes for code in required_facts):
@@ -460,6 +464,12 @@ class AutomaticExperimentComparisonService:
                 *(code for item in deltas for code in item.source_analysis_codes),
             ))),
             trace=trace,
+            experiment_kind=declaration.experiment_kind,
+            reference_experiment_code=declaration.reference_experiment_code,
+            modified_variables=declaration.modified_variables,
+            controlled_variables=declaration.controlled_variables,
+            declaration_user_note=declaration.user_note,
+            declaration_field_provenance=declaration.field_provenance,
         )
 
     def _fact_deltas(self, before, after):

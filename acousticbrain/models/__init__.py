@@ -1,4 +1,5 @@
 from .measurement import Measurement
+from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .peak import Peak
 from .band import FrequencyBand
 from .room import Room

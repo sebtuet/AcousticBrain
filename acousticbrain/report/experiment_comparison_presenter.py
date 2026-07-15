@@ -33,6 +33,12 @@ class PresentedExperimentEvolution:
     trace_delta_fact_codes: tuple[str, ...]
     trace_observed_fact_codes: tuple[str, ...]
     trace_unresolved_discrimination_codes: tuple[str, ...]
+    experiment_kind: str = "UNKNOWN"
+    reference_experiment_code: str | None = None
+    modified_variables: tuple[str, ...] = ()
+    controlled_variables: tuple[str, ...] = ()
+    declaration_user_note: str | None = None
+    declaration_field_provenance: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -140,4 +146,10 @@ class ExperimentComparisonPresenter:
             trace_unresolved_discrimination_codes=(
                 item.trace.unresolved_discrimination_codes
             ),
+            experiment_kind=item.experiment_kind.value,
+            reference_experiment_code=item.reference_experiment_code,
+            modified_variables=item.modified_variables,
+            controlled_variables=item.controlled_variables,
+            declaration_user_note=item.declaration_user_note,
+            declaration_field_provenance=item.declaration_field_provenance,
         )

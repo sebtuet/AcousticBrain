@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from math import isfinite
 
+from .experiment_declaration import ExperimentKind
+
 
 ComparisonValue = str | int | float | bool
 
@@ -156,6 +158,12 @@ class ExperimentEvolutionResult:
     technical_confidence: float | None
     provenance_codes: tuple[str, ...]
     trace: ExperimentComparisonTrace
+    experiment_kind: ExperimentKind = ExperimentKind.UNKNOWN
+    reference_experiment_code: str | None = None
+    modified_variables: tuple[str, ...] = ()
+    controlled_variables: tuple[str, ...] = ()
+    declaration_user_note: str | None = None
+    declaration_field_provenance: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self):
         collections = (
@@ -165,6 +173,8 @@ class ExperimentEvolutionResult:
             self.counter_facts, self.unavailable_fact_codes,
             self.unresolved_discriminations, self.applied_rule_codes,
             self.applied_threshold_codes, self.provenance_codes,
+            self.modified_variables, self.controlled_variables,
+            self.declaration_field_provenance,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Evolution-result collections must be tuples.")
