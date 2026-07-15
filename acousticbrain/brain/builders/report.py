@@ -16,6 +16,7 @@ from acousticbrain.report import (
     ControlledReflectionExperimentDeclarationPresenter,
     ControlledReflectionExperimentComparisonPresenter,
     ControlledReflectionHypothesisStatusPresenter,
+    LoudspeakerPositioningExperimentPresenter,
 )
 
 
@@ -40,6 +41,9 @@ class ReportBuilder:
         report.room_geometry = RoomGeometryPresenter().present(context)
         report.optimization_session = OptimizationSessionPresenter().present(context)
         report.experiment_planning = ExperimentPlanningPresenter().present(context)
+        report.loudspeaker_positioning_experiment = (
+            LoudspeakerPositioningExperimentPresenter().present(context)
+        )
         report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
         report.experiment_comparison = ExperimentComparisonPresenter().present(context)
         report.experiment_campaigns = ExperimentCampaignPresenter().present(context)

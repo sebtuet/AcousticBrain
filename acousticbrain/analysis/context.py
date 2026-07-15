@@ -33,6 +33,7 @@ from acousticbrain.models import (
     TraceabilityAnalysis,
     AcousticReasoningAnalysis,
     ExperimentPlanningAnalysis,
+    LoudspeakerPositioningExperimentAnalysis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -124,6 +125,10 @@ class AnalysisContext:
     acoustic_reasoning_analysis: AcousticReasoningAnalysis | None = None
 
     experiment_planning_analysis: ExperimentPlanningAnalysis | None = None
+
+    loudspeaker_positioning_experiment_analysis: (
+        LoudspeakerPositioningExperimentAnalysis | None
+    ) = None
 
     experiment_campaign_analyses: tuple = ()
 

@@ -8,6 +8,9 @@ from .optimization_session import (
 )
 from .experiment_discovery import ExperimentDiscoveryService
 from .experiment_declaration import ExperimentDeclarationService
+from .positioning_proposal_declaration import (
+    PositioningProposalDeclarationService,
+)
 from .experiment_protocol_declaration import ExperimentProtocolDeclarationService
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,

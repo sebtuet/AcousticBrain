@@ -1,5 +1,13 @@
 from .measurement import Measurement
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
+from .loudspeaker_positioning_experiment import (
+    LoudspeakerMovementAxis,
+    LoudspeakerMovementDirection,
+    LoudspeakerPositioningExperimentAnalysis,
+    LoudspeakerPositioningExperimentProposal,
+    LoudspeakerPositioningProposalStatus,
+    LoudspeakerPositioningTarget,
+)
 from .peak import Peak
 from .band import FrequencyBand
 from .room import Room
