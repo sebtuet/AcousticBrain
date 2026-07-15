@@ -147,7 +147,10 @@ l'a pas explicitement acceptée.
 L'acceptation convertit la proposition en `CONTROLLED_INTERVENTION`, avec
 `LOUDSPEAKER_POSITION` comme seule variable modifiée, les contrôles de la
 proposition, la référence choisie et une provenance contenant le
-`proposal_id`. Elle ne crée ni résultat, ni score, ni causalité.
+`proposal_id`. Le brouillon `PositioningProposalDeclarationDraft` expose
+directement `proposal_id` avec tous les champs PR-043; le manifeste PR-043
+conserve l'association dans la provenance de chaque champ, sans migration de
+schéma. Elle ne crée ni résultat, ni score, ni causalité.
 
 ## Acceptation CLI explicite
 

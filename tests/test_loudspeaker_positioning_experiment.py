@@ -398,6 +398,8 @@ def test_accepted_proposal_persists_a_pr043_controlled_intervention(tmp_path):
     payload = json.loads(first)
     value = payload["experiment_declaration"]
     assert declaration.experiment_kind is ExperimentKind.CONTROLLED_INTERVENTION
+    assert declaration.proposal_id == proposal.proposal_id
+    assert declaration.reference_experiment_code == "exp-005"
     assert value["modified_variables"] == ["LOUDSPEAKER_POSITION"]
     assert proposal.proposal_id in value["field_provenance"]["experiment_kind"]
     assert measurement.read_text(encoding="utf-8") == "measurement"
@@ -443,6 +445,7 @@ def test_acceptance_cli_requires_explicit_matching_proposal_and_creates_draft(
         def declare(self, measurement_root, **kwargs):
             captured["declaration"] = (measurement_root, kwargs)
             return SimpleNamespace(
+                proposal_id=proposal.proposal_id,
                 experiment_kind=ExperimentKind.CONTROLLED_INTERVENTION
             )
 
