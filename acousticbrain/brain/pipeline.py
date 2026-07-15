@@ -120,6 +120,7 @@ class BrainPipeline:
         session_context=None,
         plan_experiments=False,
         experiment_descriptors=(),
+        longitudinal_experimental_learning_analysis=None,
         return_context=False,
     ):
 
@@ -146,6 +147,9 @@ class BrainPipeline:
         measurement,
         )
         context.experiment_descriptors = tuple(experiment_descriptors)
+        context.longitudinal_experimental_learning_analysis = (
+            longitudinal_experimental_learning_analysis
+        )
 
         RoomGeometryStage().run(
             project,

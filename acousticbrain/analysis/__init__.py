@@ -63,3 +63,6 @@ from .experiment_planning import ExperimentPlanner
 from .loudspeaker_positioning_experiment import (
     LoudspeakerPositioningExperimentEngine,
 )
+from .longitudinal_experimental_learning import (
+    LongitudinalExperimentalLearningEngine,
+)

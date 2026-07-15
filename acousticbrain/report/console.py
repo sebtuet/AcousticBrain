@@ -587,6 +587,104 @@ class ConsoleReporter:
                     + (", ".join(causal.trace_decision_codes) or "aucune")
                 )
 
+        learning = report.longitudinal_experimental_learning
+        if learning is not None and learning.states:
+            print()
+            print("APPRENTISSAGE EXPÉRIMENTAL")
+            for state in learning.states:
+                print()
+                print(f"Hypothèse : {state.hypothesis_code}")
+                print(f"État de campagne : {state.learning_status}")
+                print(
+                    "Preuves longitudinales admissibles : "
+                    + (
+                        ", ".join(
+                            state.evidence_contributing_experiment_codes
+                        )
+                        or "aucune"
+                    )
+                )
+                self._print_historical_experiments(
+                    "Historique expérimental conservé — discrimination",
+                    state.discrimination_source_experiments,
+                )
+                self._print_historical_experiments(
+                    "Historique expérimental conservé — campagnes",
+                    state.campaign_source_experiments,
+                )
+                print("Historique non admissible comme nouvelle preuve :")
+                if state.excluded_experiments:
+                    for code, reason in state.excluded_experiments:
+                        print(f" • {code} — {reason}")
+                else:
+                    print(" • aucune")
+                print(
+                    "Observations favorables : "
+                    + (", ".join(state.supporting_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations contradictoires : "
+                    + (", ".join(state.contradicting_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations inchangées : "
+                    + (", ".join(state.unchanged_observation_ids) or "aucune")
+                )
+                print(
+                    "Observations inconclusives : "
+                    + (", ".join(state.inconclusive_observation_ids) or "aucune")
+                )
+                print("Ambiguïtés résolues :")
+                if state.resolved_ambiguity_provenance:
+                    for source in state.resolved_ambiguity_provenance:
+                        print(f" • {source.ambiguity_code}")
+                        print(
+                            "   Provenance : "
+                            f"{source.protocol_code} — {source.source_id}"
+                        )
+                        if source.source_experiments:
+                            print(
+                                "   Historique expérimental de la trace : "
+                                + ", ".join(
+                                    item.experiment_code
+                                    for item in source.source_experiments
+                                )
+                            )
+                        else:
+                            print(
+                                "   Historique expérimental de la trace : "
+                                "indisponible"
+                            )
+                elif state.resolved_ambiguities:
+                    for code in state.resolved_ambiguities:
+                        print(f" • {code} — provenance expérimentale indisponible")
+                else:
+                    print(" • aucune")
+                print(
+                    "Ambiguïtés restantes : "
+                    + (", ".join(state.remaining_ambiguities) or "aucune")
+                )
+                print(
+                    "Prochaine information nécessaire : "
+                    + state.next_information_need
+                )
+                source_statuses = {
+                    item.declaration_status
+                    for item in state.discrimination_source_experiments
+                }
+                if state.resolved_ambiguities and (
+                    not state.discrimination_source_experiments
+                    or source_statuses
+                    & {"UNKNOWN_DECLARATION", "DECLARATION_UNAVAILABLE"}
+                ):
+                    print("Limite :")
+                    print(
+                        "Les résultats historiques de la discrimination sont "
+                        "conservés, mais ses expériences ne sont pas "
+                        "requalifiées comme interventions contrôlées."
+                    )
+                print(f"Causalité : {state.causality_status}")
+
         if (
             comparison_analysis is None
             and causal is None
@@ -1294,6 +1392,24 @@ class ConsoleReporter:
             (item.diagnostic, item.is_secondary)
             for item in report.diagnostic_priority.prioritized_diagnostics
         ]
+
+    @staticmethod
+    def _print_historical_experiments(title, experiments):
+        labels = {
+            "UNKNOWN_DECLARATION": (
+                "déclaration expérimentale historique non disponible"
+            ),
+            "DECLARATION_UNAVAILABLE": "statut de déclaration indisponible",
+            "CONTROLLED_INTERVENTION": "déclarée CONTROLLED_INTERVENTION",
+            "MEASUREMENT_REPEAT": "déclarée MEASUREMENT_REPEAT",
+        }
+        print(f"{title} :")
+        if not experiments:
+            print(" • aucune")
+            return
+        for item in experiments:
+            label = labels.get(item.declaration_status, item.declaration_status)
+            print(f" • {item.experiment_code} — {label}")
 
     @staticmethod
     def _print_material_coefficients(label, coefficients):
