@@ -170,11 +170,12 @@ class DecisionFirstReportPresenter:
         )
         if repeat:
             action_reasons = (
-                "Aucune modification volontaire de placement n’a été déclarée.",
+                "La déclaration utilisateur n’indique aucune modification "
+                "volontaire de placement.",
             )
             unblock_steps = (
-                "Vérifiez que le microphone, le volume et les paramètres REW "
-                "sont identiques.",
+                "Vérifiez concrètement que le microphone, le volume et les "
+                "paramètres REW correspondent bien à la déclaration.",
                 "Réalisez éventuellement une nouvelle répétition de contrôle.",
             )
         facts = self._established_facts(report, comparison)
@@ -182,7 +183,7 @@ class DecisionFirstReportPresenter:
 
         if action is None:
             objective = (
-                "Contrôler la répétition de mesure déclarée."
+                "Évaluer les écarts entre acquisitions déclarées comme répétées."
                 if repeat
                 else "Aucun objectif expérimental prioritaire n’est actuellement établi."
             )
@@ -297,8 +298,9 @@ class DecisionFirstReportPresenter:
                     "Établi par les mesures",
                 )
             label = (
-                "Certaines mesures diffèrent malgré une configuration "
-                "déclarée identique."
+                "Certaines mesures diffèrent alors que la déclaration utilisateur "
+                "indique qu’aucune modification volontaire de la configuration "
+                "n’était prévue."
                 if cls._configuration_declared_unchanged(comparison)
                 else "Certaines mesures diffèrent entre les acquisitions répétées."
             )
@@ -366,9 +368,15 @@ class DecisionFirstReportPresenter:
             "Le verdict porte uniquement sur le périmètre mesuré.",
         ]
         if DecisionFirstReportPresenter._configuration_declared_unchanged(comparison):
-            values.append("Configuration déclarée inchangée.")
+            values.append(
+                "Selon la déclaration utilisateur, aucune modification volontaire "
+                "de la configuration n’était prévue."
+            )
         elif DecisionFirstReportPresenter._is_repeat(comparison):
-            values.append("Répétition de mesure déclarée.")
+            values.append(
+                "L’expérience est déclarée par l’utilisateur comme une répétition "
+                "de mesure."
+            )
         return tuple(values)
 
     @staticmethod
@@ -607,8 +615,9 @@ class DecisionFirstReportPresenter:
         values = []
         if self._is_repeat(comparison):
             values.append(
-                "Les écarts observés renseignent sur la répétition du protocole, "
-                "sans établir leur cause ni une modification de placement."
+                "Les écarts observés renseignent sur la répétition déclarée du "
+                "protocole, sans établir leur cause ni la réalité d’une modification "
+                "de placement."
             )
         if undeclared:
             values.append(

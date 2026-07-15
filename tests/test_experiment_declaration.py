@@ -257,7 +257,8 @@ def test_declaration_propagates_through_comparison_without_changing_outcome(monk
 def test_pr041_renders_repeat_without_claiming_a_position_change():
     decision, output = render_decision(repeat_report())
 
-    assert "Configuration déclarée inchangée" in output
+    assert "Selon la déclaration utilisateur" in output
+    assert "aucune modification volontaire de la configuration n’était prévue" in output
     assert "Certaines mesures diffèrent" in output
     assert "Ne déplacez pas encore les enceintes" in output
     assert decision.causality_status == "NOT_ESTABLISHED"
@@ -269,9 +270,9 @@ def test_pr042_mixed_repeat_is_partial_and_never_claims_good_repeatability():
     summary, output = render_summary(repeat_report())
 
     assert summary.conclusion[0] == "Partiellement."
-    assert "répétition du protocole" in summary.conclusion[1]
-    assert "Certaines mesures diffèrent malgré une configuration déclarée identique" in output
-    assert "Les différences observées ne peuvent donc pas être attribuées" in output
+    assert "répétition déclarée du protocole" in summary.conclusion[1]
+    assert "la déclaration utilisateur indique" in output
+    assert "AcousticBrain ne peut donc pas attribuer" in output
     forbidden = (
         "la nouvelle position est meilleure",
         "amélioration de placement",
@@ -291,11 +292,20 @@ def test_partial_repeat_declaration_does_not_invent_controlled_variables():
 
     _, output = render_summary(value)
 
-    assert "Répétition de mesure déclarée" in output
+    assert "déclarée par l’utilisateur comme une répétition" in output
     assert "le microphone" in output
     assert "le volume" not in output
     assert "les paramètres REW" not in output
-    assert "Configuration déclarée inchangée" not in output
+    assert "aucune modification volontaire de la configuration n’était prévue" not in output
+
+
+def test_repeat_rendering_attributes_configuration_claims_to_the_user():
+    _, output = render_summary(repeat_report())
+
+    assert "Selon la déclaration utilisateur" in output
+    assert "La déclaration utilisateur n’indique" in output
+    assert "configuration déclarée inchangée" not in output.lower()
+    assert "configuration inchangée" not in output.lower()
 
 
 def test_repeat_rendering_is_deterministic():

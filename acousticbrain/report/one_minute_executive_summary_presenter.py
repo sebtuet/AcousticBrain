@@ -49,10 +49,16 @@ class OneMinuteExecutiveSummaryPresenter:
             )
         ]
         if decision.configuration_declared_unchanged:
-            values.append("Configuration déclarée inchangée.")
+            values.append(
+                "Selon la déclaration utilisateur, aucune modification volontaire "
+                "de la configuration n’était prévue."
+            )
             return tuple(values)
         if decision.experiment_kind == "MEASUREMENT_REPEAT":
-            values.append("Répétition de mesure déclarée.")
+            values.append(
+                "L’expérience est déclarée par l’utilisateur comme une répétition "
+                "de mesure."
+            )
             return tuple(values)
         if not decision.tested_conditions_declared:
             values.append(
@@ -79,13 +85,14 @@ class OneMinuteExecutiveSummaryPresenter:
             if decision.configuration_declared_unchanged:
                 return (
                     "Partiellement.",
-                    "Ces écarts renseignent sur la répétition du protocole, "
-                    "pas sur un changement de positionnement.",
+                    "Ces écarts renseignent sur la répétition déclarée du protocole ; "
+                    "ils ne permettent pas d’établir l’effet d’un changement de "
+                    "positionnement.",
                 )
             return (
                 "Partiellement.",
-                "La répétition est déclarée, mais toutes les variables contrôlées "
-                "ne le sont pas.",
+                "L’utilisateur déclare une répétition, mais ne déclare pas toutes "
+                "les variables comme contrôlées.",
             )
         if not decision.tested_conditions_declared:
             return "Non.", "AcousticBrain ne sait pas formellement ce qui était testé."
@@ -114,7 +121,8 @@ class OneMinuteExecutiveSummaryPresenter:
                 if code in decision.controlled_variables
             )
             control = (
-                "Vérifiez que " + cls._join_labels(labels) + " sont identiques."
+                "Vérifiez concrètement la conformité à la déclaration pour "
+                + cls._join_labels(labels) + "."
                 if labels
                 else "Complétez la déclaration des variables maintenues inchangées."
             )
@@ -171,8 +179,9 @@ class OneMinuteExecutiveSummaryPresenter:
     def _reasons(decision):
         if decision.experiment_kind == "MEASUREMENT_REPEAT":
             return (
-                "Aucune modification volontaire de placement n’a été déclarée.",
-                "Les différences observées ne peuvent donc pas être attribuées "
+                "La déclaration utilisateur n’indique aucune modification volontaire "
+                "de placement.",
+                "AcousticBrain ne peut donc pas attribuer les différences observées "
                 "à un déplacement.",
             )
         if not decision.tested_conditions_declared and decision.comparison_available:
