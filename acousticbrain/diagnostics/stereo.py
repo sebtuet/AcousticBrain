@@ -116,6 +116,9 @@ class StereoDiagnostic(DiagnosticBase):
 
     @staticmethod
     def _conclusion(analysis, severity):
+        if severity == "OK":
+            return "Comportement stéréo globalement homogène."
+
         severity_label = {
             "LOW": "légère",
             "MEDIUM": "modérée",
@@ -130,9 +133,6 @@ class StereoDiagnostic(DiagnosticBase):
             )
             if balance is not None and abs(balance) > 1.0
         ]
-
-        if severity == "OK":
-            return "Comportement stéréo globalement homogène."
 
         if notable_balances:
             name, balance = max(notable_balances, key=lambda item: abs(item[1]))

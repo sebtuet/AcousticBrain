@@ -23,6 +23,18 @@ def test_stereo_diagnostic_reports_asymmetry():
     assert "2 spécifiques à gauche" in diagnostic.observations[0]
 
 
+def test_stereo_diagnostic_reports_nominal_symmetry():
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.stereo = StereoAnalysis(
+        common_peaks=[(peak(50), peak(50))],
+    )
+
+    diagnostic = StereoDiagnostic().analyze(context)
+
+    assert diagnostic.severity == "OK"
+    assert diagnostic.message == "Comportement stéréo globalement homogène."
+
+
 def test_stereo_diagnostic_requires_channel_measurements():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
 
