@@ -641,7 +641,10 @@ class DecisionFirstReportPresenter:
             )
         positioning_reasons = {
             "MISSING_DIRECTION": (
-                "Aucune direction de déplacement fiable n’est structurée dans les données."
+                "Les observations acoustiques sont disponibles, mais aucune règle "
+                "démontrée ne permet de les traduire en une direction de déplacement. "
+                "AcousticBrain s’arrête donc avant d’inventer une relation de cause "
+                "à effet."
             ),
             "MISSING_GEOMETRY": (
                 "La géométrie requise pour ce test de positionnement est manquante."
@@ -670,8 +673,10 @@ class DecisionFirstReportPresenter:
             )
         if status == "MISSING_DIRECTION":
             return (
-                "Aucune direction de déplacement fiable ne peut être déterminée "
-                "avec les données actuelles."
+                "Une expérience de positionnement semble pertinente. Cependant, "
+                "AcousticBrain ne peut pas choisir entre un déplacement vers l’avant, "
+                "l’arrière, l’intérieur ou l’extérieur sans formuler une hypothèse "
+                "non démontrée. Aucune direction n’est donc proposée."
             )
         if status == "MISSING_GEOMETRY":
             return "La géométrie disponible ne permet pas de définir ce déplacement."

@@ -188,8 +188,11 @@ class ActionOrientedPositioningPresenter:
         status = getattr(analysis.proposal_status, "value", analysis.proposal_status)
         messages = {
             "MISSING_DIRECTION": (
-                "Aucune direction de déplacement fiable ne peut être déterminée "
-                "avec les données actuelles."
+                "Une expérience de positionnement semble pertinente. Cependant, "
+                "les observations disponibles ne permettent pas de choisir entre "
+                "un déplacement vers l’avant, l’arrière, l’intérieur ou l’extérieur "
+                "sans formuler une hypothèse non démontrée. Aucune direction n’est "
+                "donc proposée."
             ),
             "MISSING_GEOMETRY": (
                 "La géométrie disponible ne permet pas de définir honnêtement "
@@ -204,6 +207,15 @@ class ActionOrientedPositioningPresenter:
                 "une décision utilisateur."
             ),
         }
+        limitations = self.DEFAULT_LIMITATIONS
+        if status == "MISSING_DIRECTION":
+            limitations = tuple(
+                item
+                for item in self.DEFAULT_LIMITATIONS
+                if item != "Une nouvelle mesure est nécessaire."
+            ) + (
+                "Les mesures REW disponibles ne sont pas la cause de ce blocage.",
+            )
         return PresentedActionOrientedPositioning(
             status=status,
             situation=situation,
@@ -221,11 +233,54 @@ class ActionOrientedPositioningPresenter:
             required_measurements=(),
             comparison_criteria=(),
             previous_result=previous_result,
-            missing_information=tuple(analysis.blocking_reason_codes),
-            limitations=self.DEFAULT_LIMITATIONS,
+            missing_information=self._user_missing_information(
+                analysis.blocking_reason_codes
+            ),
+            limitations=limitations,
             causality_status="NOT_ESTABLISHED",
             source_codes=tuple(analysis.considered_source_ids),
         )
+
+    @staticmethod
+    def _user_missing_information(reason_codes):
+        labels = {
+            "EXPLICIT_MOVEMENT_DIRECTION_MISSING": (
+                "Des critères scientifiques permettant de choisir une direction "
+                "de test sans supposer une cause non démontrée."
+            ),
+            "SOURCE_GEOMETRY_MISSING": (
+                "Une description géométrique suffisamment précise pour relier "
+                "le test à la configuration de la pièce."
+            ),
+            "LOUDSPEAKER_TARGET_AMBIGUOUS": (
+                "Une enceinte cible définie sans ambiguïté."
+            ),
+            "SOURCE_NOT_REVERSIBLE": (
+                "Un protocole de déplacement court et réversible."
+            ),
+            "L_R_STEREO_MEASUREMENTS_UNAVAILABLE": (
+                "Les mesures L, R et L+R nécessaires à la comparaison."
+            ),
+            "OBSERVABLE_FACTS_MISSING": (
+                "Des indicateurs existants permettant de comparer le test."
+            ),
+            "EQUAL_PRIORITY_POSITIONING_SOURCES": (
+                "Un critère permettant de départager les expériences possibles."
+            ),
+            "SOURCE_DEFERRED_BY_USER": (
+                "La reprise de l’investigation précédemment différée."
+            ),
+            "NO_ACTIVE_LOUDSPEAKER_POSITIONING_SOURCE": (
+                "Une piste active concernant explicitement le placement des enceintes."
+            ),
+        }
+        return tuple(dict.fromkeys(
+            labels.get(
+                code,
+                "Les critères scientifiques nécessaires pour définir un test précis.",
+            )
+            for code in reason_codes
+        ))
 
     @classmethod
     def _positioning_action(cls, proposal):

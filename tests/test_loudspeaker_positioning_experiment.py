@@ -357,7 +357,31 @@ def test_report_missing_direction_does_not_fall_back_to_generic_placement_advice
     decision = DecisionFirstReportPresenter().present(report)
     assert action.status == "MISSING_DIRECTION"
     assert action.target is action.direction is action.amplitude is None
-    assert "Aucune direction" in decision.action
+    assert "Une expérience de positionnement semble pertinente" in decision.action
+    assert "hypothèse non démontrée" in decision.action
+    assert "Aucune direction n’est donc proposée" in decision.action
+    assert "aucune règle démontrée" in decision.action_reasons[0]
+    assert action.missing_information == (
+        "Des critères scientifiques permettant de choisir une direction de test "
+        "sans supposer une cause non démontrée.",
+    )
+
+
+def test_missing_direction_console_never_exposes_internal_status_codes(capsys):
+    report = Report(project_name="real-exp006-shape")
+    report.loudspeaker_positioning_experiment = presented_analysis(
+        analyze(recommendation(direction=None))
+    )
+    ConsoleReporter().print(report)
+    output = capsys.readouterr().out
+    assert "EXPLICIT_MOVEMENT_DIRECTION_MISSING" not in output
+    assert "MISSING_DIRECTION" not in output
+    assert "Direction non structurée" not in output
+    assert "Movement direction missing" not in output
+    assert "Des critères scientifiques permettant de choisir" in output
+    assert "les observations disponibles" in output
+    assert "Une nouvelle mesure est nécessaire" not in output
+    assert "Les mesures REW disponibles ne sont pas la cause" in output
 
 
 def test_report_ambiguity_names_no_single_selection():
