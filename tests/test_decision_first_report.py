@@ -419,9 +419,11 @@ def test_decision_is_visible_in_first_thirty_useful_lines():
     output = rendered(with_comparison(report(), evolution("MIXED")))
     useful = [line for line in output.splitlines() if line.strip()]
 
-    assert useful.index("DÉCISION ACOUSTIQUE") < 5
-    assert useful.index("Verdict") < 30
-    assert useful.index("Prochaine action") < 30
+    assert useful.index("EN UNE MINUTE") < useful.index("DÉCISION ACOUSTIQUE")
+    assert useful.index("DÉCISION ACOUSTIQUE") < 30
+    decision_start = useful.index("DÉCISION ACOUSTIQUE")
+    assert useful.index("Verdict", decision_start) < 45
+    assert useful.index("Prochaine action", decision_start) < 45
 
 
 def test_decision_page_does_not_exceed_forty_five_lines_in_complex_case():

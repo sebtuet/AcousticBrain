@@ -22,6 +22,14 @@ class PresentedDecisionFirstReport:
     action_confidence: str
     causality_status: str
     source_codes: tuple[str, ...]
+    verdict_lines: tuple[str, ...]
+    comparison_available: bool
+    comparison_comparable: bool
+    comparison_before_experiment_id: str | None
+    comparison_after_experiment_id: str | None
+    comparison_acoustic_outcome: str | None
+    tested_conditions_declared: bool
+    measurement_status: str
 
 
 @dataclass(frozen=True)
@@ -112,7 +120,13 @@ class DecisionFirstReportPresenter:
 
     def present(self, report):
         comparison = self._latest_comparison(report)
-        verdict, verdict_confidence = self._verdict(comparison)
+        verdict_lines, verdict_confidence = self._verdict(comparison)
+        verdict = " ".join(verdict_lines)
+        if comparison is not None and comparison.acoustic_outcome == "MIXED":
+            verdict = (
+                "La dernière expérience présente des améliorations et des "
+                "dégradations. Aucun verdict global simple n’est possible."
+            )
         comparison_context = self._comparison_context(comparison)
         undeclared = self._undeclared_change(comparison)
         deferred = self._deferred_messages(report)
@@ -174,6 +188,24 @@ class DecisionFirstReportPresenter:
             ),
             causality_status="NOT_ESTABLISHED",
             source_codes=source_codes,
+            verdict_lines=verdict_lines,
+            comparison_available=comparison is not None,
+            comparison_comparable=(
+                comparison is not None and comparison.eligibility == "COMPARABLE"
+            ),
+            comparison_before_experiment_id=(
+                comparison.before_experiment_id if comparison is not None else None
+            ),
+            comparison_after_experiment_id=(
+                comparison.after_experiment_id if comparison is not None else None
+            ),
+            comparison_acoustic_outcome=(
+                comparison.acoustic_outcome if comparison is not None else None
+            ),
+            tested_conditions_declared=(
+                comparison is not None and not undeclared
+            ),
+            measurement_status=self._measurement_status(report),
         )
 
     @staticmethod
@@ -187,25 +219,29 @@ class DecisionFirstReportPresenter:
     def _verdict(cls, comparison):
         if comparison is None or comparison.eligibility != "COMPARABLE":
             return (
-                "La dernière expérience ne peut pas être comparée de manière fiable.",
+                (
+                    "La dernière expérience ne peut pas être comparée de manière fiable.",
+                ),
                 "Non établi",
             )
         labels = {
             "IMPROVED": (
                 "La dernière expérience montre une amélioration mesurable dans "
-                "le périmètre testé."
+                "le périmètre testé.",
             ),
             "DEGRADED": (
                 "La dernière expérience montre une dégradation mesurable dans "
-                "le périmètre testé."
+                "le périmètre testé.",
             ),
             "MIXED": (
-                "La dernière expérience présente des améliorations et des "
-                "dégradations. Aucun verdict global simple n’est possible."
+                "Certains indicateurs s’améliorent et d’autres se dégradent.",
+                "Aucun verdict global simple n’est possible.",
             ),
-            "UNCHANGED": "Aucun changement acoustique significatif n’a été observé.",
+            "UNCHANGED": (
+                "Aucun changement acoustique significatif n’a été observé.",
+            ),
             "INCONCLUSIVE": (
-                "Les mesures ne permettent pas de conclure sur la dernière expérience."
+                "Les mesures ne permettent pas de conclure sur la dernière expérience.",
             ),
         }
         status = comparison.acoustic_outcome
@@ -213,8 +249,24 @@ class DecisionFirstReportPresenter:
             status = "INCONCLUSIVE"
         return labels.get(
             status,
-            "Les mesures ne permettent pas de conclure sur la dernière expérience.",
+            (
+                "Les mesures ne permettent pas de conclure sur la dernière expérience.",
+            ),
         ), "Établi par les mesures"
+
+    @staticmethod
+    def _measurement_status(report):
+        quality = next(
+            (item for item in report.diagnostics if item.title == "Qualité des mesures"),
+            None,
+        )
+        if quality is None:
+            return "UNKNOWN"
+        return {
+            "LOW": "EXPLOITABLE",
+            "MEDIUM": "WITH_RESERVATIONS",
+            "HIGH": "INSUFFICIENT",
+        }.get(quality.severity, "UNKNOWN")
 
     @staticmethod
     def _comparison_context(comparison):

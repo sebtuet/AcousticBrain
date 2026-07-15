@@ -3,6 +3,9 @@ from .action_oriented_positioning_presenter import (
     ActionOrientedPositioningPresenter,
 )
 from .decision_first_presenter import DecisionFirstReportPresenter
+from .one_minute_executive_summary_presenter import (
+    OneMinuteExecutiveSummaryPresenter,
+)
 
 
 class ConsoleReporter:
@@ -19,9 +22,11 @@ class ConsoleReporter:
         print()
 
         print(f"Projet : {report.project_name}")
-        self._print_decision_first(
-            DecisionFirstReportPresenter().present(report)
+        decision = DecisionFirstReportPresenter().present(report)
+        self._print_one_minute(
+            OneMinuteExecutiveSummaryPresenter().present(decision)
         )
+        self._print_decision_first(decision)
         self._print_action_oriented_positioning(
             ActionOrientedPositioningPresenter().present(report)
         )
@@ -1069,6 +1074,24 @@ class ConsoleReporter:
             print("Deltas : " + (", ".join(comparison.trace_delta_fact_codes) or "aucun"))
             print("Faits expérimentaux : " + (", ".join(comparison.trace_observed_fact_codes) or "aucun"))
             print("Discriminations ouvertes : " + (", ".join(comparison.trace_unresolved_discrimination_codes) or "aucune"))
+
+    @staticmethod
+    def _print_one_minute(summary):
+        print()
+        print("EN UNE MINUTE")
+        for heading, lines in (
+            ("Situation", summary.situation),
+            ("Verdict", summary.verdict),
+            ("Puis-je conclure ?", summary.conclusion),
+            ("Ce que je fais maintenant", summary.actions),
+            ("Pourquoi", summary.reasons),
+            ("Confiance", summary.confidence),
+        ):
+            print()
+            print(heading)
+            for line in lines:
+                prefix = "• " if heading == "Ce que je fais maintenant" else ""
+                print(prefix + line)
 
     @staticmethod
     def _print_decision_first(decision):

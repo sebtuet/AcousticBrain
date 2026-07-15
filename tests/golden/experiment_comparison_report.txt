@@ -5,6 +5,29 @@ ACOUSTICBRAIN REPORT
 
 Projet : comparison-fixture
 
+EN UNE MINUTE
+
+Situation
+Comparaison : baseline → exp-001.
+
+Verdict
+La dernière expérience montre une amélioration mesurable dans le périmètre testé.
+
+Puis-je conclure ?
+Oui, mais uniquement dans le périmètre mesuré.
+Le protocole et la variable testée sont explicitement déclarés.
+
+Ce que je fais maintenant
+• Aucune action fiable ne peut être recommandée actuellement.
+
+Pourquoi
+Aucune action suffisamment établie n’est disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : établi par les mesures.
+Cause : non établie (NOT_ESTABLISHED).
+
 DÉCISION ACOUSTIQUE
 
 Objectif actuel

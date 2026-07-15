@@ -5,6 +5,29 @@ ACOUSTICBRAIN REPORT
 
 Projet : Studio
 
+EN UNE MINUTE
+
+Situation
+Première mesure disponible : aucune expérience précédente comparable.
+
+Verdict
+Aucune comparaison avec une expérience précédente n’est disponible.
+
+Puis-je conclure ?
+Non.
+Aucune comparaison fiable n’est disponible.
+
+Ce que je fais maintenant
+• Aucune action fiable ne peut être recommandée actuellement.
+
+Pourquoi
+Aucune action suffisamment établie n’est disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : non établi.
+Cause : non établie (NOT_ESTABLISHED).
+
 DÉCISION ACOUSTIQUE
 
 Objectif actuel

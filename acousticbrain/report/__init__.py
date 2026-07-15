@@ -7,6 +7,10 @@ from .decision_first_presenter import (
     DecisionFirstReportPresenter,
     PresentedDecisionFirstReport,
 )
+from .one_minute_executive_summary_presenter import (
+    OneMinuteExecutiveSummaryPresenter,
+    PresentedOneMinuteExecutiveSummary,
+)
 from .surface_material_presenter import (
     PresentedSurfaceMaterialAnalysis,
     SurfaceMaterialPresenter,
