@@ -102,7 +102,7 @@ class AcousticBrain:
         for imported in ready:
             report, context = self.pipeline.run(
                 imported.project,
-                plan_experiments=plan_experiments and imported is current,
+                plan_experiments=False,
                 experiment_descriptors=acoustic_session.descriptors,
                 return_context=True,
             )
@@ -145,6 +145,20 @@ class AcousticBrain:
             )
             current_context.causal_discrimination_analysis = causal_analysis
         LongitudinalExperimentalLearningStage().run(current_context)
+        if plan_experiments and current is not None:
+            learning_analysis = (
+                current_context.longitudinal_experimental_learning_analysis
+            )
+            current_report, current_context = self.pipeline.run(
+                current.project,
+                plan_experiments=True,
+                experiment_descriptors=acoustic_session.descriptors,
+                longitudinal_experimental_learning_analysis=learning_analysis,
+                return_context=True,
+            )
+            current_context.experiment_comparison_analysis = comparison
+            current_context.experiment_campaign_analyses = campaign_analyses
+            current_context.causal_discrimination_analysis = causal_analysis
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)
         )

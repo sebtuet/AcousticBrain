@@ -134,4 +134,7 @@ déclarations, comparaisons et statuts observationnels. PR-040 à PR-042 organis
 la décision et le langage utilisateur. PR-043 fournit la déclaration générique
 d'expérience. PR-044 construit un protocole de positionnement réversible.
 PR-045 lit ces objets sans les réécrire et expose une section technique unique
-après les campagnes et discriminations existantes.
+après les campagnes et discriminations existantes. L'état pré-calculé est
+ensuite présent dans le contexte avant la planification, afin qu'un consommateur
+futur puisse le consulter explicitement. Aucun planificateur actuel ne le
+consomme et son exposition ne modifie donc aucune sélection.

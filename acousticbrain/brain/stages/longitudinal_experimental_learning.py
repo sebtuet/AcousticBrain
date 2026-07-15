@@ -9,9 +9,25 @@ class LongitudinalExperimentalLearningStage:
 
     def run(self, context):
         context.longitudinal_experimental_learning_analysis = self.engine.analyze(
-            descriptors=context.experiment_descriptors,
-            comparison_analysis=context.experiment_comparison_analysis,
-            campaign_analyses=context.experiment_campaign_analyses,
-            causal_discrimination=context.causal_discrimination_analysis,
-            acoustic_reasoning=context.acoustic_reasoning_analysis,
+            descriptors=getattr(context, "experiment_descriptors", ()),
+            comparison_analysis=getattr(
+                context,
+                "experiment_comparison_analysis",
+                None,
+            ),
+            campaign_analyses=getattr(
+                context,
+                "experiment_campaign_analyses",
+                (),
+            ),
+            causal_discrimination=getattr(
+                context,
+                "causal_discrimination_analysis",
+                None,
+            ),
+            acoustic_reasoning=getattr(
+                context,
+                "acoustic_reasoning_analysis",
+                None,
+            ),
         )

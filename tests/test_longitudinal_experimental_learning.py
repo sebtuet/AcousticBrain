@@ -1,9 +1,11 @@
 import copy
+import inspect
 from io import StringIO
 from types import SimpleNamespace
 from contextlib import redirect_stdout
 
 from acousticbrain.analysis import LongitudinalExperimentalLearningEngine
+from acousticbrain.brain.pipeline import BrainPipeline
 from acousticbrain.models import (
     ComparisonEligibilityStatus,
     ExperimentEvolutionOutcome,
@@ -414,6 +416,14 @@ def test_technical_report_is_deterministic_non_causal_and_not_duplicated():
         "position optimale",
     )
     assert all(value not in output.lower() for value in forbidden)
+
+
+def test_precomputed_learning_state_is_exposed_before_experiment_planning():
+    source = inspect.getsource(BrainPipeline.run)
+
+    assert source.index(
+        "context.longitudinal_experimental_learning_analysis ="
+    ) < source.index("ExperimentPlanningStage().run")
 
 
 def test_exp006_analogue_unknown_mixed_does_not_support_positioning():
