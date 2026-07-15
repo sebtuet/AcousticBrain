@@ -24,6 +24,32 @@ class ExperimentImporter:
         self.wav_importer = wav_importer or WavImpulseImporter()
 
     def load(self, descriptor):
+        measurement_files_by_channel = {}
+        for item in descriptor.available_files:
+            if (
+                item.file_type is ExperimentFileType.TXT_MEASUREMENT
+                and item.channel is not None
+            ):
+                measurement_files_by_channel.setdefault(item.channel, []).append(
+                    item.relative_path
+                )
+        collisions = {
+            channel: paths
+            for channel, paths in measurement_files_by_channel.items()
+            if len(paths) > 1
+        }
+        if collisions:
+            details = "; ".join(
+                f"{channel.value}: {', '.join(paths)}"
+                for channel, paths in sorted(
+                    collisions.items(), key=lambda entry: entry[0].value
+                )
+            )
+            raise ValueError(
+                "Ambiguous REW measurement channel assignment: multiple frequency "
+                f"TXT files are assigned to the same channel ({details})."
+            )
+
         project = Project(
             name=descriptor.experiment_id,
             room=Room(
