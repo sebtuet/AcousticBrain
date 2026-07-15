@@ -64,6 +64,9 @@ Le modèle distingue sans recouvrement sémantique implicite :
 
 Les champs génériques `experiment_codes` et `used_experiment_codes` ne sont pas
 employés dans ce contrat, car ils confondraient historique et preuve admissible.
+Le rapport reprend cette séparation avec les intitulés « Preuves longitudinales
+admissibles », « Historique expérimental conservé » et « Historique non
+admissible comme nouvelle preuve ».
 
 ## Inclusion et exclusion
 

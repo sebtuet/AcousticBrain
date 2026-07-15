@@ -515,15 +515,16 @@ def test_report_separates_historical_discrimination_from_evidence_contributors()
         ConsoleReporter().print(report)
     output = stream.getvalue()
 
-    assert "Expériences contribuant aux preuves longitudinales : aucune" in output
-    assert "Expériences utilisées par la discrimination historique :" in output
+    assert "Preuves longitudinales admissibles : aucune" in output
+    assert "Historique expérimental conservé — discrimination :" in output
     assert "exp-001 — déclaration expérimentale historique non disponible" in output
-    assert "Expériences exclues de l’agrégation longitudinale :" in output
+    assert "Historique non admissible comme nouvelle preuve :" in output
     assert "CHAIN_RESOLVED" in output
     assert "VERIFY_SPEAKER_ROOM_ASYMMETRY — causal-trace:test" in output
     assert "Historique expérimental de la trace : exp-001, exp-002" in output
     assert "ne sont pas requalifiées comme interventions contrôlées" in output
     assert "Expériences utilisées : aucune" not in output
+    assert "Expériences utilisées par la discrimination historique" not in output
 
 
 def test_precomputed_learning_state_is_exposed_before_experiment_planning():

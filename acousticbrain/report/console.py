@@ -596,7 +596,7 @@ class ConsoleReporter:
                 print(f"Hypothèse : {state.hypothesis_code}")
                 print(f"État de campagne : {state.learning_status}")
                 print(
-                    "Expériences contribuant aux preuves longitudinales : "
+                    "Preuves longitudinales admissibles : "
                     + (
                         ", ".join(
                             state.evidence_contributing_experiment_codes
@@ -605,14 +605,14 @@ class ConsoleReporter:
                     )
                 )
                 self._print_historical_experiments(
-                    "Expériences utilisées par la discrimination historique",
+                    "Historique expérimental conservé — discrimination",
                     state.discrimination_source_experiments,
                 )
                 self._print_historical_experiments(
-                    "Expériences utilisées par les campagnes historiques",
+                    "Historique expérimental conservé — campagnes",
                     state.campaign_source_experiments,
                 )
-                print("Expériences exclues de l’agrégation longitudinale :")
+                print("Historique non admissible comme nouvelle preuve :")
                 if state.excluded_experiments:
                     for code, reason in state.excluded_experiments:
                         print(f" • {code} — {reason}")
