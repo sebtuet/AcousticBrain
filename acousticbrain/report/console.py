@@ -1,4 +1,7 @@
 from .report import Report
+from .action_oriented_positioning_presenter import (
+    ActionOrientedPositioningPresenter,
+)
 
 
 class ConsoleReporter:
@@ -15,6 +18,9 @@ class ConsoleReporter:
         print()
 
         print(f"Projet : {report.project_name}")
+        self._print_action_oriented_positioning(
+            ActionOrientedPositioningPresenter().present(report)
+        )
         if report.room_properties is not None:
 
             rp = report.room_properties
@@ -1059,6 +1065,105 @@ class ConsoleReporter:
             print("Deltas : " + (", ".join(comparison.trace_delta_fact_codes) or "aucun"))
             print("Faits expérimentaux : " + (", ".join(comparison.trace_observed_fact_codes) or "aucun"))
             print("Discriminations ouvertes : " + (", ".join(comparison.trace_unresolved_discrimination_codes) or "aucune"))
+
+    @staticmethod
+    def _print_action_oriented_positioning(positioning):
+        print()
+        print("PROCHAINE ÉTAPE DE POSITIONNEMENT")
+        print()
+        print("Situation actuelle")
+        print(positioning.situation)
+        print()
+        print("Niveau de certitude")
+        print(positioning.certainty)
+
+        if positioning.measured_facts:
+            print()
+            print("Faits mesurés qui soutiennent cette priorité")
+            for fact in positioning.measured_facts:
+                print(f" • {fact}")
+
+        if positioning.possible_explanations:
+            print()
+            print("Explications possibles — à vérifier")
+            for explanation in positioning.possible_explanations:
+                print(f" • {explanation}")
+
+        if positioning.previous_result is not None:
+            print()
+            print("Résultat du test précédent")
+            print(positioning.previous_result)
+
+        print()
+        print("Action proposée")
+        print(positioning.action)
+
+        if positioning.target is not None:
+            print(f"Objet concerné : {positioning.target}")
+            print(
+                "Direction : "
+                + (
+                    positioning.direction
+                    if positioning.direction is not None
+                    else "non déterminée par les données disponibles"
+                )
+            )
+            print(
+                "Amplitude : "
+                + (
+                    positioning.amplitude
+                    if positioning.amplitude is not None
+                    else "non déterminée par les données disponibles"
+                )
+            )
+
+        if positioning.unchanged_items:
+            print()
+            print("Ne modifiez pas")
+            for item in positioning.unchanged_items:
+                print(f" • {item}")
+
+        if positioning.required_measurements:
+            print()
+            print("Nouvelle mesure REW attendue")
+            print(" • Créez une nouvelle expérience REW distincte.")
+            print(
+                " • Reprenez les mesures : "
+                + ", ".join(positioning.required_measurements)
+                + "."
+            )
+            print(" • Conservez le microphone et le volume strictement inchangés.")
+            print(" • Notez précisément l’unique élément modifié.")
+            print(" • Consultez le guide REW pour les détails d’acquisition et d’export.")
+
+            print()
+            print("Ce qu’AcousticBrain comparera")
+            if positioning.comparison_criteria:
+                for criterion in positioning.comparison_criteria:
+                    print(
+                        " • AcousticBrain vérifiera si ce test est associé à un "
+                        f"changement mesurable concernant {criterion}."
+                    )
+            else:
+                print(
+                    " • AcousticBrain comparera uniquement les observables déjà "
+                    "définis pour cette expérience."
+                )
+
+        if positioning.missing_information:
+            print()
+            print("Données encore nécessaires")
+            for item in positioning.missing_information:
+                print(f" • {item}")
+
+        print()
+        print("Limites")
+        for limitation in positioning.limitations:
+            print(f" • {limitation}")
+        print(
+            " • Statut scientifique conservé : "
+            f"{positioning.causality_status}."
+        )
 
     @staticmethod
     def _diagnostics_to_render(report):

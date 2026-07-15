@@ -5,6 +5,27 @@ ACOUSTICBRAIN REPORT
 
 Projet : causal-fixture
 
+PROCHAINE ÉTAPE DE POSITIONNEMENT
+
+Situation actuelle
+Aucun problème prioritaire n’est évaluable avec les données disponibles.
+
+Niveau de certitude
+Non évaluable avec les mesures disponibles
+
+Action proposée
+Aucune expérience de positionnement fiable ne peut être proposée avec les données actuelles.
+
+Données encore nécessaires
+ • Une cible et une variable à modifier déjà déterminées.
+
+Limites
+ • La causalité n’est pas établie.
+ • Une seule variable doit être modifiée.
+ • Une nouvelle mesure est nécessaire.
+ • Le résultat peut être favorable, défavorable ou inconclusif.
+ • Statut scientifique conservé : NOT_ESTABLISHED.
+
 DISCRIMINATION CAUSALE
 
 Protocole : VERIFY_SPEAKER_ROOM_ASYMMETRY
