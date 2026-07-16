@@ -169,6 +169,18 @@ def test_incomplete_remeasurement_keeps_ambiguities_and_recommends_speaker_swap(
                for item in result.trajectory_assessments)
 
 
+def test_executed_speaker_swap_without_observation_waits_for_qualification():
+    result = analyze(baseline(), remeasurement(), speaker_swap())
+
+    assert result.status is CausalProtocolStatus.INCOMPLETE
+    assert result.outcome is CausalDiscriminationOutcome.INCONCLUSIVE
+    assert result.resolved_discrimination_codes == ()
+    assert result.recommended_next_protocol is None
+    assert result.trace.observation_codes == (
+        "LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE",
+    )
+
+
 def test_speaker_swap_following_loudspeaker_reduces_only_observed_ambiguity():
     result = analyze(
         baseline(),

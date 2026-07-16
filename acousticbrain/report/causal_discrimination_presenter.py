@@ -86,6 +86,7 @@ class CausalDiscriminationPresenter:
             compatible_trajectories=tuple(
                 item for source, item in zip(analysis.trajectory_assessments, trajectories)
                 if source.status.value == "COMPATIBLE"
+                and source.supporting_observation_codes
                 and source.trajectory_code
                 is not CausalTrajectoryCode.DISCRIMINATION_INCONCLUSIVE
             ),

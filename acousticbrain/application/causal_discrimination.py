@@ -310,6 +310,12 @@ class CausalDiscriminationService:
             for trajectory in CausalTrajectoryCode
         )
         completed_codes = {item.step_code for item in steps}
+        unqualified_discriminating_steps = {
+            item.step_code
+            for item in steps
+            if item.step_code in self.REQUIRED_VARIABLES
+            and not item.observation_codes
+        }
         deferred_discriminations = {
             item.discrimination_code
             for item in decisions
@@ -334,7 +340,10 @@ class CausalDiscriminationService:
             if code not in completed_codes and code not in deferred_steps
         )
         recommendation = self._next_step(
-            remaining, completed_codes, deferred_discriminations
+            remaining,
+            completed_codes,
+            deferred_discriminations,
+            unqualified_discriminating_steps,
         )
         status = (
             CausalProtocolStatus.CONTRADICTORY
@@ -420,7 +429,14 @@ class CausalDiscriminationService:
         return tuple(code for code in cls.INITIAL_DISCRIMINATIONS if code in codes)
 
     @staticmethod
-    def _next_step(remaining, completed_codes, deferred_discriminations=()):
+    def _next_step(
+        remaining,
+        completed_codes,
+        deferred_discriminations=(),
+        unqualified_discriminating_steps=(),
+    ):
+        if unqualified_discriminating_steps:
+            return None
         if (
             "LOUDSPEAKER_VS_ROOM_SIDE" in remaining
             and "LOUDSPEAKER_VS_ROOM_SIDE" not in deferred_discriminations

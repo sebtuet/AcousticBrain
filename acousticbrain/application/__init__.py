@@ -30,6 +30,9 @@ from .automatic_experiment_comparison import (
     ExperimentFactProjector,
 )
 from .causal_discrimination import CausalDiscriminationService
+from .causal_protocol_step_declaration import (
+    CausalProtocolStepDeclarationService,
+)
 from .guided_room_description import (
     ControlledVocabularyRoomDescriptionInterpreter,
     GuidedRoomDescriptionApplyResult,
