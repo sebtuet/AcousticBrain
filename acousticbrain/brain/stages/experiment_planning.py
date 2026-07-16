@@ -18,6 +18,14 @@ class ExperimentPlanningStage:
             completed_protocol_ids=self._completed_protocol_ids(
                 context.experiment_descriptors
             ),
+            causal_discrimination_analysis=getattr(
+                context, "causal_discrimination_analysis", None
+            ),
+            generated_experiment_analysis=getattr(
+                context,
+                "acoustic_hypothesis_experiment_generation_analysis",
+                None,
+            ),
         )
 
     @staticmethod

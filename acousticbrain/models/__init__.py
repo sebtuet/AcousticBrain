@@ -341,3 +341,15 @@ from .causal_discrimination import (
     CausalTrajectoryCode,
     CausalTrajectoryStatus,
 )
+from .acoustic_hypothesis_experiment_generation import (
+    AcousticHypothesisExperimentGenerationAnalysis,
+    ExpectedExperimentalObservation,
+    ExpectedObservationOutcome,
+    GeneratedAcousticExperiment,
+    GeneratedAcousticHypothesis,
+    GeneratedAcquisitionPosition,
+    GeneratedExperimentDifficulty,
+    GeneratedExperimentReversibility,
+    GeneratedExperimentType,
+    GeneratedHypothesisStatus,
+)

@@ -314,6 +314,19 @@ def test_planner_excludes_protocol_completed_by_discovered_experiments():
     )
 
 
+def test_planner_excludes_modal_candidate_without_executable_acquisition_protocol():
+    result = ExperimentPlanner().plan(
+        analysis(hypothesis(HypothesisCode.MODAL_BASS_PERSISTENCE))
+    )
+
+    modal = candidate(result, HypothesisCode.MODAL_BASS_PERSISTENCE)
+    assert modal.eligible is False
+    assert ExperimentSelectionReason.ACQUISITION_PROTOCOL_INCOMPLETE in (
+        modal.ineligibility_reasons
+    )
+    assert result.plan.recommended_candidate is None
+
+
 def test_information_value_is_not_the_support_score():
     item = candidate(
         ExperimentPlanner().plan(

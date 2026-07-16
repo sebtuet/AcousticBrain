@@ -37,6 +37,9 @@ from .loudspeaker_positioning_experiment_presenter import (
 from .longitudinal_experimental_learning_presenter import (
     PresentedLongitudinalExperimentalLearningAnalysis,
 )
+from .acoustic_hypothesis_experiment_generation_presenter import (
+    PresentedAcousticHypothesisExperimentGeneration,
+)
 
 
 @dataclass
@@ -76,6 +79,10 @@ class Report:
 
     longitudinal_experimental_learning: (
         PresentedLongitudinalExperimentalLearningAnalysis | None
+    ) = None
+
+    acoustic_hypothesis_experiment_generation: (
+        PresentedAcousticHypothesisExperimentGeneration | None
     ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
