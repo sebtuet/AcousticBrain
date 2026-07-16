@@ -50,7 +50,11 @@ The hypothesis remains visible when supported by existing reasoning. Completed c
 
 ### Modal persistence
 
-A multi-position listening-area test is generated only when the projected modal hypothesis is `PLAUSIBLE` or `WEAKLY_PLAUSIBLE`, a targeted modal-density band or exploitable bass-decay band exists, and that test has not already been executed. `INSUFFICIENT_EVIDENCE` and `CONTRADICTED` modal hypotheses are ineligible even when bands are present. No speaker displacement is generated from modal evidence alone. The multi-point test has no invented distance or direction.
+A multi-position listening-area candidate is generated only when the projected modal hypothesis is `PLAUSIBLE` or `WEAKLY_PLAUSIBLE`, a targeted modal-density band or exploitable bass-decay band exists, and that test has not already been executed. `INSUFFICIENT_EVIDENCE` and `CONTRADICTED` modal hypotheses are ineligible even when bands are present. No speaker displacement is generated from modal evidence alone.
+
+Direct executability additionally requires a structured sampling geometry from the existing `protocol.verify_modal_bass_persistence.v1` declaration schema. The generator reads only discovered descriptors carrying explicit `position_role` and `listening_position_offset_m` values. A valid schema has at least two ordered positions, exactly one `REFERENCE` at offset `0.0`, every other position parented to that reference, role and offset sign in agreement, and LEFT, RIGHT and STEREO available at every position. Descriptor order is preserved as acquisition order. Lateral offsets remain `None` because the current declaration contract does not define them. Comparability reuses the existing `CAMPAIGN_REQUIRE_REFERENCE_BRANCHES` rule and the existing controlled-variable list remains unchanged.
+
+If no complete structured geometry exists, the candidate remains visible with no positions or offsets and is blocked by `MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE`. It cannot be the main experiment.
 
 ## Refusal rules
 
@@ -66,6 +70,7 @@ Generation refuses or omits a concrete experiment when any required relation is 
 - an already discriminated causal swap;
 - a proposal that would modify more than one variable;
 - a modal hypothesis with insufficient or contradicted evidence, or without a targeted measured band;
+- a multi-position candidate without a complete source-declared sampling geometry;
 - missing LEFT, RIGHT, or STEREO measurements.
 
 Room geometry can represent front/rear/left/right walls, floor, ceiling, openings, speakers, listening positions, orientations, materials, covering zones, furniture, and treatments. Mere representability is not evidence: absent positioned speakers or surface correlations still blocks generation.
@@ -106,9 +111,11 @@ Exactly one semantic variable is modified. The remaining relevant acquisition, r
 
 A blocked candidate remains visible to explain which otherwise structured experiment cannot yet be executed. It is not eligible and is never selected as `recommended_candidate_id`. Blocking does not establish, contradict, or otherwise mutate the source hypothesis, its causal state, acoustic scores, recommendations, causal-discrimination analysis, or longitudinal learning state.
 
+The historical `ExperimentPlanningEngine` consumes the final generated-candidate eligibility. It also makes `protocol.verify_speaker_room_asymmetry.v1` ineligible when the matching causal analysis is `DISCRIMINATED`, has no remaining discrimination and recommends no next protocol. Such a candidate remains available in planning traceability with `CAUSAL_DISCRIMINATION_COMPLETED`, but cannot be recommended again.
+
 ## Reporting and export
 
-The report exposes a structured `acoustic_hypothesis_experiment_generation` object with `to_dict()`. The console section “HYPOTHÈSES ET EXPÉRIENCES À TESTER” displays no more than three hypotheses and three experiments, marks at most one priority, names expected observations and controls, and repeats the non-causal limitation.
+The report exposes a structured `acoustic_hypothesis_experiment_generation` object with `to_dict()`. The console distinguishes “hypothèse exploratoire”, “candidat expérimental” and “expérience principale”. A candidate is never marked principal merely because it is informative. When none is directly executable, the report says “Aucune expérience principale directement exécutable” and lists the structured missing data. Historical planning remains visible as traceability and does not create a second main-action label.
 
 ## Limitations and LLM role
 
@@ -121,5 +128,5 @@ An LLM may be used as a second opinion to explain alternatives or ask for missin
 - Correlated 160 Hz front-wall SBIR event for the left speaker with a structured `proposed_displacement_m = 0.12`: reuse exactly `0.12 m`, expect a localized frequency shift, keep `NOT_ESTABLISHED`.
 - The same SBIR relation without `proposed_displacement_m`: expose a blocked candidate with no distance and no main recommendation.
 - Dominant ETC path matched to the right wall: propose one reversible right first-reflection mask, expect a localized ETC change, make no global-improvement claim.
-- Sparse 20–50 Hz modal band with no previous multi-position series: recommend multi-position measurements with no invented step distance.
+- Sparse 20–50 Hz modal band with no source-declared position schema: retain a blocked multi-position candidate and request the sampling geometry without inventing offsets.
 - Missing positioned speakers and no accepted reflection surface: retain suitable hypotheses and state that no safe concrete experiment can be generated.

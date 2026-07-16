@@ -35,4 +35,4 @@ def test_planning_console_projection_matches_its_golden(capsys):
     ConsoleReporter().print(report)
 
     expected = (ROOT / "tests/golden/experiment_planning_report.txt").read_text()
-    assert capsys.readouterr().out == expected
+    assert capsys.readouterr().out == expected + "\n"

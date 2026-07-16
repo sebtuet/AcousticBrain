@@ -112,9 +112,16 @@ def test_causal_mode_projects_only_explicit_repository_steps(
     assert modal_domain.recommendation_statuses == (
         ("MEASURE_MULTIPLE_POSITIONS", "ACTIVE"),
     )
-    assert report.experiment_planning.recommended_candidate.hypothesis_code == (
-        "MODAL_BASS_PERSISTENCE"
+    planned_modal = next(
+        item
+        for item in report.experiment_planning.all_candidates
+        if item.hypothesis_code == "MODAL_BASS_PERSISTENCE"
     )
+    assert planned_modal.eligible is False
+    assert "ACQUISITION_PROTOCOL_INCOMPLETE" in (
+        planned_modal.ineligibility_reasons
+    )
+    assert report.experiment_planning.recommended_candidate is None
     assert "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS" in (
         report.experiment_planning.uncovered_active_action_codes
     )

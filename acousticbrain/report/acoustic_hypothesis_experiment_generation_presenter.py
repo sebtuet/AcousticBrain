@@ -9,6 +9,16 @@ class PresentedExpectedExperimentalObservation:
 
 
 @dataclass(frozen=True)
+class PresentedGeneratedAcquisitionPosition:
+    position_id: str
+    role: str
+    longitudinal_offset_m: float
+    lateral_offset_m: float | None
+    required_measurements: tuple[str, ...]
+    acquisition_order: int
+
+
+@dataclass(frozen=True)
 class PresentedGeneratedAcousticExperiment:
     candidate_id: str
     hypothesis_code: str
@@ -28,6 +38,9 @@ class PresentedGeneratedAcousticExperiment:
     difficulty: str
     blocking_reasons: tuple[str, ...]
     rationale_codes: tuple[str, ...]
+    acquisition_positions: tuple[PresentedGeneratedAcquisitionPosition, ...]
+    reference_position_id: str | None
+    comparability_rule_code: str | None
     causality_status: str
 
 
@@ -114,5 +127,18 @@ class AcousticHypothesisExperimentGenerationPresenter:
             difficulty=item.difficulty.name,
             blocking_reasons=item.blocking_reasons,
             rationale_codes=item.rationale_codes,
+            acquisition_positions=tuple(
+                PresentedGeneratedAcquisitionPosition(
+                    position_id=position.position_id,
+                    role=position.role,
+                    longitudinal_offset_m=position.longitudinal_offset_m,
+                    lateral_offset_m=position.lateral_offset_m,
+                    required_measurements=position.required_measurements,
+                    acquisition_order=position.acquisition_order,
+                )
+                for position in item.acquisition_positions
+            ),
+            reference_position_id=item.reference_position_id,
+            comparability_rule_code=item.comparability_rule_code,
             causality_status=item.causality_status,
         )

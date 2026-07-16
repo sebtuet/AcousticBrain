@@ -422,6 +422,22 @@ def test_exp005_exp006_analogue_completes_discrimination_without_causal_claim(
         CausalTrajectoryCode.ANOMALY_FOLLOWS_LOUDSPEAKER.value,
         CausalTrajectoryCode.ANOMALY_FOLLOWS_SIGNAL_CHAIN.value,
     }
+    planning = after.experiment_planning
+    assert (
+        planning.recommended_candidate is None
+        or planning.recommended_candidate.candidate_id
+        != "experiment_candidate.asymmetric_speaker_room_interaction"
+    )
+    planned_asymmetry = next(
+        item
+        for item in planning.all_candidates
+        if item.candidate_id
+        == "experiment_candidate.asymmetric_speaker_room_interaction"
+    )
+    assert planned_asymmetry.eligible is False
+    assert "CAUSAL_DISCRIMINATION_COMPLETED" in (
+        planned_asymmetry.ineligibility_reasons
+    )
     learning = asymmetry_learning(after)
     assert learning.learning_status == "CONFLICTING_EVIDENCE"
     assert learning.next_information_need != (
@@ -441,3 +457,4 @@ def test_exp005_exp006_analogue_completes_discrimination_without_causal_claim(
     assert STEP_2_OBSERVATION in output and STEP_3_OBSERVATION in output
     assert "Résultat discriminant : DISCRIMINATED" in output
     assert "Causalité : NOT_ESTABLISHED" in output
+    assert output.lower().count("expérience principale") == 1

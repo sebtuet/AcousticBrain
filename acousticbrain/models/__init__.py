@@ -347,6 +347,7 @@ from .acoustic_hypothesis_experiment_generation import (
     ExpectedObservationOutcome,
     GeneratedAcousticExperiment,
     GeneratedAcousticHypothesis,
+    GeneratedAcquisitionPosition,
     GeneratedExperimentDifficulty,
     GeneratedExperimentReversibility,
     GeneratedExperimentType,

@@ -71,6 +71,31 @@ class ExpectedExperimentalObservation:
 
 
 @dataclass(frozen=True)
+class GeneratedAcquisitionPosition:
+    position_id: str
+    role: str
+    longitudinal_offset_m: float
+    lateral_offset_m: float | None
+    required_measurements: tuple[str, ...]
+    acquisition_order: int
+
+    def __post_init__(self):
+        if not self.position_id or self.role not in {"REFERENCE", "FORWARD", "BACKWARD"}:
+            raise ValueError("Acquisition-position identity and role are required.")
+        for value in (self.longitudinal_offset_m, self.lateral_offset_m):
+            if value is not None and not isfinite(value):
+                raise ValueError("Acquisition-position offsets must be finite.")
+        if self.required_measurements != ("LEFT", "RIGHT", "STEREO"):
+            raise ValueError("Each acquisition position requires LEFT, RIGHT and STEREO.")
+        if (
+            not isinstance(self.acquisition_order, int)
+            or isinstance(self.acquisition_order, bool)
+            or self.acquisition_order < 1
+        ):
+            raise ValueError("Acquisition order must be positive.")
+
+
+@dataclass(frozen=True)
 class GeneratedAcousticExperiment:
     candidate_id: str
     hypothesis_code: str
@@ -90,6 +115,9 @@ class GeneratedAcousticExperiment:
     difficulty: GeneratedExperimentDifficulty
     blocking_reasons: tuple[str, ...]
     rationale_codes: tuple[str, ...]
+    acquisition_positions: tuple[GeneratedAcquisitionPosition, ...] = ()
+    reference_position_id: str | None = None
+    comparability_rule_code: str | None = None
     causality_status: str = "NOT_ESTABLISHED"
 
     def __post_init__(self):
@@ -104,6 +132,7 @@ class GeneratedAcousticExperiment:
             self.expected_time_regions,
             self.blocking_reasons,
             self.rationale_codes,
+            self.acquisition_positions,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Generated-experiment collections must be tuples.")
@@ -121,6 +150,21 @@ class GeneratedAcousticExperiment:
             raise ValueError("Information value must be bounded.")
         if self.causality_status != "NOT_ESTABLISHED":
             raise ValueError("Exploratory generation cannot establish causality.")
+        if self.acquisition_positions:
+            position_ids = tuple(item.position_id for item in self.acquisition_positions)
+            orders = tuple(item.acquisition_order for item in self.acquisition_positions)
+            references = tuple(
+                item.position_id
+                for item in self.acquisition_positions
+                if item.role == "REFERENCE"
+            )
+            if (
+                len(position_ids) != len(set(position_ids))
+                or orders != tuple(range(1, len(orders) + 1))
+                or references != (self.reference_position_id,)
+                or not self.comparability_rule_code
+            ):
+                raise ValueError("Acquisition protocol must be complete and ordered.")
 
     @property
     def expected_observation_codes(self) -> tuple[str, ...]:

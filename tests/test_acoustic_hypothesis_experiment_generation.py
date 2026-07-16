@@ -33,7 +33,10 @@ from acousticbrain.models import (
     VerificationAction,
     VerificationActionType,
 )
-from acousticbrain.report import AcousticHypothesisExperimentGenerationPresenter
+from acousticbrain.report import (
+    AcousticHypothesisExperimentGenerationPresenter,
+    ConsoleReporter,
+)
 from acousticbrain.brain import AcousticBrain
 from test_golden_report import reference_project
 
@@ -141,7 +144,32 @@ def descriptor(*modified_variables):
     )
 
 
-def modal_context(*, executed=False, source=None, available_channels=None):
+def sampling_descriptor(experiment_id, role, offset, *, parent_ids=()):
+    return SimpleNamespace(
+        experiment_id=experiment_id,
+        source_protocol_id="protocol.verify_modal_bass_persistence.v1",
+        comparison_parameters=(
+            ("listening_position_offset_m", offset),
+            ("position_role", role),
+        ),
+        parent_experiment_ids=tuple(parent_ids),
+        available_channels=(
+            ImpulseChannel.LEFT,
+            ImpulseChannel.RIGHT,
+            ImpulseChannel.STEREO,
+        ),
+        declared_change_codes=(),
+        experiment_declaration=SimpleNamespace(modified_variables=()),
+    )
+
+
+def modal_context(
+    *,
+    executed=False,
+    source=None,
+    available_channels=None,
+    with_sampling_geometry=True,
+):
     source = source or hypothesis(
         HypothesisCode.MODAL_BASS_PERSISTENCE,
         status=HypothesisStatus.INCONCLUSIVE,
@@ -163,11 +191,25 @@ def modal_context(*, executed=False, source=None, available_channels=None):
             ),
             confidence=100.0,
         )
+    descriptors = ()
+    if with_sampling_geometry:
+        descriptors = (
+            sampling_descriptor("position-center", "REFERENCE", 0.0),
+            sampling_descriptor(
+                "position-backward", "BACKWARD", -0.3,
+                parent_ids=("position-center",),
+            ),
+            sampling_descriptor(
+                "position-forward", "FORWARD", 0.3,
+                parent_ids=("position-center",),
+            ),
+        )
+    if executed:
+        descriptors = (*descriptors, descriptor("LISTENING_POSITION_MULTI_POINT"))
     return context(
         source,
         modal_density_analysis=SimpleNamespace(sparse_bands=[band], dense_bands=[]),
-        experiment_descriptors=(descriptor("LISTENING_POSITION_MULTI_POINT"),)
-        if executed else (),
+        experiment_descriptors=descriptors,
         **values,
     )
 
@@ -351,6 +393,33 @@ def test_modal_need_generates_multi_position_without_invented_distance():
     assert candidate.step_distance_m is None
     assert candidate.movement_direction is None
     assert candidate.expected_frequency_regions == ((20.0, 50.0),)
+    assert candidate.reference_position_id == "position-center"
+    assert candidate.comparability_rule_code == "CAMPAIGN_REQUIRE_REFERENCE_BRANCHES"
+    assert tuple(
+        (item.role, item.longitudinal_offset_m, item.lateral_offset_m)
+        for item in candidate.acquisition_positions
+    ) == (
+        ("REFERENCE", 0.0, None),
+        ("BACKWARD", -0.3, None),
+        ("FORWARD", 0.3, None),
+    )
+    assert all(
+        item.required_measurements == ("LEFT", "RIGHT", "STEREO")
+        for item in candidate.acquisition_positions
+    )
+
+
+def test_modal_candidate_without_structured_sampling_geometry_is_blocked():
+    result = AcousticHypothesisExperimentGenerator().generate(
+        modal_context(with_sampling_geometry=False)
+    )
+    candidate = result.ordered_experiments[0]
+    assert candidate.acquisition_positions == ()
+    assert candidate.reference_position_id is None
+    assert candidate.blocking_reasons == (
+        "MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE",
+    )
+    assert result.recommended_candidate_id is None
 
 
 @pytest.mark.parametrize(
@@ -576,10 +645,11 @@ def test_presenter_exports_structured_hypotheses_experiments_and_blockages():
     assert payload["experiments"][0]["required_measurements"] == (
         "LEFT", "RIGHT", "STEREO"
     )
+    assert len(payload["experiments"][0]["acquisition_positions"]) == 3
     assert payload["recommended_candidate_id"] is not None
 
 
-def test_real_analogue_deduplicates_swaps_and_left_absorption_then_recommends_new_test():
+def test_real_analogue_blocks_modal_candidate_without_sampling_geometry():
     early = hypothesis(HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION)
     asymmetry = hypothesis(HypothesisCode.ASYMMETRIC_SPEAKER_ROOM_INTERACTION)
     modal = hypothesis(
@@ -609,7 +679,10 @@ def test_real_analogue_deduplicates_swaps_and_left_absorption_then_recommends_ne
     assert tuple(item.experiment_type for item in result.ordered_experiments) == (
         GeneratedExperimentType.LISTENING_POSITION_MULTI_POINT,
     )
-    assert result.recommended_candidate_id == result.ordered_experiments[0].candidate_id
+    assert result.ordered_experiments[0].blocking_reasons == (
+        "MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE",
+    )
+    assert result.recommended_candidate_id is None
     assert all(item.causality_status == "NOT_ESTABLISHED" for item in result.hypotheses)
 
 
@@ -621,3 +694,13 @@ def test_pipeline_and_report_expose_generation_without_changing_existing_project
     assert len(generated.experiments) <= 5
     assert report.global_analysis is not None
     assert report.recommendations
+
+
+def test_integrated_report_exposes_exactly_one_main_action_label(capsys):
+    report = AcousticBrain().analyze(reference_project(), plan_experiments=True)
+
+    ConsoleReporter().print(report)
+    output = capsys.readouterr().out
+
+    assert output.lower().count("expérience principale") == 1
+    assert "PRIORITAIRE" not in output

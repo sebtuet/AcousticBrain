@@ -2,6 +2,7 @@ from dataclasses import dataclass, replace
 from statistics import fmean
 
 from acousticbrain.models import (
+    CausalDiscriminationOutcome,
     ExperimentCandidate,
     ExperimentCostCategory,
     ExperimentDifficulty,
@@ -49,6 +50,8 @@ class ExperimentPlanner:
         "PLAN_EXCLUDE_COMPLETED",
         "PLAN_EXCLUDE_CONTRADICTED",
         "PLAN_EXCLUDE_USER_DEFERRED",
+        "PLAN_EXCLUDE_COMPLETED_CAUSAL_DISCRIMINATION",
+        "PLAN_REQUIRE_EXECUTABLE_ACQUISITION_PROTOCOL",
         "PLAN_REQUIRE_REVERSIBLE",
         "PLAN_INFORMATION_VALUE_V1",
         "PLAN_DETERMINISTIC_ORDER_V1",
@@ -211,6 +214,8 @@ class ExperimentPlanner:
         session=None,
         deferred_action_codes=(),
         completed_protocol_ids=(),
+        causal_discrimination_analysis=None,
+        generated_experiment_analysis=None,
     ):
         hypotheses = {
             item.code: item for item in reasoning_analysis.hypotheses
@@ -225,6 +230,8 @@ class ExperimentPlanner:
                 definition,
                 deferred_action_codes,
                 completed_protocol_ids,
+                causal_discrimination_analysis,
+                generated_experiment_analysis,
             )
             for definition in self.PROTOCOLS
         )
@@ -293,18 +300,53 @@ class ExperimentPlanner:
         definition,
         deferred_action_codes,
         completed_protocol_ids,
+        causal_discrimination_analysis,
+        generated_experiment_analysis,
     ):
         reasons = list(candidate.ineligibility_reasons)
         if definition.action_code in deferred_action_codes:
             reasons.append(ExperimentSelectionReason.USER_DEFERRED)
         if definition.protocol_id in completed_protocol_ids:
             reasons.append(ExperimentSelectionReason.ALREADY_COMPLETED)
+        if (
+            definition.action_code == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+            and causal_discrimination_analysis is not None
+            and getattr(causal_discrimination_analysis, "protocol_code", None)
+            == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+            and causal_discrimination_analysis.outcome
+            is CausalDiscriminationOutcome.DISCRIMINATED
+            and not causal_discrimination_analysis.remaining_discrimination_codes
+            and causal_discrimination_analysis.recommended_next_protocol is None
+        ):
+            reasons.append(
+                ExperimentSelectionReason.CAUSAL_DISCRIMINATION_COMPLETED
+            )
+        if (
+            definition.action_code == "VERIFY_MODAL_BASS_PERSISTENCE"
+            and not ExperimentPlanner._has_executable_generated_candidate(
+                generated_experiment_analysis,
+                definition.hypothesis_code.value,
+            )
+        ):
+            reasons.append(
+                ExperimentSelectionReason.ACQUISITION_PROTOCOL_INCOMPLETE
+            )
         if not reasons:
             return candidate
         return replace(
             candidate,
             ineligibility_reasons=tuple(dict.fromkeys(reasons)),
             eligible=False,
+        )
+
+    @staticmethod
+    def _has_executable_generated_candidate(analysis, hypothesis_code):
+        return bool(
+            analysis is not None
+            and any(
+                item.hypothesis_code == hypothesis_code and item.eligible
+                for item in analysis.ordered_experiments
+            )
         )
 
     def _candidate(self, definition, hypothesis, session):

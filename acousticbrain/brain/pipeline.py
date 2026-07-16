@@ -261,6 +261,10 @@ class BrainPipeline:
             context,
         )
 
+        AcousticHypothesisExperimentGenerationStage().run(
+            context,
+        )
+
         if plan_experiments:
             ExperimentPlanningStage().run(
                 context,
@@ -276,10 +280,6 @@ class BrainPipeline:
         )
 
         RecommendationStage().run(
-            context,
-        )
-
-        AcousticHypothesisExperimentGenerationStage().run(
             context,
         )
 

@@ -902,10 +902,10 @@ class ConsoleReporter:
 
         generated = getattr(report, "acoustic_hypothesis_experiment_generation", None)
         if generated is not None:
-            print("HYPOTHÈSES ET EXPÉRIENCES À TESTER")
+            print("HYPOTHÈSES EXPLORATOIRES ET CANDIDATS EXPÉRIMENTAUX")
             print()
             for hypothesis in generated.hypotheses[:3]:
-                print(f"Hypothèse : {hypothesis.hypothesis_code}")
+                print(f"Hypothèse exploratoire : {hypothesis.hypothesis_code}")
                 print(f"Statut exploratoire : {hypothesis.status}")
                 facts = (
                     hypothesis.supporting_fact_codes
@@ -918,15 +918,32 @@ class ConsoleReporter:
                     print("Limites : " + ", ".join(hypothesis.uncertainty_reasons))
                 print(f"Causalité : {hypothesis.causality_status}")
                 print()
-            if generated.recommended_candidate_id is None:
-                print("Expérience prioritaire : aucune expérience sûre et concrète")
+            main_experiment = next(
+                (
+                    item
+                    for item in generated.experiments
+                    if item.candidate_id == generated.recommended_candidate_id
+                ),
+                None,
+            )
+            if main_experiment is None:
+                print("Aucune expérience principale directement exécutable")
+                missing = tuple(dict.fromkeys(
+                    reason
+                    for item in generated.experiments
+                    for reason in item.blocking_reasons
+                ))
+                if missing:
+                    print("Donnée nécessaire : " + ", ".join(missing))
+                print()
+            else:
+                print("Expérience principale")
+                print(f"Type : {main_experiment.experiment_type}")
+                print(f"Cible : {main_experiment.target}")
+                print()
             for experiment in generated.experiments[:3]:
-                priority = (
-                    " — PRIORITAIRE"
-                    if experiment.candidate_id == generated.recommended_candidate_id
-                    else ""
-                )
-                print(f"Expérience : {experiment.experiment_type}{priority}")
+                state = "EXÉCUTABLE" if not experiment.blocking_reasons else "BLOQUÉ"
+                print(f"Candidat expérimental : {experiment.experiment_type} — {state}")
                 print(f"Cible : {experiment.target}")
                 if experiment.movement_direction is not None:
                     print(f"Direction : {experiment.movement_direction}")
@@ -940,13 +957,36 @@ class ConsoleReporter:
                 )
                 print("Variables contrôlées : " + ", ".join(experiment.controlled_variables))
                 print("Mesures : " + ", ".join(experiment.required_measurements))
+                if experiment.acquisition_positions:
+                    print(f"Position centrale : {experiment.reference_position_id}")
+                    print(
+                        "Règle de comparabilité : "
+                        + experiment.comparability_rule_code
+                    )
+                    print(f"Nombre de positions : {len(experiment.acquisition_positions)}")
+                    for position in experiment.acquisition_positions:
+                        print(
+                            f" • Ordre {position.acquisition_order} — "
+                            f"{position.position_id} ({position.role}), "
+                            f"offset longitudinal {position.longitudinal_offset_m:+.3f} m"
+                        )
+                        print(
+                            "   Mesures : "
+                            + ", ".join(position.required_measurements)
+                        )
+                if experiment.blocking_reasons:
+                    print("Donnée nécessaire : " + ", ".join(experiment.blocking_reasons))
                 print("Limite : test exploratoire sans garantie d’amélioration globale.")
                 print(f"Causalité : {experiment.causality_status}")
                 print()
 
         planning = report.experiment_planning
         if planning is not None:
-            print("PROCHAINE EXPÉRIENCE RECOMMANDÉE")
+            print(
+                "PLANIFICATION EXPÉRIMENTALE — TRAÇABILITÉ"
+                if generated is not None
+                else "EXPÉRIENCE PRINCIPALE"
+            )
             print()
             print(f"Statut : {planning.status}")
             candidate = planning.recommended_candidate
@@ -966,6 +1006,8 @@ class ConsoleReporter:
                     "HYPOTHESIS_REFUTED": "hypothèse contredite",
                     "SOURCE_HYPOTHESIS_MISSING": "hypothèse source absente",
                     "INCOMPLETE_PROVENANCE": "provenance structurée insuffisante",
+                    "CAUSAL_DISCRIMINATION_COMPLETED": "discrimination causale déjà terminée",
+                    "ACQUISITION_PROTOCOL_INCOMPLETE": "protocole d’acquisition incomplet",
                 }
                 for item in planning.all_candidates:
                     if item.eligible:
