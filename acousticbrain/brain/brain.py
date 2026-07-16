@@ -14,6 +14,7 @@ from acousticbrain.report import (
     LongitudinalExperimentalLearningPresenter,
     AcousticHypothesisExperimentGenerationPresenter,
     ListeningPositionCampaignPlanPresenter,
+    ListeningPositionCampaignInstancePresenter,
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
@@ -29,6 +30,7 @@ from .stages.listening_position_campaign_plan import (
 )
 from .stages.experiment_planning import ExperimentPlanningStage
 from .stages.traceability import TraceabilityStage
+from acousticbrain.models import ListeningPositionCampaignInstanceStatus
 
 
 class AcousticBrain:
@@ -48,7 +50,26 @@ class AcousticBrain:
         detailed_comparison_traceability=False,
         analyze_causal_discrimination=False,
         listening_position_sampling_protocol=None,
+        listening_position_campaign_instance_analysis=None,
     ):
+
+        if (
+            listening_position_campaign_instance_analysis is not None
+            and listening_position_campaign_instance_analysis.status
+            is ListeningPositionCampaignInstanceStatus.VALID
+        ):
+            instance_protocol = (
+                listening_position_campaign_instance_analysis.instance
+                .to_sampling_protocol()
+            )
+            if (
+                listening_position_sampling_protocol is not None
+                and listening_position_sampling_protocol != instance_protocol
+            ):
+                raise ValueError(
+                    "Campaign instance and sampling protocol are incompatible."
+                )
+            listening_position_sampling_protocol = instance_protocol
 
         experiment_descriptors = ()
         if measurement_root is not None:
@@ -71,6 +92,9 @@ class AcousticBrain:
                     analyze_causal_discrimination=analyze_causal_discrimination,
                     listening_position_sampling_protocol=(
                         listening_position_sampling_protocol
+                    ),
+                    listening_position_campaign_instance_analysis=(
+                        listening_position_campaign_instance_analysis
                     ),
                 )
             if project is None:
@@ -102,6 +126,9 @@ class AcousticBrain:
             listening_position_sampling_protocol=(
                 listening_position_sampling_protocol
             ),
+            listening_position_campaign_instance_analysis=(
+                listening_position_campaign_instance_analysis
+            ),
         )
 
     def _analyze_experiments(
@@ -113,6 +140,7 @@ class AcousticBrain:
         optimization_session,
         analyze_causal_discrimination,
         listening_position_sampling_protocol,
+        listening_position_campaign_instance_analysis,
     ):
         contexts = {}
         current_report = None
@@ -126,6 +154,9 @@ class AcousticBrain:
                 experiment_descriptors=acoustic_session.descriptors,
                 listening_position_sampling_protocol=(
                     listening_position_sampling_protocol
+                ),
+                listening_position_campaign_instance_analysis=(
+                    listening_position_campaign_instance_analysis
                 ),
                 return_context=True,
             )
@@ -147,6 +178,9 @@ class AcousticBrain:
                     "experiment_comparison_analysis": comparison,
                     "listening_position_sampling_protocol": (
                         listening_position_sampling_protocol
+                    ),
+                    "listening_position_campaign_instance_analysis": (
+                        listening_position_campaign_instance_analysis
                     ),
                 },
             )()
@@ -182,6 +216,9 @@ class AcousticBrain:
                 listening_position_sampling_protocol=(
                     listening_position_sampling_protocol
                 ),
+                listening_position_campaign_instance_analysis=(
+                    listening_position_campaign_instance_analysis
+                ),
                 longitudinal_experimental_learning_analysis=learning_analysis,
                 return_context=True,
             )
@@ -207,6 +244,9 @@ class AcousticBrain:
         )
         current_report.listening_position_campaign_plan = (
             ListeningPositionCampaignPlanPresenter().present(current_context)
+        )
+        current_report.listening_position_campaign_instance = (
+            ListeningPositionCampaignInstancePresenter().present(current_context)
         )
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)

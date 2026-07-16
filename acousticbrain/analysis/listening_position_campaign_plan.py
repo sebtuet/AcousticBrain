@@ -8,6 +8,7 @@ from acousticbrain.models import (
     ListeningPositionCampaignStep,
     ListeningPositionCampaignStepExecutionStatus,
     REQUIRED_POSITION_MEASUREMENTS,
+    ListeningPositionCampaignInstanceStatus,
 )
 
 
@@ -29,6 +30,16 @@ class ListeningPositionCampaignPlanBuilder:
             return None
 
         protocol = getattr(context, "listening_position_sampling_protocol", None)
+        instance_analysis = getattr(
+            context, "listening_position_campaign_instance_analysis", None
+        )
+        instance = (
+            instance_analysis.instance
+            if instance_analysis is not None
+            and instance_analysis.status
+            is ListeningPositionCampaignInstanceStatus.VALID
+            else None
+        )
         reasons = []
         prerequisite_candidate_reasons = {
             "MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE"
@@ -43,13 +54,17 @@ class ListeningPositionCampaignPlanBuilder:
             for item in candidate.blocking_reasons
         ):
             reasons.append("SOURCE_CANDIDATE_NOT_ELIGIBLE")
-        if protocol is None or not protocol.definition_completeness.complete:
+        if instance_analysis is not None and instance is None:
+            reasons.extend(instance_analysis.blocking_reasons)
+        elif protocol is None or not protocol.definition_completeness.complete:
             reasons.append("MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE")
         elif (
             candidate.sampling_protocol_id != protocol.protocol_id
             or candidate.sampling_protocol_version != protocol.version
         ):
             reasons.append("MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE")
+        if instance is not None and protocol != instance.to_sampling_protocol():
+            reasons.append("CAMPAIGN_INSTANCE_PROTOCOL_MISMATCH")
         if candidate.required_measurements != REQUIRED_POSITION_MEASUREMENTS:
             reasons.append("REQUIRED_MEASUREMENTS_UNAVAILABLE")
         if any(
@@ -62,7 +77,13 @@ class ListeningPositionCampaignPlanBuilder:
 
         reference = None
         if not reasons:
-            reference = self._select_reference(context, protocol)
+            reference = self._select_reference(
+                context,
+                protocol,
+                requested_experiment_id=(
+                    instance.reference_experiment_id if instance is not None else None
+                ),
+            )
             if reference is None:
                 reasons.append("CAMPAIGN_REFERENCE_EXPERIMENT_UNAVAILABLE")
 
@@ -74,6 +95,7 @@ class ListeningPositionCampaignPlanBuilder:
                     protocol,
                     reference.experiment_id if reference is not None else None,
                     blocked=bool(reasons),
+                    instance=instance,
                 )
             except ValueError:
                 reasons = list(dict.fromkeys((*reasons, "CAMPAIGN_STEP_RELATION_INVALID")))
@@ -85,10 +107,11 @@ class ListeningPositionCampaignPlanBuilder:
             else ListeningPositionCampaignPlanStatus.BLOCKED
         )
         return ListeningPositionCampaignPlan(
-            campaign_plan_id=self._plan_id(candidate, protocol),
+            campaign_plan_id=self._plan_id(candidate, protocol, instance),
             protocol_id=protocol.protocol_id if protocol is not None else None,
             protocol_version=protocol.version if protocol is not None else None,
             source_candidate_id=candidate.candidate_id,
+            source_instance_id=(instance.instance_id if instance is not None else None),
             source_hypothesis_code=candidate.hypothesis_code,
             reference_experiment_id=(
                 reference.experiment_id if reference is not None else None
@@ -124,7 +147,9 @@ class ListeningPositionCampaignPlanBuilder:
             None,
         )
 
-    def _select_reference(self, context, protocol):
+    def _select_reference(
+        self, context, protocol, *, requested_experiment_id=None
+    ):
         descriptors = {
             item.experiment_id: item
             for item in getattr(context, "experiment_descriptors", ())
@@ -138,6 +163,11 @@ class ListeningPositionCampaignPlanBuilder:
             if item.eligibility is ComparisonEligibilityStatus.COMPARABLE
         }
         for experiment_id in reversed(chronology):
+            if (
+                requested_experiment_id is not None
+                and experiment_id != requested_experiment_id
+            ):
+                continue
             descriptor = descriptors.get(experiment_id)
             if descriptor is not None and self._reference_is_admissible(
                 descriptor, comparable, protocol
@@ -166,10 +196,13 @@ class ListeningPositionCampaignPlanBuilder:
         return set(protocol.controlled_variables).issubset(configuration_facts)
 
     @staticmethod
-    def _steps(protocol, reference_experiment_id, *, blocked):
+    def _steps(
+        protocol, reference_experiment_id, *, blocked, instance=None
+    ):
+        source_positions = instance.positions if instance is not None else protocol.positions
         step_id_by_position = {
             item.position_code: f"campaign-step.{item.position_code}"
-            for item in protocol.positions
+            for item in source_positions
         }
         execution_status = (
             ListeningPositionCampaignStepExecutionStatus.BLOCKED
@@ -179,7 +212,11 @@ class ListeningPositionCampaignPlanBuilder:
         return tuple(
             ListeningPositionCampaignStep(
                 step_id=step_id_by_position[position.position_code],
-                order_index=position.acquisition_order,
+                order_index=(
+                    position.order_index
+                    if instance is not None
+                    else position.acquisition_order
+                ),
                 position_code=position.position_code,
                 position_role=position.position_role,
                 longitudinal_offset_m=position.longitudinal_offset_m,
@@ -196,20 +233,34 @@ class ListeningPositionCampaignPlanBuilder:
                     else None
                 ),
                 reference_experiment_id=reference_experiment_id,
-                modified_variables=protocol.modified_variables,
-                controlled_variables=protocol.controlled_variables,
+                modified_variables=(
+                    position.modified_variables
+                    if instance is not None
+                    else protocol.modified_variables
+                ),
+                controlled_variables=(
+                    position.controlled_variables
+                    if instance is not None
+                    else protocol.controlled_variables
+                ),
                 required_measurements=position.required_measurements,
                 comparability_requirements=(protocol.comparability_rule_code,),
                 execution_status=execution_status,
             )
-            for position in protocol.positions
+            for position in source_positions
         )
 
     @staticmethod
-    def _plan_id(candidate, protocol):
+    def _plan_id(candidate, protocol, instance):
         protocol_identity = (
             f"{protocol.protocol_id}.v{protocol.version}"
             if protocol is not None
             else "protocol-unavailable"
         )
-        return f"campaign-plan.{candidate.candidate_id}.{protocol_identity}"
+        instance_identity = (
+            instance.instance_id if instance is not None else "instance-unavailable"
+        )
+        return (
+            f"campaign-plan.{candidate.candidate_id}."
+            f"{protocol_identity}.{instance_identity}"
+        )

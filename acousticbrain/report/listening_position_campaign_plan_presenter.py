@@ -26,6 +26,7 @@ class PresentedListeningPositionCampaignPlan:
     protocol_id: str | None
     protocol_version: int | None
     source_candidate_id: str
+    source_instance_id: str | None
     source_hypothesis_code: str
     reference_experiment_id: str | None
     steps: tuple[PresentedListeningPositionCampaignStep, ...]
@@ -51,6 +52,7 @@ class ListeningPositionCampaignPlanPresenter:
             protocol_id=plan.protocol_id,
             protocol_version=plan.protocol_version,
             source_candidate_id=plan.source_candidate_id,
+            source_instance_id=plan.source_instance_id,
             source_hypothesis_code=plan.source_hypothesis_code,
             reference_experiment_id=plan.reference_experiment_id,
             steps=tuple(
