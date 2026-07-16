@@ -67,6 +67,9 @@ from .stages.loudspeaker_positioning_experiment import (
 from .stages.acoustic_hypothesis_experiment_generation import (
     AcousticHypothesisExperimentGenerationStage,
 )
+from .stages.listening_position_campaign_plan import (
+    ListeningPositionCampaignPlanStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -266,6 +269,10 @@ class BrainPipeline:
         )
 
         AcousticHypothesisExperimentGenerationStage().run(
+            context,
+        )
+
+        ListeningPositionCampaignPlanStage().run(
             context,
         )
 

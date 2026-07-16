@@ -6,6 +6,11 @@
 
 The protocol is optional and must be supplied explicitly through `AcousticBrain.analyze(listening_position_sampling_protocol=...)`. When it is absent or structurally incomplete, the existing `LISTENING_POSITION_MULTI_POINT` candidate remains blocked by `MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE`.
 
+Its projection into future acquisition steps is specified separately by
+`LISTENING_POSITION_CAMPAIGN_PLAN_CONTRACT.md`. The protocol remains the sole
+source of sampling geometry; the campaign plan does not duplicate or reconstruct
+it.
+
 ## Protocol structure
 
 A protocol carries only declared data:

@@ -35,6 +35,7 @@ from acousticbrain.models import (
     ExperimentPlanningAnalysis,
     LoudspeakerPositioningExperimentAnalysis,
     ListeningPositionSamplingProtocol,
+    ListeningPositionCampaignPlan,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -186,6 +187,8 @@ class AnalysisContext:
     listening_position_sampling_protocol: (
         ListeningPositionSamplingProtocol | None
     ) = None
+
+    listening_position_campaign_plan: ListeningPositionCampaignPlan | None = None
 
     experiment_comparison_analysis = None
 

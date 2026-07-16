@@ -13,6 +13,7 @@ from acousticbrain.report import (
     ExperimentCampaignPresenter,
     LongitudinalExperimentalLearningPresenter,
     AcousticHypothesisExperimentGenerationPresenter,
+    ListeningPositionCampaignPlanPresenter,
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
@@ -22,6 +23,9 @@ from .stages.longitudinal_experimental_learning import (
 )
 from .stages.acoustic_hypothesis_experiment_generation import (
     AcousticHypothesisExperimentGenerationStage,
+)
+from .stages.listening_position_campaign_plan import (
+    ListeningPositionCampaignPlanStage,
 )
 from .stages.experiment_planning import ExperimentPlanningStage
 from .stages.traceability import TraceabilityStage
@@ -185,6 +189,7 @@ class AcousticBrain:
             current_context.experiment_campaign_analyses = campaign_analyses
             current_context.causal_discrimination_analysis = causal_analysis
         AcousticHypothesisExperimentGenerationStage().run(current_context)
+        ListeningPositionCampaignPlanStage().run(current_context)
         if plan_experiments and current is not None:
             ExperimentPlanningStage().run(
                 current_context,
@@ -199,6 +204,9 @@ class AcousticBrain:
             )
         current_report.acoustic_hypothesis_experiment_generation = (
             AcousticHypothesisExperimentGenerationPresenter().present(current_context)
+        )
+        current_report.listening_position_campaign_plan = (
+            ListeningPositionCampaignPlanPresenter().present(current_context)
         )
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)

@@ -361,3 +361,9 @@ from .listening_position_sampling_protocol import (
     REQUIRED_COMPLETION_CONDITION_CODES,
     REQUIRED_POSITION_MEASUREMENTS,
 )
+from .listening_position_campaign_plan import (
+    ListeningPositionCampaignPlan,
+    ListeningPositionCampaignPlanStatus,
+    ListeningPositionCampaignStep,
+    ListeningPositionCampaignStepExecutionStatus,
+)
