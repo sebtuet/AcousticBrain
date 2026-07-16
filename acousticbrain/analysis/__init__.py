@@ -66,3 +66,6 @@ from .loudspeaker_positioning_experiment import (
 from .longitudinal_experimental_learning import (
     LongitudinalExperimentalLearningEngine,
 )
+from .acoustic_hypothesis_experiment_generation import (
+    AcousticHypothesisExperimentGenerator,
+)

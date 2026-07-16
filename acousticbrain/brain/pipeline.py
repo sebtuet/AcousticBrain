@@ -64,6 +64,9 @@ from .stages.experiment_planning import ExperimentPlanningStage
 from .stages.loudspeaker_positioning_experiment import (
     LoudspeakerPositioningExperimentStage,
 )
+from .stages.acoustic_hypothesis_experiment_generation import (
+    AcousticHypothesisExperimentGenerationStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -273,6 +276,10 @@ class BrainPipeline:
         )
 
         RecommendationStage().run(
+            context,
+        )
+
+        AcousticHypothesisExperimentGenerationStage().run(
             context,
         )
 

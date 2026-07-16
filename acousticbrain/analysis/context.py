@@ -126,6 +126,8 @@ class AnalysisContext:
 
     experiment_planning_analysis: ExperimentPlanningAnalysis | None = None
 
+    acoustic_hypothesis_experiment_generation_analysis = None
+
     loudspeaker_positioning_experiment_analysis: (
         LoudspeakerPositioningExperimentAnalysis | None
     ) = None

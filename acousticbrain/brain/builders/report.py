@@ -18,6 +18,7 @@ from acousticbrain.report import (
     ControlledReflectionHypothesisStatusPresenter,
     LoudspeakerPositioningExperimentPresenter,
     LongitudinalExperimentalLearningPresenter,
+    AcousticHypothesisExperimentGenerationPresenter,
 )
 
 
@@ -51,6 +52,9 @@ class ReportBuilder:
         report.causal_discrimination = CausalDiscriminationPresenter().present(context)
         report.longitudinal_experimental_learning = (
             LongitudinalExperimentalLearningPresenter().present(context)
+        )
+        report.acoustic_hypothesis_experiment_generation = (
+            AcousticHypothesisExperimentGenerationPresenter().present(context)
         )
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (

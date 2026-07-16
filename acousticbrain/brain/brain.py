@@ -12,10 +12,14 @@ from acousticbrain.report import (
     ExperimentDiscoveryPresenter,
     ExperimentCampaignPresenter,
     LongitudinalExperimentalLearningPresenter,
+    AcousticHypothesisExperimentGenerationPresenter,
     Report,
 )
 from .stages.longitudinal_experimental_learning import (
     LongitudinalExperimentalLearningStage,
+)
+from .stages.acoustic_hypothesis_experiment_generation import (
+    AcousticHypothesisExperimentGenerationStage,
 )
 
 
@@ -159,6 +163,10 @@ class AcousticBrain:
             current_context.experiment_comparison_analysis = comparison
             current_context.experiment_campaign_analyses = campaign_analyses
             current_context.causal_discrimination_analysis = causal_analysis
+        AcousticHypothesisExperimentGenerationStage().run(current_context)
+        current_report.acoustic_hypothesis_experiment_generation = (
+            AcousticHypothesisExperimentGenerationPresenter().present(current_context)
+        )
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)
         )

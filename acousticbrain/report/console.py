@@ -900,6 +900,50 @@ class ConsoleReporter:
             if self.detailed_traceability and traceability.links:
                 print()
 
+        generated = getattr(report, "acoustic_hypothesis_experiment_generation", None)
+        if generated is not None:
+            print("HYPOTHÈSES ET EXPÉRIENCES À TESTER")
+            print()
+            for hypothesis in generated.hypotheses[:3]:
+                print(f"Hypothèse : {hypothesis.hypothesis_code}")
+                print(f"Statut exploratoire : {hypothesis.status}")
+                facts = (
+                    hypothesis.supporting_fact_codes
+                    or hypothesis.contradicting_fact_codes
+                    or hypothesis.rationale_codes
+                    or hypothesis.missing_fact_codes
+                )
+                print("Pourquoi : " + (", ".join(facts[:3]) or "faits structurés insuffisants"))
+                if hypothesis.uncertainty_reasons:
+                    print("Limites : " + ", ".join(hypothesis.uncertainty_reasons))
+                print(f"Causalité : {hypothesis.causality_status}")
+                print()
+            if generated.recommended_candidate_id is None:
+                print("Expérience prioritaire : aucune expérience sûre et concrète")
+            for experiment in generated.experiments[:3]:
+                priority = (
+                    " — PRIORITAIRE"
+                    if experiment.candidate_id == generated.recommended_candidate_id
+                    else ""
+                )
+                print(f"Expérience : {experiment.experiment_type}{priority}")
+                print(f"Cible : {experiment.target}")
+                if experiment.movement_direction is not None:
+                    print(f"Direction : {experiment.movement_direction}")
+                if experiment.step_distance_m is not None:
+                    print(f"Distance : {experiment.step_distance_m:.2f} m")
+                print(
+                    "Effets mesurables attendus : "
+                    + ", ".join(
+                        item.observation_code for item in experiment.expected_observations
+                    )
+                )
+                print("Variables contrôlées : " + ", ".join(experiment.controlled_variables))
+                print("Mesures : " + ", ".join(experiment.required_measurements))
+                print("Limite : test exploratoire sans garantie d’amélioration globale.")
+                print(f"Causalité : {experiment.causality_status}")
+                print()
+
         planning = report.experiment_planning
         if planning is not None:
             print("PROCHAINE EXPÉRIENCE RECOMMANDÉE")
