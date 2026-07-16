@@ -1,4 +1,5 @@
 from dataclasses import replace
+from math import isfinite
 
 from acousticbrain.models import (
     AcousticHypothesisExperimentGenerationAnalysis,
@@ -13,6 +14,7 @@ from acousticbrain.models import (
     GeneratedHypothesisStatus,
     HypothesisCode,
     HypothesisStatus,
+    ImpulseChannel,
     ReflectionCandidateGeometricStatus,
     RoomSurfaceKind,
 )
@@ -136,10 +138,12 @@ class AcousticHypothesisExperimentGenerator:
                 by_hypothesis[modal.code.value].append(candidate.candidate_id)
 
         experiments = self._deduplicate(experiments)
-        experiments = sorted(
-            experiments,
-            key=lambda item: (-item.information_value, item.experiment_type.value, item.candidate_id),
-        )[:5]
+        available_measurements = self._available_measurements(context)
+        experiments = [
+            self._block_missing_measurements(item, available_measurements)
+            for item in experiments
+        ]
+        experiments = self._rank_and_limit(experiments)
         retained_ids = {item.candidate_id for item in experiments}
         by_hypothesis = {
             code: [candidate_id for candidate_id in ids if candidate_id in retained_ids]
@@ -274,7 +278,21 @@ class AcousticHypothesisExperimentGenerator:
         else:
             return None
         frequency = float(match.observed_dip.frequency)
-        width = max(2.0, frequency * 0.05)
+        frequency_regions = ()
+        uncertainty_hz = getattr(source, "frequency_uncertainty_hz", None)
+        if self._is_non_negative_number(uncertainty_hz):
+            frequency_regions = ((
+                max(0.0, frequency - float(uncertainty_hz)),
+                frequency + float(uncertainty_hz),
+            ),)
+        step_distance_m = self._structured_positive_parameter(
+            hypothesis, "proposed_displacement_m"
+        )
+        blocking_reasons = (
+            ()
+            if step_distance_m is not None
+            else ("STRUCTURED_STEP_DISTANCE_UNAVAILABLE",)
+        )
         observations = self._frequency_shift_observations("SBIR", frequency)
         return self._experiment(
             candidate_id=f"generated.{experiment_type.value.lower()}.sbir",
@@ -283,17 +301,22 @@ class AcousticHypothesisExperimentGenerator:
             target=target,
             movement_axis="LONGITUDINAL",
             movement_direction="FORWARD_AWAY_FROM_FRONT_WALL",
-            step_distance_m=0.10,
+            step_distance_m=step_distance_m,
             modified_variable=f"{target}_LONGITUDINAL_POSITION",
             controlled_variables=self.CONTROLLED_SPEAKER_MOVE,
             observations=observations,
-            frequency_regions=((max(0.0, frequency - width), frequency + width),),
+            frequency_regions=frequency_regions,
             time_regions=(),
             reversibility=GeneratedExperimentReversibility.HIGH,
             difficulty=GeneratedExperimentDifficulty.EASY,
+            blocking_reasons=blocking_reasons,
             rationale=(
                 "SBIR_GEOMETRY_FREQUENCY_MATCH",
-                "STRUCTURED_0_10_M_DISPLACEMENT",
+                (
+                    "STRUCTURED_STEP_DISTANCE_REUSED"
+                    if step_distance_m is not None
+                    else "STRUCTURED_STEP_DISTANCE_UNAVAILABLE"
+                ),
                 "LOCALIZED_FREQUENCY_EFFECT_ONLY",
             ),
         )
@@ -343,8 +366,10 @@ class AcousticHypothesisExperimentGenerator:
             experiment_type, target = selection
             path = paths.get(item.path_id)
             time_regions = ()
-            if path is not None:
-                uncertainty = path.uncertainty_ms or 0.5
+            if path is not None and self._is_non_negative_number(
+                path.uncertainty_ms
+            ):
+                uncertainty = float(path.uncertainty_ms)
                 time_regions = ((
                     max(0.0, path.theoretical_delay_ms - uncertainty),
                     path.theoretical_delay_ms + uncertainty,
@@ -365,6 +390,7 @@ class AcousticHypothesisExperimentGenerator:
                 time_regions=time_regions,
                 reversibility=GeneratedExperimentReversibility.HIGH,
                 difficulty=GeneratedExperimentDifficulty.EASY,
+                blocking_reasons=(),
                 rationale=(
                     "IDENTIFIED_SINGLE_REFLECTION_SURFACE",
                     "REVERSIBLE_LOCALIZED_TEMPORARY_TREATMENT",
@@ -385,16 +411,21 @@ class AcousticHypothesisExperimentGenerator:
             }
         )
 
-    @staticmethod
-    def _modal_test_is_informative(context, hypothesis):
+    def _modal_test_is_informative(self, context, hypothesis):
         modal = getattr(context, "modal_density_analysis", None)
         bass = getattr(context, "bass_decay_analysis", None)
         return bool(
-            hypothesis.status is not HypothesisStatus.CONTRADICTED
+            self._status(hypothesis) in {
+                GeneratedHypothesisStatus.PLAUSIBLE,
+                GeneratedHypothesisStatus.WEAKLY_PLAUSIBLE,
+            }
             and (
                 getattr(modal, "sparse_bands", ())
                 or getattr(modal, "dense_bands", ())
-                or getattr(bass, "aggregate_bands", ())
+                or any(
+                    band.estimated_decay_time_seconds is not None
+                    for band in getattr(bass, "aggregate_bands", ())
+                )
             )
         )
 
@@ -424,6 +455,7 @@ class AcousticHypothesisExperimentGenerator:
             time_regions=(),
             reversibility=GeneratedExperimentReversibility.HIGH,
             difficulty=GeneratedExperimentDifficulty.EASY,
+            blocking_reasons=(),
             rationale=(
                 "LOW_FREQUENCY_SPATIAL_VARIATION_TEST",
                 "NO_SPEAKER_DIRECTION_INVENTED",
@@ -435,10 +467,10 @@ class AcousticHypothesisExperimentGenerator:
         self, *, candidate_id, hypothesis_code, experiment_type, target,
         movement_axis, movement_direction, step_distance_m, modified_variable,
         controlled_variables, observations, frequency_regions, time_regions,
-        reversibility, difficulty, rationale,
+        reversibility, difficulty, blocking_reasons, rationale,
     ):
         information = 35.0
-        information += 15.0
+        information += 15.0 if not blocking_reasons else 0.0
         information += 10.0 if reversibility is GeneratedExperimentReversibility.HIGH else 5.0
         information += 10.0 if difficulty is GeneratedExperimentDifficulty.EASY else 5.0
         information += min(20.0, 5.0 * len(observations))
@@ -460,7 +492,7 @@ class AcousticHypothesisExperimentGenerator:
             information_value=min(100.0, information),
             reversibility=reversibility,
             difficulty=difficulty,
-            blocking_reasons=(),
+            blocking_reasons=tuple(blocking_reasons),
             rationale_codes=tuple(rationale),
         )
 
@@ -529,6 +561,86 @@ class AcousticHypothesisExperimentGenerator:
             if existing is None or item.information_value > existing.information_value:
                 result[key] = item
         return list(result.values())
+
+    @staticmethod
+    def _rank_and_limit(experiments):
+        return sorted(
+            experiments,
+            key=lambda item: (
+                -item.information_value,
+                item.experiment_type.value,
+                item.candidate_id,
+            ),
+        )[:5]
+
+    @staticmethod
+    def _structured_positive_parameter(hypothesis, parameter_code):
+        for action in hypothesis.verification_actions:
+            value = action.parameters.get(parameter_code)
+            if (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and isfinite(value)
+                and value > 0.0
+            ):
+                return float(value)
+        return None
+
+    @staticmethod
+    def _is_non_negative_number(value):
+        return bool(
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and isfinite(value)
+            and value >= 0.0
+        )
+
+    @staticmethod
+    def _available_measurements(context):
+        quality = getattr(context, "measurement_quality_analysis", None)
+        measurement_set = getattr(quality, "measurement_set_quality", None)
+        if measurement_set is not None:
+            channels = set(measurement_set.available_channels)
+        else:
+            channels = set()
+            project = getattr(context, "project", None)
+            getter = getattr(project, "get_impulse_response", None)
+            if callable(getter):
+                channels = {
+                    channel
+                    for channel in (
+                        ImpulseChannel.LEFT,
+                        ImpulseChannel.RIGHT,
+                        ImpulseChannel.STEREO,
+                    )
+                    if getter(channel) is not None
+                }
+        return {getattr(channel, "value", str(channel)) for channel in channels}
+
+    def _block_missing_measurements(self, experiment, available_measurements):
+        missing = tuple(
+            measurement
+            for measurement in self.REQUIRED_MEASUREMENTS
+            if measurement not in available_measurements
+        )
+        if not missing:
+            return experiment
+        reasons = tuple(
+            dict.fromkeys(
+                (
+                    *experiment.blocking_reasons,
+                    *(f"REQUIRED_MEASUREMENT_UNAVAILABLE:{item}" for item in missing),
+                )
+            )
+        )
+        information_value = experiment.information_value
+        if not experiment.blocking_reasons:
+            information_value = max(0.0, information_value - 15.0)
+        return replace(
+            experiment,
+            blocking_reasons=reasons,
+            information_value=information_value,
+        )
 
     @staticmethod
     def _frequency_shift_observations(prefix, frequency):

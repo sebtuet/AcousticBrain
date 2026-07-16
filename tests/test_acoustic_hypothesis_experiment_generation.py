@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -21,10 +22,16 @@ from acousticbrain.models import (
     GeneratedHypothesisStatus,
     HypothesisCode,
     HypothesisStatus,
+    ImpulseChannel,
+    MeasurementQualityAnalysis,
+    MeasurementSetQuality,
     Peak,
+    RecommendationPriority,
     ReasoningEvidence,
     ReflectionCandidateGeometricStatus,
     RoomSurfaceKind,
+    VerificationAction,
+    VerificationActionType,
 )
 from acousticbrain.report import AcousticHypothesisExperimentGenerationPresenter
 from acousticbrain.brain import AcousticBrain
@@ -43,12 +50,37 @@ def evidence(code, role=EvidenceRole.SUPPORTING, source="TestAnalysis"):
     )
 
 
-def hypothesis(code, *, status=HypothesisStatus.SUPPORTED, support=True, context=False):
+def hypothesis(
+    code,
+    *,
+    status=HypothesisStatus.SUPPORTED,
+    support=True,
+    context=False,
+    action_parameters=None,
+):
+    supporting_evidence = (evidence(f"{code.value}.support"),) if support else ()
+    verification_actions = ()
+    if action_parameters is not None:
+        verification_actions = (
+            VerificationAction(
+                code=f"VERIFY_{code.value}",
+                action_type=VerificationActionType.TEMPORARY_MOVE,
+                target="structured_test_target",
+                priority=RecommendationPriority.HIGH,
+                confidence=75.0,
+                evidence_fact_codes=tuple(
+                    item.fact_code for item in supporting_evidence
+                ),
+                expected_supporting_fact_codes=("EXPECTED_SUPPORT",),
+                expected_counter_fact_codes=("EXPECTED_COUNTER",),
+                parameters=action_parameters,
+            ),
+        )
     return AcousticHypothesis(
         code=code,
         phenomenon=code.value,
         domain_codes=("TEST",),
-        supporting_evidence=(evidence(f"{code.value}.support"),) if support else (),
+        supporting_evidence=supporting_evidence,
         counter_evidence=(),
         context_evidence=(
             (evidence(f"{code.value}.context", EvidenceRole.CONTEXT),)
@@ -59,6 +91,7 @@ def hypothesis(code, *, status=HypothesisStatus.SUPPORTED, support=True, context
         support_score=80.0 if support else 0.0,
         confidence=75.0,
         status=status,
+        verification_actions=verification_actions,
     )
 
 
@@ -78,6 +111,22 @@ def context(*hypotheses, **values):
         room_geometry=None,
         modal_density_analysis=None,
         bass_decay_analysis=None,
+        measurement_quality_analysis=MeasurementQualityAnalysis(
+            measurement_set_quality=MeasurementSetQuality(
+                available_channels=(
+                    ImpulseChannel.LEFT,
+                    ImpulseChannel.RIGHT,
+                    ImpulseChannel.STEREO,
+                ),
+                required_channels=(
+                    ImpulseChannel.LEFT,
+                    ImpulseChannel.RIGHT,
+                    ImpulseChannel.STEREO,
+                ),
+                confidence=100.0,
+            ),
+            confidence=100.0,
+        ),
     )
     defaults.update(values)
     return SimpleNamespace(**defaults)
@@ -92,23 +141,40 @@ def descriptor(*modified_variables):
     )
 
 
-def modal_context(*, executed=False):
-    source = hypothesis(
+def modal_context(*, executed=False, source=None, available_channels=None):
+    source = source or hypothesis(
         HypothesisCode.MODAL_BASS_PERSISTENCE,
         status=HypothesisStatus.INCONCLUSIVE,
         support=False,
         context=True,
     )
     band = SimpleNamespace(minimum_hz=20.0, maximum_hz=50.0)
+    values = {}
+    if available_channels is not None:
+        values["measurement_quality_analysis"] = MeasurementQualityAnalysis(
+            measurement_set_quality=MeasurementSetQuality(
+                available_channels=tuple(available_channels),
+                required_channels=(
+                    ImpulseChannel.LEFT,
+                    ImpulseChannel.RIGHT,
+                    ImpulseChannel.STEREO,
+                ),
+                confidence=100.0,
+            ),
+            confidence=100.0,
+        )
     return context(
         source,
         modal_density_analysis=SimpleNamespace(sparse_bands=[band], dense_bands=[]),
         experiment_descriptors=(descriptor("LISTENING_POSITION_MULTI_POINT"),)
         if executed else (),
+        **values,
     )
 
 
-def reflection_context(*, executed=False, mixed=False, with_surface=True):
+def reflection_context(
+    *, executed=False, mixed=False, with_surface=True, uncertainty_ms=0.4
+):
     source = hypothesis(HypothesisCode.DOMINANT_EARLY_REFLECTION_INTERACTION)
     if not with_surface:
         return context(source)
@@ -138,7 +204,8 @@ def reflection_context(*, executed=False, mixed=False, with_surface=True):
         ),
         geometry_early_reflection_analysis=SimpleNamespace(
             paths=(SimpleNamespace(
-                path_id="path.left", theoretical_delay_ms=5.0, uncertainty_ms=0.4
+                path_id="path.left", theoretical_delay_ms=5.0,
+                uncertainty_ms=uncertainty_ms
             ),)
         ),
         experiment_descriptors=(
@@ -148,14 +215,25 @@ def reflection_context(*, executed=False, mixed=False, with_surface=True):
     )
 
 
-def sbir_context(*, with_distance=True):
-    source = hypothesis(HypothesisCode.SBIR_PLACEMENT_INTERACTION)
+def sbir_context(
+    *, with_distance=True, step_distance_m=0.10, frequency_uncertainty_hz=8.0
+):
+    parameters = (
+        {}
+        if step_distance_m is None
+        else {"proposed_displacement_m": step_distance_m}
+    )
+    source = hypothesis(
+        HypothesisCode.SBIR_PLACEMENT_INTERACTION,
+        action_parameters=parameters,
+    )
     if not with_distance:
         return context(source)
     candidate = SimpleNamespace(
         surface=SimpleNamespace(name="FRONT_WALL"),
         speaker_id="LEFT_SPEAKER",
         speaker_boundary_distance_m=0.54,
+        frequency_uncertainty_hz=frequency_uncertainty_hz,
     )
     match = SimpleNamespace(candidate=candidate, observed_dip=Peak(160.0, -10.0, 1, 8.0))
     return context(
@@ -173,13 +251,16 @@ def test_no_reasoning_or_no_exploitable_data_produces_no_result():
     assert result.recommended_candidate_id is None
 
 
-def test_sbir_known_distance_generates_structured_ten_centimeter_test():
-    result = AcousticHypothesisExperimentGenerator().generate(sbir_context())
+def test_sbir_reuses_structured_step_distance_without_transforming_it():
+    result = AcousticHypothesisExperimentGenerator().generate(
+        sbir_context(step_distance_m=0.12, frequency_uncertainty_hz=3.0)
+    )
     candidate = result.ordered_experiments[0]
     assert candidate.experiment_type is GeneratedExperimentType.LEFT_SPEAKER_FORWARD
     assert candidate.movement_direction == "FORWARD_AWAY_FROM_FRONT_WALL"
-    assert candidate.step_distance_m == pytest.approx(0.10)
-    assert candidate.expected_frequency_regions == ((152.0, 168.0),)
+    assert candidate.step_distance_m == pytest.approx(0.12)
+    assert candidate.expected_frequency_regions == ((157.0, 163.0),)
+    assert candidate.blocking_reasons == ()
     assert candidate.required_measurements == ("LEFT", "RIGHT", "STEREO")
 
 
@@ -193,6 +274,32 @@ def test_sbir_without_geometry_or_distance_does_not_invent_test():
     )
 
 
+def test_sbir_without_structured_amplitude_is_blocked_and_invents_no_distance():
+    result = AcousticHypothesisExperimentGenerator().generate(
+        sbir_context(step_distance_m=None)
+    )
+    candidate = result.ordered_experiments[0]
+    assert candidate.step_distance_m is None
+    assert candidate.blocking_reasons == ("STRUCTURED_STEP_DISTANCE_UNAVAILABLE",)
+    assert result.recommended_candidate_id is None
+    assert "0.05" not in repr(candidate)
+    assert "0.10" not in repr(candidate)
+
+
+def test_sbir_frequency_region_comes_from_structured_source_uncertainty():
+    candidate = AcousticHypothesisExperimentGenerator().generate(
+        sbir_context(frequency_uncertainty_hz=1.25)
+    ).ordered_experiments[0]
+    assert candidate.expected_frequency_regions == ((158.75, 161.25),)
+
+
+def test_sbir_without_structured_frequency_uncertainty_has_no_region():
+    candidate = AcousticHypothesisExperimentGenerator().generate(
+        sbir_context(frequency_uncertainty_hz=None)
+    ).ordered_experiments[0]
+    assert candidate.expected_frequency_regions == ()
+
+
 def test_reflection_surface_generates_one_reversible_localized_treatment():
     result = AcousticHypothesisExperimentGenerator().generate(reflection_context())
     candidate = result.ordered_experiments[0]
@@ -203,6 +310,13 @@ def test_reflection_surface_generates_one_reversible_localized_treatment():
     assert candidate.expected_time_regions == ((4.6, 5.4),)
     assert len(candidate.modified_variables) == 1
     assert "NO_GLOBAL_IMPROVEMENT_GUARANTEE" in candidate.rationale_codes
+
+
+def test_reflection_without_structured_time_uncertainty_has_no_region():
+    candidate = AcousticHypothesisExperimentGenerator().generate(
+        reflection_context(uncertainty_ms=None)
+    ).ordered_experiments[0]
+    assert candidate.expected_time_regions == ()
 
 
 def test_reflection_without_surface_does_not_propose_massive_treatment():
@@ -237,6 +351,68 @@ def test_modal_need_generates_multi_position_without_invented_distance():
     assert candidate.step_distance_m is None
     assert candidate.movement_direction is None
     assert candidate.expected_frequency_regions == ((20.0, 50.0),)
+
+
+@pytest.mark.parametrize(
+    "source_status,expected_status",
+    [
+        (HypothesisStatus.INCONCLUSIVE, GeneratedHypothesisStatus.INSUFFICIENT_EVIDENCE),
+        (HypothesisStatus.CONTRADICTED, GeneratedHypothesisStatus.CONTRADICTED),
+    ],
+)
+def test_modal_non_supporting_status_is_not_eligible_despite_available_bands(
+    source_status, expected_status
+):
+    source = hypothesis(
+        HypothesisCode.MODAL_BASS_PERSISTENCE,
+        status=source_status,
+        support=False,
+        context=False,
+    )
+    result = AcousticHypothesisExperimentGenerator().generate(
+        modal_context(source=source)
+    )
+    assert result.ordered_experiments == ()
+    assert result.hypotheses[0].status is expected_status
+
+
+def test_modal_hypothesis_without_targeted_measured_anomaly_has_no_candidate():
+    source = hypothesis(HypothesisCode.MODAL_BASS_PERSISTENCE)
+    result = AcousticHypothesisExperimentGenerator().generate(context(source))
+    assert result.ordered_experiments == ()
+
+
+@pytest.mark.parametrize(
+    "missing_channel",
+    [ImpulseChannel.LEFT, ImpulseChannel.RIGHT, ImpulseChannel.STEREO],
+)
+def test_modal_candidate_is_blocked_when_a_required_measurement_is_missing(
+    missing_channel,
+):
+    available = tuple(
+        channel
+        for channel in (
+            ImpulseChannel.LEFT,
+            ImpulseChannel.RIGHT,
+            ImpulseChannel.STEREO,
+        )
+        if channel is not missing_channel
+    )
+    result = AcousticHypothesisExperimentGenerator().generate(
+        modal_context(available_channels=available)
+    )
+    candidate = result.ordered_experiments[0]
+    assert candidate.blocking_reasons == (
+        f"REQUIRED_MEASUREMENT_UNAVAILABLE:{missing_channel.value}",
+    )
+    assert result.recommended_candidate_id is None
+
+
+def test_modal_candidate_is_eligible_with_left_right_and_stereo_available():
+    result = AcousticHypothesisExperimentGenerator().generate(modal_context())
+    candidate = result.ordered_experiments[0]
+    assert candidate.blocking_reasons == ()
+    assert result.recommended_candidate_id == candidate.candidate_id
 
 
 def test_executed_multi_position_is_not_reproposed():
@@ -310,6 +486,20 @@ def test_ranking_is_deterministic_limited_and_has_one_recommendation():
     ) == 1
 
 
+def test_ranking_caps_exactly_at_five_with_more_than_five_candidates():
+    generator = AcousticHypothesisExperimentGenerator()
+    base = generator.generate(modal_context()).ordered_experiments[0]
+    candidates = tuple(
+        replace(base, candidate_id=f"generated.modal.{index}")
+        for index in range(6)
+    )
+    ranked = generator._rank_and_limit(reversed(candidates))
+    assert len(ranked) == 5
+    assert tuple(item.candidate_id for item in ranked) == tuple(
+        f"generated.modal.{index}" for index in range(5)
+    )
+
+
 def test_expected_observations_cover_all_outcomes_and_never_guarantee_improvement():
     candidate = AcousticHypothesisExperimentGenerator().generate(modal_context()).ordered_experiments[0]
     assert {item.outcome.value for item in candidate.expected_observations} == {
@@ -337,18 +527,44 @@ def test_stage_does_not_mutate_source_analyses_scores_or_recommendations():
     source_context = modal_context()
     source_context.recommendation_analysis = SimpleNamespace(recommendations=("unchanged",))
     source_context.global_analysis = SimpleNamespace(score=51.3)
+    source_context.causal_discrimination_analysis = SimpleNamespace(
+        outcome=CausalDiscriminationOutcome.INCONCLUSIVE,
+        marker="unchanged",
+    )
+    source_context.longitudinal_experimental_learning_analysis = SimpleNamespace(
+        state="STABLE_NON_SUPPORT",
+        marker="unchanged",
+    )
+    source_references = (
+        source_context.acoustic_reasoning_analysis,
+        source_context.recommendation_analysis,
+        source_context.global_analysis,
+        source_context.causal_discrimination_analysis,
+        source_context.longitudinal_experimental_learning_analysis,
+        source_context.modal_density_analysis,
+        source_context.measurement_quality_analysis,
+    )
     before = deepcopy((
         source_context.acoustic_reasoning_analysis,
         source_context.recommendation_analysis,
         source_context.global_analysis,
+        source_context.causal_discrimination_analysis,
+        source_context.longitudinal_experimental_learning_analysis,
+        source_context.modal_density_analysis,
+        source_context.measurement_quality_analysis,
     ))
     AcousticHypothesisExperimentGenerationStage().run(source_context)
     after = (
         source_context.acoustic_reasoning_analysis,
         source_context.recommendation_analysis,
         source_context.global_analysis,
+        source_context.causal_discrimination_analysis,
+        source_context.longitudinal_experimental_learning_analysis,
+        source_context.modal_density_analysis,
+        source_context.measurement_quality_analysis,
     )
     assert after == before
+    assert all(current is original for current, original in zip(after, source_references))
 
 
 def test_presenter_exports_structured_hypotheses_experiments_and_blockages():

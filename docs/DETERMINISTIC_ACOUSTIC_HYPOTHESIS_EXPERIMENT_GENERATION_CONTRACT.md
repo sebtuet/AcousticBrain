@@ -36,11 +36,13 @@ The first implementation emits only the subset for which explicit rules exist. I
 
 ### SBIR
 
-A concrete move requires an existing geometry-to-dip correlation, a known speaker, a front-wall relationship, an exploitable measured dip, and the existing structured `0.10 m` test amplitude. In that case the rule tests a forward move away from the front wall and expects a localized frequency shift. No `0.05 m` default is imported from PR-044. Without the complete relation, no direction or distance is emitted.
+A concrete move requires an existing geometry-to-dip correlation, a known speaker, a front-wall relationship, and an exploitable measured dip. The movement amplitude is copied without transformation only from the source hypothesis verification-action parameter `proposed_displacement_m`. If that positive structured parameter is absent, the candidate has `step_distance_m = None`, is blocked by `STRUCTURED_STEP_DISTANCE_UNAVAILABLE`, and cannot become the main recommendation. The generator has no `0.05 m` or `0.10 m` fallback.
+
+An expected frequency region is emitted only when the correlated geometry candidate provides `frequency_uncertainty_hz`; its bounds are the measured frequency plus or minus that source uncertainty. Without it, `expected_frequency_regions` is empty. The generator applies no implicit absolute or percentage window.
 
 ### Dominant early reflection
 
-A temporary treatment requires an accepted material-aware geometry candidate that resolves to exactly one supported room surface. The expected effect is a localized ETC-event change, possibly accompanied by local D/R or clarity changes. Floor, ceiling, unknown surfaces, and unlocalized massive treatment are refused.
+A temporary treatment requires an accepted material-aware geometry candidate that resolves to exactly one supported room surface. The expected effect is a localized ETC-event change, possibly accompanied by local D/R or clarity changes. Floor, ceiling, unknown surfaces, and unlocalized massive treatment are refused. An expected time region is emitted only when the associated geometry path provides `uncertainty_ms`; its bounds are the theoretical delay plus or minus that source uncertainty. Without it, `expected_time_regions` is empty and no default timing window is created.
 
 ### Speaker/room asymmetry
 
@@ -48,14 +50,14 @@ The hypothesis remains visible when supported by existing reasoning. Completed c
 
 ### Modal persistence
 
-A multi-position listening-area test is generated when modal-density bands or exploitable bass-decay bands exist and that test has not already been executed. No speaker displacement is generated from modal evidence alone. The multi-point test has no invented distance or direction.
+A multi-position listening-area test is generated only when the projected modal hypothesis is `PLAUSIBLE` or `WEAKLY_PLAUSIBLE`, a targeted modal-density band or exploitable bass-decay band exists, and that test has not already been executed. `INSUFFICIENT_EVIDENCE` and `CONTRADICTED` modal hypotheses are ineligible even when bands are present. No speaker displacement is generated from modal evidence alone. The multi-point test has no invented distance or direction.
 
 ## Refusal rules
 
 Generation refuses or omits a concrete experiment when any required relation is absent, including:
 
 - no reasoning analysis or no supported/contextual evidence;
-- no correlated SBIR distance, speaker, surface, or safe longitudinal direction;
+- no correlated SBIR speaker, surface, or safe longitudinal direction;
 - no accepted and representable reflection surface;
 - a toe-in change without a dedicated directional rule;
 - a floor/ceiling or multi-surface treatment outside the allow-list;
@@ -63,6 +65,7 @@ Generation refuses or omits a concrete experiment when any required relation is 
 - a prior identical inconclusive or `MIXED` experiment without new structural information;
 - an already discriminated causal swap;
 - a proposal that would modify more than one variable;
+- a modal hypothesis with insufficient or contradicted evidence, or without a targeted measured band;
 - missing LEFT, RIGHT, or STEREO measurements.
 
 Room geometry can represent front/rear/left/right walls, floor, ceiling, openings, speakers, listening positions, orientations, materials, covering zones, furniture, and treatments. Mere representability is not evidence: absent positioned speakers or surface correlations still blocks generation.
@@ -78,7 +81,7 @@ Candidate information value uses rule `PR048_DETERMINISTIC_INFORMATION_RANKING_V
 - 5 per explicit expected outcome, capped at 20;
 - 10 for a structured frequency or time region.
 
-Scores are capped at 100. Ties are resolved by experiment-type code and candidate ID. This is a deterministic utility ordering, not a probability and not a pseudo-Bayesian confidence. At most five hypotheses and five experiments are returned; at most one eligible experiment is recommended.
+Scores are capped at 100. A blocked candidate receives no 15-point unblocked contribution. Ties are resolved by experiment-type code and candidate ID. This is a deterministic utility ordering, not a probability and not a pseudo-Bayesian confidence. At most five hypotheses and five experiments are returned; at most one eligible experiment is recommended.
 
 ## Deduplication
 
@@ -99,7 +102,9 @@ SBIR expectations concern a localized frequency shift. Reflection expectations c
 
 ## Controlled variables and measurements
 
-Exactly one semantic variable is modified. The remaining relevant acquisition, room, signal-chain, placement, and orientation variables are listed as controlled according to the experiment family. Every experiment requires separate LEFT, RIGHT, and STEREO measurements.
+Exactly one semantic variable is modified. The remaining relevant acquisition, room, signal-chain, placement, and orientation variables are listed as controlled according to the experiment family. Every experiment requires separate LEFT, RIGHT, and STEREO measurements. Availability is verified against the structured measurement-set quality channels, or against the project's loaded impulse responses when set-quality facts are unavailable. Each absent channel adds `REQUIRED_MEASUREMENT_UNAVAILABLE:<CHANNEL>` to `blocking_reasons`.
+
+A blocked candidate remains visible to explain which otherwise structured experiment cannot yet be executed. It is not eligible and is never selected as `recommended_candidate_id`. Blocking does not establish, contradict, or otherwise mutate the source hypothesis, its causal state, acoustic scores, recommendations, causal-discrimination analysis, or longitudinal learning state.
 
 ## Reporting and export
 
@@ -113,7 +118,8 @@ An LLM may be used as a second opinion to explain alternatives or ask for missin
 
 ## Examples
 
-- Correlated 160 Hz front-wall SBIR event for the left speaker: propose the existing structured `0.10 m` forward test, expect a localized frequency shift, keep `NOT_ESTABLISHED`.
+- Correlated 160 Hz front-wall SBIR event for the left speaker with a structured `proposed_displacement_m = 0.12`: reuse exactly `0.12 m`, expect a localized frequency shift, keep `NOT_ESTABLISHED`.
+- The same SBIR relation without `proposed_displacement_m`: expose a blocked candidate with no distance and no main recommendation.
 - Dominant ETC path matched to the right wall: propose one reversible right first-reflection mask, expect a localized ETC change, make no global-improvement claim.
 - Sparse 20–50 Hz modal band with no previous multi-position series: recommend multi-position measurements with no invented step distance.
 - Missing positioned speakers and no accepted reflection surface: retain suitable hypotheses and state that no safe concrete experiment can be generated.
