@@ -100,6 +100,13 @@ No trajectory can be confirmed by this declaration service. The causal status
 remains `NOT_ESTABLISHED` in the decision and longitudinal layers until their
 existing evidence contracts are satisfied.
 
+`causal_protocol_step` does not associate the automatic source comparison with
+the protocol or hypothesis. That association still requires the comparison's
+explicit `protocol_id` and `hypothesis_code` contract. Inferring it from the
+step alone would requalify a generic intervention as hypothesis evidence, so
+this declaration boundary deliberately leaves
+`SOURCE_COMPARISON_UNAVAILABLE` visible when the source metadata is absent.
+
 ## Example: controlled loudspeaker swap
 
 For an `exp-005` whose general declaration modifies

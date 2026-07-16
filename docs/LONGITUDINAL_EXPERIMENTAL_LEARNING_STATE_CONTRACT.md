@@ -89,6 +89,9 @@ distincts.
 - `NOT_TESTED` : aucune expérience reliée à l'hypothèse;
 - `INSUFFICIENT_DECLARATION` : l'historique existe mais sa déclaration ne permet
   pas une agrégation honnête;
+- `INSUFFICIENT_CAUSAL_CONTEXT` : une exécution de protocole causal est présente,
+  mais sa comparaison source n'est pas explicitement associée ou aucune
+  discrimination initiale n'a été établie;
 - `INSUFFICIENT_COMPARABILITY` : aucune contribution exploitable en raison de la
   comparabilité;
 - `EVIDENCE_ACCUMULATING` : des observations exploitables existent sans stabilité
@@ -144,10 +147,20 @@ Cette classification est descriptive. Elle n'empêche jamais l'acquisition.
 
 ## Chemin expérimental épuisé
 
-Un chemin est épuisé uniquement lorsqu'une campagne ou discrimination existante
-n'expose plus d'ambiguïté ni de protocole suivant. Cela signifie qu'aucune
+Un chemin causal est épuisé uniquement lorsque son résultat est
+`DISCRIMINATED`, que son protocole est `ACTIVE`, qu'au moins une discrimination
+initiale a été établie puis résolue, et qu'il n'expose plus ni discrimination,
+ni ambiguïté nouvelle, ni observation à qualifier, ni protocole suivant. Les
+résultats `INCONCLUSIVE` ou `CONTRADICTORY` et les protocoles `INCOMPLETE` ou
+`CONTRADICTORY` ne satisfont jamais cette condition. Cela signifie qu'aucune
 nouvelle discrimination n'est disponible dans le périmètre structuré actuel,
 pas que toute recherche acoustique est terminée.
+
+`SOURCE_COMPARISON_UNAVAILABLE` interdit explicitement cette projection. L'état
+reste `INSUFFICIENT_CAUSAL_CONTEXT` et le besoin suivant est
+`ASSOCIATE_SOURCE_COMPARISON_WITH_CAUSAL_PROTOCOL`; il ne devient ni
+`EXPERIMENTAL_PATH_EXHAUSTED`, ni
+`NO_ADDITIONAL_DISCRIMINATION_AVAILABLE`.
 
 La présence technique d'un chemin épuisé ne prend pas le pas sur une déclaration
 `UNKNOWN` ou une provenance expérimentale absente. Dans ces cas, l'état reste

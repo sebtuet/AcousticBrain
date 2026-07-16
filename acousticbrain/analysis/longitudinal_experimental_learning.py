@@ -26,6 +26,7 @@ class LongitudinalExperimentalLearningEngine:
         "LONGITUDINAL_REPEAT_INFORMS_REPEATABILITY_ONLY",
         "LONGITUDINAL_SEPARATE_HISTORICAL_CONTEXT_FROM_EVIDENCE",
         "LONGITUDINAL_PRESERVE_SOURCE_TRACE_WITHOUT_REQUALIFICATION",
+        "LONGITUDINAL_REQUIRE_VALID_CAUSAL_DISCRIMINATION_FOR_EXHAUSTION",
         "LONGITUDINAL_NEVER_SUM_SUPPORT_SCORES",
         "LONGITUDINAL_NEVER_ESTABLISH_CAUSALITY",
     )
@@ -199,6 +200,7 @@ class LongitudinalExperimentalLearningEngine:
                 exhausted.add(campaign.campaign_code)
         causal_id = None
         causal_observation_needs = []
+        causal_context_required = False
         if relevant_causal is not None:
             causal_id = relevant_causal.trace.trace_id
             resolved.update(relevant_causal.resolved_discrimination_codes)
@@ -232,11 +234,46 @@ class LongitudinalExperimentalLearningEngine:
                 f"QUALIFY_CAUSAL_OBSERVATION:{code}"
                 for code in causal_observation_needs
             )
-            if (
-                not relevant_causal.remaining_discrimination_codes
+            causal_outcome = relevant_causal.outcome.value
+            causal_status = relevant_causal.status.value
+            new_causal_ambiguities = tuple(
+                relevant_causal.new_ambiguity_codes
+            )
+            initial_discrimination_established = bool(
+                relevant_causal.resolved_discrimination_codes
+                or relevant_causal.remaining_discrimination_codes
+            )
+            source_comparison_unavailable = (
+                "SOURCE_COMPARISON_UNAVAILABLE" in new_causal_ambiguities
+            )
+            causal_context_required = (
+                source_comparison_unavailable
+                or not initial_discrimination_established
+            )
+            if source_comparison_unavailable:
+                next_needs.append(
+                    "ASSOCIATE_SOURCE_COMPARISON_WITH_CAUSAL_PROTOCOL"
+                )
+            elif not initial_discrimination_established:
+                next_needs.append(
+                    "ESTABLISH_INITIAL_CAUSAL_DISCRIMINATION"
+                )
+            next_needs.extend(
+                f"RESOLVE_CAUSAL_AMBIGUITY:{code}"
+                for code in new_causal_ambiguities
+                if code != "SOURCE_COMPARISON_UNAVAILABLE"
+            )
+            valid_causal_discrimination_completed = (
+                causal_outcome == "DISCRIMINATED"
+                and causal_status == "ACTIVE"
+                and initial_discrimination_established
+                and bool(relevant_causal.resolved_discrimination_codes)
+                and not relevant_causal.remaining_discrimination_codes
+                and not new_causal_ambiguities
                 and relevant_causal.recommended_next_protocol is None
                 and not causal_observation_needs
-            ):
+            )
+            if valid_causal_discrimination_completed:
                 exhausted.add(relevant_causal.protocol_code)
 
         status = self._status(
@@ -253,6 +290,7 @@ class LongitudinalExperimentalLearningEngine:
             deferred=deferred,
             exhausted=exhausted,
             causal_observation_required=bool(causal_observation_needs),
+            causal_context_required=causal_context_required,
         )
         next_need = self._next_need(
             status=status,
@@ -324,7 +362,7 @@ class LongitudinalExperimentalLearningEngine:
                 controlled, unknown, non_comparable,
                 supporting, contradicting, supporting_experiments,
                 contradicting_experiments, remaining, deferred, exhausted,
-                causal_observation_required):
+                causal_observation_required, causal_context_required):
         if not historical_experiment_codes and not has_historical_analysis:
             return LongitudinalLearningStatus.NOT_TESTED
         if deferred:
@@ -343,6 +381,8 @@ class LongitudinalExperimentalLearningEngine:
             return LongitudinalLearningStatus.INSUFFICIENT_DECLARATION
         if non_comparable:
             return LongitudinalLearningStatus.INSUFFICIENT_COMPARABILITY
+        if causal_context_required:
+            return LongitudinalLearningStatus.INSUFFICIENT_CAUSAL_CONTEXT
         if remaining:
             return LongitudinalLearningStatus.DISCRIMINATION_REQUIRED
         if causal_observation_required:
