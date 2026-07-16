@@ -25,7 +25,10 @@ from acousticbrain.models import (
     ImpulseChannel,
     MeasurementQualityAnalysis,
     MeasurementSetQuality,
+    ListeningPositionSamplingPosition,
+    ListeningPositionSamplingProtocol,
     Peak,
+    REQUIRED_COMPLETION_CONDITION_CODES,
     RecommendationPriority,
     ReasoningEvidence,
     ReflectionCandidateGeometricStatus,
@@ -36,6 +39,7 @@ from acousticbrain.models import (
 from acousticbrain.report import (
     AcousticHypothesisExperimentGenerationPresenter,
     ConsoleReporter,
+    Report,
 )
 from acousticbrain.brain import AcousticBrain
 from test_golden_report import reference_project
@@ -144,22 +148,37 @@ def descriptor(*modified_variables):
     )
 
 
-def sampling_descriptor(experiment_id, role, offset, *, parent_ids=()):
-    return SimpleNamespace(
-        experiment_id=experiment_id,
-        source_protocol_id="protocol.verify_modal_bass_persistence.v1",
-        comparison_parameters=(
-            ("listening_position_offset_m", offset),
-            ("position_role", role),
+def sampling_protocol():
+    measurements = ("LEFT", "RIGHT", "STEREO")
+    return ListeningPositionSamplingProtocol(
+        protocol_id="protocol.listening_position_sampling.v1",
+        version=1,
+        positions=(
+            ListeningPositionSamplingPosition(
+                "REFERENCE", "REFERENCE", 0.0, None, None,
+                None, "REFERENCE", 1, measurements,
+            ),
+            ListeningPositionSamplingPosition(
+                "FORWARD_100MM", "FORWARD", 0.10, None, None,
+                "REFERENCE", "REFERENCE", 2, measurements,
+            ),
+            ListeningPositionSamplingPosition(
+                "BACKWARD_100MM", "BACKWARD", -0.10, None, None,
+                "FORWARD_100MM", "REFERENCE", 3, measurements,
+            ),
         ),
-        parent_experiment_ids=tuple(parent_ids),
-        available_channels=(
-            ImpulseChannel.LEFT,
-            ImpulseChannel.RIGHT,
-            ImpulseChannel.STEREO,
+        modified_variables=("LISTENING_POSITION",),
+        controlled_variables=(
+            "LOUDSPEAKER_POSITION",
+            "LOUDSPEAKER_ASSIGNMENT",
+            "SIGNAL_CHAIN_ASSIGNMENT",
+            "ROOM_CONFIGURATION",
+            "MICROPHONE_ORIENTATION",
+            "MEASUREMENT_LEVEL",
+            "REW_PARAMETERS",
         ),
-        declared_change_codes=(),
-        experiment_declaration=SimpleNamespace(modified_variables=()),
+        comparability_rule_code="LISTENING_POSITION_ORDERED_REFERENCE_BRANCH",
+        completion_condition_codes=REQUIRED_COMPLETION_CONDITION_CODES,
     )
 
 
@@ -192,24 +211,15 @@ def modal_context(
             confidence=100.0,
         )
     descriptors = ()
-    if with_sampling_geometry:
-        descriptors = (
-            sampling_descriptor("position-center", "REFERENCE", 0.0),
-            sampling_descriptor(
-                "position-backward", "BACKWARD", -0.3,
-                parent_ids=("position-center",),
-            ),
-            sampling_descriptor(
-                "position-forward", "FORWARD", 0.3,
-                parent_ids=("position-center",),
-            ),
-        )
     if executed:
         descriptors = (*descriptors, descriptor("LISTENING_POSITION_MULTI_POINT"))
     return context(
         source,
         modal_density_analysis=SimpleNamespace(sparse_bands=[band], dense_bands=[]),
         experiment_descriptors=descriptors,
+        listening_position_sampling_protocol=(
+            sampling_protocol() if with_sampling_geometry else None
+        ),
         **values,
     )
 
@@ -393,15 +403,34 @@ def test_modal_need_generates_multi_position_without_invented_distance():
     assert candidate.step_distance_m is None
     assert candidate.movement_direction is None
     assert candidate.expected_frequency_regions == ((20.0, 50.0),)
-    assert candidate.reference_position_id == "position-center"
-    assert candidate.comparability_rule_code == "CAMPAIGN_REQUIRE_REFERENCE_BRANCHES"
+    assert candidate.reference_position_id == "REFERENCE"
+    assert candidate.comparability_rule_code == (
+        "LISTENING_POSITION_ORDERED_REFERENCE_BRANCH"
+    )
+    assert candidate.sampling_protocol_id == "protocol.listening_position_sampling.v1"
+    assert candidate.sampling_protocol_version == 1
+    assert candidate.modified_variables == ("LISTENING_POSITION",)
     assert tuple(
-        (item.role, item.longitudinal_offset_m, item.lateral_offset_m)
+        (
+            item.position_id,
+            item.role,
+            item.longitudinal_offset_m,
+            item.lateral_offset_m,
+            item.vertical_offset_m,
+            item.parent_position_id,
+            item.reference_position_id,
+        )
         for item in candidate.acquisition_positions
     ) == (
-        ("REFERENCE", 0.0, None),
-        ("BACKWARD", -0.3, None),
-        ("FORWARD", 0.3, None),
+        ("REFERENCE", "REFERENCE", 0.0, None, None, None, "REFERENCE"),
+        (
+            "FORWARD_100MM", "FORWARD", 0.10, None, None,
+            "REFERENCE", "REFERENCE",
+        ),
+        (
+            "BACKWARD_100MM", "BACKWARD", -0.10, None, None,
+            "FORWARD_100MM", "REFERENCE",
+        ),
     )
     assert all(
         item.required_measurements == ("LEFT", "RIGHT", "STEREO")
@@ -420,6 +449,28 @@ def test_modal_candidate_without_structured_sampling_geometry_is_blocked():
         "MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE",
     )
     assert result.recommended_candidate_id is None
+
+
+def test_report_describes_protocol_branch_without_creating_experiments(capsys):
+    source_context = modal_context()
+    AcousticHypothesisExperimentGenerationStage().run(source_context)
+    report = Report(project_name="sampling-protocol")
+    report.acoustic_hypothesis_experiment_generation = (
+        AcousticHypothesisExperimentGenerationPresenter().present(source_context)
+    )
+
+    ConsoleReporter().print(report)
+    output = capsys.readouterr().out
+
+    assert "Campagne proposée" in output
+    assert "REFERENCE (longitudinal +0.00 m)" in output
+    assert "FORWARD_100MM (longitudinal +0.10 m)" in output
+    assert "BACKWARD_100MM (longitudinal -0.10 m)" in output
+    assert output.index("REFERENCE (longitudinal +0.00 m)") < output.index(
+        "FORWARD_100MM (longitudinal +0.10 m)"
+    ) < output.index("BACKWARD_100MM (longitudinal -0.10 m)")
+    assert "Mesures : LEFT, RIGHT, STEREO" in output
+    assert "exp-008" not in output
 
 
 @pytest.mark.parametrize(

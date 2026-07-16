@@ -74,15 +74,22 @@ class ExpectedExperimentalObservation:
 class GeneratedAcquisitionPosition:
     position_id: str
     role: str
-    longitudinal_offset_m: float
+    longitudinal_offset_m: float | None
     lateral_offset_m: float | None
+    vertical_offset_m: float | None
+    parent_position_id: str | None
+    reference_position_id: str | None
     required_measurements: tuple[str, ...]
     acquisition_order: int
 
     def __post_init__(self):
         if not self.position_id or self.role not in {"REFERENCE", "FORWARD", "BACKWARD"}:
             raise ValueError("Acquisition-position identity and role are required.")
-        for value in (self.longitudinal_offset_m, self.lateral_offset_m):
+        for value in (
+            self.longitudinal_offset_m,
+            self.lateral_offset_m,
+            self.vertical_offset_m,
+        ):
             if value is not None and not isfinite(value):
                 raise ValueError("Acquisition-position offsets must be finite.")
         if self.required_measurements != ("LEFT", "RIGHT", "STEREO"):
@@ -118,6 +125,9 @@ class GeneratedAcousticExperiment:
     acquisition_positions: tuple[GeneratedAcquisitionPosition, ...] = ()
     reference_position_id: str | None = None
     comparability_rule_code: str | None = None
+    sampling_protocol_id: str | None = None
+    sampling_protocol_version: int | None = None
+    sampling_completion_condition_codes: tuple[str, ...] = ()
     causality_status: str = "NOT_ESTABLISHED"
 
     def __post_init__(self):
@@ -133,6 +143,7 @@ class GeneratedAcousticExperiment:
             self.blocking_reasons,
             self.rationale_codes,
             self.acquisition_positions,
+            self.sampling_completion_condition_codes,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Generated-experiment collections must be tuples.")
@@ -163,6 +174,9 @@ class GeneratedAcousticExperiment:
                 or orders != tuple(range(1, len(orders) + 1))
                 or references != (self.reference_position_id,)
                 or not self.comparability_rule_code
+                or not self.sampling_protocol_id
+                or self.sampling_protocol_version is None
+                or not self.sampling_completion_condition_codes
             ):
                 raise ValueError("Acquisition protocol must be complete and ordered.")
 

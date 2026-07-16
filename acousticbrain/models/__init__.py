@@ -353,3 +353,11 @@ from .acoustic_hypothesis_experiment_generation import (
     GeneratedExperimentType,
     GeneratedHypothesisStatus,
 )
+from .listening_position_sampling_protocol import (
+    ListeningPositionSamplingAcquisition,
+    ListeningPositionSamplingCompleteness,
+    ListeningPositionSamplingPosition,
+    ListeningPositionSamplingProtocol,
+    REQUIRED_COMPLETION_CONDITION_CODES,
+    REQUIRED_POSITION_MEASUREMENTS,
+)
