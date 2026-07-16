@@ -123,6 +123,7 @@ class BrainPipeline:
         session_context=None,
         plan_experiments=False,
         experiment_descriptors=(),
+        listening_position_sampling_protocol=None,
         longitudinal_experimental_learning_analysis=None,
         return_context=False,
     ):
@@ -150,6 +151,9 @@ class BrainPipeline:
         measurement,
         )
         context.experiment_descriptors = tuple(experiment_descriptors)
+        context.listening_position_sampling_protocol = (
+            listening_position_sampling_protocol
+        )
         context.longitudinal_experimental_learning_analysis = (
             longitudinal_experimental_learning_analysis
         )

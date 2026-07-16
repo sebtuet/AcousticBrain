@@ -34,6 +34,7 @@ from acousticbrain.models import (
     AcousticReasoningAnalysis,
     ExperimentPlanningAnalysis,
     LoudspeakerPositioningExperimentAnalysis,
+    ListeningPositionSamplingProtocol,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -181,6 +182,10 @@ class AnalysisContext:
     optimization_session_analysis = None
 
     experiment_descriptors: tuple = ()
+
+    listening_position_sampling_protocol: (
+        ListeningPositionSamplingProtocol | None
+    ) = None
 
     experiment_comparison_analysis = None
 

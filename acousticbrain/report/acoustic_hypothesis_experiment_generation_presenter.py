@@ -12,8 +12,11 @@ class PresentedExpectedExperimentalObservation:
 class PresentedGeneratedAcquisitionPosition:
     position_id: str
     role: str
-    longitudinal_offset_m: float
+    longitudinal_offset_m: float | None
     lateral_offset_m: float | None
+    vertical_offset_m: float | None
+    parent_position_id: str | None
+    reference_position_id: str | None
     required_measurements: tuple[str, ...]
     acquisition_order: int
 
@@ -41,6 +44,9 @@ class PresentedGeneratedAcousticExperiment:
     acquisition_positions: tuple[PresentedGeneratedAcquisitionPosition, ...]
     reference_position_id: str | None
     comparability_rule_code: str | None
+    sampling_protocol_id: str | None
+    sampling_protocol_version: int | None
+    sampling_completion_condition_codes: tuple[str, ...]
     causality_status: str
 
 
@@ -133,6 +139,9 @@ class AcousticHypothesisExperimentGenerationPresenter:
                     role=position.role,
                     longitudinal_offset_m=position.longitudinal_offset_m,
                     lateral_offset_m=position.lateral_offset_m,
+                    vertical_offset_m=position.vertical_offset_m,
+                    parent_position_id=position.parent_position_id,
+                    reference_position_id=position.reference_position_id,
                     required_measurements=position.required_measurements,
                     acquisition_order=position.acquisition_order,
                 )
@@ -140,5 +149,10 @@ class AcousticHypothesisExperimentGenerationPresenter:
             ),
             reference_position_id=item.reference_position_id,
             comparability_rule_code=item.comparability_rule_code,
+            sampling_protocol_id=item.sampling_protocol_id,
+            sampling_protocol_version=item.sampling_protocol_version,
+            sampling_completion_condition_codes=(
+                item.sampling_completion_condition_codes
+            ),
             causality_status=item.causality_status,
         )

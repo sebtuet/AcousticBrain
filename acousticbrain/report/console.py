@@ -955,25 +955,47 @@ class ConsoleReporter:
                         item.observation_code for item in experiment.expected_observations
                     )
                 )
-                print("Variables contrôlées : " + ", ".join(experiment.controlled_variables))
-                print("Mesures : " + ", ".join(experiment.required_measurements))
                 if experiment.acquisition_positions:
+                    print()
+                    print("Campagne proposée")
+                    print(
+                        f"Protocole : {experiment.sampling_protocol_id} "
+                        f"v{experiment.sampling_protocol_version}"
+                    )
                     print(f"Position centrale : {experiment.reference_position_id}")
                     print(
                         "Règle de comparabilité : "
                         + experiment.comparability_rule_code
                     )
-                    print(f"Nombre de positions : {len(experiment.acquisition_positions)}")
-                    for position in experiment.acquisition_positions:
+                    for index, position in enumerate(experiment.acquisition_positions):
+                        if index:
+                            print("↓")
+                        offsets = []
+                        if position.longitudinal_offset_m is not None:
+                            offsets.append(
+                                f"longitudinal {position.longitudinal_offset_m:+.2f} m"
+                            )
+                        if position.lateral_offset_m is not None:
+                            offsets.append(
+                                f"latéral {position.lateral_offset_m:+.2f} m"
+                            )
+                        if position.vertical_offset_m is not None:
+                            offsets.append(
+                                f"vertical {position.vertical_offset_m:+.2f} m"
+                            )
                         print(
-                            f" • Ordre {position.acquisition_order} — "
-                            f"{position.position_id} ({position.role}), "
-                            f"offset longitudinal {position.longitudinal_offset_m:+.3f} m"
+                            position.position_id
+                            + (f" ({', '.join(offsets)})" if offsets else "")
                         )
                         print(
-                            "   Mesures : "
-                            + ", ".join(position.required_measurements)
+                            f"  Rôle : {position.role} ; "
+                            f"parent : {position.parent_position_id or 'aucun'} ; "
+                            f"référence : {position.reference_position_id or 'aucune'} ; "
+                            f"ordre : {position.acquisition_order}"
                         )
+                    print()
+                print("Mesures : " + ", ".join(experiment.required_measurements))
+                print("Variables contrôlées : " + ", ".join(experiment.controlled_variables))
                 if experiment.blocking_reasons:
                     print("Donnée nécessaire : " + ", ".join(experiment.blocking_reasons))
                 print("Limite : test exploratoire sans garantie d’amélioration globale.")

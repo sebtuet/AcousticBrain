@@ -43,6 +43,7 @@ class AcousticBrain:
         compare_experiments=False,
         detailed_comparison_traceability=False,
         analyze_causal_discrimination=False,
+        listening_position_sampling_protocol=None,
     ):
 
         experiment_descriptors = ()
@@ -64,6 +65,9 @@ class AcousticBrain:
                         session_context.session if session_context is not None else None
                     ),
                     analyze_causal_discrimination=analyze_causal_discrimination,
+                    listening_position_sampling_protocol=(
+                        listening_position_sampling_protocol
+                    ),
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -91,6 +95,9 @@ class AcousticBrain:
             session_context=session_context,
             plan_experiments=plan_experiments,
             experiment_descriptors=experiment_descriptors,
+            listening_position_sampling_protocol=(
+                listening_position_sampling_protocol
+            ),
         )
 
     def _analyze_experiments(
@@ -101,6 +108,7 @@ class AcousticBrain:
         detailed_traceability,
         optimization_session,
         analyze_causal_discrimination,
+        listening_position_sampling_protocol,
     ):
         contexts = {}
         current_report = None
@@ -112,6 +120,9 @@ class AcousticBrain:
                 imported.project,
                 plan_experiments=False,
                 experiment_descriptors=acoustic_session.descriptors,
+                listening_position_sampling_protocol=(
+                    listening_position_sampling_protocol
+                ),
                 return_context=True,
             )
             contexts[imported.descriptor.experiment_id] = context
@@ -130,6 +141,9 @@ class AcousticBrain:
                 {
                     "experiment_descriptors": acoustic_session.descriptors,
                     "experiment_comparison_analysis": comparison,
+                    "listening_position_sampling_protocol": (
+                        listening_position_sampling_protocol
+                    ),
                 },
             )()
             current_report = Report(project_name=acoustic_session.measurement_root)
@@ -161,6 +175,9 @@ class AcousticBrain:
                 current.project,
                 plan_experiments=True,
                 experiment_descriptors=acoustic_session.descriptors,
+                listening_position_sampling_protocol=(
+                    listening_position_sampling_protocol
+                ),
                 longitudinal_experimental_learning_analysis=learning_analysis,
                 return_context=True,
             )

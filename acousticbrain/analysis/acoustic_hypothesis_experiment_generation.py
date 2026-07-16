@@ -16,6 +16,7 @@ from acousticbrain.models import (
     HypothesisCode,
     HypothesisStatus,
     ImpulseChannel,
+    ListeningPositionSamplingProtocol,
     ReflectionCandidateGeometricStatus,
     RoomSurfaceKind,
 )
@@ -25,8 +26,6 @@ class AcousticHypothesisExperimentGenerator:
     """Builds conservative exploratory tests from already-computed analyses."""
 
     REQUIRED_MEASUREMENTS = ("LEFT", "RIGHT", "STEREO")
-    MODAL_PROTOCOL_ID = "protocol.verify_modal_bass_persistence.v1"
-    MULTI_POSITION_COMPARABILITY_RULE = "CAMPAIGN_REQUIRE_REFERENCE_BRANCHES"
     CONTROLLED_SPEAKER_MOVE = (
         "LISTENING_POSITION",
         "LOUDSPEAKER_ORIENTATION",
@@ -443,7 +442,9 @@ class AcousticHypothesisExperimentGenerator:
                 if band.estimated_decay_time_seconds is not None:
                     regions.append((float(band.minimum_frequency_hz), float(band.maximum_frequency_hz)))
         observations = self._modal_observations()
-        positions, reference_position_id = self._multi_position_acquisition(context)
+        positions, reference_position_id, sampling_protocol = (
+            self._multi_position_acquisition(context)
+        )
         blocking_reasons = (
             ()
             if positions
@@ -457,8 +458,21 @@ class AcousticHypothesisExperimentGenerator:
             movement_axis=None,
             movement_direction=None,
             step_distance_m=None,
-            modified_variable="LISTENING_POSITION_SAMPLING",
-            controlled_variables=self.CONTROLLED_LISTENING_POSITION,
+            modified_variable=(
+                sampling_protocol.modified_variables[0]
+                if sampling_protocol is not None
+                else "LISTENING_POSITION_SAMPLING"
+            ),
+            controlled_variables=(
+                sampling_protocol.controlled_variables
+                if sampling_protocol is not None
+                else self.CONTROLLED_LISTENING_POSITION
+            ),
+            required_measurements=(
+                sampling_protocol.positions[0].required_measurements
+                if sampling_protocol is not None
+                else self.REQUIRED_MEASUREMENTS
+            ),
             observations=observations,
             frequency_regions=tuple(sorted(set(regions)))[:5],
             time_regions=(),
@@ -473,7 +487,24 @@ class AcousticHypothesisExperimentGenerator:
             acquisition_positions=positions,
             reference_position_id=reference_position_id,
             comparability_rule_code=(
-                self.MULTI_POSITION_COMPARABILITY_RULE if positions else None
+                sampling_protocol.comparability_rule_code
+                if sampling_protocol is not None
+                else None
+            ),
+            sampling_protocol_id=(
+                sampling_protocol.protocol_id
+                if sampling_protocol is not None
+                else None
+            ),
+            sampling_protocol_version=(
+                sampling_protocol.version
+                if sampling_protocol is not None
+                else None
+            ),
+            sampling_completion_condition_codes=(
+                sampling_protocol.completion_condition_codes
+                if sampling_protocol is not None
+                else ()
             ),
         )
 
@@ -482,8 +513,11 @@ class AcousticHypothesisExperimentGenerator:
         movement_axis, movement_direction, step_distance_m, modified_variable,
         controlled_variables, observations, frequency_regions, time_regions,
         reversibility, difficulty, blocking_reasons, rationale,
+        required_measurements=None,
         acquisition_positions=(), reference_position_id=None,
         comparability_rule_code=None,
+        sampling_protocol_id=None, sampling_protocol_version=None,
+        sampling_completion_condition_codes=(),
     ):
         information = 35.0
         information += 15.0 if not blocking_reasons else 0.0
@@ -501,7 +535,11 @@ class AcousticHypothesisExperimentGenerator:
             step_distance_m=step_distance_m,
             modified_variables=(modified_variable,),
             controlled_variables=tuple(controlled_variables),
-            required_measurements=self.REQUIRED_MEASUREMENTS,
+            required_measurements=(
+                tuple(required_measurements)
+                if required_measurements is not None
+                else self.REQUIRED_MEASUREMENTS
+            ),
             expected_observations=tuple(observations),
             expected_frequency_regions=tuple(frequency_regions),
             expected_time_regions=tuple(time_regions),
@@ -513,6 +551,11 @@ class AcousticHypothesisExperimentGenerator:
             acquisition_positions=tuple(acquisition_positions),
             reference_position_id=reference_position_id,
             comparability_rule_code=comparability_rule_code,
+            sampling_protocol_id=sampling_protocol_id,
+            sampling_protocol_version=sampling_protocol_version,
+            sampling_completion_condition_codes=tuple(
+                sampling_completion_condition_codes
+            ),
         )
 
     def _hypothesis(
@@ -639,7 +682,7 @@ class AcousticHypothesisExperimentGenerator:
     def _block_missing_measurements(self, experiment, available_measurements):
         missing = tuple(
             measurement
-            for measurement in self.REQUIRED_MEASUREMENTS
+            for measurement in experiment.required_measurements
             if measurement not in available_measurements
         )
         if not missing:
@@ -662,56 +705,28 @@ class AcousticHypothesisExperimentGenerator:
         )
 
     def _multi_position_acquisition(self, context):
-        structured = []
-        for descriptor in getattr(context, "experiment_descriptors", ()):
-            if getattr(descriptor, "source_protocol_id", None) != self.MODAL_PROTOCOL_ID:
-                continue
-            parameters = dict(getattr(descriptor, "comparison_parameters", ()))
-            role = parameters.get("position_role")
-            offset = parameters.get("listening_position_offset_m")
-            if (
-                role not in {"REFERENCE", "FORWARD", "BACKWARD"}
-                or not isinstance(offset, (int, float))
-                or isinstance(offset, bool)
-                or not isfinite(offset)
-            ):
-                return (), None
-            available = {
-                getattr(channel, "value", str(channel))
-                for channel in getattr(descriptor, "available_channels", ())
-            }
-            if not set(self.REQUIRED_MEASUREMENTS).issubset(available):
-                return (), None
-            structured.append((descriptor, role, float(offset)))
-        if len(structured) < 2:
-            return (), None
-        references = tuple(
-            item for item in structured if item[1] == "REFERENCE" and item[2] == 0.0
-        )
-        if len(references) != 1:
-            return (), None
-        reference_id = references[0][0].experiment_id
-        if any(
-            role == "REFERENCE"
-            or reference_id not in getattr(descriptor, "parent_experiment_ids", ())
-            or (role == "FORWARD") != (offset > 0.0)
-            or (role == "BACKWARD") != (offset < 0.0)
-            for descriptor, role, offset in structured
-            if descriptor.experiment_id != reference_id
+        protocol = getattr(context, "listening_position_sampling_protocol", None)
+        if (
+            not isinstance(protocol, ListeningPositionSamplingProtocol)
+            or not protocol.definition_completeness.complete
         ):
-            return (), None
+            return (), None, None
+        reference = protocol.reference_position
         positions = tuple(
             GeneratedAcquisitionPosition(
-                position_id=descriptor.experiment_id,
-                role=role,
-                longitudinal_offset_m=offset,
-                lateral_offset_m=None,
-                required_measurements=self.REQUIRED_MEASUREMENTS,
-                acquisition_order=index,
+                position_id=position.position_code,
+                role=position.position_role,
+                longitudinal_offset_m=position.longitudinal_offset_m,
+                lateral_offset_m=position.lateral_offset_m,
+                vertical_offset_m=position.vertical_offset_m,
+                parent_position_id=position.parent_position_code,
+                reference_position_id=position.reference_position_code,
+                required_measurements=position.required_measurements,
+                acquisition_order=position.acquisition_order,
             )
-            for index, (descriptor, role, offset) in enumerate(structured, start=1)
+            for position in protocol.positions
         )
-        return positions, reference_id
+        return positions, reference.position_code, protocol
 
     @staticmethod
     def _frequency_shift_observations(prefix, frequency):
