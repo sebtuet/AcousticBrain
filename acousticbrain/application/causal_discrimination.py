@@ -26,6 +26,8 @@ class CausalDiscriminationService:
     """Réduit des ambiguïtés à partir d'étapes et observations explicites."""
 
     PROTOCOL_CODE = "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    SOURCE_PROTOCOL_ID = "protocol.verify_speaker_room_asymmetry.v1"
+    SOURCE_HYPOTHESIS_CODE = "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
     STEP_CODES = (
         "STEP_0_BASELINE",
         "STEP_1_LEFT_RIGHT_REMEASUREMENT",
@@ -420,7 +422,12 @@ class CausalDiscriminationService:
     def _initial_discriminations(cls, comparison_analysis):
         if comparison_analysis is None:
             return ()
-        comparisons = comparison_analysis.sequence.local_comparisons
+        comparisons = tuple(
+            item
+            for item in comparison_analysis.sequence.local_comparisons
+            if item.source_protocol_id == cls.SOURCE_PROTOCOL_ID
+            and item.source_hypothesis_code == cls.SOURCE_HYPOTHESIS_CODE
+        )
         if not comparisons:
             return ()
         codes = tuple(
