@@ -46,6 +46,9 @@ from .listening_position_campaign_plan_presenter import (
 from .listening_position_campaign_instance_presenter import (
     PresentedListeningPositionCampaignInstance,
 )
+from .campaign_reference_qualification_presenter import (
+    PresentedCampaignReferenceQualification,
+)
 
 
 @dataclass
@@ -97,6 +100,10 @@ class Report:
 
     listening_position_campaign_instance: (
         PresentedListeningPositionCampaignInstance | None
+    ) = None
+
+    campaign_reference_qualification: (
+        PresentedCampaignReferenceQualification | None
     ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None

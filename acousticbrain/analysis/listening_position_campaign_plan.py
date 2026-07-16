@@ -9,6 +9,7 @@ from acousticbrain.models import (
     ListeningPositionCampaignStepExecutionStatus,
     REQUIRED_POSITION_MEASUREMENTS,
     ListeningPositionCampaignInstanceStatus,
+    CampaignReferenceQualificationStatus,
 )
 
 
@@ -21,6 +22,7 @@ class ListeningPositionCampaignPlanBuilder:
         "REFERENCE_LOCAL_COMPARISON_COMPARABLE",
         "REFERENCE_DECLARATION_STRUCTURED",
         "REFERENCE_CONFIGURATION_COVERAGE_AVAILABLE",
+        "REFERENCE_QUALIFICATION_QUALIFIED_WHEN_INSTANCE_DECLARED",
         "LATEST_ADMISSIBLE_CHRONOLOGY_ENTRY",
     )
 
@@ -39,6 +41,9 @@ class ListeningPositionCampaignPlanBuilder:
             and instance_analysis.status
             is ListeningPositionCampaignInstanceStatus.VALID
             else None
+        )
+        qualification = getattr(
+            context, "campaign_reference_qualification", None
         )
         reasons = []
         prerequisite_candidate_reasons = {
@@ -65,6 +70,20 @@ class ListeningPositionCampaignPlanBuilder:
             reasons.append("MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE")
         if instance is not None and protocol != instance.to_sampling_protocol():
             reasons.append("CAMPAIGN_INSTANCE_PROTOCOL_MISMATCH")
+        if instance is not None and (
+            qualification is None
+            or qualification.status
+            is not CampaignReferenceQualificationStatus.QUALIFIED
+            or qualification.experiment_id != instance.reference_experiment_id
+            or qualification.intended_protocol_id != instance.protocol_id
+            or qualification.intended_protocol_version != instance.protocol_version
+            or (
+                qualification.intended_campaign_instance_id is not None
+                and qualification.intended_campaign_instance_id
+                != instance.instance_id
+            )
+        ):
+            reasons.append("CAMPAIGN_REFERENCE_EXPERIMENT_UNAVAILABLE")
         if candidate.required_measurements != REQUIRED_POSITION_MEASUREMENTS:
             reasons.append("REQUIRED_MEASUREMENTS_UNAVAILABLE")
         if any(
@@ -83,6 +102,7 @@ class ListeningPositionCampaignPlanBuilder:
                 requested_experiment_id=(
                     instance.reference_experiment_id if instance is not None else None
                 ),
+                qualification=qualification,
             )
             if reference is None:
                 reasons.append("CAMPAIGN_REFERENCE_EXPERIMENT_UNAVAILABLE")
@@ -148,7 +168,12 @@ class ListeningPositionCampaignPlanBuilder:
         )
 
     def _select_reference(
-        self, context, protocol, *, requested_experiment_id=None
+        self,
+        context,
+        protocol,
+        *,
+        requested_experiment_id=None,
+        qualification=None,
     ):
         descriptors = {
             item.experiment_id: item
@@ -170,13 +195,15 @@ class ListeningPositionCampaignPlanBuilder:
                 continue
             descriptor = descriptors.get(experiment_id)
             if descriptor is not None and self._reference_is_admissible(
-                descriptor, comparable, protocol
+                descriptor, comparable, protocol, qualification
             ):
                 return descriptor
         return None
 
     @staticmethod
-    def _reference_is_admissible(descriptor, comparable, protocol):
+    def _reference_is_admissible(
+        descriptor, comparable, protocol, qualification=None
+    ):
         if (
             descriptor.state is not ExperimentState.READY
             or descriptor.experiment_id not in comparable
@@ -193,6 +220,17 @@ class ListeningPositionCampaignPlanBuilder:
         configuration_facts = set(declaration.modified_variables) | set(
             declaration.controlled_variables
         )
+        if (
+            qualification is not None
+            and qualification.status
+            is CampaignReferenceQualificationStatus.QUALIFIED
+            and qualification.experiment_id == descriptor.experiment_id
+            and qualification.intended_protocol_id == protocol.protocol_id
+            and qualification.intended_protocol_version == protocol.version
+        ):
+            configuration_facts.update(
+                qualification.qualified_controlled_variables
+            )
         return set(protocol.controlled_variables).issubset(configuration_facts)
 
     @staticmethod

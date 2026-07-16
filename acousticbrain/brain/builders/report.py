@@ -21,6 +21,7 @@ from acousticbrain.report import (
     AcousticHypothesisExperimentGenerationPresenter,
     ListeningPositionCampaignPlanPresenter,
     ListeningPositionCampaignInstancePresenter,
+    CampaignReferenceQualificationPresenter,
 )
 
 
@@ -63,6 +64,9 @@ class ReportBuilder:
         )
         report.listening_position_campaign_instance = (
             ListeningPositionCampaignInstancePresenter().present(context)
+        )
+        report.campaign_reference_qualification = (
+            CampaignReferenceQualificationPresenter().present(context)
         )
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (

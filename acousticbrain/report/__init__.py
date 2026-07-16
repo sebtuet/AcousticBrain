@@ -15,6 +15,10 @@ from .listening_position_campaign_instance_presenter import (
     ListeningPositionCampaignInstancePresenter,
     PresentedListeningPositionCampaignInstance,
 )
+from .campaign_reference_qualification_presenter import (
+    CampaignReferenceQualificationPresenter,
+    PresentedCampaignReferenceQualification,
+)
 from .loudspeaker_positioning_experiment_presenter import (
     LoudspeakerPositioningExperimentPresenter,
     PresentedLoudspeakerPositioningExperimentAnalysis,

@@ -70,6 +70,9 @@ from .stages.acoustic_hypothesis_experiment_generation import (
 from .stages.listening_position_campaign_plan import (
     ListeningPositionCampaignPlanStage,
 )
+from .stages.campaign_reference_qualification import (
+    CampaignReferenceQualificationStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -128,6 +131,7 @@ class BrainPipeline:
         experiment_descriptors=(),
         listening_position_sampling_protocol=None,
         listening_position_campaign_instance_analysis=None,
+        campaign_reference_qualification_declaration_analysis=None,
         longitudinal_experimental_learning_analysis=None,
         return_context=False,
     ):
@@ -160,6 +164,9 @@ class BrainPipeline:
         )
         context.listening_position_campaign_instance_analysis = (
             listening_position_campaign_instance_analysis
+        )
+        context.campaign_reference_qualification_declaration_analysis = (
+            campaign_reference_qualification_declaration_analysis
         )
         context.longitudinal_experimental_learning_analysis = (
             longitudinal_experimental_learning_analysis
@@ -273,6 +280,10 @@ class BrainPipeline:
         )
 
         AcousticHypothesisExperimentGenerationStage().run(
+            context,
+        )
+
+        CampaignReferenceQualificationStage().run(
             context,
         )
 

@@ -379,3 +379,13 @@ from .listening_position_campaign_instance import (
     ListeningPositionCampaignInstanceValidationError,
     ListeningPositionCampaignProtocolContract,
 )
+from .campaign_reference_qualification import (
+    CampaignReferenceAssertionStatus,
+    CampaignReferenceCriterionStatus,
+    CampaignReferenceDeclarationStatus,
+    CampaignReferenceQualification,
+    CampaignReferenceQualificationDeclaration,
+    CampaignReferenceQualificationDeclarationAnalysis,
+    CampaignReferenceQualificationStatus,
+    CampaignReferenceQualificationValidationError,
+)

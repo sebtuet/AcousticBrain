@@ -939,6 +939,68 @@ class ConsoleReporter:
                     print(f"Source technique : {campaign_instance.source_path}")
             print()
 
+        reference_qualification = getattr(
+            report, "campaign_reference_qualification", None
+        )
+        if reference_qualification is not None:
+            print("QUALIFICATION DE RÉFÉRENCE DE CAMPAGNE")
+            print()
+            print(f"Statut : {reference_qualification.status}")
+            if reference_qualification.qualification_id is not None:
+                print(
+                    "Qualification : "
+                    f"{reference_qualification.qualification_id}"
+                )
+            if reference_qualification.experiment_id is not None:
+                print(
+                    f"Expérience : {reference_qualification.experiment_id}"
+                )
+            if reference_qualification.intended_protocol_id is not None:
+                print(
+                    "Protocole : "
+                    f"{reference_qualification.intended_protocol_id} "
+                    f"v{reference_qualification.intended_protocol_version}"
+                )
+            if reference_qualification.reference_role is not None:
+                print(f"Rôle : {reference_qualification.reference_role}")
+            if reference_qualification.required_measurements:
+                print(
+                    "Mesures requises : "
+                    + ", ".join(reference_qualification.required_measurements)
+                )
+            if reference_qualification.qualified_controlled_variables:
+                print(
+                    "Variables contrôlées démontrées : "
+                    + ", ".join(
+                        reference_qualification.qualified_controlled_variables
+                    )
+                )
+            print(
+                "Contradictions : "
+                + (
+                    ", ".join(reference_qualification.contradicting_fact_codes)
+                    or "aucune"
+                )
+            )
+            print(
+                "Données manquantes : "
+                + (
+                    ", ".join(reference_qualification.missing_fact_codes)
+                    or "aucune"
+                )
+            )
+            if reference_qualification.blocking_reasons:
+                print(
+                    "Donnée nécessaire : "
+                    + ", ".join(reference_qualification.blocking_reasons)
+                )
+            if reference_qualification.source_path is not None:
+                print(
+                    f"Source technique : {reference_qualification.source_path}"
+                )
+            print(f"Causalité : {reference_qualification.causality_status}")
+            print()
+
         if generated is not None:
             campaign_plan = getattr(report, "listening_position_campaign_plan", None)
             print("HYPOTHÈSES EXPLORATOIRES ET CANDIDATS EXPÉRIMENTAUX")

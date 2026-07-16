@@ -38,3 +38,20 @@ reference before producing a campaign plan. It never creates an experiment or
 fills in missing geometry. The file in
 `docs/examples/listening-position-campaign.example.json` is an editable
 illustration only and is never activated automatically.
+
+To qualify the exact existing experiment requested by a multi-position
+campaign instance, provide a second explicit JSON declaration:
+
+```bash
+python main.py \
+  --measurements-root /path/to/my-campaign \
+  --listening-position-campaign /path/to/listening-position-campaign.json \
+  --campaign-reference-qualification /path/to/reference-qualification.json
+```
+
+The qualification is cross-checked against the observed experiment, its real
+channels, historical declaration, local comparison, protocol and campaign
+instance. It never replaces the requested experiment or rewrites historical
+facts. The example at
+`docs/examples/campaign-reference-qualification.example.json` is documentation
+only and is never loaded automatically.
