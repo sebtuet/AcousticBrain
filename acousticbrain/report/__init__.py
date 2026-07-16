@@ -6,6 +6,11 @@ from .acoustic_hypothesis_experiment_generation_presenter import (
     PresentedGeneratedAcousticExperiment,
     PresentedGeneratedAcousticHypothesis,
 )
+from .listening_position_campaign_plan_presenter import (
+    ListeningPositionCampaignPlanPresenter,
+    PresentedListeningPositionCampaignPlan,
+    PresentedListeningPositionCampaignStep,
+)
 from .loudspeaker_positioning_experiment_presenter import (
     LoudspeakerPositioningExperimentPresenter,
     PresentedLoudspeakerPositioningExperimentAnalysis,

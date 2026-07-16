@@ -902,6 +902,7 @@ class ConsoleReporter:
 
         generated = getattr(report, "acoustic_hypothesis_experiment_generation", None)
         if generated is not None:
+            campaign_plan = getattr(report, "listening_position_campaign_plan", None)
             print("HYPOTHÈSES EXPLORATOIRES ET CANDIDATS EXPÉRIMENTAUX")
             print()
             for hypothesis in generated.hypotheses[:3]:
@@ -957,7 +958,7 @@ class ConsoleReporter:
                 )
                 if experiment.acquisition_positions:
                     print()
-                    print("Campagne proposée")
+                    print("Protocole multi-position structuré")
                     print(
                         f"Protocole : {experiment.sampling_protocol_id} "
                         f"v{experiment.sampling_protocol_version}"
@@ -1000,6 +1001,71 @@ class ConsoleReporter:
                     print("Donnée nécessaire : " + ", ".join(experiment.blocking_reasons))
                 print("Limite : test exploratoire sans garantie d’amélioration globale.")
                 print(f"Causalité : {experiment.causality_status}")
+                print()
+
+            if campaign_plan is not None:
+                print("PLAN DE CAMPAGNE MULTI-POSITION")
+                print()
+                print(f"Statut : {campaign_plan.status}")
+                print(f"Candidat source : {campaign_plan.source_candidate_id}")
+                print(f"Hypothèse source : {campaign_plan.source_hypothesis_code}")
+                if campaign_plan.status == "READY":
+                    print(
+                        "Référence existante : "
+                        f"{campaign_plan.reference_experiment_id}"
+                    )
+                    print(
+                        f"Protocole : {campaign_plan.protocol_id} "
+                        f"v{campaign_plan.protocol_version}"
+                    )
+                    print()
+                    print("Étapes proposées :")
+                    print()
+                    for step in campaign_plan.steps:
+                        print(f"{step.order_index}. {step.position_role}")
+                        print(f"   Identifiant interne : {step.step_id}")
+                        if step.longitudinal_offset_m is not None:
+                            print(
+                                "   Offset longitudinal : "
+                                f"{step.longitudinal_offset_m:+.2f} m"
+                            )
+                        if step.lateral_offset_m is not None:
+                            print(
+                                "   Offset latéral : "
+                                f"{step.lateral_offset_m:+.2f} m"
+                            )
+                        if step.vertical_offset_m is not None:
+                            print(
+                                "   Offset vertical : "
+                                f"{step.vertical_offset_m:+.2f} m"
+                            )
+                        if step.parent_step_id is not None:
+                            print(f"   Parent : {step.parent_step_id}")
+                        print(
+                            "   Référence scientifique : "
+                            f"{step.reference_experiment_id}"
+                        )
+                        print(
+                            "   Mesures : "
+                            + ", ".join(step.required_measurements)
+                        )
+                        print()
+                    print(
+                        "Variables contrôlées : "
+                        + ", ".join(campaign_plan.controlled_variables)
+                    )
+                    print(
+                        "Règle de comparabilité : "
+                        f"{campaign_plan.comparability_rule}"
+                    )
+                    print("Aucune expérience ni aucun fichier n’a encore été créé.")
+                else:
+                    print(
+                        "Donnée nécessaire : "
+                        + ", ".join(campaign_plan.blocking_reasons)
+                    )
+                    print("Ce plan n’est pas directement exécutable.")
+                print(f"Causalité : {campaign_plan.causality_status}")
                 print()
 
         planning = report.experiment_planning

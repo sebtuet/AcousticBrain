@@ -462,7 +462,7 @@ def test_report_describes_protocol_branch_without_creating_experiments(capsys):
     ConsoleReporter().print(report)
     output = capsys.readouterr().out
 
-    assert "Campagne proposée" in output
+    assert "Protocole multi-position structuré" in output
     assert "REFERENCE (longitudinal +0.00 m)" in output
     assert "FORWARD_100MM (longitudinal +0.10 m)" in output
     assert "BACKWARD_100MM (longitudinal -0.10 m)" in output
