@@ -16,3 +16,6 @@ from .measurement_repository import (
     InspectedMeasurementFile,
     MeasurementRepository,
 )
+from .listening_position_campaign_instance_json import (
+    ListeningPositionCampaignInstanceJsonLoader,
+)

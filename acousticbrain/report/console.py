@@ -901,6 +901,44 @@ class ConsoleReporter:
                 print()
 
         generated = getattr(report, "acoustic_hypothesis_experiment_generation", None)
+        campaign_instance = getattr(
+            report, "listening_position_campaign_instance", None
+        )
+        if campaign_instance is not None:
+            print("INSTANCE DE CAMPAGNE MULTI-POSITION")
+            print()
+            print(f"Statut : {campaign_instance.status}")
+            if campaign_instance.status == "VALID":
+                print(f"Instance : {campaign_instance.instance_id}")
+                print(
+                    f"Protocole : {campaign_instance.protocol_id} "
+                    f"v{campaign_instance.protocol_version}"
+                )
+                print(
+                    "Référence demandée : "
+                    f"{campaign_instance.reference_experiment_id}"
+                )
+                print(
+                    "Positions déclarées : "
+                    + ", ".join(campaign_instance.position_codes)
+                )
+                print(f"Source déclarative : {campaign_instance.declaration_source}")
+                if campaign_instance.source_path is not None:
+                    print(f"Source technique : {campaign_instance.source_path}")
+            else:
+                print(
+                    "Donnée nécessaire : "
+                    + ", ".join(campaign_instance.blocking_reasons)
+                )
+                if campaign_instance.validation_messages:
+                    print(
+                        "Erreur : "
+                        + "; ".join(campaign_instance.validation_messages)
+                    )
+                if campaign_instance.source_path is not None:
+                    print(f"Source technique : {campaign_instance.source_path}")
+            print()
+
         if generated is not None:
             campaign_plan = getattr(report, "listening_position_campaign_plan", None)
             print("HYPOTHÈSES EXPLORATOIRES ET CANDIDATS EXPÉRIMENTAUX")

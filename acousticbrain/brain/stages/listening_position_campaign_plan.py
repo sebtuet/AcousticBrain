@@ -17,11 +17,27 @@ class ListeningPositionCampaignPlanStage:
             return
 
         analysis = context.acoustic_hypothesis_experiment_generation_analysis
+        instance_analysis = getattr(
+            context, "listening_position_campaign_instance_analysis", None
+        )
         experiments = tuple(
             replace(
                 item,
                 blocking_reasons=tuple(
-                    dict.fromkeys((*item.blocking_reasons, *plan.blocking_reasons))
+                    dict.fromkeys(
+                        (
+                            *(
+                                reason
+                                for reason in item.blocking_reasons
+                                if not (
+                                    instance_analysis is not None
+                                    and reason
+                                    == "MULTI_POSITION_SAMPLING_GEOMETRY_UNAVAILABLE"
+                                )
+                            ),
+                            *plan.blocking_reasons,
+                        )
+                    )
                 ),
             )
             if item.candidate_id == plan.source_candidate_id

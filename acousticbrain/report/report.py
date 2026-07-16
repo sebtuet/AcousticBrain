@@ -43,6 +43,9 @@ from .acoustic_hypothesis_experiment_generation_presenter import (
 from .listening_position_campaign_plan_presenter import (
     PresentedListeningPositionCampaignPlan,
 )
+from .listening_position_campaign_instance_presenter import (
+    PresentedListeningPositionCampaignInstance,
+)
 
 
 @dataclass
@@ -90,6 +93,10 @@ class Report:
 
     listening_position_campaign_plan: (
         PresentedListeningPositionCampaignPlan | None
+    ) = None
+
+    listening_position_campaign_instance: (
+        PresentedListeningPositionCampaignInstance | None
     ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None

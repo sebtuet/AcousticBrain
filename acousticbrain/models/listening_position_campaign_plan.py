@@ -70,8 +70,14 @@ class ListeningPositionCampaignStep:
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Campaign-step collections must be tuples.")
-        if self.modified_variables != ("LISTENING_POSITION",):
-            raise ValueError("Campaign steps modify LISTENING_POSITION only.")
+        if (
+            self.position_role == "REFERENCE"
+            and self.modified_variables not in ((), ("LISTENING_POSITION",))
+        ) or (
+            self.position_role != "REFERENCE"
+            and self.modified_variables != ("LISTENING_POSITION",)
+        ):
+            raise ValueError("Campaign-step modified variables are invalid.")
         if (
             not self.controlled_variables
             or set(self.modified_variables) & set(self.controlled_variables)
@@ -96,6 +102,7 @@ class ListeningPositionCampaignPlan:
     protocol_id: str | None
     protocol_version: int | None
     source_candidate_id: str
+    source_instance_id: str | None
     source_hypothesis_code: str
     reference_experiment_id: str | None
     steps: tuple[ListeningPositionCampaignStep, ...]
