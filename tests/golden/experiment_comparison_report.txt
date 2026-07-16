@@ -9,23 +9,25 @@ EN UNE MINUTE
 
 Situation
 Comparaison : baseline → exp-001.
+La variable testée, ou l’absence de changement volontaire, n’a pas été déclarée.
 
 Verdict
 La dernière expérience montre une amélioration mesurable dans le périmètre testé.
 
 Puis-je conclure ?
-Oui, mais uniquement dans le périmètre mesuré.
-Le protocole et la variable testée sont explicitement déclarés.
+Non.
+AcousticBrain ne sait pas formellement ce qui était testé.
 
 Ce que je fais maintenant
 • Aucune action fiable ne peut être recommandée actuellement.
+• Déclarez si la configuration devait rester inchangée ou quelle variable était testée pendant la dernière expérience.
 
 Pourquoi
-Aucune action suffisamment établie n’est disponible.
+La modification testée n’est pas suffisamment documentée.
 
 Confiance
 Mesures : statut non établi.
-Verdict : établi par les mesures.
+Verdict : incertain.
 Cause : non établie (NOT_ESTABLISHED).
 
 DÉCISION ACOUSTIQUE
@@ -42,10 +44,17 @@ La dernière expérience montre une amélioration mesurable dans le périmètre 
 Prochaine action
 Aucun déplacement fiable ne peut être recommandé actuellement.
 
+Pourquoi
+ • La variable testée, ou l’absence de changement volontaire, n’a pas été déclarée.
+
+À faire avant de poursuivre
+ • Déclarez si la configuration devait rester inchangée ou quelle variable était testée pendant la dernière expérience.
+
 Ce que l’on sait
  • l’asymétrie spatiale diminue
 
 Ce que l’on ne sait pas encore
+ • AcousticBrain ne sait pas formellement quelle variable était testée ni si la configuration devait rester inchangée.
  • L’origine causale exacte n’est pas établie.
 
 Statut de confiance

@@ -28,7 +28,11 @@ class PresentedDecisionFirstReport:
     comparison_before_experiment_id: str | None
     comparison_after_experiment_id: str | None
     comparison_acoustic_outcome: str | None
+    tested_variable_declared: bool
+    protocol_scope_declared: bool
     tested_conditions_declared: bool
+    source_protocol_id: str | None
+    source_hypothesis_code: str | None
     measurement_status: str
     experiment_kind: str
     reference_experiment_code: str | None
@@ -155,7 +159,12 @@ class DecisionFirstReportPresenter:
                 "dégradations. Aucun verdict global simple n’est possible."
             )
         comparison_context = self._comparison_context(comparison)
+        tested_variable_declared = self._tested_variable_declared(comparison)
+        protocol_scope_declared = self._protocol_scope_declared(comparison)
         undeclared = self._undeclared_change(comparison)
+        protocol_scope_missing = (
+            tested_variable_declared and not protocol_scope_declared
+        )
         deferred = self._deferred_messages(report)
 
         action, action_status = self._select_action(report)
@@ -166,6 +175,7 @@ class DecisionFirstReportPresenter:
             report,
             action_status,
             undeclared,
+            protocol_scope_missing,
             deferred,
         )
         positioning = getattr(report, "loudspeaker_positioning_experiment", None)
@@ -192,7 +202,12 @@ class DecisionFirstReportPresenter:
                 "Réalisez éventuellement une nouvelle répétition de contrôle.",
             )
         facts = self._established_facts(report, comparison)
-        limits = self._active_limits(comparison, undeclared, deferred)
+        limits = self._active_limits(
+            comparison,
+            undeclared,
+            protocol_scope_missing,
+            deferred,
+        )
 
         if action is None:
             objective = (
@@ -268,8 +283,16 @@ class DecisionFirstReportPresenter:
             comparison_acoustic_outcome=(
                 comparison.acoustic_outcome if comparison is not None else None
             ),
+            tested_variable_declared=tested_variable_declared,
+            protocol_scope_declared=protocol_scope_declared,
             tested_conditions_declared=(
-                comparison is not None and not undeclared
+                tested_variable_declared and protocol_scope_declared
+            ),
+            source_protocol_id=(
+                comparison.source_protocol_id if comparison is not None else None
+            ),
+            source_hypothesis_code=(
+                comparison.source_hypothesis_code if comparison is not None else None
             ),
             measurement_status=self._measurement_status(report),
             experiment_kind=(
@@ -419,11 +442,30 @@ class DecisionFirstReportPresenter:
     def _undeclared_change(comparison):
         if comparison is None:
             return False
-        if DecisionFirstReportPresenter._is_repeat(comparison):
+        return not DecisionFirstReportPresenter._tested_variable_declared(comparison)
+
+    @staticmethod
+    def _tested_variable_declared(comparison):
+        if comparison is None or comparison.experiment_kind == "UNKNOWN":
             return False
-        return (
-            comparison.source_protocol_id is None
-            or comparison.source_hypothesis_code is None
+        if comparison.experiment_kind == "CONTROLLED_INTERVENTION":
+            return bool(
+                comparison.reference_experiment_code
+                and comparison.modified_variables
+            )
+        if comparison.experiment_kind == "MEASUREMENT_REPEAT":
+            return (
+                bool(comparison.reference_experiment_code)
+                and comparison.modified_variables == ("MEASUREMENT_ACQUISITION",)
+            )
+        return False
+
+    @staticmethod
+    def _protocol_scope_declared(comparison):
+        return bool(
+            comparison is not None
+            and comparison.source_protocol_id
+            and comparison.source_hypothesis_code
         )
 
     @staticmethod
@@ -622,14 +664,27 @@ class DecisionFirstReportPresenter:
             source_codes=(recommendation.code,),
         )
 
-    def _action_reasons(self, report, status, undeclared, deferred):
-        if status == "AVAILABLE":
+    def _action_reasons(
+        self,
+        report,
+        status,
+        undeclared,
+        protocol_scope_missing,
+        deferred,
+    ):
+        if status == "AVAILABLE" and not protocol_scope_missing:
             return ()
         reasons = []
         if undeclared:
             reasons.append(
                 "La variable testée, ou l’absence de changement volontaire, "
                 "n’a pas été déclarée."
+            )
+        if protocol_scope_missing:
+            reasons.append(
+                "La variable modifiée est déclarée par l’utilisateur, mais aucun "
+                "protocole ni aucune hypothèse scientifique ne sont formellement "
+                "associés à cette expérience."
             )
         planning = report.experiment_planning
         if planning is not None and planning.recommended_candidate is None:
@@ -741,7 +796,13 @@ class DecisionFirstReportPresenter:
             item for item in values if item
         ))[: self.MAXIMUM_FACTS]
 
-    def _active_limits(self, comparison, undeclared, deferred):
+    def _active_limits(
+        self,
+        comparison,
+        undeclared,
+        protocol_scope_missing,
+        deferred,
+    ):
         values = []
         if self._is_repeat(comparison):
             values.append(
@@ -753,6 +814,11 @@ class DecisionFirstReportPresenter:
             values.append(
                 "AcousticBrain ne sait pas formellement quelle variable était "
                 "testée ni si la configuration devait rester inchangée."
+            )
+        if protocol_scope_missing:
+            values.append(
+                "La variable modifiée est connue par déclaration utilisateur, "
+                "mais son protocole et son hypothèse scientifiques ne sont pas établis."
             )
         if comparison is None or comparison.eligibility != "COMPARABLE":
             values.append("La dernière comparaison n’est pas établie.")

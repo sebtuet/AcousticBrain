@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 
 from .decision_first_presenter import PresentedDecisionFirstReport
@@ -10,7 +11,7 @@ class PresentedOneMinuteExecutiveSummary:
     conclusion: tuple[str, str]
     actions: tuple[str, ...]
     reasons: tuple[str, ...]
-    confidence: tuple[str, str, str]
+    confidence: tuple[str, ...]
 
 
 class OneMinuteExecutiveSummaryPresenter:
@@ -18,7 +19,6 @@ class OneMinuteExecutiveSummaryPresenter:
 
     MAXIMUM_ACTION_LINES = 3
     MAXIMUM_REASON_LINES = 2
-
     def present(
         self,
         decision: PresentedDecisionFirstReport,
@@ -60,7 +60,15 @@ class OneMinuteExecutiveSummaryPresenter:
                 "de mesure."
             )
             return tuple(values)
-        if not decision.tested_conditions_declared:
+        if decision.tested_variable_declared:
+            values.extend(
+                OneMinuteExecutiveSummaryPresenter._declared_intervention(decision)
+            )
+            if decision.reference_experiment_code:
+                values.append(
+                    f"Référence déclarée : {decision.reference_experiment_code}."
+                )
+        else:
             values.append(
                 "La variable testée, ou l’absence de changement volontaire, "
                 "n’a pas été déclarée."
@@ -94,8 +102,15 @@ class OneMinuteExecutiveSummaryPresenter:
                 "L’utilisateur déclare une répétition, mais ne déclare pas toutes "
                 "les variables comme contrôlées.",
             )
-        if not decision.tested_conditions_declared:
+        if not decision.tested_variable_declared:
             return "Non.", "AcousticBrain ne sait pas formellement ce qui était testé."
+        if not decision.protocol_scope_declared:
+            return (
+                "Partiellement.",
+                "La variable modifiée est connue, mais aucun protocole ni aucune "
+                "hypothèse scientifique ne sont formellement associés à cette "
+                "expérience.",
+            )
         if decision.comparison_acoustic_outcome in {"MIXED", "INCONCLUSIVE"}:
             return "Non.", "Le verdict mesuré reste contradictoire ou inconclusif."
         if decision.comparison_acoustic_outcome in {
@@ -186,7 +201,7 @@ class OneMinuteExecutiveSummaryPresenter:
                 "AcousticBrain ne peut donc pas attribuer les différences observées "
                 "à un déplacement.",
             )
-        if not decision.tested_conditions_declared and decision.comparison_available:
+        if not decision.tested_variable_declared and decision.comparison_available:
             if decision.comparison_acoustic_outcome == "MIXED":
                 return (
                     "Les effets observés sont contradictoires et la modification "
@@ -194,6 +209,12 @@ class OneMinuteExecutiveSummaryPresenter:
                 )
             return (
                 "La modification testée n’est pas suffisamment documentée.",
+            )
+        if decision.tested_variable_declared and not decision.protocol_scope_declared:
+            return (
+                "La comparaison mesure les effets de l’intervention déclarée.",
+                "AcousticBrain ne peut toutefois pas interpréter cette intervention "
+                "dans le cadre d’une hypothèse scientifique déterminée.",
             )
         if decision.action_status == "TIED":
             return (
@@ -245,9 +266,46 @@ class OneMinuteExecutiveSummaryPresenter:
         else:
             verdict = "Verdict : établi par les mesures."
         cause = "Cause : non établie (NOT_ESTABLISHED)."
+        if decision.tested_variable_declared and not decision.protocol_scope_declared:
+            return (
+                measurement,
+                "Intervention : déclarée par l’utilisateur.",
+                "Protocole scientifique : non établi.",
+                cause,
+            )
         if decision.positioning_proposal_id is not None:
             cause = (
                 "Action : expérience réversible proposée ; amélioration non garantie. "
                 "Cause : non établie (NOT_ESTABLISHED)."
             )
         return measurement, verdict, cause
+
+    @classmethod
+    def _declared_intervention(cls, decision):
+        return tuple(
+            cls._declared_variable_label(code)
+            for code in decision.modified_variables
+        )
+
+    @staticmethod
+    def _declared_variable_label(code):
+        movement = re.fullmatch(
+            r"(LEFT|RIGHT)_SPEAKER_POSITION_"
+            r"(FORWARD|BACKWARD|INWARD|OUTWARD)_(\d+)MM",
+            code,
+        )
+        if movement is None:
+            return f"Variable modifiée déclarée : {code}."
+        speaker_code, direction_code, distance_mm = movement.groups()
+        speaker = {"LEFT": "gauche", "RIGHT": "droite"}[speaker_code]
+        direction = {
+            "FORWARD": "avancée",
+            "BACKWARD": "reculée",
+            "INWARD": "déplacée vers l’intérieur",
+            "OUTWARD": "déplacée vers l’extérieur",
+        }[direction_code]
+        distance_cm = int(distance_mm) / 10
+        return (
+            f"Intervention déclarée : enceinte {speaker} {direction} "
+            f"de {distance_cm:g} cm."
+        )

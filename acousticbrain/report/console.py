@@ -1134,6 +1134,20 @@ class ConsoleReporter:
             print("Raisons : " + ", ".join(comparison.ineligibility_reasons))
         print(f"Protocole : {comparison.source_protocol_id or 'non déclaré'}")
         print(f"Hypothèse : {comparison.source_hypothesis_code or 'non déclarée'}")
+        if comparison.experiment_kind != "UNKNOWN":
+            print(f"Déclaration expérimentale : {comparison.experiment_kind}")
+            print(
+                "Référence déclarée : "
+                + (comparison.reference_experiment_code or "non établie")
+            )
+            print(
+                "Variables modifiées déclarées : "
+                + (", ".join(comparison.modified_variables) or "aucune")
+            )
+            print(
+                "Variables contrôlées déclarées : "
+                + (", ".join(comparison.controlled_variables) or "aucune")
+            )
         for name, value in comparison.experiment_parameters:
             print(f"{name} : {value}")
         print(f"Évolution acoustique : {comparison.acoustic_outcome}")
@@ -1204,6 +1218,20 @@ class ConsoleReporter:
         print(decision.verdict)
         for item in decision.comparison_context:
             print(f" • {item}")
+
+        if decision.tested_variable_declared:
+            print()
+            print("Déclaration expérimentale")
+            print(decision.experiment_kind)
+            print("Référence")
+            print(decision.reference_experiment_code or "non établie")
+            print("Variables modifiées")
+            for item in decision.modified_variables:
+                print(f" • {item}")
+            print("Protocole scientifique")
+            print(decision.source_protocol_id or "non établi")
+            print("Hypothèse scientifique")
+            print(decision.source_hypothesis_code or "non établie")
 
         print()
         print("Prochaine action")
