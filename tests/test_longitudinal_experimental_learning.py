@@ -154,7 +154,8 @@ def campaign(*, unresolved=(), next_code=None, status="RESOLVED",
 
 
 def causal(*, remaining=(), resolved=(), deferred=(), recommended=None,
-           experiments=("exp-causal",), unqualified_step=None):
+           experiments=("exp-causal",), unqualified_step=None,
+           outcome=None, status="ACTIVE", new_ambiguities=(), steps=None):
     decisions = tuple(
         SimpleNamespace(
             discrimination_code=value,
@@ -162,18 +163,24 @@ def causal(*, remaining=(), resolved=(), deferred=(), recommended=None,
         )
         for value in deferred
     )
+    completed_steps = steps or tuple(
+        SimpleNamespace(
+            experiment_id=code,
+            step_code=(unqualified_step if index == len(experiments) - 1 else None),
+            observation_codes=(),
+        )
+        for index, code in enumerate(experiments)
+    )
+    if outcome is None:
+        outcome = "DISCRIMINATED" if resolved and not remaining else "INCONCLUSIVE"
     return SimpleNamespace(
         protocol_code="VERIFY_SPEAKER_ROOM_ASYMMETRY",
-        completed_steps=tuple(
-            SimpleNamespace(
-                experiment_id=code,
-                step_code=(unqualified_step if index == len(experiments) - 1 else None),
-                observation_codes=(),
-            )
-            for index, code in enumerate(experiments)
-        ),
+        status=SimpleNamespace(value=status),
+        outcome=SimpleNamespace(value=outcome),
+        completed_steps=completed_steps,
         resolved_discrimination_codes=resolved,
         remaining_discrimination_codes=remaining,
+        new_ambiguity_codes=new_ambiguities,
         discrimination_decisions=decisions,
         recommended_next_protocol=recommended,
         trace=SimpleNamespace(
@@ -336,7 +343,11 @@ def test_unqualified_causal_step_is_not_treated_as_an_exhausted_path():
             hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
             protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
         ),),
-        causal=causal(unqualified_step="STEP_2_SPEAKER_SWAP"),
+        causal=causal(
+            remaining=("ROOM_OPEN",),
+            unqualified_step="STEP_2_SPEAKER_SWAP",
+            status="INCOMPLETE",
+        ),
         hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
     ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
 
@@ -344,6 +355,129 @@ def test_unqualified_causal_step_is_not_treated_as_an_exhausted_path():
     assert value.exhausted_discriminations == ()
     assert value.next_information_need == (
         "QUALIFY_CAUSAL_OBSERVATION:STEP_2_SPEAKER_SWAP"
+    )
+    assert value.causality_status == "NOT_ESTABLISHED"
+
+
+def test_exp005_exp006_analogue_requires_explicit_source_comparison_association():
+    causal_steps = (
+        SimpleNamespace(
+            experiment_id="exp-005",
+            step_code="STEP_2_SPEAKER_SWAP",
+            observation_codes=(
+                "ANOMALY_REMAINED_WITH_ROOM_SIDE_AFTER_SPEAKER_SWAP",
+            ),
+        ),
+        SimpleNamespace(
+            experiment_id="exp-006",
+            step_code="STEP_3_SIGNAL_CHAIN_SWAP",
+            observation_codes=(
+                "ANOMALY_REMAINED_WITH_ROOM_SIDE_AFTER_SIGNAL_CHAIN_SWAP",
+            ),
+        ),
+    )
+    value = state(run(
+        descriptors=(
+            descriptor("exp-005", hypothesis=None, protocol=None),
+            descriptor("exp-006", hypothesis=None, protocol=None),
+        ),
+        causal=causal(
+            experiments=("exp-005", "exp-006"),
+            steps=causal_steps,
+            outcome="INCONCLUSIVE",
+            new_ambiguities=("SOURCE_COMPARISON_UNAVAILABLE",),
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.learning_status is LongitudinalLearningStatus.INSUFFICIENT_CAUSAL_CONTEXT
+    assert value.exhausted_discriminations == ()
+    assert value.next_information_need == (
+        "ASSOCIATE_SOURCE_COMPARISON_WITH_CAUSAL_PROTOCOL"
+    )
+    assert value.causality_status == "NOT_ESTABLISHED"
+
+
+def test_inconclusive_causal_result_with_no_remaining_path_is_not_exhausted():
+    value = state(run(
+        descriptors=(descriptor(
+            "exp-causal",
+            hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        ),),
+        causal=causal(
+            resolved=("INITIAL_DISCRIMINATION",),
+            outcome="INCONCLUSIVE",
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.learning_status is LongitudinalLearningStatus.EVIDENCE_ACCUMULATING
+    assert value.exhausted_discriminations == ()
+    assert value.next_information_need != "NO_ADDITIONAL_DISCRIMINATION_AVAILABLE"
+
+
+def test_discriminated_causal_result_without_new_ambiguity_is_exhausted():
+    value = state(run(
+        descriptors=(descriptor(
+            "exp-causal",
+            hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        ),),
+        causal=causal(
+            resolved=("INITIAL_DISCRIMINATION",),
+            outcome="DISCRIMINATED",
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.learning_status is LongitudinalLearningStatus.EXPERIMENTAL_PATH_EXHAUSTED
+    assert value.exhausted_discriminations == (
+        "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+    )
+    assert value.next_information_need == "NO_ADDITIONAL_DISCRIMINATION_AVAILABLE"
+    assert value.causality_status == "NOT_ESTABLISHED"
+
+
+def test_incomplete_causal_protocol_is_not_exhausted_even_if_outcome_discriminated():
+    value = state(run(
+        descriptors=(descriptor(
+            "exp-causal",
+            hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        ),),
+        causal=causal(
+            resolved=("INITIAL_DISCRIMINATION",),
+            outcome="DISCRIMINATED",
+            status="INCOMPLETE",
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.exhausted_discriminations == ()
+    assert value.next_information_need != "NO_ADDITIONAL_DISCRIMINATION_AVAILABLE"
+    assert value.causality_status == "NOT_ESTABLISHED"
+
+
+def test_contradictory_causal_protocol_is_not_exhausted():
+    value = state(run(
+        descriptors=(descriptor(
+            "exp-causal",
+            hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        ),),
+        causal=causal(
+            resolved=("INITIAL_DISCRIMINATION",),
+            outcome="CONTRADICTORY",
+            status="CONTRADICTORY",
+            new_ambiguities=("CONTRADICTORY_OBSERVATIONS",),
+        ),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.exhausted_discriminations == ()
+    assert value.next_information_need == (
+        "RESOLVE_CAUSAL_AMBIGUITY:CONTRADICTORY_OBSERVATIONS"
     )
     assert value.causality_status == "NOT_ESTABLISHED"
 
