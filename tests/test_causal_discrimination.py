@@ -108,7 +108,11 @@ def comparison():
         UnresolvedDiscrimination(code)
         for code in CausalDiscriminationService.INITIAL_DISCRIMINATIONS
     )
-    result = SimpleNamespace(unresolved_discriminations=unresolved)
+    result = SimpleNamespace(
+        source_protocol_id="protocol.verify_speaker_room_asymmetry.v1",
+        source_hypothesis_code="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+        unresolved_discriminations=unresolved,
+    )
     return SimpleNamespace(sequence=SimpleNamespace(local_comparisons=(result,)))
 
 
