@@ -95,7 +95,6 @@ Résultat discriminant : INCONCLUSIVE
 Étapes différées : aucune
 Trajectoires compatibles :
  • ANOMALY_FOLLOWS_LOUDSPEAKER — support 100.0 / 100
- • ANOMALY_FOLLOWS_SIGNAL_CHAIN — support 0.0 / 100
 Trajectoires contradictoires :
  • ANOMALY_REMAINS_WITH_ROOM_SIDE — contre-preuves : ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
 Discriminations résolues : LOUDSPEAKER_VS_ROOM_SIDE, SIGNAL_CHAIN_VS_ROOM_SIDE

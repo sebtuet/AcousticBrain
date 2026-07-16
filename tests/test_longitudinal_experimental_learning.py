@@ -154,7 +154,7 @@ def campaign(*, unresolved=(), next_code=None, status="RESOLVED",
 
 
 def causal(*, remaining=(), resolved=(), deferred=(), recommended=None,
-           experiments=("exp-causal",)):
+           experiments=("exp-causal",), unqualified_step=None):
     decisions = tuple(
         SimpleNamespace(
             discrimination_code=value,
@@ -165,7 +165,12 @@ def causal(*, remaining=(), resolved=(), deferred=(), recommended=None,
     return SimpleNamespace(
         protocol_code="VERIFY_SPEAKER_ROOM_ASYMMETRY",
         completed_steps=tuple(
-            SimpleNamespace(experiment_id=code) for code in experiments
+            SimpleNamespace(
+                experiment_id=code,
+                step_code=(unqualified_step if index == len(experiments) - 1 else None),
+                observation_codes=(),
+            )
+            for index, code in enumerate(experiments)
         ),
         resolved_discrimination_codes=resolved,
         remaining_discrimination_codes=remaining,
@@ -322,6 +327,25 @@ def test_resolved_remaining_deferred_completed_and_exhausted_discriminations():
     ))
     assert exhausted.exhausted_discriminations == ("TEST_CAMPAIGN",)
     assert exhausted.learning_status is LongitudinalLearningStatus.EXPERIMENTAL_PATH_EXHAUSTED
+
+
+def test_unqualified_causal_step_is_not_treated_as_an_exhausted_path():
+    value = state(run(
+        descriptors=(descriptor(
+            "exp-causal",
+            hypothesis="ASYMMETRIC_SPEAKER_ROOM_INTERACTION",
+            protocol="VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        ),),
+        causal=causal(unqualified_step="STEP_2_SPEAKER_SWAP"),
+        hypotheses=("ASYMMETRIC_SPEAKER_ROOM_INTERACTION",),
+    ), "ASYMMETRIC_SPEAKER_ROOM_INTERACTION")
+
+    assert value.learning_status is LongitudinalLearningStatus.DISCRIMINATION_REQUIRED
+    assert value.exhausted_discriminations == ()
+    assert value.next_information_need == (
+        "QUALIFY_CAUSAL_OBSERVATION:STEP_2_SPEAKER_SWAP"
+    )
+    assert value.causality_status == "NOT_ESTABLISHED"
 
 
 def test_unknown_discrimination_sources_remain_historical_not_evidence():

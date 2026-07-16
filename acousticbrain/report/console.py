@@ -516,9 +516,30 @@ class ConsoleReporter:
                     "   Variables inconnues : "
                     + (", ".join(step.unknown_variable_codes) or "aucune")
                 )
+                if (
+                    step.step_code
+                    in {"STEP_2_SPEAKER_SWAP", "STEP_3_SIGNAL_CHAIN_SWAP"}
+                    and not step.observation_codes
+                ):
+                    print("   Observation causale : non encore qualifiée")
+                else:
+                    print(
+                        "   Observations : "
+                        + (", ".join(step.observation_codes) or "aucune")
+                    )
+            unqualified_steps = tuple(
+                step.step_code
+                for step in causal.completed_steps
+                if step.step_code
+                in {"STEP_2_SPEAKER_SWAP", "STEP_3_SIGNAL_CHAIN_SWAP"}
+                and not step.observation_codes
+            )
+            if unqualified_steps:
+                print("Conclusion causale : non établie")
                 print(
-                    "   Observations : "
-                    + (", ".join(step.observation_codes) or "aucune")
+                    "Prochaine information nécessaire : qualifier "
+                    "l’observation de "
+                    + ", ".join(unqualified_steps)
                 )
             print(
                 "Étapes restantes : "
@@ -529,11 +550,14 @@ class ConsoleReporter:
                 + (", ".join(causal.deferred_step_codes) or "aucune")
             )
             print("Trajectoires compatibles :")
-            for trajectory in causal.compatible_trajectories:
-                print(
-                    f" • {trajectory.trajectory_code} — support "
-                    f"{trajectory.support_score:.1f} / 100"
-                )
+            if causal.compatible_trajectories:
+                for trajectory in causal.compatible_trajectories:
+                    print(
+                        f" • {trajectory.trajectory_code} — support "
+                        f"{trajectory.support_score:.1f} / 100"
+                    )
+            else:
+                print(" • aucune")
             print("Trajectoires contradictoires :")
             if causal.contradicted_trajectories:
                 for trajectory in causal.contradicted_trajectories:

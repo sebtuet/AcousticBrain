@@ -198,6 +198,7 @@ class LongitudinalExperimentalLearningEngine:
             elif not campaign.unresolved_discrimination_codes:
                 exhausted.add(campaign.campaign_code)
         causal_id = None
+        causal_observation_needs = []
         if relevant_causal is not None:
             causal_id = relevant_causal.trace.trace_id
             resolved.update(relevant_causal.resolved_discrimination_codes)
@@ -220,9 +221,21 @@ class LongitudinalExperimentalLearningEngine:
                 for item in relevant_causal.discrimination_decisions
                 if item.status.value == "DEFERRED"
             )
+            causal_observation_needs = sorted(
+                step.step_code
+                for step in relevant_causal.completed_steps
+                if getattr(step, "step_code", None)
+                in {"STEP_2_SPEAKER_SWAP", "STEP_3_SIGNAL_CHAIN_SWAP"}
+                and not getattr(step, "observation_codes", ())
+            )
+            next_needs.extend(
+                f"QUALIFY_CAUSAL_OBSERVATION:{code}"
+                for code in causal_observation_needs
+            )
             if (
                 not relevant_causal.remaining_discrimination_codes
                 and relevant_causal.recommended_next_protocol is None
+                and not causal_observation_needs
             ):
                 exhausted.add(relevant_causal.protocol_code)
 
@@ -239,6 +252,7 @@ class LongitudinalExperimentalLearningEngine:
             remaining=remaining,
             deferred=deferred,
             exhausted=exhausted,
+            causal_observation_required=bool(causal_observation_needs),
         )
         next_need = self._next_need(
             status=status,
@@ -309,7 +323,8 @@ class LongitudinalExperimentalLearningEngine:
     def _status(*, historical_experiment_codes, has_historical_analysis,
                 controlled, unknown, non_comparable,
                 supporting, contradicting, supporting_experiments,
-                contradicting_experiments, remaining, deferred, exhausted):
+                contradicting_experiments, remaining, deferred, exhausted,
+                causal_observation_required):
         if not historical_experiment_codes and not has_historical_analysis:
             return LongitudinalLearningStatus.NOT_TESTED
         if deferred:
@@ -329,6 +344,8 @@ class LongitudinalExperimentalLearningEngine:
         if non_comparable:
             return LongitudinalLearningStatus.INSUFFICIENT_COMPARABILITY
         if remaining:
+            return LongitudinalLearningStatus.DISCRIMINATION_REQUIRED
+        if causal_observation_required:
             return LongitudinalLearningStatus.DISCRIMINATION_REQUIRED
         if exhausted:
             return LongitudinalLearningStatus.EXPERIMENTAL_PATH_EXHAUSTED
