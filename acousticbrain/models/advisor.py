@@ -21,6 +21,22 @@ class AdvisorValidationStatus(Enum):
     INVALID = "INVALID"
 
 
+class AdvisorDimensionStatus(Enum):
+    VALID = "VALID"
+    INVALID = "INVALID"
+    NOT_REQUIRED = "NOT_REQUIRED"
+
+
+class AdvisorResponseLanguage(Enum):
+    FR = "fr"
+    EN = "en"
+
+
+class AdvisorResponseSource(Enum):
+    PROVIDER = "PROVIDER"
+    LOCAL_SAFETY_RESPONSE = "LOCAL_SAFETY_RESPONSE"
+
+
 @dataclass(frozen=True)
 class AdvisorContextObject:
     object_id: str
@@ -50,6 +66,13 @@ class AdvisorDeterministicContext:
     blocking_factors: tuple[str, ...]
     contradictions: tuple[str, ...]
     limitations: tuple[str, ...]
+    expected_response_language: AdvisorResponseLanguage
+    required_reasoning_ids: tuple[str, ...]
+    required_blocking_factor_ids: tuple[str, ...]
+    required_ready_plan_ids: tuple[str, ...]
+    required_blocked_plan_ids: tuple[str, ...]
+    allowed_object_ids: tuple[str, ...]
+    object_labels: tuple[tuple[str, str], ...]
 
     def __post_init__(self):
         if any(
@@ -71,6 +94,34 @@ class AdvisorDeterministicContext:
                 or any(not isinstance(value, str) or not value for value in values)
             ):
                 raise ValueError("Advisor context facts must be unique tuples.")
+        if not isinstance(self.expected_response_language, AdvisorResponseLanguage):
+            raise ValueError("Advisor context requires a canonical response language.")
+        for values in (
+            self.required_reasoning_ids,
+            self.required_blocking_factor_ids,
+            self.required_ready_plan_ids,
+            self.required_blocked_plan_ids,
+            self.allowed_object_ids,
+        ):
+            if (
+                not isinstance(values, tuple)
+                or len(values) != len(set(values))
+                or any(not isinstance(value, str) or not value for value in values)
+            ):
+                raise ValueError("Advisor completeness requirements must be unique tuples.")
+        if self.allowed_object_ids != object_ids:
+            raise ValueError("Allowed advisor ids must exactly match context objects.")
+        if (
+            not isinstance(self.object_labels, tuple)
+            or len(self.object_labels) != len({value[0] for value in self.object_labels})
+            or any(
+                not isinstance(value, tuple)
+                or len(value) != 2
+                or any(not isinstance(item, str) or not item for item in value)
+                for value in self.object_labels
+            )
+        ):
+            raise ValueError("Advisor object labels must be unique string pairs.")
 
 
 @dataclass(frozen=True)
@@ -173,6 +224,11 @@ class AdvisorProviderOutput:
     limitations: tuple[str, ...]
     proposed_action_ids: tuple[str, ...] = ()
     introduced_scores: tuple[str, ...] = ()
+    covered_reasoning_ids: tuple[str, ...] = ()
+    covered_blocking_factor_ids: tuple[str, ...] = ()
+    covered_ready_plan_ids: tuple[str, ...] = ()
+    covered_blocked_plan_ids: tuple[str, ...] = ()
+    response_language: AdvisorResponseLanguage = AdvisorResponseLanguage.EN
 
     def __post_init__(self):
         if not isinstance(self.answer, str) or not self.answer.strip():
@@ -185,6 +241,10 @@ class AdvisorProviderOutput:
             self.limitations,
             self.proposed_action_ids,
             self.introduced_scores,
+            self.covered_reasoning_ids,
+            self.covered_blocking_factor_ids,
+            self.covered_ready_plan_ids,
+            self.covered_blocked_plan_ids,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Advisor provider collections must be immutable tuples.")
@@ -200,6 +260,18 @@ class AdvisorProviderOutput:
                 not isinstance(value, str) or not value for value in values
             ):
                 raise ValueError("Advisor provider values must be unique strings.")
+        for values in (
+            self.covered_reasoning_ids,
+            self.covered_blocking_factor_ids,
+            self.covered_ready_plan_ids,
+            self.covered_blocked_plan_ids,
+        ):
+            if not isinstance(values, tuple) or any(
+                not isinstance(value, str) or not value for value in values
+            ):
+                raise ValueError("Advisor coverage values must be string tuples.")
+        if not isinstance(self.response_language, AdvisorResponseLanguage):
+            raise ValueError("Advisor provider response language is invalid.")
         if any(not isinstance(value, AdvisorClaim) for value in self.claims):
             raise ValueError("Advisor claims must use the structured model.")
 
@@ -223,6 +295,17 @@ class AdvisorResponse:
     unsupported_claims: tuple[str, ...]
     validation_status: AdvisorValidationStatus
     warnings: tuple[str, ...]
+    response_source: AdvisorResponseSource
+    scientific_fidelity_status: AdvisorDimensionStatus
+    semantic_coverage_status: AdvisorDimensionStatus
+    response_language_status: AdvisorDimensionStatus
+    reference_integrity_status: AdvisorDimensionStatus
+    degeneracy_status: AdvisorDimensionStatus
+    response_language: AdvisorResponseLanguage
+    covered_reasoning_ids: tuple[str, ...]
+    covered_blocking_factor_ids: tuple[str, ...]
+    covered_ready_plan_ids: tuple[str, ...]
+    covered_blocked_plan_ids: tuple[str, ...]
 
     def __post_init__(self):
         required = (
@@ -240,6 +323,21 @@ class AdvisorResponse:
             raise ValueError("Advisor model id cannot be empty.")
         if not isinstance(self.validation_status, AdvisorValidationStatus):
             raise ValueError("Advisor validation status is invalid.")
+        if not isinstance(self.response_source, AdvisorResponseSource):
+            raise ValueError("Advisor response source is invalid.")
+        if any(
+            not isinstance(value, AdvisorDimensionStatus)
+            for value in (
+                self.scientific_fidelity_status,
+                self.semantic_coverage_status,
+                self.response_language_status,
+                self.reference_integrity_status,
+                self.degeneracy_status,
+            )
+        ):
+            raise ValueError("Advisor dimension status is invalid.")
+        if not isinstance(self.response_language, AdvisorResponseLanguage):
+            raise ValueError("Advisor response language is invalid.")
         collections = (
             self.referenced_object_ids,
             self.referenced_observation_ids,
@@ -251,6 +349,10 @@ class AdvisorResponse:
             self.preserved_limitations,
             self.unsupported_claims,
             self.warnings,
+            self.covered_reasoning_ids,
+            self.covered_blocking_factor_ids,
+            self.covered_ready_plan_ids,
+            self.covered_blocked_plan_ids,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Advisor response collections must be immutable tuples.")

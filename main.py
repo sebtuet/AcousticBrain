@@ -23,6 +23,7 @@ from acousticbrain.report import (
 from acousticbrain.models import (
     AdvisorAudience,
     AdvisorDetailLevel,
+    AdvisorResponseLanguage,
     CampaignReferenceDeclarationStatus,
     ListeningPositionCampaignInstanceStatus,
 )
@@ -100,6 +101,12 @@ def create_parser():
         choices=tuple(value.value for value in AdvisorDetailLevel),
         default=AdvisorDetailLevel.STANDARD.value,
     )
+    parser.add_argument(
+        "--advisor-language",
+        choices=("auto", "fr", "en"),
+        default="auto",
+        help="advisor response language (default: deterministic detection)",
+    )
     return parser
 
 
@@ -145,6 +152,7 @@ def run(
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
     advisor_detail_level=AdvisorDetailLevel.STANDARD,
+    advisor_response_language=AdvisorResponseLanguage.EN,
     advisor_provider=None,
     advisor_service=None,
     brain=None,
@@ -202,6 +210,7 @@ def run(
             audience=advisor_audience,
             detail_level=advisor_detail_level,
             provider=advisor_provider,
+            expected_response_language=advisor_response_language,
         )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
@@ -288,6 +297,9 @@ def main(
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),
             advisor_detail_level=AdvisorDetailLevel(arguments.advisor_detail),
+            advisor_response_language=resolve_advisor_language(
+                arguments.advisor_language, arguments.question or ""
+            ),
             advisor_provider=(
                 advisor_provider_instance
                 if advisor_provider_instance is not None
@@ -302,6 +314,21 @@ def main(
     except AdvisorError as error:
         parser.error(str(error))
     return 0
+
+
+def resolve_advisor_language(configured, question):
+    if configured != "auto":
+        return AdvisorResponseLanguage(configured)
+    normalized = question.casefold()
+    french_markers = (
+        "é", "è", "à", "ç", "ù", "résume", "explique", "pourquoi",
+        "aucune", "quels", "quelles", "prêts", "bloqués", "français",
+    )
+    return (
+        AdvisorResponseLanguage.FR
+        if any(value in normalized for value in french_markers)
+        else AdvisorResponseLanguage.EN
+    )
 
 
 def create_advisor_provider(provider_id):

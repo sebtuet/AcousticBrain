@@ -42,6 +42,10 @@ weights by default) and follows their explicit action, reasoning and observation
 references. Unreferenced observations are excluded. Each object is retained as
 canonical, stably ordered JSON with its type, id and references. Blocking
 factors, contradictions and limitations are separately preserved.
+The v2 context also declares the expected response language, the exact
+reasoning and blocking-factor ids that require coverage, READY and BLOCKED plan
+ids, the complete allowed-id set, and deterministic display labels. The
+provider never infers a plan status.
 
 The provider receives a minimal textual JSON projection. It never receives raw
 measurement files, local paths, secrets or API keys. Context construction does
@@ -98,11 +102,13 @@ provider dependency is installed.
 
 ## Prompt and structured response
 
-`ADVISOR_SYSTEM_PROMPT_V1` states the non-authoritative boundary, but the prompt
+`ADVISOR_SYSTEM_PROMPT_V2` states the non-authoritative boundary, but the prompt
 is not treated as a security control. Provider output must use the strict
 structured schema: answer, cited object ids, claims with supporting ids and
 structured fact assertions, preserved blocks, contradictions and limitations,
-and explicit empty collections for proposed actions and introduced scores.
+explicit empty collections for proposed actions and introduced scores, exact
+coverage collections for reasoning, blocking factors and both plan classes,
+and the declared response language.
 
 ## Post-response validation
 
@@ -115,10 +121,23 @@ The local validator checks:
 - no blocked action is asserted applicable;
 - no factor, contradiction or limitation is omitted, denied or invented;
 - no new action, global score, percentage or absent geometry is introduced.
+- structured coverage is complete, unique, correctly ordered and never crosses
+  READY/BLOCKED plan classes;
+- the declared language matches the request and manifest use of another
+  language is rejected by a deliberately conservative check;
+- empty, generic, copied or category-omitting answers are rejected as
+  degenerate.
 
-Invalid provider text is never rendered as normal advice. A deterministic local
-safety answer is returned with `INVALID`, the violations, and the unchanged
-deterministic references. Provider failures remain typed errors and are never
+Validity is multidimensional: scientific fidelity, semantic coverage, response
+language, reference integrity and degeneracy are reported independently. No
+global score, average, probability or confidence number is computed. Overall
+validation is valid only when every required dimension is valid.
+
+Invalid provider text is never rendered as normal advice. A deterministic,
+structured local safety report in the requested language is returned with
+`INVALID`, the violations, all required coverage and the unchanged deterministic
+references. `Response Source` distinguishes `PROVIDER` from
+`LOCAL_SAFETY_RESPONSE`. Provider failures remain typed errors and are never
 converted into scientific conclusions.
 
 ## CLI
@@ -129,6 +148,7 @@ python main.py \
   --advisor \
   --advisor-provider mock \
   --question "Why is this action blocked?" \
+  --advisor-language en \
   --advisor-audience general \
   --advisor-detail standard
 ```
@@ -136,7 +156,9 @@ python main.py \
 Providers are `mock`, `ollama` and `openai`. Audience values are `general`,
 `enthusiast`, `acoustician` and `developer`; detail values are `concise`,
 `standard` and `technical`. A question without `--advisor`, or `--advisor`
-without a question, is rejected. No interactive mode is added.
+without a question, is rejected. Language values are `fr`, `en` and `auto`.
+`auto` uses deterministic markers from the question; an explicit choice always
+wins. No interactive mode is added.
 
 ## Determinism and limitations
 
@@ -149,3 +171,20 @@ structured assertions with explicit prohibited overrides. It cannot make free
 text intrinsically trustworthy; provider output remains non-authoritative and
 is always subordinate to the structured deterministic objects displayed by the
 validator.
+
+## Local Ollama compatibility observations
+
+Manual campaign trials on Ollama 0.31.2 remain separate from the automated
+suite. With the six PR-059 plans in context, `qwen3:8b` produced a fully valid
+French response in one run. A separate English run returned the prohibited
+generic metadata sentence and was rejected. `gemma4:12b` produced structurally
+grounded French output but omitted plan identifiers from its prose, then
+returned invalid JSON in the English trial. Both outputs were rejected before
+normal rendering.
+
+These observations are model outputs, not deterministic guarantees: repeated
+generation may differ. AcousticBrain therefore does not relax parsing, repair
+missing coverage, retry automatically, select another model, or fall back to a
+generic JSON mode. The local safety report is the only response rendered after
+a semantic rejection; malformed provider JSON remains an explicit typed
+provider error.
