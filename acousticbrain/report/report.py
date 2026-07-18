@@ -53,6 +53,9 @@ from .acoustic_observation_presenter import PresentedAcousticObservationReport
 from .deterministic_acoustic_reasoning_presenter import (
     PresentedDeterministicAcousticReasoningReport,
 )
+from .deterministic_corrective_action_presenter import (
+    PresentedDeterministicCorrectiveActionReport,
+)
 
 
 @dataclass
@@ -114,6 +117,10 @@ class Report:
 
     deterministic_acoustic_reasoning: (
         PresentedDeterministicAcousticReasoningReport | None
+    ) = None
+
+    deterministic_corrective_actions: (
+        PresentedDeterministicCorrectiveActionReport | None
     ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None

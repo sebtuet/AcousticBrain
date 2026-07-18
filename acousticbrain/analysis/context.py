@@ -41,6 +41,7 @@ from acousticbrain.models import (
     CampaignReferenceQualificationDeclarationAnalysis,
     AcousticObservationSynthesis,
     DeterministicAcousticReasoningSynthesis,
+    DeterministicCorrectiveActionSynthesis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -63,6 +64,10 @@ class AnalysisContext:
 
     deterministic_acoustic_reasoning_synthesis: (
         DeterministicAcousticReasoningSynthesis | None
+    ) = None
+
+    deterministic_corrective_action_synthesis: (
+        DeterministicCorrectiveActionSynthesis | None
     ) = None
 
     peaks: list = field(default_factory=list)

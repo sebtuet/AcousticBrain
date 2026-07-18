@@ -24,6 +24,7 @@ from acousticbrain.report import (
     CampaignReferenceQualificationPresenter,
     AcousticObservationPresenter,
     DeterministicAcousticReasoningPresenter,
+    DeterministicCorrectiveActionPresenter,
 )
 
 
@@ -73,6 +74,9 @@ class ReportBuilder:
         report.acoustic_observations = AcousticObservationPresenter().present(context)
         report.deterministic_acoustic_reasoning = (
             DeterministicAcousticReasoningPresenter().present(context)
+        )
+        report.deterministic_corrective_actions = (
+            DeterministicCorrectiveActionPresenter().present(context)
         )
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (

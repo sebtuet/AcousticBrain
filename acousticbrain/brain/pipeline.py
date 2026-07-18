@@ -77,6 +77,9 @@ from .stages.acoustic_observation import AcousticObservationStage
 from .stages.deterministic_acoustic_reasoning import (
     DeterministicAcousticReasoningStage,
 )
+from .stages.deterministic_corrective_action import (
+    DeterministicCorrectiveActionStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -139,9 +142,11 @@ class BrainPipeline:
         longitudinal_experimental_learning_analysis=None,
         synthesize_observations=False,
         synthesize_reasoning=False,
+        synthesize_actions=False,
         return_context=False,
     ):
 
+        synthesize_reasoning = synthesize_reasoning or synthesize_actions
         synthesize_observations = synthesize_observations or synthesize_reasoning
 
         #
@@ -292,6 +297,9 @@ class BrainPipeline:
 
         if synthesize_reasoning:
             DeterministicAcousticReasoningStage().run(context)
+
+        if synthesize_actions:
+            DeterministicCorrectiveActionStage().run(context)
 
         AcousticHypothesisExperimentGenerationStage().run(
             context,
