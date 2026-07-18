@@ -2,7 +2,11 @@ import argparse
 from pathlib import Path
 
 from acousticbrain.brain import AcousticBrain
-from acousticbrain.report import AcousticObservationConsoleReporter, ConsoleReporter
+from acousticbrain.report import (
+    AcousticObservationConsoleReporter,
+    ConsoleReporter,
+    DeterministicAcousticReasoningConsoleReporter,
+)
 from acousticbrain.models import (
     CampaignReferenceDeclarationStatus,
     ListeningPositionCampaignInstanceStatus,
@@ -44,6 +48,11 @@ def create_parser():
         action="store_true",
         help="print the deterministic acoustic observation report",
     )
+    parser.add_argument(
+        "--reasoning",
+        action="store_true",
+        help="print the deterministic acoustic reasoning report",
+    )
     return parser
 
 
@@ -81,12 +90,17 @@ def run(
     campaign_instance_analysis=None,
     reference_qualification_declaration_analysis=None,
     observations=False,
+    reasoning=False,
     brain=None,
     reporter=None,
 ):
     brain = brain or AcousticBrain()
     reporter = reporter or (
-        AcousticObservationConsoleReporter() if observations else ConsoleReporter()
+        DeterministicAcousticReasoningConsoleReporter()
+        if reasoning
+        else AcousticObservationConsoleReporter()
+        if observations
+        else ConsoleReporter()
     )
     arguments = dict(
         measurement_root=measurements_root,
@@ -95,6 +109,8 @@ def run(
     )
     if observations:
         arguments["synthesize_observations"] = True
+    if reasoning:
+        arguments["synthesize_reasoning"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
@@ -174,6 +190,7 @@ def main(
             reference_qualification_declaration_analysis
         ),
         observations=arguments.observations,
+        reasoning=arguments.reasoning,
         brain=brain,
         reporter=reporter,
     )

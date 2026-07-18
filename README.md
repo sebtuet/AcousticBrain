@@ -67,3 +67,14 @@ provenance into immutable descriptive observations. It contains no
 recommendation, corrective action, hypothesis or experiment. Without the
 option, the historical report is unchanged. See
 `docs/DETERMINISTIC_ACOUSTIC_OBSERVATIONS.md` for the contract.
+
+To explain existing deterministic hypothesis statuses from PR-054 observations:
+
+```bash
+python main.py --measurements-root /path/to/my-campaign --reasoning
+```
+
+The dedicated report exposes structured premises, inference steps, conclusions,
+contradictions, limitations and provenance. It creates no new hypothesis,
+recommendation, action or experiment. See
+`docs/DETERMINISTIC_ACOUSTIC_REASONING.md` for the scientific contract.

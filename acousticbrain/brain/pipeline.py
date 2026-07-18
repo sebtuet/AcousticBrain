@@ -74,6 +74,9 @@ from .stages.campaign_reference_qualification import (
     CampaignReferenceQualificationStage,
 )
 from .stages.acoustic_observation import AcousticObservationStage
+from .stages.deterministic_acoustic_reasoning import (
+    DeterministicAcousticReasoningStage,
+)
 
 from .builders.report import ReportBuilder
 
@@ -135,8 +138,11 @@ class BrainPipeline:
         campaign_reference_qualification_declaration_analysis=None,
         longitudinal_experimental_learning_analysis=None,
         synthesize_observations=False,
+        synthesize_reasoning=False,
         return_context=False,
     ):
+
+        synthesize_observations = synthesize_observations or synthesize_reasoning
 
         #
         # Mesure principale
@@ -283,6 +289,9 @@ class BrainPipeline:
         AcousticReasoningStage().run(
             context,
         )
+
+        if synthesize_reasoning:
+            DeterministicAcousticReasoningStage().run(context)
 
         AcousticHypothesisExperimentGenerationStage().run(
             context,
