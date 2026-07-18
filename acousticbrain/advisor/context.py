@@ -7,14 +7,21 @@ from acousticbrain.models import (
     AdvisorDetailLevel,
     AdvisorDeterministicContext,
     AdvisorRequest,
+    AdvisorResponseLanguage,
 )
 
 
 class AdvisorContextBuilder:
-    SCHEMA_VERSION = "advisor-context.v1"
-    REQUEST_SCHEMA_VERSION = "advisor-request.v1"
+    SCHEMA_VERSION = "advisor-context.v2"
+    REQUEST_SCHEMA_VERSION = "advisor-request.v2"
 
-    def build(self, report, *, selected_object_ids=()):
+    def build(
+        self,
+        report,
+        *,
+        selected_object_ids=(),
+        expected_response_language=AdvisorResponseLanguage.EN,
+    ):
         objects = self._all_objects(report)
         by_id = {value.object_id: value for value in objects}
         requested = tuple(selected_object_ids) or tuple(
@@ -36,6 +43,7 @@ class AdvisorContextBuilder:
                         pending.append(reference)
             objects = tuple(value for value in objects if value.object_id in included)
         blocking, contradictions, limitations = self._preserved(objects)
+        requirements = self._requirements(objects)
         return AdvisorDeterministicContext(
             schema_version=self.SCHEMA_VERSION,
             project_id=str(report.project_name),
@@ -43,6 +51,12 @@ class AdvisorContextBuilder:
             blocking_factors=blocking,
             contradictions=contradictions,
             limitations=limitations,
+            expected_response_language=expected_response_language,
+            allowed_object_ids=tuple(value.object_id for value in objects),
+            object_labels=tuple(
+                (value.object_id, self._label(value)) for value in objects
+            ),
+            **requirements,
         )
 
     def request(
@@ -54,8 +68,13 @@ class AdvisorContextBuilder:
         detail_level,
         provider_configuration_reference,
         selected_object_ids=(),
+        expected_response_language=AdvisorResponseLanguage.EN,
     ):
-        context = self.build(report, selected_object_ids=selected_object_ids)
+        context = self.build(
+            report,
+            selected_object_ids=selected_object_ids,
+            expected_response_language=expected_response_language,
+        )
         identity = json.dumps(
             {
                 "question": question,
@@ -64,6 +83,7 @@ class AdvisorContextBuilder:
                 "project": context.project_id,
                 "objects": [value.object_id for value in context.objects],
                 "provider": provider_configuration_reference,
+                "language": expected_response_language.value,
             },
             ensure_ascii=False,
             sort_keys=True,
@@ -98,6 +118,13 @@ class AdvisorContextBuilder:
             "blocking_factors": list(context.blocking_factors),
             "contradictions": list(context.contradictions),
             "limitations": list(context.limitations),
+            "expected_response_language": context.expected_response_language.value,
+            "required_reasoning_ids": list(context.required_reasoning_ids),
+            "required_blocking_factor_ids": list(context.required_blocking_factor_ids),
+            "required_ready_plan_ids": list(context.required_ready_plan_ids),
+            "required_blocked_plan_ids": list(context.required_blocked_plan_ids),
+            "allowed_object_ids": list(context.allowed_object_ids),
+            "object_labels": [list(value) for value in context.object_labels],
         }
         return json.dumps(
             payload,
@@ -179,3 +206,37 @@ class AdvisorContextBuilder:
         return tuple(dict.fromkeys(blocking)), tuple(dict.fromkeys(contradictions)), tuple(
             dict.fromkeys(limitations)
         )
+
+    @staticmethod
+    def _requirements(objects):
+        reasoning = []
+        blocking = []
+        ready = []
+        blocked = []
+        for value in objects:
+            data = json.loads(value.canonical_json)
+            if value.object_type == "REASONING":
+                reasoning.append(value.object_id)
+            if value.object_type == "EVIDENCE_WEIGHT":
+                blocking.extend(
+                    item["factor_id"] for item in data.get("blocking_factors", ())
+                )
+            if value.object_type == "EVIDENCE_ACQUISITION_PLAN":
+                status = data.get("status")
+                if status not in ("READY", "BLOCKED"):
+                    raise ValueError(
+                        f"Advisor plan status is invalid: {value.object_id}:{status}"
+                    )
+                target = ready if status == "READY" else blocked
+                target.append(value.object_id)
+        return {
+            "required_reasoning_ids": tuple(dict.fromkeys(reasoning)),
+            "required_blocking_factor_ids": tuple(dict.fromkeys(blocking)),
+            "required_ready_plan_ids": tuple(dict.fromkeys(ready)),
+            "required_blocked_plan_ids": tuple(dict.fromkeys(blocked)),
+        }
+
+    @staticmethod
+    def _label(value):
+        data = json.loads(value.canonical_json)
+        return str(data.get("title") or data.get("objective") or value.object_id)

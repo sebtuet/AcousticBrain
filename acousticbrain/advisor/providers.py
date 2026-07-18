@@ -4,7 +4,11 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from urllib import error, request as urlrequest
 
-from acousticbrain.models import AdvisorClaim, AdvisorProviderOutput
+from acousticbrain.models import (
+    AdvisorClaim,
+    AdvisorProviderOutput,
+    AdvisorResponseLanguage,
+)
 
 from .errors import (
     AdvisorConfigurationError,
@@ -109,6 +113,11 @@ class MockAdvisorProvider(AdvisorProvider):
             blocking_factors=context.blocking_factors,
             contradictions=context.contradictions,
             limitations=context.limitations,
+            covered_reasoning_ids=context.required_reasoning_ids,
+            covered_blocking_factor_ids=context.required_blocking_factor_ids,
+            covered_ready_plan_ids=context.required_ready_plan_ids,
+            covered_blocked_plan_ids=context.required_blocked_plan_ids,
+            response_language=context.expected_response_language,
         )
         if self.mode is MockAdvisorMode.HALLUCINATION:
             return AdvisorProviderOutput(
@@ -159,42 +168,50 @@ class MockAdvisorProvider(AdvisorProvider):
     @staticmethod
     def _answer(request):
         context = request.deterministic_context
-        if not context.objects:
-            return "The deterministic engine does not provide information for this question."
-        plans = tuple(
-            value.object_id
-            for value in context.objects
-            if value.object_type == "EVIDENCE_ACQUISITION_PLAN"
+        labels = dict(context.object_labels)
+
+        def listed(values, empty):
+            return "; ".join(
+                f"{labels.get(value, value)} [{value}]" for value in values
+            ) or empty
+
+        if context.expected_response_language is AdvisorResponseLanguage.FR:
+            prefix = (
+                "Les prochains plans déterministes d’acquisition de preuves sont décrits ci-dessous. "
+                if context.required_ready_plan_ids or context.required_blocked_plan_ids
+                else ""
+            )
+            return (
+                prefix
+                + "Résumé des problèmes : "
+                + listed(context.required_reasoning_ids, "aucun problème déterministe")
+                + ". Facteurs de blocage préservés : "
+                + listed(context.required_blocking_factor_ids, "aucun")
+                + ". Plans READY — tests prêts : "
+                + listed(context.required_ready_plan_ids, "aucun")
+                + ". Plans BLOCKED — tests bloqués : "
+                + listed(context.required_blocked_plan_ids, "aucun")
+                + ". Ces plans acquièrent des preuves et ne rendent aucune action "
+                "corrective bloquée applicable."
+            )
+        prefix = (
+            "The next deterministic evidence acquisition plans are described below. "
+            if context.required_ready_plan_ids or context.required_blocked_plan_ids
+            else ""
         )
-        if plans:
-            if any(
-                value in request.question.casefold()
-                for value in ("quel", "pourquoi", "prochain", "faut-il")
-            ):
-                return (
-                    "Les prochains plans déterministes d’acquisition de preuves sont : "
-                    + "; ".join(plans)
-                    + ". Ils servent uniquement à acquérir des preuves et ne rendent "
-                    "aucune action corrective bloquée applicable. Facteurs de blocage "
-                    "préservés : "
-                    + "; ".join(context.blocking_factors)
-                    + "."
-                )
-            return (
-                "The next deterministic evidence acquisition plans are: "
-                + "; ".join(plans)
-                + ". They acquire evidence only and do not make a blocked corrective "
-                "action applicable. Preserved blocking factors: "
-                + "; ".join(context.blocking_factors)
-                + "."
-            )
-        if context.blocking_factors:
-            return (
-                "The deterministic evidence remains subject to these blocking factors: "
-                + "; ".join(context.blocking_factors)
-                + ". No blocked action is presented as applicable."
-            )
-        return "The supplied deterministic objects contain no preserved blocking factor."
+        return (
+            prefix
+            + "Problem summary: "
+            + listed(context.required_reasoning_ids, "no deterministic problem")
+            + ". Preserved blocking factors: "
+            + listed(context.required_blocking_factor_ids, "none")
+            + ". READY plans — tests ready to run: "
+            + listed(context.required_ready_plan_ids, "none")
+            + ". BLOCKED plans — blocked tests: "
+            + listed(context.required_blocked_plan_ids, "none")
+            + ". These plans acquire evidence and no blocked action is presented "
+            "as applicable."
+        )
 
     @staticmethod
     def _blocked_actions(context):
@@ -234,6 +251,9 @@ class OllamaAdvisorProvider(_HttpAdvisorProvider):
         self._require_configuration()
         grounding_values = self._required_grounding_values(request)
         response_schema = provider_output_json_schema(grounding_values)
+        response_schema["properties"]["answer"]["description"] = (
+            self._answer_description(request)
+        )
         response = self.http_client.post_json(
             self.endpoint.rstrip("/") + "/api/generate",
             headers={"Content-Type": "application/json"},
@@ -270,21 +290,66 @@ class OllamaAdvisorProvider(_HttpAdvisorProvider):
             "audience": request.requested_audience.value,
             "detail": request.requested_detail_level.value,
             "deterministic_context": json.loads(context_projection),
+            "required_response_language": (
+                request.deterministic_context.expected_response_language.value
+            ),
         }
         if response_schema is not None:
             payload["required_response_schema"] = response_schema
             payload["required_grounding_values"] = grounding_values
+            context = request.deterministic_context
+            payload["answer_contract"] = {
+                "language": context.expected_response_language.value,
+                "required_sections": [
+                    "PROBLEMS",
+                    "BLOCKING_FACTORS",
+                    "READY",
+                    "BLOCKED",
+                ],
+                "reasoning_ids": list(context.required_reasoning_ids),
+                "blocking_factor_ids": list(context.required_blocking_factor_ids),
+                "ready_plan_ids": list(context.required_ready_plan_ids),
+                "blocked_plan_ids": list(context.required_blocked_plan_ids),
+                "object_labels": dict(context.object_labels),
+                "mandatory_outline": (
+                    "PROBLEMS: cite the supplied reasoning conclusions; "
+                    "BLOCKING_FACTORS: explain the supplied blocking factors; "
+                    "READY: list each ready_plan_id exactly; "
+                    "BLOCKED: list each blocked_plan_id exactly."
+                ),
+            }
             payload["response_rules"] = (
                 "Copy required_grounding_values exactly into the corresponding "
                 "response fields. Do not shorten, translate, reorder or extend "
                 "those arrays. Use the exact supplied claim object. Write answer "
                 "using only those preserved facts and object ids. Do not introduce "
-                "numbers, measurements, scores, actions or scientific facts."
+                "numbers, measurements, scores, actions or scientific facts. "
+                "Write a genuine user synthesis in required_response_language. "
+                "Cover the problem summary and blocking factors, and when plans "
+                "exist use the literal headings READY and BLOCKED and list every "
+                "corresponding plan id. The answer is invalid if any of the four "
+                "literal headings PROBLEMS, BLOCKING_FACTORS, READY or BLOCKED is "
+                "absent, or if any supplied plan id is absent. Never return a "
+                "generic metadata sentence."
             )
         return json.dumps(
             payload,
             ensure_ascii=False,
             sort_keys=True,
+        )
+
+    @staticmethod
+    def _answer_description(request):
+        context = request.deterministic_context
+        return (
+            "User-facing synthesis in "
+            f"{context.expected_response_language.value}. It must include explicit "
+            "PROBLEMS and BLOCKING_FACTORS sections, plus literal READY and BLOCKED "
+            "sections. It must cite every applicable plan id: "
+            + ", ".join(
+                context.required_ready_plan_ids + context.required_blocked_plan_ids
+            )
+            + ". Do not copy the claim text or return metadata."
         )
 
     @staticmethod
@@ -320,6 +385,11 @@ class OllamaAdvisorProvider(_HttpAdvisorProvider):
             "limitations": list(context.limitations),
             "proposed_action_ids": [],
             "introduced_scores": [],
+            "covered_reasoning_ids": list(context.required_reasoning_ids),
+            "covered_blocking_factor_ids": list(context.required_blocking_factor_ids),
+            "covered_ready_plan_ids": list(context.required_ready_plan_ids),
+            "covered_blocked_plan_ids": list(context.required_blocked_plan_ids),
+            "response_language": context.expected_response_language.value,
         }
 
 
@@ -396,6 +466,11 @@ def parse_provider_output(raw):
         "limitations",
         "proposed_action_ids",
         "introduced_scores",
+        "covered_reasoning_ids",
+        "covered_blocking_factor_ids",
+        "covered_ready_plan_ids",
+        "covered_blocked_plan_ids",
+        "response_language",
     }
     if not isinstance(data, dict) or set(data) != required:
         raise AdvisorResponseSchemaError("Advisor output schema fields are invalid.")
@@ -426,6 +501,11 @@ def parse_provider_output(raw):
             limitations=tuple(data["limitations"]),
             proposed_action_ids=tuple(data["proposed_action_ids"]),
             introduced_scores=tuple(data["introduced_scores"]),
+            covered_reasoning_ids=tuple(data["covered_reasoning_ids"]),
+            covered_blocking_factor_ids=tuple(data["covered_blocking_factor_ids"]),
+            covered_ready_plan_ids=tuple(data["covered_ready_plan_ids"]),
+            covered_blocked_plan_ids=tuple(data["covered_blocked_plan_ids"]),
+            response_language=AdvisorResponseLanguage(data["response_language"]),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise AdvisorResponseSchemaError("Advisor output structure is invalid.") from exc
@@ -489,6 +569,11 @@ def provider_output_json_schema(required_grounding_values=None):
             "limitations",
             "proposed_action_ids",
             "introduced_scores",
+            "covered_reasoning_ids",
+            "covered_blocking_factor_ids",
+            "covered_ready_plan_ids",
+            "covered_blocked_plan_ids",
+            "response_language",
         ],
         "properties": {
             "answer": {"type": "string"},
@@ -499,6 +584,11 @@ def provider_output_json_schema(required_grounding_values=None):
             "limitations": string_array,
             "proposed_action_ids": string_array,
             "introduced_scores": string_array,
+            "covered_reasoning_ids": string_array,
+            "covered_blocking_factor_ids": string_array,
+            "covered_ready_plan_ids": string_array,
+            "covered_blocked_plan_ids": string_array,
+            "response_language": {"type": "string", "enum": ["fr", "en"]},
         },
     }
     if required_grounding_values is not None:

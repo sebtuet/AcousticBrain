@@ -49,10 +49,13 @@ from .advisor import (
     AdvisorClaim,
     AdvisorContextObject,
     AdvisorDetailLevel,
+    AdvisorDimensionStatus,
     AdvisorDeterministicContext,
     AdvisorProviderOutput,
     AdvisorRequest,
     AdvisorResponse,
+    AdvisorResponseLanguage,
+    AdvisorResponseSource,
     AdvisorValidationStatus,
 )
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind

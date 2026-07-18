@@ -26,6 +26,7 @@ from acousticbrain.models import (
     AdvisorAudience,
     AdvisorClaim,
     AdvisorDetailLevel,
+    AdvisorResponseSource,
     AdvisorValidationStatus,
 )
 from acousticbrain.report import Report
@@ -172,7 +173,7 @@ def test_compliant_mock_preserves_block_and_grounding():
     response = advise()
 
     assert response.validation_status is AdvisorValidationStatus.VALID
-    assert "MISSING_PARAMETERS" in response.answer_text
+    assert "blocking.action_a.missing" in response.answer_text
     assert response.preserved_blocking_factors
     assert response.preserved_contradictions == ("counter.a",)
     assert response.referenced_evidence_weight_ids == ("EVIDENCE_WEIGHT_ACTION_A",)
@@ -200,7 +201,8 @@ def test_invalid_mock_output_is_intercepted_with_deterministic_safety_response(
 
     assert first == second
     assert first.validation_status is AdvisorValidationStatus.INVALID
-    assert first.answer_text.startswith("The advisor could not produce")
+    assert first.answer_text.startswith("Local safety response")
+    assert first.response_source is AdvisorResponseSource.LOCAL_SAFETY_RESPONSE
     assert any(value.startswith(violation) for value in first.unsupported_claims)
     assert first.preserved_blocking_factors
     assert first.preserved_contradictions
@@ -227,7 +229,7 @@ def test_repeated_identical_violations_still_return_one_safety_violation():
 
     assert response.validation_status is AdvisorValidationStatus.INVALID
     assert len(response.unsupported_claims) == len(set(response.unsupported_claims))
-    assert response.answer_text == AdvisorResponseValidator.SAFETY_ANSWER
+    assert response.answer_text.startswith("Local safety response")
 
 
 def test_mock_failure_and_timeout_remain_typed_provider_errors():
@@ -247,7 +249,7 @@ def test_question_outside_empty_context_returns_grounded_unavailable_answer():
     )
 
     assert response.validation_status is AdvisorValidationStatus.VALID
-    assert "does not provide information" in response.answer_text
+    assert "no deterministic problem" in response.answer_text
     assert response.referenced_object_ids == ()
 
 
@@ -271,7 +273,10 @@ class RaisingHttpClient:
 
 def provider_json():
     return {
-        "answer": "Grounded answer.",
+        "answer": (
+            "Problem summary: REASONING_A. Preserved blocking factor: "
+            "blocking.action_a.missing. No blocked action is applicable."
+        ),
         "referenced_object_ids": [
             "OBSERVATION_A",
             "REASONING_A",
@@ -304,6 +309,11 @@ def provider_json():
         ],
         "proposed_action_ids": [],
         "introduced_scores": [],
+        "covered_reasoning_ids": ["REASONING_A"],
+        "covered_blocking_factor_ids": ["blocking.action_a.missing"],
+        "covered_ready_plan_ids": [],
+        "covered_blocked_plan_ids": [],
+        "response_language": "en",
     }
 
 
@@ -329,6 +339,15 @@ def test_ollama_adapter_uses_injected_http_client_without_real_network():
     prompt = __import__("json").loads(payload["prompt"])
     grounding = prompt["required_grounding_values"]
     schema = provider_output_json_schema(grounding)
+    schema["properties"]["answer"]["description"] = provider._answer_description(
+        AdvisorContextBuilder().request(
+            deterministic_report(),
+            question="Why?",
+            audience=AdvisorAudience.DEVELOPER,
+            detail_level=AdvisorDetailLevel.TECHNICAL,
+            provider_configuration_reference="advisor-provider.ollama",
+        )
+    )
     assert url == "http://ollama.test/api/generate"
     assert payload["format"] == schema
     assert payload["format"] != "json"
@@ -362,6 +381,11 @@ def test_provider_output_schema_is_stable_and_requires_the_canonical_fields():
         "limitations",
         "proposed_action_ids",
         "introduced_scores",
+        "covered_reasoning_ids",
+        "covered_blocking_factor_ids",
+        "covered_ready_plan_ids",
+        "covered_blocked_plan_ids",
+        "response_language",
     }
     first = provider_output_json_schema()
     second = provider_output_json_schema()
