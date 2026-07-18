@@ -59,6 +59,7 @@ from .deterministic_corrective_action_presenter import (
 from .evidence_weighting_presenter import (
     PresentedDeterministicEvidenceWeightingReport,
 )
+from .evidence_acquisition_presenter import PresentedEvidenceAcquisitionPlanReport
 
 
 @dataclass
@@ -129,6 +130,8 @@ class Report:
     deterministic_evidence_weighting: (
         PresentedDeterministicEvidenceWeightingReport | None
     ) = None
+
+    evidence_acquisition_plans: PresentedEvidenceAcquisitionPlanReport | None = None
 
     advisor_response: AdvisorResponse | None = None
 

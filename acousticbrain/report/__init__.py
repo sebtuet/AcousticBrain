@@ -113,6 +113,12 @@ from .evidence_weighting_console import (
     DeterministicEvidenceWeightingConsoleReporter,
 )
 from .advisor_console import AdvisorConsoleReporter
+from .evidence_acquisition_presenter import (
+    EvidenceAcquisitionPlanPresenter,
+    PresentedEvidenceAcquisitionPlan,
+    PresentedEvidenceAcquisitionPlanReport,
+)
+from .evidence_acquisition_console import EvidenceAcquisitionPlanConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,

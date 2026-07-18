@@ -20,6 +20,7 @@ from acousticbrain.report import (
     DeterministicAcousticReasoningPresenter,
     DeterministicCorrectiveActionPresenter,
     DeterministicEvidenceWeightingPresenter,
+    EvidenceAcquisitionPlanPresenter,
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
@@ -44,6 +45,7 @@ from .stages.deterministic_corrective_action import (
     DeterministicCorrectiveActionStage,
 )
 from .stages.evidence_weighting import DeterministicEvidenceWeightingStage
+from .stages.evidence_acquisition import EvidenceAcquisitionPlanningStage
 from .stages.experiment_planning import ExperimentPlanningStage
 from .stages.traceability import TraceabilityStage
 from acousticbrain.models import ListeningPositionCampaignInstanceStatus
@@ -72,8 +74,10 @@ class AcousticBrain:
         synthesize_reasoning=False,
         synthesize_actions=False,
         synthesize_weighting=False,
+        synthesize_evidence_acquisition=False,
     ):
 
+        synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
         synthesize_actions = synthesize_actions or synthesize_weighting
         synthesize_reasoning = synthesize_reasoning or synthesize_actions
         synthesize_observations = synthesize_observations or synthesize_reasoning
@@ -128,6 +132,7 @@ class AcousticBrain:
                     synthesize_reasoning=synthesize_reasoning,
                     synthesize_actions=synthesize_actions,
                     synthesize_weighting=synthesize_weighting,
+                    synthesize_evidence_acquisition=synthesize_evidence_acquisition,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -168,6 +173,7 @@ class AcousticBrain:
             synthesize_reasoning=synthesize_reasoning,
             synthesize_actions=synthesize_actions,
             synthesize_weighting=synthesize_weighting,
+            synthesize_evidence_acquisition=synthesize_evidence_acquisition,
         )
 
     def _analyze_experiments(
@@ -185,6 +191,7 @@ class AcousticBrain:
         synthesize_reasoning,
         synthesize_actions,
         synthesize_weighting,
+        synthesize_evidence_acquisition,
     ):
         contexts = {}
         current_report = None
@@ -209,6 +216,7 @@ class AcousticBrain:
                 synthesize_reasoning=synthesize_reasoning,
                 synthesize_actions=synthesize_actions,
                 synthesize_weighting=synthesize_weighting,
+                synthesize_evidence_acquisition=synthesize_evidence_acquisition,
                 return_context=True,
             )
             contexts[imported.descriptor.experiment_id] = context
@@ -297,6 +305,8 @@ class AcousticBrain:
             DeterministicCorrectiveActionStage().run(current_context)
         if synthesize_weighting:
             DeterministicEvidenceWeightingStage().run(current_context)
+        if synthesize_evidence_acquisition:
+            EvidenceAcquisitionPlanningStage().run(current_context)
         if plan_experiments and current is not None:
             ExperimentPlanningStage().run(
                 current_context,
@@ -332,6 +342,9 @@ class AcousticBrain:
         )
         current_report.deterministic_evidence_weighting = (
             DeterministicEvidenceWeightingPresenter().present(current_context)
+        )
+        current_report.evidence_acquisition_plans = (
+            EvidenceAcquisitionPlanPresenter().present(current_context)
         )
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)

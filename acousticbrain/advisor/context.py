@@ -18,7 +18,9 @@ class AdvisorContextBuilder:
         objects = self._all_objects(report)
         by_id = {value.object_id: value for value in objects}
         requested = tuple(selected_object_ids) or tuple(
-            value.object_id for value in objects if value.object_type == "EVIDENCE_WEIGHT"
+            value.object_id
+            for value in objects
+            if value.object_type in ("EVIDENCE_WEIGHT", "EVIDENCE_ACQUISITION_PLAN")
         )
         unknown = tuple(value for value in requested if value not in by_id)
         if unknown:
@@ -111,6 +113,12 @@ class AdvisorContextBuilder:
             ("REASONING", report.deterministic_acoustic_reasoning, "reasonings", "reasoning_id"),
             ("ACTION", report.deterministic_corrective_actions, "actions", "action_id"),
             ("EVIDENCE_WEIGHT", report.deterministic_evidence_weighting, "weights", "weight_id"),
+            (
+                "EVIDENCE_ACQUISITION_PLAN",
+                report.evidence_acquisition_plans,
+                "plans",
+                "plan_id",
+            ),
         )
         for object_type, container, attribute, identifier in collections:
             for item in getattr(container, attribute, ()) if container is not None else ():
@@ -142,10 +150,17 @@ class AdvisorContextBuilder:
                 "reasoning_references",
                 "observation_references",
             ),
+            "EVIDENCE_ACQUISITION_PLAN": (
+                "evidence_weight_id",
+                "corrective_action_id",
+                "reasoning_id",
+            ),
         }[object_type]
-        return tuple(
-            dict.fromkeys(value for key in keys for value in data.get(key, ()))
-        )
+        references = []
+        for key in keys:
+            value = data.get(key, ())
+            references.extend(value if isinstance(value, (list, tuple)) else (value,))
+        return tuple(dict.fromkeys(references))
 
     @staticmethod
     def _preserved(objects):
