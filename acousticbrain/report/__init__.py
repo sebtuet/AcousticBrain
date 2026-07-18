@@ -4,6 +4,13 @@ from .acoustic_observation_presenter import (
     PresentedAcousticObservation,
     PresentedAcousticObservationReport,
 )
+from .deterministic_acoustic_reasoning_presenter import (
+    DeterministicAcousticReasoningPresenter,
+    PresentedDeterministicAcousticReasoning,
+    PresentedDeterministicAcousticReasoningReport,
+    PresentedInferenceStep,
+    PresentedReasoningPremise,
+)
 from .acoustic_hypothesis_experiment_generation_presenter import (
     AcousticHypothesisExperimentGenerationPresenter,
     PresentedAcousticHypothesisExperimentGeneration,
@@ -83,6 +90,9 @@ from .guided_room_description_presenter import (
 )
 from .console import ConsoleReporter
 from .acoustic_observation_console import AcousticObservationConsoleReporter
+from .deterministic_acoustic_reasoning_console import (
+    DeterministicAcousticReasoningConsoleReporter,
+)
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,

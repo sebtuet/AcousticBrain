@@ -17,6 +17,7 @@ from acousticbrain.report import (
     ListeningPositionCampaignInstancePresenter,
     CampaignReferenceQualificationPresenter,
     AcousticObservationPresenter,
+    DeterministicAcousticReasoningPresenter,
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
@@ -34,6 +35,9 @@ from .stages.campaign_reference_qualification import (
     CampaignReferenceQualificationStage,
 )
 from .stages.acoustic_observation import AcousticObservationStage
+from .stages.deterministic_acoustic_reasoning import (
+    DeterministicAcousticReasoningStage,
+)
 from .stages.experiment_planning import ExperimentPlanningStage
 from .stages.traceability import TraceabilityStage
 from acousticbrain.models import ListeningPositionCampaignInstanceStatus
@@ -59,7 +63,10 @@ class AcousticBrain:
         listening_position_campaign_instance_analysis=None,
         campaign_reference_qualification_declaration_analysis=None,
         synthesize_observations=False,
+        synthesize_reasoning=False,
     ):
+
+        synthesize_observations = synthesize_observations or synthesize_reasoning
 
         if (
             listening_position_campaign_instance_analysis is not None
@@ -108,6 +115,7 @@ class AcousticBrain:
                         campaign_reference_qualification_declaration_analysis
                     ),
                     synthesize_observations=synthesize_observations,
+                    synthesize_reasoning=synthesize_reasoning,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -145,6 +153,7 @@ class AcousticBrain:
                 campaign_reference_qualification_declaration_analysis
             ),
             synthesize_observations=synthesize_observations,
+            synthesize_reasoning=synthesize_reasoning,
         )
 
     def _analyze_experiments(
@@ -159,6 +168,7 @@ class AcousticBrain:
         listening_position_campaign_instance_analysis,
         campaign_reference_qualification_declaration_analysis,
         synthesize_observations,
+        synthesize_reasoning,
     ):
         contexts = {}
         current_report = None
@@ -180,6 +190,7 @@ class AcousticBrain:
                     campaign_reference_qualification_declaration_analysis
                 ),
                 synthesize_observations=synthesize_observations,
+                synthesize_reasoning=synthesize_reasoning,
                 return_context=True,
             )
             contexts[imported.descriptor.experiment_id] = context
@@ -248,6 +259,7 @@ class AcousticBrain:
                     campaign_reference_qualification_declaration_analysis
                 ),
                 synthesize_observations=synthesize_observations,
+                synthesize_reasoning=synthesize_reasoning,
                 longitudinal_experimental_learning_analysis=learning_analysis,
                 return_context=True,
             )
@@ -259,6 +271,8 @@ class AcousticBrain:
         ListeningPositionCampaignPlanStage().run(current_context)
         if synthesize_observations:
             AcousticObservationStage().run(current_context)
+        if synthesize_reasoning:
+            DeterministicAcousticReasoningStage().run(current_context)
         if plan_experiments and current is not None:
             ExperimentPlanningStage().run(
                 current_context,
@@ -285,6 +299,9 @@ class AcousticBrain:
         )
         current_report.acoustic_observations = AcousticObservationPresenter().present(
             current_context
+        )
+        current_report.deterministic_acoustic_reasoning = (
+            DeterministicAcousticReasoningPresenter().present(current_context)
         )
         current_report.experiment_comparison = (
             ExperimentComparisonPresenter().present(current_context)

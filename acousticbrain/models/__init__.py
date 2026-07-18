@@ -4,6 +4,16 @@ from .acoustic_observation import (
     AcousticObservationCategory,
     AcousticObservationSynthesis,
 )
+from .deterministic_acoustic_reasoning import (
+    DeterministicAcousticReasoning,
+    DeterministicAcousticReasoningSynthesis,
+    DeterministicInferenceStep,
+    DeterministicReasoningCategory,
+    DeterministicReasoningConclusion,
+    DeterministicReasoningPremise,
+    ReasoningPremiseRole,
+    ReasoningPremiseSourceType,
+)
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,

@@ -50,6 +50,9 @@ from .campaign_reference_qualification_presenter import (
     PresentedCampaignReferenceQualification,
 )
 from .acoustic_observation_presenter import PresentedAcousticObservationReport
+from .deterministic_acoustic_reasoning_presenter import (
+    PresentedDeterministicAcousticReasoningReport,
+)
 
 
 @dataclass
@@ -108,6 +111,10 @@ class Report:
     ) = None
 
     acoustic_observations: PresentedAcousticObservationReport | None = None
+
+    deterministic_acoustic_reasoning: (
+        PresentedDeterministicAcousticReasoningReport | None
+    ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 
