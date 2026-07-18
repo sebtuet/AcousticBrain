@@ -36,6 +36,17 @@ from .evidence_weighting import (
     WeightedObjectReference,
     WeightedObjectType,
 )
+from .advisor import (
+    AdvisorAudience,
+    AdvisorClaim,
+    AdvisorContextObject,
+    AdvisorDetailLevel,
+    AdvisorDeterministicContext,
+    AdvisorProviderOutput,
+    AdvisorRequest,
+    AdvisorResponse,
+    AdvisorValidationStatus,
+)
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,

@@ -1,6 +1,15 @@
 import argparse
+import os
 from pathlib import Path
 
+from acousticbrain.advisor import (
+    AdvisorConfigurationError,
+    AdvisorError,
+    AdvisorService,
+    MockAdvisorProvider,
+    OllamaAdvisorProvider,
+    OpenAIAdvisorProvider,
+)
 from acousticbrain.brain import AcousticBrain
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
@@ -8,8 +17,11 @@ from acousticbrain.report import (
     DeterministicAcousticReasoningConsoleReporter,
     DeterministicCorrectiveActionConsoleReporter,
     DeterministicEvidenceWeightingConsoleReporter,
+    AdvisorConsoleReporter,
 )
 from acousticbrain.models import (
+    AdvisorAudience,
+    AdvisorDetailLevel,
     CampaignReferenceDeclarationStatus,
     ListeningPositionCampaignInstanceStatus,
 )
@@ -65,6 +77,23 @@ def create_parser():
         action="store_true",
         help="print the deterministic multidimensional evidence weighting report",
     )
+    parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
+    parser.add_argument("--question", default=None, help="question for the enabled advisor")
+    parser.add_argument(
+        "--advisor-provider",
+        choices=("mock", "ollama", "openai"),
+        default="mock",
+    )
+    parser.add_argument(
+        "--advisor-audience",
+        choices=tuple(value.value for value in AdvisorAudience),
+        default=AdvisorAudience.GENERAL.value,
+    )
+    parser.add_argument(
+        "--advisor-detail",
+        choices=tuple(value.value for value in AdvisorDetailLevel),
+        default=AdvisorDetailLevel.STANDARD.value,
+    )
     return parser
 
 
@@ -105,12 +134,20 @@ def run(
     reasoning=False,
     actions=False,
     weighting=False,
+    advisor=False,
+    question=None,
+    advisor_audience=AdvisorAudience.GENERAL,
+    advisor_detail_level=AdvisorDetailLevel.STANDARD,
+    advisor_provider=None,
+    advisor_service=None,
     brain=None,
     reporter=None,
 ):
     brain = brain or AcousticBrain()
     reporter = reporter or (
-        DeterministicEvidenceWeightingConsoleReporter()
+        AdvisorConsoleReporter()
+        if advisor
+        else DeterministicEvidenceWeightingConsoleReporter()
         if weighting
         else DeterministicCorrectiveActionConsoleReporter()
         if actions
@@ -133,6 +170,8 @@ def run(
         arguments["synthesize_actions"] = True
     if weighting:
         arguments["synthesize_weighting"] = True
+    if advisor:
+        arguments["synthesize_weighting"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
@@ -142,6 +181,14 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
+    if advisor:
+        report.advisor_response = (advisor_service or AdvisorService()).advise(
+            report,
+            question=question,
+            audience=advisor_audience,
+            detail_level=advisor_detail_level,
+            provider=advisor_provider,
+        )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
     reporter.print(report)
@@ -155,11 +202,17 @@ def main(
     reporter=None,
     campaign_loader=None,
     reference_qualification_loader=None,
+    advisor_provider_instance=None,
+    advisor_service=None,
 ):
     parser = create_parser()
     arguments = parser.parse_args(argv)
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.question is not None and not arguments.advisor:
+            raise ValueError("--question requires --advisor.")
+        if arguments.advisor and not arguments.question:
+            raise ValueError("--advisor requires --question.")
         campaign_instance_analysis = None
         reference_qualification_declaration_analysis = None
         if arguments.listening_position_campaign is not None:
@@ -205,20 +258,62 @@ def main(
                 raise ValueError(details)
     except ValueError as error:
         parser.error(str(error))
-    run(
-        measurements_root,
-        campaign_instance_analysis=campaign_instance_analysis,
-        reference_qualification_declaration_analysis=(
-            reference_qualification_declaration_analysis
-        ),
-        observations=arguments.observations,
-        reasoning=arguments.reasoning,
-        actions=arguments.actions,
-        weighting=arguments.weighting,
-        brain=brain,
-        reporter=reporter,
-    )
+    try:
+        run(
+            measurements_root,
+            campaign_instance_analysis=campaign_instance_analysis,
+            reference_qualification_declaration_analysis=(
+                reference_qualification_declaration_analysis
+            ),
+            observations=arguments.observations,
+            reasoning=arguments.reasoning,
+            actions=arguments.actions,
+            weighting=arguments.weighting,
+            advisor=arguments.advisor,
+            question=arguments.question,
+            advisor_audience=AdvisorAudience(arguments.advisor_audience),
+            advisor_detail_level=AdvisorDetailLevel(arguments.advisor_detail),
+            advisor_provider=(
+                advisor_provider_instance
+                if advisor_provider_instance is not None
+                else create_advisor_provider(arguments.advisor_provider)
+                if arguments.advisor
+                else None
+            ),
+            advisor_service=advisor_service,
+            brain=brain,
+            reporter=reporter,
+        )
+    except AdvisorError as error:
+        parser.error(str(error))
     return 0
+
+
+def create_advisor_provider(provider_id):
+    try:
+        timeout = float(os.environ.get("ADVISOR_TIMEOUT_SECONDS", "30"))
+    except ValueError as error:
+        raise AdvisorConfigurationError(
+            "ADVISOR_TIMEOUT_SECONDS must be numeric."
+        ) from error
+    if provider_id == "mock":
+        return MockAdvisorProvider()
+    if provider_id == "ollama":
+        return OllamaAdvisorProvider(
+            endpoint=os.environ.get("OLLAMA_ADVISOR_ENDPOINT"),
+            model_id=os.environ.get("OLLAMA_ADVISOR_MODEL"),
+            timeout_seconds=timeout,
+        )
+    if provider_id == "openai":
+        return OpenAIAdvisorProvider(
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            endpoint=os.environ.get(
+                "OPENAI_ADVISOR_ENDPOINT", "https://api.openai.com/v1/responses"
+            ),
+            model_id=os.environ.get("OPENAI_ADVISOR_MODEL"),
+            timeout_seconds=timeout,
+        )
+    raise ValueError(f"Unknown advisor provider: {provider_id}")
 
 
 if __name__ == "__main__":

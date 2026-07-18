@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from acousticbrain.diagnostics import Diagnostic
-from acousticbrain.models import DiagnosticPriorityAnalysis
+from acousticbrain.models import AdvisorResponse, DiagnosticPriorityAnalysis
 
 from .recommendation import PresentedRecommendation
 
@@ -129,6 +129,8 @@ class Report:
     deterministic_evidence_weighting: (
         PresentedDeterministicEvidenceWeightingReport | None
     ) = None
+
+    advisor_response: AdvisorResponse | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 
