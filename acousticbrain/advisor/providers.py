@@ -161,6 +161,33 @@ class MockAdvisorProvider(AdvisorProvider):
         context = request.deterministic_context
         if not context.objects:
             return "The deterministic engine does not provide information for this question."
+        plans = tuple(
+            value.object_id
+            for value in context.objects
+            if value.object_type == "EVIDENCE_ACQUISITION_PLAN"
+        )
+        if plans:
+            if any(
+                value in request.question.casefold()
+                for value in ("quel", "pourquoi", "prochain", "faut-il")
+            ):
+                return (
+                    "Les prochains plans déterministes d’acquisition de preuves sont : "
+                    + "; ".join(plans)
+                    + ". Ils servent uniquement à acquérir des preuves et ne rendent "
+                    "aucune action corrective bloquée applicable. Facteurs de blocage "
+                    "préservés : "
+                    + "; ".join(context.blocking_factors)
+                    + "."
+                )
+            return (
+                "The next deterministic evidence acquisition plans are: "
+                + "; ".join(plans)
+                + ". They acquire evidence only and do not make a blocked corrective "
+                "action applicable. Preserved blocking factors: "
+                + "; ".join(context.blocking_factors)
+                + "."
+            )
         if context.blocking_factors:
             return (
                 "The deterministic evidence remains subject to these blocking factors: "

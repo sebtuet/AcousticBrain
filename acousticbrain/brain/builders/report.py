@@ -26,6 +26,7 @@ from acousticbrain.report import (
     DeterministicAcousticReasoningPresenter,
     DeterministicCorrectiveActionPresenter,
     DeterministicEvidenceWeightingPresenter,
+    EvidenceAcquisitionPlanPresenter,
 )
 
 
@@ -81,6 +82,9 @@ class ReportBuilder:
         )
         report.deterministic_evidence_weighting = (
             DeterministicEvidenceWeightingPresenter().present(context)
+        )
+        report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(
+            context
         )
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (

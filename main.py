@@ -17,6 +17,7 @@ from acousticbrain.report import (
     DeterministicAcousticReasoningConsoleReporter,
     DeterministicCorrectiveActionConsoleReporter,
     DeterministicEvidenceWeightingConsoleReporter,
+    EvidenceAcquisitionPlanConsoleReporter,
     AdvisorConsoleReporter,
 )
 from acousticbrain.models import (
@@ -77,6 +78,11 @@ def create_parser():
         action="store_true",
         help="print the deterministic multidimensional evidence weighting report",
     )
+    parser.add_argument(
+        "--evidence-acquisition",
+        action="store_true",
+        help="print deterministic plans for acquiring missing evidence",
+    )
     parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
     parser.add_argument("--question", default=None, help="question for the enabled advisor")
     parser.add_argument(
@@ -134,6 +140,7 @@ def run(
     reasoning=False,
     actions=False,
     weighting=False,
+    evidence_acquisition=False,
     advisor=False,
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
@@ -147,6 +154,8 @@ def run(
     reporter = reporter or (
         AdvisorConsoleReporter()
         if advisor
+        else EvidenceAcquisitionPlanConsoleReporter()
+        if evidence_acquisition
         else DeterministicEvidenceWeightingConsoleReporter()
         if weighting
         else DeterministicCorrectiveActionConsoleReporter()
@@ -170,8 +179,13 @@ def run(
         arguments["synthesize_actions"] = True
     if weighting:
         arguments["synthesize_weighting"] = True
+    if evidence_acquisition:
+        arguments["synthesize_evidence_acquisition"] = True
     if advisor:
-        arguments["synthesize_weighting"] = True
+        if evidence_acquisition:
+            arguments["synthesize_evidence_acquisition"] = True
+        else:
+            arguments["synthesize_weighting"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
@@ -269,6 +283,7 @@ def main(
             reasoning=arguments.reasoning,
             actions=arguments.actions,
             weighting=arguments.weighting,
+            evidence_acquisition=arguments.evidence_acquisition,
             advisor=arguments.advisor,
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),

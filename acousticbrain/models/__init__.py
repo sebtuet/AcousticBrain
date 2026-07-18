@@ -36,6 +36,14 @@ from .evidence_weighting import (
     WeightedObjectReference,
     WeightedObjectType,
 )
+from .evidence_acquisition import (
+    EvidenceAcquisitionEffort,
+    EvidenceAcquisitionPlan,
+    EvidenceAcquisitionPlanSynthesis,
+    EvidenceAcquisitionPriority,
+    EvidenceAcquisitionStatus,
+    EvidenceAcquisitionTestType,
+)
 from .advisor import (
     AdvisorAudience,
     AdvisorClaim,

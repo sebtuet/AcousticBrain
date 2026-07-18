@@ -103,6 +103,19 @@ discriminative power, parameter completeness and action applicability
 independent. It creates no evidence or decision and does not alter upstream
 objects. See `docs/DETERMINISTIC_EVIDENCE_WEIGHTING.md` for the contract.
 
+To print deterministic procedures for acquiring evidence required by existing
+blocking factors:
+
+```bash
+python main.py \
+  --measurements-root /path/to/my-campaign \
+  --evidence-acquisition
+```
+
+These plans describe diagnostic acquisition only. They are not acoustic
+corrections and never make a corrective action applicable by themselves. See
+`docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md`.
+
 To ask the optional, non-authoritative advisor to explain those deterministic
 objects offline:
 
