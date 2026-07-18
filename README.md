@@ -102,3 +102,18 @@ The dedicated report keeps evidence strength, source consistency,
 discriminative power, parameter completeness and action applicability
 independent. It creates no evidence or decision and does not alter upstream
 objects. See `docs/DETERMINISTIC_EVIDENCE_WEIGHTING.md` for the contract.
+
+To ask the optional, non-authoritative advisor to explain those deterministic
+objects offline:
+
+```bash
+python main.py \
+  --measurements-root /path/to/my-campaign \
+  --advisor \
+  --advisor-provider mock \
+  --question "Why is this action blocked?"
+```
+
+The advisor is disabled by default and never creates scientific knowledge. Its
+context, provider adapters and strict post-response validation are documented
+in `docs/OPTIONAL_LLM_ADVISOR.md`.
