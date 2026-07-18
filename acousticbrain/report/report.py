@@ -56,6 +56,9 @@ from .deterministic_acoustic_reasoning_presenter import (
 from .deterministic_corrective_action_presenter import (
     PresentedDeterministicCorrectiveActionReport,
 )
+from .evidence_weighting_presenter import (
+    PresentedDeterministicEvidenceWeightingReport,
+)
 
 
 @dataclass
@@ -121,6 +124,10 @@ class Report:
 
     deterministic_corrective_actions: (
         PresentedDeterministicCorrectiveActionReport | None
+    ) = None
+
+    deterministic_evidence_weighting: (
+        PresentedDeterministicEvidenceWeightingReport | None
     ) = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None

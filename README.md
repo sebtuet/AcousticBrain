@@ -90,3 +90,15 @@ The report exposes applicability, priority, source reasoning and observations,
 existing compatible contracts, known and missing parameters, contradictions
 and limitations. It executes nothing and invents no geometry or setting. See
 `docs/DETERMINISTIC_CORRECTIVE_ACTIONS.md` for the contract.
+
+To qualify the robustness of existing evidence without producing a global
+score:
+
+```bash
+python main.py --measurements-root /path/to/my-campaign --weighting
+```
+
+The dedicated report keeps evidence strength, source consistency,
+discriminative power, parameter completeness and action applicability
+independent. It creates no evidence or decision and does not alter upstream
+objects. See `docs/DETERMINISTIC_EVIDENCE_WEIGHTING.md` for the contract.
