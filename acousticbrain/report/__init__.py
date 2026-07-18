@@ -11,6 +11,12 @@ from .deterministic_acoustic_reasoning_presenter import (
     PresentedInferenceStep,
     PresentedReasoningPremise,
 )
+from .deterministic_corrective_action_presenter import (
+    DeterministicCorrectiveActionPresenter,
+    PresentedCorrectiveActionJustification,
+    PresentedDeterministicCorrectiveAction,
+    PresentedDeterministicCorrectiveActionReport,
+)
 from .acoustic_hypothesis_experiment_generation_presenter import (
     AcousticHypothesisExperimentGenerationPresenter,
     PresentedAcousticHypothesisExperimentGeneration,
@@ -92,6 +98,9 @@ from .console import ConsoleReporter
 from .acoustic_observation_console import AcousticObservationConsoleReporter
 from .deterministic_acoustic_reasoning_console import (
     DeterministicAcousticReasoningConsoleReporter,
+)
+from .deterministic_corrective_action_console import (
+    DeterministicCorrectiveActionConsoleReporter,
 )
 from .room_geometry_presenter import (
     PresentedRoomGeometry,

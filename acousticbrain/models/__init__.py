@@ -14,6 +14,16 @@ from .deterministic_acoustic_reasoning import (
     ReasoningPremiseRole,
     ReasoningPremiseSourceType,
 )
+from .deterministic_corrective_action import (
+    CorrectiveActionApplicability,
+    CorrectiveActionCategory,
+    CorrectiveActionJustification,
+    CorrectiveActionPriority,
+    CorrectiveActionTraceabilityStatus,
+    CorrectiveActionType,
+    DeterministicCorrectiveAction,
+    DeterministicCorrectiveActionSynthesis,
+)
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,

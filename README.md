@@ -78,3 +78,15 @@ The dedicated report exposes structured premises, inference steps, conclusions,
 contradictions, limitations and provenance. It creates no new hypothesis,
 recommendation, action or experiment. See
 `docs/DETERMINISTIC_ACOUSTIC_REASONING.md` for the scientific contract.
+
+To project sufficiently established reasoning into declarative corrective or
+discrimination actions:
+
+```bash
+python main.py --measurements-root /path/to/my-campaign --actions
+```
+
+The report exposes applicability, priority, source reasoning and observations,
+existing compatible contracts, known and missing parameters, contradictions
+and limitations. It executes nothing and invents no geometry or setting. See
+`docs/DETERMINISTIC_CORRECTIVE_ACTIONS.md` for the contract.
