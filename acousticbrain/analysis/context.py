@@ -37,6 +37,8 @@ from acousticbrain.models import (
     ListeningPositionSamplingProtocol,
     ListeningPositionCampaignPlan,
     ListeningPositionCampaignInstanceAnalysis,
+    CampaignReferenceQualification,
+    CampaignReferenceQualificationDeclarationAnalysis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -194,6 +196,12 @@ class AnalysisContext:
     listening_position_campaign_instance_analysis: (
         ListeningPositionCampaignInstanceAnalysis | None
     ) = None
+
+    campaign_reference_qualification_declaration_analysis: (
+        CampaignReferenceQualificationDeclarationAnalysis | None
+    ) = None
+
+    campaign_reference_qualification: CampaignReferenceQualification | None = None
 
     experiment_comparison_analysis = None
 

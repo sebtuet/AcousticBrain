@@ -288,14 +288,18 @@ def test_requested_reference_is_not_replaced_by_another_admissible_one(tmp_path)
     )
 
 
-def test_admissible_requested_reference_makes_plan_ready(tmp_path):
+def test_admissible_requested_reference_without_qualification_stays_blocked(
+    tmp_path,
+):
     analysis = load(write_payload(tmp_path / "instance.json"))
 
     plan = planned_context(analysis).listening_position_campaign_plan
 
-    assert plan.status is ListeningPositionCampaignPlanStatus.READY
-    assert plan.reference_experiment_id == "exp-007"
-    assert plan.blocking_reasons == ()
+    assert plan.status is ListeningPositionCampaignPlanStatus.BLOCKED
+    assert plan.reference_experiment_id is None
+    assert plan.blocking_reasons == (
+        "CAMPAIGN_REFERENCE_EXPERIMENT_UNAVAILABLE",
+    )
 
 
 def test_offsets_and_none_values_are_preserved_without_transformation(tmp_path):
@@ -501,7 +505,7 @@ def test_instance_preserves_scientific_and_historical_outputs(tmp_path):
     )
 
 
-def test_valid_instance_report_is_readable_and_path_is_only_technical(tmp_path, capsys):
+def test_valid_instance_report_without_qualification_is_blocked(tmp_path, capsys):
     analysis = load(write_payload(tmp_path / "instance.json"))
     value = planned_context(analysis)
     report = Report(project_name="instance-valid")
@@ -522,7 +526,8 @@ def test_valid_instance_report_is_readable_and_path_is_only_technical(tmp_path, 
     assert "Statut : VALID" in output
     assert "Référence demandée : exp-007" in output
     assert "PLAN DE CAMPAGNE MULTI-POSITION" in output
-    assert "Statut : READY" in output
+    assert "Statut : BLOCKED" in output
+    assert "CAMPAIGN_REFERENCE_EXPERIMENT_UNAVAILABLE" in output
     presented = ListeningPositionCampaignInstancePresenter().present(value)
     assert "source_path" not in presented.to_dict()
 

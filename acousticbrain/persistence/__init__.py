@@ -19,3 +19,6 @@ from .measurement_repository import (
 from .listening_position_campaign_instance_json import (
     ListeningPositionCampaignInstanceJsonLoader,
 )
+from .campaign_reference_qualification_json import (
+    CampaignReferenceQualificationJsonLoader,
+)
