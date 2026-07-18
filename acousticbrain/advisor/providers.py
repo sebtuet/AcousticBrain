@@ -205,14 +205,21 @@ class OllamaAdvisorProvider(_HttpAdvisorProvider):
 
     def generate(self, request, context_projection):
         self._require_configuration()
+        grounding_values = self._required_grounding_values(request)
+        response_schema = provider_output_json_schema(grounding_values)
         response = self.http_client.post_json(
             self.endpoint.rstrip("/") + "/api/generate",
             headers={"Content-Type": "application/json"},
             payload={
                 "model": self.model_id,
                 "system": ADVISOR_SYSTEM_PROMPT,
-                "prompt": self._user_prompt(request, context_projection),
-                "format": "json",
+                "prompt": self._user_prompt(
+                    request,
+                    context_projection,
+                    response_schema=response_schema,
+                    grounding_values=grounding_values,
+                ),
+                "format": response_schema,
                 "stream": False,
             },
             timeout_seconds=self.timeout_seconds,
@@ -223,18 +230,70 @@ class OllamaAdvisorProvider(_HttpAdvisorProvider):
         return parse_provider_output(raw)
 
     @staticmethod
-    def _user_prompt(request, context_projection):
+    def _user_prompt(
+        request,
+        context_projection,
+        *,
+        response_schema=None,
+        grounding_values=None,
+    ):
+        payload = {
+            "prompt_id": ADVISOR_SYSTEM_PROMPT_ID,
+            "question": request.question,
+            "audience": request.requested_audience.value,
+            "detail": request.requested_detail_level.value,
+            "deterministic_context": json.loads(context_projection),
+        }
+        if response_schema is not None:
+            payload["required_response_schema"] = response_schema
+            payload["required_grounding_values"] = grounding_values
+            payload["response_rules"] = (
+                "Copy required_grounding_values exactly into the corresponding "
+                "response fields. Do not shorten, translate, reorder or extend "
+                "those arrays. Use the exact supplied claim object. Write answer "
+                "using only those preserved facts and object ids. Do not introduce "
+                "numbers, measurements, scores, actions or scientific facts."
+            )
         return json.dumps(
-            {
-                "prompt_id": ADVISOR_SYSTEM_PROMPT_ID,
-                "question": request.question,
-                "audience": request.requested_audience.value,
-                "detail": request.requested_detail_level.value,
-                "deterministic_context": json.loads(context_projection),
-            },
+            payload,
             ensure_ascii=False,
             sort_keys=True,
         )
+
+    @staticmethod
+    def _required_grounding_values(request):
+        context = request.deterministic_context
+        object_ids = tuple(value.object_id for value in context.objects)
+        supporting_ids = tuple(
+            value.object_id
+            for value in context.objects
+            if value.object_type == "EVIDENCE_WEIGHT"
+        ) or object_ids[:1]
+        claims = []
+        if supporting_ids:
+            claims.append(
+                {
+                    "text": (
+                        "The answer restates only the supplied deterministic objects."
+                    ),
+                    "supporting_object_ids": list(supporting_ids),
+                    "asserted_action_applicability": [],
+                    "asserted_weight_dimensions": [],
+                    "asserted_evidence": [],
+                    "asserted_blocking_factors": list(context.blocking_factors),
+                    "asserted_contradictions": list(context.contradictions),
+                    "asserted_limitations": list(context.limitations),
+                }
+            )
+        return {
+            "referenced_object_ids": list(object_ids),
+            "claims": claims,
+            "blocking_factors": list(context.blocking_factors),
+            "contradictions": list(context.contradictions),
+            "limitations": list(context.limitations),
+            "proposed_action_ids": [],
+            "introduced_scores": [],
+        }
 
 
 class OpenAIAdvisorProvider(_HttpAdvisorProvider):
@@ -345,7 +404,7 @@ def parse_provider_output(raw):
         raise AdvisorResponseSchemaError("Advisor output structure is invalid.") from exc
 
 
-def provider_output_json_schema():
+def provider_output_json_schema(required_grounding_values=None):
     claim = {
         "type": "object",
         "additionalProperties": False,
@@ -391,7 +450,7 @@ def provider_output_json_schema():
         },
     }
     string_array = {"type": "array", "items": {"type": "string"}}
-    return {
+    schema = {
         "type": "object",
         "additionalProperties": False,
         "required": [
@@ -415,3 +474,12 @@ def provider_output_json_schema():
             "introduced_scores": string_array,
         },
     }
+    if required_grounding_values is not None:
+        expected = set(schema["required"]) - {"answer"}
+        if set(required_grounding_values) != expected:
+            raise AdvisorConfigurationError(
+                "Ollama grounding values do not match the provider schema."
+            )
+        for field, value in required_grounding_values.items():
+            schema["properties"][field] = {"const": value}
+    return schema
