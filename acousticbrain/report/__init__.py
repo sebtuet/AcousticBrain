@@ -102,6 +102,16 @@ from .deterministic_acoustic_reasoning_console import (
 from .deterministic_corrective_action_console import (
     DeterministicCorrectiveActionConsoleReporter,
 )
+from .evidence_weighting_presenter import (
+    DeterministicEvidenceWeightingPresenter,
+    PresentedDeterministicEvidenceWeight,
+    PresentedDeterministicEvidenceWeightingReport,
+    PresentedEvidenceBlockingFactor,
+    PresentedEvidenceCeiling,
+)
+from .evidence_weighting_console import (
+    DeterministicEvidenceWeightingConsoleReporter,
+)
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,

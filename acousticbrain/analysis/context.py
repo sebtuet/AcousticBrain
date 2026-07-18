@@ -42,6 +42,7 @@ from acousticbrain.models import (
     AcousticObservationSynthesis,
     DeterministicAcousticReasoningSynthesis,
     DeterministicCorrectiveActionSynthesis,
+    DeterministicEvidenceWeightingSynthesis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -68,6 +69,10 @@ class AnalysisContext:
 
     deterministic_corrective_action_synthesis: (
         DeterministicCorrectiveActionSynthesis | None
+    ) = None
+
+    deterministic_evidence_weighting_synthesis: (
+        DeterministicEvidenceWeightingSynthesis | None
     ) = None
 
     peaks: list = field(default_factory=list)

@@ -80,6 +80,7 @@ from .stages.deterministic_acoustic_reasoning import (
 from .stages.deterministic_corrective_action import (
     DeterministicCorrectiveActionStage,
 )
+from .stages.evidence_weighting import DeterministicEvidenceWeightingStage
 
 from .builders.report import ReportBuilder
 
@@ -143,9 +144,11 @@ class BrainPipeline:
         synthesize_observations=False,
         synthesize_reasoning=False,
         synthesize_actions=False,
+        synthesize_weighting=False,
         return_context=False,
     ):
 
+        synthesize_actions = synthesize_actions or synthesize_weighting
         synthesize_reasoning = synthesize_reasoning or synthesize_actions
         synthesize_observations = synthesize_observations or synthesize_reasoning
 
@@ -300,6 +303,9 @@ class BrainPipeline:
 
         if synthesize_actions:
             DeterministicCorrectiveActionStage().run(context)
+
+        if synthesize_weighting:
+            DeterministicEvidenceWeightingStage().run(context)
 
         AcousticHypothesisExperimentGenerationStage().run(
             context,

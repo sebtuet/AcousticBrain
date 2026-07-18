@@ -2,6 +2,7 @@ from .context import AnalysisContext
 from .acoustic_observation import DeterministicAcousticObservationSynthesizer
 from .deterministic_acoustic_reasoning import DeterministicAcousticReasoningEngine
 from .deterministic_corrective_action import DeterministicCorrectiveActionEngine
+from .evidence_weighting import DeterministicEvidenceWeightingEngine
 from .surface_material import SurfaceMaterialAnalyzer
 from .material_aware_reflection_candidate import (
     ReflectionCandidateCompatibilityEngine,

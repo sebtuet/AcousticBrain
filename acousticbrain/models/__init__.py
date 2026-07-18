@@ -24,6 +24,18 @@ from .deterministic_corrective_action import (
     DeterministicCorrectiveAction,
     DeterministicCorrectiveActionSynthesis,
 )
+from .evidence_weighting import (
+    DeterministicEvidenceWeight,
+    DeterministicEvidenceWeightingSynthesis,
+    EvidenceBlockingFactor,
+    EvidenceDimension,
+    EvidenceDimensionCeiling,
+    EvidenceWeightLevel,
+    EvidenceWeightRuleApplication,
+    WeightedActionApplicability,
+    WeightedObjectReference,
+    WeightedObjectType,
+)
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,

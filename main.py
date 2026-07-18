@@ -7,6 +7,7 @@ from acousticbrain.report import (
     ConsoleReporter,
     DeterministicAcousticReasoningConsoleReporter,
     DeterministicCorrectiveActionConsoleReporter,
+    DeterministicEvidenceWeightingConsoleReporter,
 )
 from acousticbrain.models import (
     CampaignReferenceDeclarationStatus,
@@ -59,6 +60,11 @@ def create_parser():
         action="store_true",
         help="print the deterministic corrective-action report",
     )
+    parser.add_argument(
+        "--weighting",
+        action="store_true",
+        help="print the deterministic multidimensional evidence weighting report",
+    )
     return parser
 
 
@@ -98,12 +104,15 @@ def run(
     observations=False,
     reasoning=False,
     actions=False,
+    weighting=False,
     brain=None,
     reporter=None,
 ):
     brain = brain or AcousticBrain()
     reporter = reporter or (
-        DeterministicCorrectiveActionConsoleReporter()
+        DeterministicEvidenceWeightingConsoleReporter()
+        if weighting
+        else DeterministicCorrectiveActionConsoleReporter()
         if actions
         else DeterministicAcousticReasoningConsoleReporter()
         if reasoning
@@ -122,6 +131,8 @@ def run(
         arguments["synthesize_reasoning"] = True
     if actions:
         arguments["synthesize_actions"] = True
+    if weighting:
+        arguments["synthesize_weighting"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
@@ -203,6 +214,7 @@ def main(
         observations=arguments.observations,
         reasoning=arguments.reasoning,
         actions=arguments.actions,
+        weighting=arguments.weighting,
         brain=brain,
         reporter=reporter,
     )
