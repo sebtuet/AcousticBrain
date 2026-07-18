@@ -70,6 +70,14 @@ export OLLAMA_ADVISOR_MODEL=your-explicit-model
 AcousticBrain never starts or installs Ollama. Missing configuration, network
 errors and timeouts are explicit failures.
 
+The Ollama `/api/generate` request sends the complete canonical JSON Schema in
+`format` and repeats it explicitly in the user prompt for model compatibility.
+It never falls back to the generic `"json"` format. A syntactically valid JSON
+object outside the contract, including a chat-shaped `{role, content}` object,
+is rejected without conversion or repair. Local compatibility was verified
+with Ollama 0.31.2; provider behavior may still vary by model, so the local
+post-response validator remains authoritative and strict.
+
 ### OpenAI
 
 The OpenAI adapter is optional, isolated, and uses the Responses API with a

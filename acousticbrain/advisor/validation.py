@@ -84,6 +84,7 @@ class AdvisorResponseValidator:
         if invented_geometry:
             violations.append(f"INVENTED_GEOMETRY:{'|'.join(invented_geometry)}")
 
+        violations = list(dict.fromkeys(violations))
         status = (
             AdvisorValidationStatus.INVALID
             if violations

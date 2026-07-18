@@ -1,4 +1,4 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from inspect import getsource
 from types import SimpleNamespace
 
@@ -9,6 +9,7 @@ from acousticbrain.advisor import (
     AdvisorContextBuilder,
     AdvisorProviderResponseError,
     AdvisorProviderUnavailableError,
+    AdvisorResponseValidator,
     AdvisorResponseSchemaError,
     AdvisorService,
     AdvisorTimeoutError,
@@ -17,9 +18,13 @@ from acousticbrain.advisor import (
     OllamaAdvisorProvider,
     OpenAIAdvisorProvider,
 )
-from acousticbrain.advisor.providers import parse_provider_output
+from acousticbrain.advisor.providers import (
+    parse_provider_output,
+    provider_output_json_schema,
+)
 from acousticbrain.models import (
     AdvisorAudience,
+    AdvisorClaim,
     AdvisorDetailLevel,
     AdvisorValidationStatus,
 )
@@ -201,6 +206,30 @@ def test_invalid_mock_output_is_intercepted_with_deterministic_safety_response(
     assert first.preserved_contradictions
 
 
+def test_repeated_identical_violations_still_return_one_safety_violation():
+    class RepeatedInvalidClaimProvider(MockAdvisorProvider):
+        def generate(self, request, context_projection):
+            output = super().generate(request, context_projection)
+            claim = AdvisorClaim(
+                text="Repeated invalid claim.",
+                supporting_object_ids=("UNKNOWN_OBJECT",),
+                asserted_evidence=("invented.evidence",),
+            )
+            return replace(output, claims=(claim, claim))
+
+    response = AdvisorService().advise(
+        deterministic_report(),
+        question="Why?",
+        audience=AdvisorAudience.GENERAL,
+        detail_level=AdvisorDetailLevel.STANDARD,
+        provider=RepeatedInvalidClaimProvider(),
+    )
+
+    assert response.validation_status is AdvisorValidationStatus.INVALID
+    assert len(response.unsupported_claims) == len(set(response.unsupported_claims))
+    assert response.answer_text == AdvisorResponseValidator.SAFETY_ANSWER
+
+
 def test_mock_failure_and_timeout_remain_typed_provider_errors():
     with pytest.raises(AdvisorProviderResponseError):
         advise(MockAdvisorMode.FAILURE)
@@ -296,8 +325,84 @@ def test_ollama_adapter_uses_injected_http_client_without_real_network():
     )
 
     assert response.validation_status is AdvisorValidationStatus.VALID
-    assert client.calls[0][0] == "http://ollama.test/api/generate"
-    assert client.calls[0][3] == 4
+    url, _, payload, timeout = client.calls[0]
+    prompt = __import__("json").loads(payload["prompt"])
+    grounding = prompt["required_grounding_values"]
+    schema = provider_output_json_schema(grounding)
+    assert url == "http://ollama.test/api/generate"
+    assert payload["format"] == schema
+    assert payload["format"] != "json"
+    assert prompt["required_response_schema"] == schema
+    assert set(grounding) == set(provider_json()) - {"answer"}
+    assert grounding["blocking_factors"] == provider_json()["blocking_factors"]
+    assert grounding["contradictions"] == provider_json()["contradictions"]
+    assert grounding["limitations"] == provider_json()["limitations"]
+    assert grounding["proposed_action_ids"] == []
+    assert grounding["introduced_scores"] == []
+    assert "Copy required_grounding_values exactly" in prompt["response_rules"]
+    assert timeout == 4
+
+
+def test_grounded_ollama_schema_constrains_every_non_text_response_field():
+    grounding = {key: value for key, value in provider_json().items() if key != "answer"}
+    schema = provider_output_json_schema(grounding)
+
+    assert schema["properties"]["answer"] == {"type": "string"}
+    for field, value in grounding.items():
+        assert schema["properties"][field] == {"const": value}
+
+
+def test_provider_output_schema_is_stable_and_requires_the_canonical_fields():
+    expected_fields = {
+        "answer",
+        "referenced_object_ids",
+        "claims",
+        "blocking_factors",
+        "contradictions",
+        "limitations",
+        "proposed_action_ids",
+        "introduced_scores",
+    }
+    first = provider_output_json_schema()
+    second = provider_output_json_schema()
+
+    assert first == second
+    assert first is not second
+    assert first["type"] == "object"
+    assert first["additionalProperties"] is False
+    assert set(first["required"]) == expected_fields
+    assert set(first["properties"]) == expected_fields
+
+
+@pytest.mark.parametrize(
+    "invalid_output",
+    (
+        {"role": "assistant", "content": "Grounded-looking free text."},
+        {"answer": "Valid JSON, wrong contract."},
+        {**provider_json(), "unexpected": "field"},
+        {key: value for key, value in provider_json().items() if key != "claims"},
+    ),
+)
+def test_ollama_rejects_valid_json_outside_schema_without_fallback(invalid_output):
+    client = RecordingHttpClient(
+        {"response": __import__("json").dumps(invalid_output)}
+    )
+    provider = OllamaAdvisorProvider(
+        endpoint="http://ollama.test",
+        model_id="local-model",
+        http_client=client,
+    )
+
+    with pytest.raises(AdvisorResponseSchemaError):
+        AdvisorService().advise(
+            deterministic_report(),
+            question="Why?",
+            audience=AdvisorAudience.GENERAL,
+            detail_level=AdvisorDetailLevel.STANDARD,
+            provider=provider,
+        )
+
+    assert len(client.calls) == 1
 
 
 def test_openai_adapter_uses_responses_structured_output_and_hides_key_from_payload():
