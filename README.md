@@ -55,3 +55,15 @@ instance. It never replaces the requested experiment or rewrites historical
 facts. The example at
 `docs/examples/campaign-reference-qualification.example.json` is documentation
 only and is never loaded automatically.
+
+To print the opt-in deterministic observation report:
+
+```bash
+python main.py --measurements-root /path/to/my-campaign --observations
+```
+
+This dedicated report copies established analysis facts, confidence and
+provenance into immutable descriptive observations. It contains no
+recommendation, corrective action, hypothesis or experiment. Without the
+option, the historical report is unchanged. See
+`docs/DETERMINISTIC_ACOUSTIC_OBSERVATIONS.md` for the contract.

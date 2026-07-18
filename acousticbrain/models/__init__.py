@@ -1,4 +1,9 @@
 from .measurement import Measurement
+from .acoustic_observation import (
+    AcousticObservation,
+    AcousticObservationCategory,
+    AcousticObservationSynthesis,
+)
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,

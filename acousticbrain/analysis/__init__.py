@@ -1,4 +1,5 @@
 from .context import AnalysisContext
+from .acoustic_observation import DeterministicAcousticObservationSynthesizer
 from .surface_material import SurfaceMaterialAnalyzer
 from .material_aware_reflection_candidate import (
     ReflectionCandidateCompatibilityEngine,

@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from acousticbrain.brain import AcousticBrain
-from acousticbrain.report import ConsoleReporter
+from acousticbrain.report import AcousticObservationConsoleReporter, ConsoleReporter
 from acousticbrain.models import (
     CampaignReferenceDeclarationStatus,
     ListeningPositionCampaignInstanceStatus,
@@ -38,6 +38,11 @@ def create_parser():
         default=None,
         metavar="PATH",
         help="explicit versioned campaign reference qualification JSON",
+    )
+    parser.add_argument(
+        "--observations",
+        action="store_true",
+        help="print the deterministic acoustic observation report",
     )
     return parser
 
@@ -75,16 +80,21 @@ def run(
     *,
     campaign_instance_analysis=None,
     reference_qualification_declaration_analysis=None,
+    observations=False,
     brain=None,
     reporter=None,
 ):
     brain = brain or AcousticBrain()
-    reporter = reporter or ConsoleReporter()
+    reporter = reporter or (
+        AcousticObservationConsoleReporter() if observations else ConsoleReporter()
+    )
     arguments = dict(
         measurement_root=measurements_root,
         compare_experiments=True,
         analyze_causal_discrimination=True,
     )
+    if observations:
+        arguments["synthesize_observations"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
@@ -163,6 +173,7 @@ def main(
         reference_qualification_declaration_analysis=(
             reference_qualification_declaration_analysis
         ),
+        observations=arguments.observations,
         brain=brain,
         reporter=reporter,
     )
