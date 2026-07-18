@@ -39,6 +39,7 @@ from acousticbrain.models import (
     ListeningPositionCampaignInstanceAnalysis,
     CampaignReferenceQualification,
     CampaignReferenceQualificationDeclarationAnalysis,
+    AcousticObservationSynthesis,
     PropagationGeometry,
     PropagationGeometryAnalysis,
     SurfaceMaterialAnalysis,
@@ -56,6 +57,8 @@ from acousticbrain.project import Project
 class AnalysisContext:
 
     measurement: Measurement
+
+    acoustic_observation_synthesis: AcousticObservationSynthesis | None = None
 
     peaks: list = field(default_factory=list)
 

@@ -73,6 +73,7 @@ from .stages.listening_position_campaign_plan import (
 from .stages.campaign_reference_qualification import (
     CampaignReferenceQualificationStage,
 )
+from .stages.acoustic_observation import AcousticObservationStage
 
 from .builders.report import ReportBuilder
 
@@ -133,6 +134,7 @@ class BrainPipeline:
         listening_position_campaign_instance_analysis=None,
         campaign_reference_qualification_declaration_analysis=None,
         longitudinal_experimental_learning_analysis=None,
+        synthesize_observations=False,
         return_context=False,
     ):
 
@@ -274,6 +276,9 @@ class BrainPipeline:
         SpatialInterpretationStage().run(
             context,
         )
+
+        if synthesize_observations:
+            AcousticObservationStage().run(context)
 
         AcousticReasoningStage().run(
             context,

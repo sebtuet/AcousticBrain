@@ -1,4 +1,9 @@
 from .report import Report
+from .acoustic_observation_presenter import (
+    AcousticObservationPresenter,
+    PresentedAcousticObservation,
+    PresentedAcousticObservationReport,
+)
 from .acoustic_hypothesis_experiment_generation_presenter import (
     AcousticHypothesisExperimentGenerationPresenter,
     PresentedAcousticHypothesisExperimentGeneration,
@@ -77,6 +82,7 @@ from .guided_room_description_presenter import (
     RoomDescriptionChangeProposalPresenter,
 )
 from .console import ConsoleReporter
+from .acoustic_observation_console import AcousticObservationConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,

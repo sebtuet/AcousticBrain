@@ -49,6 +49,7 @@ from .listening_position_campaign_instance_presenter import (
 from .campaign_reference_qualification_presenter import (
     PresentedCampaignReferenceQualification,
 )
+from .acoustic_observation_presenter import PresentedAcousticObservationReport
 
 
 @dataclass
@@ -105,6 +106,8 @@ class Report:
     campaign_reference_qualification: (
         PresentedCampaignReferenceQualification | None
     ) = None
+
+    acoustic_observations: PresentedAcousticObservationReport | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 

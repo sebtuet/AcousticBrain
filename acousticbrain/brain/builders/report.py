@@ -22,6 +22,7 @@ from acousticbrain.report import (
     ListeningPositionCampaignPlanPresenter,
     ListeningPositionCampaignInstancePresenter,
     CampaignReferenceQualificationPresenter,
+    AcousticObservationPresenter,
 )
 
 
@@ -68,6 +69,7 @@ class ReportBuilder:
         report.campaign_reference_qualification = (
             CampaignReferenceQualificationPresenter().present(context)
         )
+        report.acoustic_observations = AcousticObservationPresenter().present(context)
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (
             MaterialAwareReflectionCandidatePresenter().present(context)
