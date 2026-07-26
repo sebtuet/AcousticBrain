@@ -31,6 +31,12 @@ def test_parser_uses_historical_measurements_default():
     assert arguments.measurements_root == Path("measurements")
 
 
+def test_parser_accepts_full_assessment():
+    arguments = acousticbrain_main.create_parser().parse_args(["--full-assessment"])
+
+    assert arguments.full_assessment is True
+
+
 @pytest.mark.parametrize(
     "value",
     (
@@ -122,6 +128,57 @@ def test_main_passes_exact_absolute_path(tmp_path):
     )
 
     assert brain.calls[0]["measurement_root"] == campaign
+
+
+def test_full_assessment_activates_only_evidence_acquisition_synthesis(tmp_path):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    brain = RecordingBrain()
+
+    acousticbrain_main.main(
+        ["--measurements-root", str(campaign), "--full-assessment"],
+        brain=brain,
+        reporter=RecordingReporter(),
+    )
+
+    assert brain.calls == [
+        {
+            "measurement_root": campaign,
+            "compare_experiments": True,
+            "analyze_causal_discrimination": True,
+            "synthesize_evidence_acquisition": True,
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    "option",
+    (
+        "--observations",
+        "--reasoning",
+        "--actions",
+        "--weighting",
+        "--evidence-acquisition",
+        "--advisor",
+    ),
+)
+def test_full_assessment_rejects_each_incompatible_option(
+    tmp_path, capsys, option
+):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            ["--measurements-root", str(campaign), "--full-assessment", option],
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert f"--full-assessment cannot be combined with {option}." in (
+        capsys.readouterr().err
+    )
 
 
 def test_default_and_explicit_historical_path_are_invariant(tmp_path, monkeypatch):

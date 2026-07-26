@@ -18,6 +18,7 @@ from acousticbrain.report import (
     DeterministicCorrectiveActionConsoleReporter,
     DeterministicEvidenceWeightingConsoleReporter,
     EvidenceAcquisitionPlanConsoleReporter,
+    FullAssessmentConsoleReporter,
     AdvisorConsoleReporter,
 )
 from acousticbrain.models import (
@@ -84,6 +85,11 @@ def create_parser():
         action="store_true",
         help="print deterministic plans for acquiring missing evidence",
     )
+    parser.add_argument(
+        "--full-assessment",
+        action="store_true",
+        help="print the complete deterministic assessment workflow",
+    )
     parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
     parser.add_argument("--question", default=None, help="question for the enabled advisor")
     parser.add_argument(
@@ -148,6 +154,7 @@ def run(
     actions=False,
     weighting=False,
     evidence_acquisition=False,
+    full_assessment=False,
     advisor=False,
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
@@ -162,6 +169,8 @@ def run(
     reporter = reporter or (
         AdvisorConsoleReporter()
         if advisor
+        else FullAssessmentConsoleReporter()
+        if full_assessment
         else EvidenceAcquisitionPlanConsoleReporter()
         if evidence_acquisition
         else DeterministicEvidenceWeightingConsoleReporter()
@@ -187,7 +196,7 @@ def run(
         arguments["synthesize_actions"] = True
     if weighting:
         arguments["synthesize_weighting"] = True
-    if evidence_acquisition:
+    if evidence_acquisition or full_assessment:
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
         if evidence_acquisition:
@@ -234,6 +243,17 @@ def main(
         measurements_root = validate_measurements_root(arguments.measurements_root)
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
+        incompatible_full_assessment_options = (
+            ("--observations", arguments.observations),
+            ("--reasoning", arguments.reasoning),
+            ("--actions", arguments.actions),
+            ("--weighting", arguments.weighting),
+            ("--evidence-acquisition", arguments.evidence_acquisition),
+            ("--advisor", arguments.advisor),
+        )
+        for option, enabled in incompatible_full_assessment_options:
+            if arguments.full_assessment and enabled:
+                raise ValueError(f"--full-assessment cannot be combined with {option}.")
         if arguments.advisor and not arguments.question:
             raise ValueError("--advisor requires --question.")
         campaign_instance_analysis = None
@@ -293,6 +313,7 @@ def main(
             actions=arguments.actions,
             weighting=arguments.weighting,
             evidence_acquisition=arguments.evidence_acquisition,
+            full_assessment=arguments.full_assessment,
             advisor=arguments.advisor,
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),

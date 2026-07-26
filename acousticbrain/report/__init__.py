@@ -119,6 +119,7 @@ from .evidence_acquisition_presenter import (
     PresentedEvidenceAcquisitionPlanReport,
 )
 from .evidence_acquisition_console import EvidenceAcquisitionPlanConsoleReporter
+from .full_assessment_console import FullAssessmentConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,
