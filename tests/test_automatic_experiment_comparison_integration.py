@@ -2,7 +2,9 @@ from pathlib import Path
 import json
 import shutil
 
+from acousticbrain.application import AcousticSession
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.report import AssessmentSummaryPresenter
 import pytest
 
 
@@ -48,6 +50,33 @@ def test_comparison_is_absent_when_explicit_mode_is_disabled(
 
     assert report.experiment_comparison is None
     assert report.optimization_session is None
+
+
+def test_multi_experiment_assessment_summary_matches_final_report():
+    report = AcousticBrain().analyze(
+        measurement_root=ROOT / "measurements",
+        compare_experiments=True,
+        synthesize_evidence_acquisition=True,
+    )
+
+    assert report.assessment_summary == AssessmentSummaryPresenter().present(report)
+    assert tuple(
+        item.plan_id for item in report.assessment_summary.recommended_experiments
+    ) == tuple(
+        item.plan_id for item in report.evidence_acquisition_plans.plans
+    )
+    assert report.assessment_summary.recommended_experiments
+
+
+def test_single_experiment_assessment_summary_remains_synchronized():
+    project = AcousticSession.auto_open(ROOT / "measurements").current_project
+
+    report = AcousticBrain().analyze(
+        project,
+        synthesize_evidence_acquisition=True,
+    )
+
+    assert report.assessment_summary == AssessmentSummaryPresenter().present(report)
 
 
 def test_causal_mode_projects_only_explicit_repository_steps(
