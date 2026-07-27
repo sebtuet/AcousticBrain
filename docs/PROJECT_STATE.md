@@ -117,6 +117,12 @@ des blocages et réserves. Il indique explicitement que ces statuts
 n'établissent pas la validité scientifique et que `BLOCKED` ne signifie pas
 que le pipeline a sauté le calcul.
 
+La branche `develop` expose également une synthèse déterministe par l'option
+`--assessment-summary`. Cette présentation utilise exclusivement les données
+déjà projetées dans `Report` et distingue l'absence de données structurées
+d'action d'une collection structurée présente sans action bloquée. Elle
+n'ajoute aucune analyse, classification scientifique ou interprétation.
+
 Le code de ces workflows produit est présent dans `develop`, mais pas dans
 `main` à la date de cette mise à jour.
 
@@ -150,7 +156,8 @@ La première étape produit, qui consistait à exposer les cinq rapports
 existants par une seule option CLI, est terminée. La prochaine étape produit
 n'est pas encore définie. L'export texte déterministe de ce rapport complet
 est également terminé. L'exposition de la readiness technique des analyses
-est terminée.
+est terminée. La synthèse déterministe destinée à l'utilisateur est également
+terminée.
 
 ## 8. Mandats produit terminés
 
@@ -301,13 +308,81 @@ Validations établies :
 Cette fonctionnalité est présente dans `develop`, mais son code produit n'est
 pas présent dans `main` à la date de cette mise à jour.
 
+### Deterministic Assessment Summary CLI
+
+Branche d'implémentation :
+`agent/assessment-summary-cli`
+
+Commit fonctionnel :
+`ab88fe836e113ca245efecf36f304afd0b3512cc`
+
+Message :
+`feat(cli): add deterministic assessment summary`
+
+Commit correctif :
+`a39315df8245c0bfd76c2ef3a7b2cbc60d4ef0a1`
+
+Message :
+`fix(cli): distinguish missing blocked-action data`
+
+État :
+
+- implémenté, testé et revu indépendamment ;
+- publié dans la PR
+  [#45](https://github.com/sebtuet/AcousticBrain/pull/45) ;
+- fusionné dans `develop` par le commit
+  `431466515b62f6048dec4e0bf06c3979662b2699` ;
+- nouveau HEAD de `develop` :
+  `431466515b62f6048dec4e0bf06c3979662b2699`.
+
+Comportement établi :
+
+- `--assessment-summary` produit une synthèse déterministe à partir du
+  `Report` existant ;
+- les sections présentent le statut des mesures découvertes, la readiness
+  technique, les observations acoustiques existantes, les actions applicables
+  et bloquées structurées, les plans d'acquisition de preuves existants et une
+  notice technique explicite ;
+- les sources structurées utilisées sont `experiments_discovered`,
+  `analysis_readiness`, `acoustic_observations`,
+  `deterministic_corrective_actions` et `evidence_acquisition_plans` ;
+- `APPLICABLE` et `CONDITIONALLY_APPLICABLE` sont projetés dans les actions
+  applicables ;
+- les statuts explicitement bloquants et `NOT_SUPPORTED` sont projetés dans
+  les actions bloquées ;
+- `ALREADY_TESTED` et `NO_ACTION_REQUIRED` ne sont reclassés dans aucune de
+  ces deux sections ;
+- le reporter distingue l'absence de données structurées d'action d'une
+  collection structurée présente sans action bloquée ;
+- aucune nouvelle science, Scientific Question, analyse, politique de
+  readiness, règle, hiérarchie, interprétation, valeur ou décision n'est
+  ajoutée ;
+- aucun moteur scientifique, diagnostic source, action source, plan
+  d'acquisition source, score ou seuil n'est modifié ;
+- `BrainPipeline`, les reporters historiques, l'Advisor et le comportement
+  réseau ne sont pas modifiés.
+
+Validations établies :
+
+- assessment summary : `9 passed` ;
+- CLI : `49 passed` ;
+- analysis readiness : `7 passed` ;
+- full-assessment export : `11 passed` ;
+- suite complète : `1565 passed` ;
+- `compileall` réussi ;
+- `git diff --check` réussi.
+
+Cette fonctionnalité est présente dans `develop`, mais son code produit n'est
+pas présent dans `main` à la date de cette mise à jour. `main` reçoit
+uniquement cette mise à jour descriptive par la PR documentaire associée.
+
 ## 9. Démarrage d'une nouvelle conversation
 
 > Voici l'état officiel actuel d'AcousticBrain.
 > Utilise `docs/PROJECT_STATE.md` comme référence descriptive de cette
 > conversation. Ne modifie pas les jalons figés. Les mandats produit
 > `--full-assessment`, export texte déterministe et
-> `--analysis-readiness` sont terminés dans `develop` par les PR #39, #41 et
-> #43. Leur code produit n'est pas encore présent dans `main`. Aucune prochaine
-> étape produit n'est encore définie. N'invente aucun nouveau mandat
-> scientifique ni aucune Scientific Question.
+> `--analysis-readiness`, ainsi que `--assessment-summary`, sont terminés dans
+> `develop` par les PR #39, #41, #43 et #45. Leur code produit n'est pas encore
+> présent dans `main`. Aucune prochaine étape produit n'est encore définie.
+> N'invente aucun nouveau mandat scientifique ni aucune Scientific Question.
