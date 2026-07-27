@@ -37,6 +37,14 @@ def test_parser_accepts_full_assessment():
     assert arguments.full_assessment is True
 
 
+def test_parser_accepts_full_assessment_output():
+    arguments = acousticbrain_main.create_parser().parse_args(
+        ["--full-assessment", "--full-assessment-output", "assessment.txt"]
+    )
+
+    assert arguments.full_assessment_output == Path("assessment.txt")
+
+
 @pytest.mark.parametrize(
     "value",
     (
@@ -149,6 +157,102 @@ def test_full_assessment_activates_only_evidence_acquisition_synthesis(tmp_path)
             "synthesize_evidence_acquisition": True,
         }
     ]
+
+
+def test_full_assessment_output_requires_full_assessment(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            [
+                "--measurements-root",
+                str(campaign),
+                "--full-assessment-output",
+                str(tmp_path / "assessment.txt"),
+            ],
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert "--full-assessment-output requires --full-assessment." in (
+        capsys.readouterr().err
+    )
+
+
+def test_full_assessment_output_rejects_missing_parent(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    output = tmp_path / "missing" / "assessment.txt"
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            [
+                "--measurements-root",
+                str(campaign),
+                "--full-assessment",
+                "--full-assessment-output",
+                str(output),
+            ],
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert "Full assessment output parent does not exist" in capsys.readouterr().err
+    assert not output.exists()
+
+
+def test_full_assessment_output_rejects_parent_file(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    parent = tmp_path / "not-a-directory"
+    parent.write_text("content", encoding="utf-8")
+    output = parent / "assessment.txt"
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            [
+                "--measurements-root",
+                str(campaign),
+                "--full-assessment",
+                "--full-assessment-output",
+                str(output),
+            ],
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert "Full assessment output parent is not a directory" in (
+        capsys.readouterr().err
+    )
+    assert not output.exists()
+
+
+def test_full_assessment_output_rejects_existing_path(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    output = tmp_path / "assessment.txt"
+    output.write_text("preserve", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            [
+                "--measurements-root",
+                str(campaign),
+                "--full-assessment",
+                "--full-assessment-output",
+                str(output),
+            ],
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert "Full assessment output already exists" in capsys.readouterr().err
+    assert output.read_text(encoding="utf-8") == "preserve"
 
 
 @pytest.mark.parametrize(

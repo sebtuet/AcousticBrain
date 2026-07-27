@@ -1,6 +1,9 @@
 import argparse
+from contextlib import redirect_stdout
+from io import StringIO
 import os
 from pathlib import Path
+import sys
 
 from acousticbrain.advisor import (
     AdvisorConfigurationError,
@@ -19,6 +22,8 @@ from acousticbrain.report import (
     DeterministicEvidenceWeightingConsoleReporter,
     EvidenceAcquisitionPlanConsoleReporter,
     FullAssessmentConsoleReporter,
+    FullAssessmentTextExportError,
+    FullAssessmentTextExporter,
     AdvisorConsoleReporter,
 )
 from acousticbrain.models import (
@@ -90,6 +95,13 @@ def create_parser():
         action="store_true",
         help="print the complete deterministic assessment workflow",
     )
+    parser.add_argument(
+        "--full-assessment-output",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="write the complete deterministic assessment to a new text file",
+    )
     parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
     parser.add_argument("--question", default=None, help="question for the enabled advisor")
     parser.add_argument(
@@ -144,6 +156,30 @@ def validate_campaign_reference_qualification(path):
     return path
 
 
+def validate_full_assessment_output(path):
+    if path.exists():
+        raise ValueError(f"Full assessment output already exists: {path}")
+    if not path.parent.exists():
+        raise ValueError(
+            f"Full assessment output parent does not exist: {path.parent}"
+        )
+    if not path.parent.is_dir():
+        raise ValueError(
+            f"Full assessment output parent is not a directory: {path.parent}"
+        )
+    return path
+
+
+def write_full_assessment_stdout(data):
+    output = getattr(sys.stdout, "buffer", None)
+    if output is None:
+        raise FullAssessmentTextExportError(
+            "Binary stdout is required for full assessment export."
+        )
+    output.write(data)
+    output.flush()
+
+
 def run(
     measurements_root,
     *,
@@ -155,6 +191,7 @@ def run(
     weighting=False,
     evidence_acquisition=False,
     full_assessment=False,
+    full_assessment_output=None,
     advisor=False,
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
@@ -221,9 +258,20 @@ def run(
             provider=advisor_provider,
             expected_response_language=advisor_response_language,
         )
-    print(f"Measurement root: {measurements_root.resolve()}")
-    print()
-    reporter.print(report)
+    if full_assessment_output is None:
+        print(f"Measurement root: {measurements_root.resolve()}")
+        print()
+        reporter.print(report)
+    else:
+        rendered_output = StringIO()
+        with redirect_stdout(rendered_output):
+            print(f"Measurement root: {measurements_root.resolve()}")
+            print()
+            reporter.print(report)
+        text = rendered_output.getvalue()
+        data = text.encode("utf-8")
+        write_full_assessment_stdout(data)
+        FullAssessmentTextExporter(full_assessment_output).write(data)
     return report
 
 
@@ -254,6 +302,18 @@ def main(
         for option, enabled in incompatible_full_assessment_options:
             if arguments.full_assessment and enabled:
                 raise ValueError(f"--full-assessment cannot be combined with {option}.")
+        if (
+            arguments.full_assessment_output is not None
+            and not arguments.full_assessment
+        ):
+            raise ValueError(
+                "--full-assessment-output requires --full-assessment."
+            )
+        full_assessment_output = (
+            validate_full_assessment_output(arguments.full_assessment_output)
+            if arguments.full_assessment_output is not None
+            else None
+        )
         if arguments.advisor and not arguments.question:
             raise ValueError("--advisor requires --question.")
         campaign_instance_analysis = None
@@ -314,6 +374,7 @@ def main(
             weighting=arguments.weighting,
             evidence_acquisition=arguments.evidence_acquisition,
             full_assessment=arguments.full_assessment,
+            full_assessment_output=full_assessment_output,
             advisor=arguments.advisor,
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),
@@ -332,7 +393,7 @@ def main(
             brain=brain,
             reporter=reporter,
         )
-    except AdvisorError as error:
+    except (AdvisorError, FullAssessmentTextExportError) as error:
         parser.error(str(error))
     return 0
 

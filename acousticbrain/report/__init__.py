@@ -120,6 +120,10 @@ from .evidence_acquisition_presenter import (
 )
 from .evidence_acquisition_console import EvidenceAcquisitionPlanConsoleReporter
 from .full_assessment_console import FullAssessmentConsoleReporter
+from .full_assessment_text_export import (
+    FullAssessmentTextExportError,
+    FullAssessmentTextExporter,
+)
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,
