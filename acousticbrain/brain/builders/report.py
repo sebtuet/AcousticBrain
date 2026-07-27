@@ -27,6 +27,7 @@ from acousticbrain.report import (
     DeterministicCorrectiveActionPresenter,
     DeterministicEvidenceWeightingPresenter,
     EvidenceAcquisitionPlanPresenter,
+    AnalysisReadinessPresenter,
 )
 
 
@@ -86,6 +87,7 @@ class ReportBuilder:
         report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(
             context
         )
+        report.analysis_readiness = AnalysisReadinessPresenter().present(context)
         report.surface_materials = SurfaceMaterialPresenter().present(context)
         report.material_aware_reflection_candidates = (
             MaterialAwareReflectionCandidatePresenter().present(context)
