@@ -102,6 +102,16 @@ dans l'ordre suivant :
 Cette option utilise la cascade déterministe existante et n'active pas
 l'Advisor.
 
+La branche `develop` expose également le rapport complet dans un fichier texte
+par l'option `--full-assessment-output PATH`. Le rendu est encodé une seule
+fois en UTF-8, puis les mêmes octets sont écrits sur stdout et dans le fichier.
+Un chemin existant n'est jamais écrasé et le fichier final est publié
+atomiquement. Cette exposition n'ajoute aucune capacité scientifique, aucun
+Advisor et aucun accès réseau.
+
+Le code de ces workflows produit est présent dans `develop`, mais pas dans
+`main` à la date de cette mise à jour.
+
 ## 6. Principes de développement
 
 - Aucune nouvelle capacité scientifique ne peut être créée sans Scientific
@@ -130,9 +140,10 @@ Le parcours minimal recherché reste :
 
 La première étape produit, qui consistait à exposer les cinq rapports
 existants par une seule option CLI, est terminée. La prochaine étape produit
-n'est pas encore définie.
+n'est pas encore définie. L'export texte déterministe de ce rapport complet
+est également terminé.
 
-## 8. Dernier mandat produit terminé
+## 8. Mandats produit terminés
 
 ### Unified Deterministic Assessment Workflow
 
@@ -185,11 +196,56 @@ Validations établies :
 - sorties historiques inchangées byte-for-byte ;
 - deux sorties `--full-assessment` identiques byte-for-byte.
 
+### Deterministic Full Assessment Text Export
+
+Branche d'implémentation :
+`agent/full-assessment-text-export`
+
+Commit d'implémentation :
+`16d9a22dfacd3fbb8842c4deb81a9a707bd7995f`
+
+Message :
+`feat(cli): export deterministic full assessment`
+
+État :
+
+- implémenté et testé ;
+- publié dans la PR
+  [#41](https://github.com/sebtuet/AcousticBrain/pull/41) ;
+- fusionné dans `develop` par le commit
+  `5e4bc76e9509e189a2bfbbe412f3f2aa57d68480` ;
+- nouveau HEAD de `develop` :
+  `5e4bc76e9509e189a2bfbbe412f3f2aa57d68480`.
+
+Comportement établi :
+
+- `--full-assessment-output PATH` exige `--full-assessment` ;
+- le rapport complet est rendu une seule fois et encodé une seule fois en
+  UTF-8 ;
+- stdout et le fichier reçoivent exactement les mêmes octets ;
+- un fichier existant n'est jamais écrasé ;
+- le fichier final est publié atomiquement sans fichier final partiel ;
+- aucune nouvelle capacité scientifique n'est créée ;
+- l'Advisor n'est pas initialisé et aucun accès réseau n'est ajouté.
+
+Validations établies :
+
+- tests CLI et export réussis ;
+- test réel en sous-processus de l'identité byte-for-byte réussi ;
+- tests ciblés de la chaîne moderne réussis ;
+- suite complète : `1525 passed` ;
+- `compileall` réussi ;
+- `git diff --check` réussi.
+
+Cette fonctionnalité est présente dans `develop`, mais son code produit n'est
+pas présent dans `main` à la date de cette mise à jour.
+
 ## 9. Démarrage d'une nouvelle conversation
 
 > Voici l'état officiel actuel d'AcousticBrain.
 > Utilise `docs/PROJECT_STATE.md` comme référence descriptive de cette
-> conversation. Ne modifie pas les jalons figés. Le dernier mandat produit est
-> terminé et fusionné dans `develop` par la PR #39. Il n'est pas encore
-> présent dans `main`. Aucune prochaine étape produit n'est encore définie.
-> N'invente aucun nouveau mandat scientifique ni aucune Scientific Question.
+> conversation. Ne modifie pas les jalons figés. Les deux derniers mandats
+> produit sont terminés dans `develop` par les PR #39 et #41. Leur code produit
+> n'est pas encore présent dans `main`. Aucune prochaine étape produit n'est
+> encore définie. N'invente aucun nouveau mandat scientifique ni aucune
+> Scientific Question.
