@@ -25,6 +25,7 @@ from acousticbrain.report import (
     FullAssessmentTextExportError,
     FullAssessmentTextExporter,
     AnalysisReadinessConsoleReporter,
+    AssessmentSummaryConsoleReporter,
     AdvisorConsoleReporter,
 )
 from acousticbrain.models import (
@@ -107,6 +108,11 @@ def create_parser():
         "--analysis-readiness",
         action="store_true",
         help="print existing technical analysis readiness decisions",
+    )
+    parser.add_argument(
+        "--assessment-summary",
+        action="store_true",
+        help="print a concise summary of existing deterministic report content",
     )
     parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
     parser.add_argument("--question", default=None, help="question for the enabled advisor")
@@ -199,6 +205,7 @@ def run(
     full_assessment=False,
     full_assessment_output=None,
     analysis_readiness=False,
+    assessment_summary=False,
     advisor=False,
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
@@ -213,6 +220,8 @@ def run(
     reporter = reporter or (
         AdvisorConsoleReporter()
         if advisor
+        else AssessmentSummaryConsoleReporter()
+        if assessment_summary
         else AnalysisReadinessConsoleReporter()
         if analysis_readiness
         else FullAssessmentConsoleReporter()
@@ -242,7 +251,7 @@ def run(
         arguments["synthesize_actions"] = True
     if weighting:
         arguments["synthesize_weighting"] = True
-    if evidence_acquisition or full_assessment:
+    if evidence_acquisition or full_assessment or assessment_summary:
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
         if evidence_acquisition:
@@ -268,7 +277,7 @@ def run(
             expected_response_language=advisor_response_language,
         )
     if full_assessment_output is None:
-        if not analysis_readiness:
+        if not analysis_readiness and not assessment_summary:
             print(f"Measurement root: {measurements_root.resolve()}")
             print()
         reporter.print(report)
@@ -329,6 +338,25 @@ def main(
             if arguments.analysis_readiness and enabled:
                 raise ValueError(
                     f"--analysis-readiness cannot be combined with {option}."
+                )
+        incompatible_assessment_summary_options = (
+            ("--observations", arguments.observations),
+            ("--reasoning", arguments.reasoning),
+            ("--actions", arguments.actions),
+            ("--weighting", arguments.weighting),
+            ("--evidence-acquisition", arguments.evidence_acquisition),
+            ("--analysis-readiness", arguments.analysis_readiness),
+            ("--full-assessment", arguments.full_assessment),
+            (
+                "--full-assessment-output",
+                arguments.full_assessment_output is not None,
+            ),
+            ("--advisor", arguments.advisor),
+        )
+        for option, enabled in incompatible_assessment_summary_options:
+            if arguments.assessment_summary and enabled:
+                raise ValueError(
+                    f"--assessment-summary cannot be combined with {option}."
                 )
         if (
             arguments.full_assessment_output is not None
@@ -404,6 +432,7 @@ def main(
             full_assessment=arguments.full_assessment,
             full_assessment_output=full_assessment_output,
             analysis_readiness=arguments.analysis_readiness,
+            assessment_summary=arguments.assessment_summary,
             advisor=arguments.advisor,
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),

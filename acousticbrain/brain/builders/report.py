@@ -28,6 +28,7 @@ from acousticbrain.report import (
     DeterministicEvidenceWeightingPresenter,
     EvidenceAcquisitionPlanPresenter,
     AnalysisReadinessPresenter,
+    AssessmentSummaryPresenter,
 )
 
 
@@ -104,5 +105,6 @@ class ReportBuilder:
         report.controlled_reflection_hypothesis_status_updates = (
             ControlledReflectionHypothesisStatusPresenter().present(context)
         )
+        report.assessment_summary = AssessmentSummaryPresenter().present(report)
 
         return report

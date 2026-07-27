@@ -61,6 +61,7 @@ from .evidence_weighting_presenter import (
 )
 from .evidence_acquisition_presenter import PresentedEvidenceAcquisitionPlanReport
 from .analysis_readiness_presenter import PresentedAnalysisReadinessReport
+from .assessment_summary_presenter import PresentedAssessmentSummary
 
 
 @dataclass
@@ -135,6 +136,8 @@ class Report:
     evidence_acquisition_plans: PresentedEvidenceAcquisitionPlanReport | None = None
 
     analysis_readiness: PresentedAnalysisReadinessReport | None = None
+
+    assessment_summary: PresentedAssessmentSummary | None = None
 
     advisor_response: AdvisorResponse | None = None
 
