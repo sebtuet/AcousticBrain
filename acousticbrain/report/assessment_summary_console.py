@@ -17,7 +17,14 @@ class AssessmentSummaryConsoleReporter:
         self._measurement_status(summary)
         self._findings(summary)
         self._actions("Applicable Actions", summary.applicable_actions)
-        self._actions("Blocked Actions", summary.blocked_actions, blocked=True)
+        self._actions(
+            "Blocked Actions",
+            summary.blocked_actions,
+            blocked=True,
+            structured_information_available=(
+                report.deterministic_corrective_actions is not None
+            ),
+        )
         self._recommended_experiments(summary)
         self._technical_notice()
 
@@ -48,12 +55,20 @@ class AssessmentSummaryConsoleReporter:
             print(f"  {finding.description}")
 
     @staticmethod
-    def _actions(label, actions, *, blocked=False):
+    def _actions(
+        label,
+        actions,
+        *,
+        blocked=False,
+        structured_information_available=True,
+    ):
         print()
         print(label)
         if not actions:
             print(
-                "No blocked actions are available."
+                "No structured blocked-action information is available."
+                if blocked and not structured_information_available
+                else "No blocked actions are available."
                 if blocked
                 else "No applicable actions are available."
             )

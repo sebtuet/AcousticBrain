@@ -155,6 +155,7 @@ def source_report():
                 action("ACTION-3", "BLOCKED_BY_CONTRADICTION"),
                 action("ACTION-4", "NOT_SUPPORTED"),
                 action("ACTION-5", "ALREADY_TESTED"),
+                action("ACTION-6", "NO_ACTION_REQUIRED"),
             )
         )
     )
@@ -254,6 +255,9 @@ def test_console_preserves_findings_actions_and_experiments(capsys):
     assert "Applicability: BLOCKED_BY_CONTRADICTION" in output
     assert "Justification: ACTION-RULE-1:REASONING-1:CONCLUSION-1" in output
     assert "ACTION-5" not in output
+    assert "ACTION-6" not in output
+    assert "ACTION-4: Title ACTION-4" in output
+    assert "Applicability: NOT_SUPPORTED" in output
     assert "PLAN-1: Objective PLAN-1" in output
     assert "Status: READY" in output
     assert output.index("PLAN-1:") < output.index("PLAN-2:")
@@ -267,8 +271,23 @@ def test_console_handles_each_absent_section_independently(capsys):
     assert "No technical analysis readiness information is available." in output
     assert "No assessment findings are available." in output
     assert "No applicable actions are available." in output
-    assert "No blocked actions are available." in output
+    assert "No structured blocked-action information is available." in output
+    assert "No blocked actions are available." not in output
     assert "No recommended experiments are available." in output
+
+
+def test_console_distinguishes_present_collection_without_blocked_actions(capsys):
+    report = Report(project_name="actions")
+    report.deterministic_corrective_actions = (
+        PresentedDeterministicCorrectiveActionReport(
+            actions=(action("ACTION-1", "APPLICABLE"),)
+        )
+    )
+
+    output = render(report, capsys)
+
+    assert "No blocked actions are available." in output
+    assert "No structured blocked-action information is available." not in output
 
 
 def test_console_omits_internal_scores_thresholds_and_traceability(capsys):
