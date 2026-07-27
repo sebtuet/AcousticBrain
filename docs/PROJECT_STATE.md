@@ -154,12 +154,14 @@ Message :
 
 - implémenté ;
 - testé ;
-- publié dans la Draft PR
+- publié initialement dans la PR
   [#39](https://github.com/sebtuet/AcousticBrain/pull/39) ;
-- non fusionné à la date de cette mise à jour.
+- fusionné dans `develop` par le commit
+  `ab0b815896798b7d9e4ed23ad0896f148da81cb2`.
 
-La PR #39 utilise une branche de publication propre issue de `develop`. Elle
-contient un seul commit fonctionnel et les cinq fichiers autorisés.
+La PR #39 utilisait une branche de publication propre issue de `develop`.
+Elle contenait un seul commit fonctionnel et les cinq fichiers autorisés. Le
+workflow n'est pas présent dans `main` à la date de cette mise à jour.
 
 Comportement établi :
 
@@ -188,6 +190,6 @@ Validations établies :
 > Voici l'état officiel actuel d'AcousticBrain.
 > Utilise `docs/PROJECT_STATE.md` comme référence descriptive de cette
 > conversation. Ne modifie pas les jalons figés. Le dernier mandat produit est
-> terminé et présent dans la Draft PR #39. Aucune prochaine étape produit
-> n'est encore définie. N'invente aucun nouveau mandat scientifique ni aucune
-> Scientific Question.
+> terminé et fusionné dans `develop` par la PR #39. Il n'est pas encore
+> présent dans `main`. Aucune prochaine étape produit n'est encore définie.
+> N'invente aucun nouveau mandat scientifique ni aucune Scientific Question.
