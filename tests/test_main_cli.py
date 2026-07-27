@@ -5,6 +5,11 @@ import sys
 import pytest
 
 import main as acousticbrain_main
+from acousticbrain.report import (
+    PresentedAnalysisReadiness,
+    PresentedAnalysisReadinessReport,
+    Report,
+)
 
 
 class RecordingBrain:
@@ -43,6 +48,14 @@ def test_parser_accepts_full_assessment_output():
     )
 
     assert arguments.full_assessment_output == Path("assessment.txt")
+
+
+def test_parser_accepts_analysis_readiness():
+    arguments = acousticbrain_main.create_parser().parse_args(
+        ["--analysis-readiness"]
+    )
+
+    assert arguments.analysis_readiness is True
 
 
 @pytest.mark.parametrize(
@@ -282,6 +295,118 @@ def test_full_assessment_rejects_each_incompatible_option(
     assert error.value.code == 2
     assert f"--full-assessment cannot be combined with {option}." in (
         capsys.readouterr().err
+    )
+
+
+@pytest.mark.parametrize(
+    "option",
+    (
+        "--observations",
+        "--reasoning",
+        "--actions",
+        "--weighting",
+        "--evidence-acquisition",
+        "--full-assessment",
+        "--full-assessment-output",
+        "--advisor",
+    ),
+)
+def test_analysis_readiness_rejects_each_incompatible_option(
+    tmp_path, capsys, option
+):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    arguments = [
+        "--measurements-root",
+        str(campaign),
+        "--analysis-readiness",
+        option,
+    ]
+    if option == "--full-assessment-output":
+        arguments.append(str(tmp_path / "assessment.txt"))
+
+    with pytest.raises(SystemExit) as error:
+        acousticbrain_main.main(
+            arguments,
+            brain=RecordingBrain(),
+            reporter=RecordingReporter(),
+        )
+
+    assert error.value.code == 2
+    assert f"--analysis-readiness cannot be combined with {option}." in (
+        capsys.readouterr().err
+    )
+
+
+def test_analysis_readiness_runs_pipeline_once_without_advisor_or_network(
+    tmp_path, monkeypatch
+):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    brain = RecordingBrain()
+    reporter = RecordingReporter()
+
+    def unexpected_call(*args, **kwargs):
+        raise AssertionError("Advisor or network access was initialized")
+
+    monkeypatch.setattr(acousticbrain_main, "create_advisor_provider", unexpected_call)
+    monkeypatch.setattr("socket.create_connection", unexpected_call)
+
+    result = acousticbrain_main.main(
+        ["--measurements-root", str(campaign), "--analysis-readiness"],
+        brain=brain,
+        reporter=reporter,
+    )
+
+    assert result == 0
+    assert brain.calls == [
+        {
+            "measurement_root": campaign,
+            "compare_experiments": True,
+            "analyze_causal_discrimination": True,
+        }
+    ]
+    assert reporter.reports == [brain.report]
+
+
+def test_analysis_readiness_returns_zero_with_blocked_family(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    report = Report(project_name="fixture")
+    report.analysis_readiness = PresentedAnalysisReadinessReport(
+        analyses=(
+            PresentedAnalysisReadiness(
+                family="CLARITY",
+                status="BLOCKED",
+                blocking_issue_codes=("INVALID_DIRECT_PEAK",),
+            ),
+        )
+    )
+
+    result = acousticbrain_main.main(
+        ["--measurements-root", str(campaign), "--analysis-readiness"],
+        brain=RecordingBrain(report),
+    )
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "Status: BLOCKED" in output
+    assert str(campaign) not in output
+
+
+def test_analysis_readiness_returns_zero_without_readiness(tmp_path, capsys):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+
+    result = acousticbrain_main.main(
+        ["--measurements-root", str(campaign), "--analysis-readiness"],
+        brain=RecordingBrain(Report(project_name="fixture")),
+    )
+
+    assert result == 0
+    assert (
+        "No technical analysis readiness information is available."
+        in capsys.readouterr().out
     )
 
 

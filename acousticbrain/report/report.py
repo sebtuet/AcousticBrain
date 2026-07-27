@@ -60,6 +60,7 @@ from .evidence_weighting_presenter import (
     PresentedDeterministicEvidenceWeightingReport,
 )
 from .evidence_acquisition_presenter import PresentedEvidenceAcquisitionPlanReport
+from .analysis_readiness_presenter import PresentedAnalysisReadinessReport
 
 
 @dataclass
@@ -132,6 +133,8 @@ class Report:
     ) = None
 
     evidence_acquisition_plans: PresentedEvidenceAcquisitionPlanReport | None = None
+
+    analysis_readiness: PresentedAnalysisReadinessReport | None = None
 
     advisor_response: AdvisorResponse | None = None
 
