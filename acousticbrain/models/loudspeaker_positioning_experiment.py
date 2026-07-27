@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from math import isfinite
 
+from .room_surface import RoomSurfaceKind
+
 
 class LoudspeakerPositioningTarget(Enum):
     LEFT_SPEAKER = "LEFT_SPEAKER"
@@ -49,6 +51,10 @@ class LoudspeakerPositioningExperimentProposal:
     causality_status: str
     proposal_status: LoudspeakerPositioningProposalStatus
     provenance: tuple[tuple[str, str], ...]
+    source_surface_id: str | None = None
+    source_geometry_candidate_id: str | None = None
+    source_surface_role: RoomSurfaceKind | None = None
+    source_observation_ids: tuple[str, ...] = ()
 
     def __post_init__(self):
         tuple_fields = (
@@ -59,9 +65,32 @@ class LoudspeakerPositioningExperimentProposal:
             self.expected_observables,
             self.rationale,
             self.provenance,
+            self.source_observation_ids,
         )
         if not all(isinstance(value, tuple) for value in tuple_fields):
             raise ValueError("Positioning-proposal collections must be tuples.")
+        for value in (
+            self.source_surface_id,
+            self.source_geometry_candidate_id,
+        ):
+            if value is not None and (
+                not isinstance(value, str) or not value.strip()
+            ):
+                raise ValueError(
+                    "Positioning-proposal source identifiers must be non-empty."
+                )
+        if (
+            self.source_surface_role is not None
+            and not isinstance(self.source_surface_role, RoomSurfaceKind)
+        ):
+            raise ValueError("Positioning-proposal surface role is invalid.")
+        if any(
+            not isinstance(value, str) or not value.strip()
+            for value in self.source_observation_ids
+        ):
+            raise ValueError(
+                "Positioning-proposal observation identifiers must be non-empty."
+            )
         if not self.proposal_id or not self.source_recommendation_ids:
             raise ValueError("A positioning proposal requires stable source identifiers.")
         if self.tested_variable != "LOUDSPEAKER_POSITION":

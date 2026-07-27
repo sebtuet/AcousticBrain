@@ -10,6 +10,7 @@ from acousticbrain.models import (
     LoudspeakerPositioningProposalStatus,
     LoudspeakerPositioningTarget,
     RecommendationStatus,
+    RoomSurfaceKind,
 )
 
 
@@ -30,6 +31,10 @@ class _Source:
     geometry_required: bool
     geometry_available: bool
     reversible: bool
+    surface_id: str | None
+    geometry_candidate_id: str | None
+    surface_role: RoomSurfaceKind | None
+    observation_ids: tuple[str, ...]
 
 
 class LoudspeakerPositioningExperimentEngine:
@@ -233,6 +238,10 @@ class LoudspeakerPositioningExperimentEngine:
                 ),
                 ("causality_status", "PR044_CAUSAL_LIMIT"),
             ),
+            source_surface_id=source.surface_id,
+            source_geometry_candidate_id=source.geometry_candidate_id,
+            source_surface_role=source.surface_role,
+            source_observation_ids=source.observation_ids,
         )
         return LoudspeakerPositioningExperimentAnalysis(
             proposal=proposal,
@@ -253,6 +262,7 @@ class LoudspeakerPositioningExperimentEngine:
         geometry_required = (
             candidate.source_protocol_id == "protocol.temporary_move_speaker.v1"
         )
+        surface_id = self._identifier(parameters.get("surface"))
         return _Source(
             source_id=candidate.candidate_id,
             recommendation_ids=(
@@ -276,6 +286,12 @@ class LoudspeakerPositioningExperimentEngine:
                 or self._candidate_geometry_available(parameters, room_geometry)
             ),
             reversible=getattr(candidate.reversibility, "name", None) == "HIGH",
+            surface_id=surface_id,
+            geometry_candidate_id=self._identifier(
+                parameters.get("geometry_candidate_id")
+            ),
+            surface_role=self._surface_role(surface_id, room_geometry),
+            observation_ids=(),
         )
 
     def _recommendation_sources(self, analysis, room_geometry):
@@ -292,6 +308,7 @@ class LoudspeakerPositioningExperimentEngine:
             "TEST_SPEAKER_DISTANCE",
             "VERIFY_SBIR_PLACEMENT",
         }
+        surface_id = self._identifier(parameters.get("surface"))
         return _Source(
             source_id=item.code,
             recommendation_ids=(item.code,),
@@ -314,6 +331,12 @@ class LoudspeakerPositioningExperimentEngine:
                 or self._candidate_geometry_available(parameters, room_geometry)
             ),
             reversible=True,
+            surface_id=surface_id,
+            geometry_candidate_id=self._identifier(
+                parameters.get("geometry_candidate_id")
+            ),
+            surface_role=self._surface_role(surface_id, room_geometry),
+            observation_ids=(),
         )
 
     @classmethod
@@ -392,6 +415,22 @@ class LoudspeakerPositioningExperimentEngine:
             and bool(getattr(room_geometry, "speakers", ()))
             and all(parameters.get(key) is not None for key in required)
         )
+
+    @staticmethod
+    def _identifier(value):
+        return value if isinstance(value, str) and value.strip() else None
+
+    @staticmethod
+    def _surface_role(surface_id, room_geometry):
+        if surface_id is None or room_geometry is None:
+            return None
+        for surface in getattr(room_geometry, "surfaces", ()):
+            if (
+                getattr(surface, "surface_id", None) == surface_id
+                and isinstance(getattr(surface, "kind", None), RoomSurfaceKind)
+            ):
+                return surface.kind
+        return None
 
     @staticmethod
     def _positive_distance(value):
