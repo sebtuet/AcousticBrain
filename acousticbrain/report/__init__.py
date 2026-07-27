@@ -130,6 +130,15 @@ from .analysis_readiness_presenter import (
     PresentedAnalysisReadinessReport,
 )
 from .analysis_readiness_console import AnalysisReadinessConsoleReporter
+from .assessment_summary_presenter import (
+    AssessmentSummaryPresenter,
+    PresentedAssessmentAction,
+    PresentedAssessmentExperiment,
+    PresentedAssessmentFinding,
+    PresentedAssessmentSummary,
+    PresentedRecommendedExperiment,
+)
+from .assessment_summary_console import AssessmentSummaryConsoleReporter
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,
