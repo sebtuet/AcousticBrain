@@ -109,6 +109,14 @@ Un chemin existant n'est jamais écrasé et le fichier final est publié
 atomiquement. Cette exposition n'ajoute aucune capacité scientifique, aucun
 Advisor et aucun accès réseau.
 
+La branche `develop` expose désormais aussi la readiness technique existante
+par l'option `--analysis-readiness`. Ce mode affiche les expériences
+découvertes avec leur état `READY` ou `INCOMPLETE`, puis les sept familles
+d'analyse dans leur ordre existant, avec leurs statuts et les codes existants
+des blocages et réserves. Il indique explicitement que ces statuts
+n'établissent pas la validité scientifique et que `BLOCKED` ne signifie pas
+que le pipeline a sauté le calcul.
+
 Le code de ces workflows produit est présent dans `develop`, mais pas dans
 `main` à la date de cette mise à jour.
 
@@ -141,7 +149,8 @@ Le parcours minimal recherché reste :
 La première étape produit, qui consistait à exposer les cinq rapports
 existants par une seule option CLI, est terminée. La prochaine étape produit
 n'est pas encore définie. L'export texte déterministe de ce rapport complet
-est également terminé.
+est également terminé. L'exposition de la readiness technique des analyses
+est terminée.
 
 ## 8. Mandats produit terminés
 
@@ -240,12 +249,65 @@ Validations établies :
 Cette fonctionnalité est présente dans `develop`, mais son code produit n'est
 pas présent dans `main` à la date de cette mise à jour.
 
+### Technical Analysis Readiness CLI
+
+Branche d'implémentation :
+`agent/analysis-readiness-cli`
+
+Commit d'implémentation :
+`0a64bf457172ba3cf703b5d613f8b13db5f58e5e`
+
+Message :
+`feat(cli): expose technical analysis readiness`
+
+État :
+
+- implémenté et testé ;
+- publié dans la PR
+  [#43](https://github.com/sebtuet/AcousticBrain/pull/43) ;
+- fusionné dans `develop` par le commit
+  `0ca2566bbdd659d2e25c93925b21edeb95668c6b` ;
+- nouveau HEAD de `develop` :
+  `0ca2566bbdd659d2e25c93925b21edeb95668c6b`.
+
+Comportement établi :
+
+- `--analysis-readiness` expose les expériences découvertes avec leur état
+  exact `READY` ou `INCOMPLETE` ;
+- les sept familles sont exposées dans l'ordre existant avec leur statut
+  exact ;
+- seuls les codes existants des blocages et réserves sont affichés lorsqu'ils
+  existent ;
+- la sortie précise qu'il s'agit de readiness technique et non de validité
+  scientifique ;
+- la sortie précise que `BLOCKED` n'implique pas que le pipeline ait sauté le
+  calcul ;
+- sans `MeasurementReadinessAnalysis`, aucune famille n'est inventée, un
+  message structurel est affiché et le code de retour reste `0` ;
+- le code de retour reste également `0` lorsqu'une famille est `BLOCKED` ;
+- aucun seuil, score, verdict ou règle scientifique n'est ajouté ;
+- le pipeline, les politiques de readiness, l'Advisor et le comportement
+  réseau ne sont pas modifiés.
+
+Validations établies :
+
+- tests CLI et présentation de la readiness réussis ;
+- tests du moteur de readiness réussis ;
+- tests ciblés du `ReportBuilder` et des reporters réussis ;
+- suite complète : `1544 passed` ;
+- `compileall` réussi ;
+- `git diff --check` réussi.
+
+Cette fonctionnalité est présente dans `develop`, mais son code produit n'est
+pas présent dans `main` à la date de cette mise à jour.
+
 ## 9. Démarrage d'une nouvelle conversation
 
 > Voici l'état officiel actuel d'AcousticBrain.
 > Utilise `docs/PROJECT_STATE.md` comme référence descriptive de cette
-> conversation. Ne modifie pas les jalons figés. Les deux derniers mandats
-> produit sont terminés dans `develop` par les PR #39 et #41. Leur code produit
-> n'est pas encore présent dans `main`. Aucune prochaine étape produit n'est
-> encore définie. N'invente aucun nouveau mandat scientifique ni aucune
-> Scientific Question.
+> conversation. Ne modifie pas les jalons figés. Les mandats produit
+> `--full-assessment`, export texte déterministe et
+> `--analysis-readiness` sont terminés dans `develop` par les PR #39, #41 et
+> #43. Leur code produit n'est pas encore présent dans `main`. Aucune prochaine
+> étape produit n'est encore définie. N'invente aucun nouveau mandat
+> scientifique ni aucune Scientific Question.
