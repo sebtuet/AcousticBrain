@@ -87,12 +87,20 @@ Mesures
 ```
 
 Les cinq rapports correspondant aux étapes allant des observations aux plans
-d'acquisition existent déjà. Le pipeline peut déjà produire toute cette
-chaîne lorsque `synthesize_evidence_acquisition=True`.
+d'acquisition existent. Le pipeline peut produire toute cette chaîne lorsque
+`synthesize_evidence_acquisition=True`.
 
-Le CLI ne peut actuellement afficher qu'un rapport à la fois. Le principal
-obstacle immédiat à l'utilisabilité est donc l'accessibilité du parcours
-complet, et non l'absence du cœur scientifique.
+Le CLI expose désormais ces cinq rapports par l'option `--full-assessment`,
+dans l'ordre suivant :
+
+1. observations ;
+2. reasoning ;
+3. actions correctives ;
+4. evidence weighting ;
+5. plans d'acquisition.
+
+Cette option utilise la cascade déterministe existante et n'active pas
+l'Advisor.
 
 ## 6. Principes de développement
 
@@ -111,7 +119,7 @@ complet, et non l'absence du cœur scientifique.
 
 ## 7. Objectif produit immédiat
 
-Le parcours minimal recherché est :
+Le parcours minimal recherché reste :
 
 1. validation des mesures ;
 2. synthèse des problèmes observés ;
@@ -120,10 +128,11 @@ Le parcours minimal recherché est :
 5. expériences recommandées pour lever les blocages ;
 6. rapport lisible et exportable.
 
-La première étape retenue est volontairement plus petite : exposer les cinq
-rapports existants par une seule option CLI.
+La première étape produit, qui consistait à exposer les cinq rapports
+existants par une seule option CLI, est terminée. La prochaine étape produit
+n'est pas encore définie.
 
-## 8. Prochain mandat prêt à exécuter
+## 8. Dernier mandat produit terminé
 
 ### Unified Deterministic Assessment Workflow
 
@@ -132,56 +141,55 @@ Branche de départ :
 - `agent/scientific-audit-records`
 - commit : `cb74b2a354b40c2f363e49566b2babba2f0267af`
 
-Nouvelle branche :
+Branche d'implémentation :
 `agent/unified-deterministic-assessment`
 
-Objectif :
-ajouter l'option CLI `--full-assessment`.
+Commit d'implémentation :
+`c4e698108070ea8c0552fc46cbec7b76edeb75b9`
 
-Ordre exact des sorties :
-
-1. observations ;
-2. reasoning ;
-3. actions correctives ;
-4. evidence weighting ;
-5. plans d'acquisition.
-
-Comportement autorisé :
-
-- activer uniquement `synthesize_evidence_acquisition=True` ;
-- utiliser la cascade existante ;
-- déléguer aux cinq reporters existants ;
-- ne pas activer l'Advisor ;
-- ne réaliser aucun appel réseau ;
-- ne créer aucun calcul, tri, filtrage, résumé ou interprétation.
-
-Combinaisons interdites avec `--full-assessment` :
-
-- `--observations`
-- `--reasoning`
-- `--actions`
-- `--weighting`
-- `--evidence-acquisition`
-- `--advisor`
-
-Fichiers autorisés :
-
-- `main.py`
-- `acousticbrain/report/__init__.py`
-- `acousticbrain/report/full_assessment_console.py`
-- `tests/test_main_cli.py`
-- `tests/test_full_assessment_console.py`
-
-Message de commit prévu :
+Message :
 `feat(cli): add unified deterministic assessment workflow`
 
-Ce mandat est prêt, mais il n'est pas exécuté par le présent travail. Aucun
-fichier de code ne doit être modifié sur cette branche documentaire.
+État :
+
+- implémenté ;
+- testé ;
+- publié initialement dans la PR
+  [#39](https://github.com/sebtuet/AcousticBrain/pull/39) ;
+- fusionné dans `develop` par le commit
+  `ab0b815896798b7d9e4ed23ad0896f148da81cb2`.
+
+La PR #39 utilisait une branche de publication propre issue de `develop`.
+Elle contenait un seul commit fonctionnel et les cinq fichiers autorisés. Le
+workflow n'est pas présent dans `main` à la date de cette mise à jour.
+
+Comportement établi :
+
+- `--full-assessment` active uniquement
+  `synthesize_evidence_acquisition=True` ;
+- la cascade existante produit les cinq couches déterministes ;
+- les cinq reporters historiques reçoivent le même objet `Report` ;
+- leur ordre est observations, reasoning, actions correctives, evidence
+  weighting, puis plans d'acquisition ;
+- l'Advisor n'est pas activé ;
+- aucun calcul, tri, filtrage, résumé, interprétation ou appel réseau
+  supplémentaire n'est introduit.
+
+Validations établies :
+
+- tests CLI et reporter réussis ;
+- tests ciblés de la chaîne moderne réussis ;
+- suite complète : `1509 passed` ;
+- `compileall` réussi ;
+- `git diff --check` réussi ;
+- sorties historiques inchangées byte-for-byte ;
+- deux sorties `--full-assessment` identiques byte-for-byte.
 
 ## 9. Démarrage d'une nouvelle conversation
 
 > Voici l'état officiel actuel d'AcousticBrain.
 > Utilise `docs/PROJECT_STATE.md` comme référence descriptive de cette
-> conversation. Ne modifie pas les jalons figés. Le prochain travail autorisé
-> est uniquement celui décrit dans la section « Prochain mandat prêt à
-> exécuter », après confirmation explicite de son exécution.
+> conversation. Ne modifie pas les jalons figés. Le dernier mandat produit est
+> terminé et fusionné dans `develop` par la PR #39. Il n'est pas encore
+> présent dans `main`. Aucune prochaine étape produit n'est encore définie.
+> N'invente aucun nouveau mandat scientifique ni aucune Scientific Question.
