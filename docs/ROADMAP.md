@@ -29,8 +29,11 @@ Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 
 ## ✅ Physics
 
-- détection des pics et creux ;
+- détection déterministe des pics et creux ;
 - classification par bandes fréquentielles ;
+- caractéristiques fréquentielles descriptives LEFT, RIGHT et STEREO ;
+- comparaisons `COMMON`, `LEFT_ONLY` et `RIGHT_ONLY`, sans attribution
+  causale ;
 - propriétés géométriques de la salle ;
 - fréquence de Schroeder ;
 - modes propres complets :
@@ -61,7 +64,14 @@ Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
   - détection des réflexions précoces ;
   - agrégation multi-canal ;
   - événements communs et spécifiques ;
-  - corrélations structurées ETC-SBIR.
+  - corrélations structurées ETC-SBIR ;
+- clarté :
+  - C50 ;
+  - C80 ;
+  - D50 ;
+  - temps central Ts ;
+- rapport direct/réverbéré ;
+- décroissance du grave.
 
 ## ✅ Current Diagnostics
 
@@ -73,7 +83,10 @@ Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 - densité modale complète ;
 - confiance ;
 - RT60 ;
-- ETC et corrélations de réflexions précoces.
+- ETC et corrélations de réflexions précoces ;
+- clarté ;
+- rapport direct/réverbéré ;
+- décroissance du grave.
 
 Les diagnostics interprètent les connaissances existantes. Ils ne détectent
 pas de nouvelles features et ne recalculent aucune analyse.
@@ -88,18 +101,41 @@ pas de nouvelles features et ne recalculent aucune analyse.
 - symétrie des réflexions ;
 - validation croisée ETC, SBIR et géométrie complète.
 
-## 🚧 Additional Acoustic Metrics
+## ✅ Deterministic Evidence and Experimental Planning
 
-- clarté C50 et C80 ;
-- définition D50 ;
-- temps central Ts ;
+- plans déterministes d'acquisition de preuves ;
+- statuts `PROPOSED`, `READY` et `BLOCKED` ;
+- génération de candidats expérimentaux lorsque leurs paramètres sont déjà
+  explicitement structurés ;
+- planification de campagne multi-position lorsqu'un protocole complet est
+  fourni ;
+- proposition de déplacement temporaire d'enceinte lorsque la cible, la
+  direction et les contrôles requis existent ;
+- absence d'invention des paramètres manquants et causalité conservée comme
+  non établie.
+
+## 🚧 Remaining Acoustic Metrics
+
 - IACC ;
 - analyse LEDE ;
-- diffusion ;
-- décroissance du grave.
+- diffusion.
 
 Ces métriques devront être produites comme des `*Analysis` structurées avant
 toute interprétation ou présentation.
+
+## 🚧 Executable Experiment Completion
+
+- relier un `EvidenceAcquisitionPlan` incomplet à une déclaration expérimentale
+  entièrement paramétrée lorsque toutes les données requises sont fournies ;
+- conserver le blocage lorsqu'un protocole, une position, une répétition, un
+  canal, un réglage ou un critère requis manque ;
+- ne jamais transformer une compatibilité fréquentielle en causalité ni
+  inventer une règle scientifique.
+
+Le dépôt sait déjà projeter certains candidats, propositions et plans
+exécutables à partir de déclarations complètes. Cette étape future concerne la
+liaison générique depuis un plan d'acquisition incomplet, pas le remplacement
+des contrats expérimentaux existants.
 
 ## 🚧 Recommendations
 

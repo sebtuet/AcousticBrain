@@ -27,7 +27,7 @@ qu'ils ont examiné.
 
 ## 3. Gouvernance scientifique figée
 
-Le corpus comprend :
+Le jalon historique de gouvernance comprend :
 
 - `docs/scientific/SCIENTIFIC_CONTRACT.md`
 - `docs/scientific/KNOWLEDGE_MODEL.md`
@@ -42,7 +42,11 @@ Message :
 `docs(scientific): establish normative scientific governance`
 
 Ce corpus est figé. Sa modification est autorisée uniquement par un mandat
-explicite ou lorsqu'une insuffisance est démontrée.
+explicite ou lorsqu'une insuffisance est démontrée. Les fichiers énumérés
+ci-dessus ne sont toutefois pas présents dans l'arbre courant de `develop` ou
+de `main` : ils restent conservés dans le commit historique et sur la branche
+`agent/scientific-normative-foundations`. Leur absence de la révision courante
+ne doit pas être confondue avec une révocation de leur jalon.
 
 Les Scientific Questions relèvent exclusivement de l'autorité scientifique.
 Aucune Scientific Question ne doit être reconstruite depuis le code, le
@@ -50,7 +54,7 @@ registre ou les audits.
 
 ## 4. Audits scientifiques versionnés
 
-Les audits versionnés sont :
+Le jalon historique d'audit contient :
 
 - `docs/scientific/audits/2026-07-26_repository_scientific_audit.md`
 - `docs/scientific/audits/2026-07-26_assertion_model_inventory.md`
@@ -68,9 +72,11 @@ Branche :
 Nature :
 `AUDIT — NON NORMATIF`
 
-Les anciens audits restent immuables. Un nouvel audit est requis lorsque le
-code ou la base normative change. Une erreur factuelle doit être rectifiée de
-façon traçable, jamais par réécriture silencieuse.
+Ces fichiers ne sont pas présents dans l'arbre courant de `develop` ou de
+`main`. Ils restent conservés dans le commit et sur la branche historiques
+indiqués ci-dessus. Les anciens audits restent immuables. Un nouvel audit est
+requis lorsque le code ou la base normative change. Une erreur factuelle doit
+être rectifiée de façon traçable, jamais par réécriture silencieuse.
 
 ## 5. État technique observé
 
