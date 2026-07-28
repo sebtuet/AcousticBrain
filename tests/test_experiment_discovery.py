@@ -1,4 +1,5 @@
 import json
+import shutil
 import wave
 from datetime import datetime, timezone
 from pathlib import Path
@@ -310,6 +311,111 @@ def test_discovery_preserves_future_extension_while_recalculating_technical_fiel
     assert persisted["state"] == "READY"
     assert persisted["content_hash"] != "obsolete"
     assert len(persisted["files"]) == 3
+
+
+def test_discovery_preserves_extensions_in_file_entries_by_path(tmp_path):
+    directory = tmp_path / "baseline"
+    complete_experiment(directory)
+    archive = directory / "rew" / "archive.mdat"
+    archive.parent.mkdir()
+    archive.write_bytes(b"optional user archive")
+    extension = {
+        "revision": 3,
+        "enabled": True,
+        "nullable": None,
+        "nested": {
+            "labels": ["user", "archive"],
+            "threshold": 0.125,
+        },
+    }
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "files": [
+                    {
+                        "path": "rew/archive.mdat",
+                        "type": "TXT_UNKNOWN",
+                        "sha256": "obsolete",
+                        "channel": "LEFT",
+                        "consumer": "USER",
+                        "format_role": "OPTIONAL_PROPRIETARY_ARCHIVE",
+                        "required": False,
+                        "future_extension": extension,
+                    },
+                    {
+                        "path": "measurements/one.txt",
+                        "type": "TXT_UNKNOWN",
+                        "sha256": "obsolete",
+                        "channel": None,
+                        "transport_note": "preserve by path",
+                    },
+                    {
+                        "path": "measurements/missing.txt",
+                        "type": "TXT_MEASUREMENT",
+                        "sha256": "missing",
+                        "channel": "LEFT",
+                        "future_extension": {"stale": True},
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    persisted = json.loads((directory / "manifest.json").read_text())
+    files = {item["path"]: item for item in persisted["files"]}
+    mdat = files["rew/archive.mdat"]
+    assert mdat["consumer"] == "USER"
+    assert mdat["format_role"] == "OPTIONAL_PROPRIETARY_ARCHIVE"
+    assert mdat["required"] is False
+    assert mdat["future_extension"] == extension
+    assert mdat["type"] == "MDAT"
+    assert mdat["channel"] is None
+    assert mdat["sha256"] == MeasurementRepository.hash_file(archive)
+    assert files["measurements/one.txt"]["transport_note"] == "preserve by path"
+    assert persisted["files"][0]["path"] == "measurements/one.txt"
+    assert "measurements/missing.txt" not in files
+    assert {"measurements/two.txt", "measurements/three.txt"} <= set(files)
+
+
+def test_discovery_rejects_duplicate_manifest_file_paths(tmp_path):
+    directory = tmp_path / "baseline"
+    complete_experiment(directory)
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "files": [
+                    {"path": "measurements/one.txt"},
+                    {"path": " measurements/one.txt "},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Manifest file paths must be unique"):
+        ExperimentDiscoveryService().discover(tmp_path)
+
+
+def test_discovery_is_lossless_on_july_28_baseline_copy(tmp_path):
+    source = Path(__file__).resolve().parents[1] / "measurements" / "baseline"
+    copied = tmp_path / "baseline"
+    shutil.copytree(source, copied)
+    before = json.loads((copied / "manifest.json").read_text(encoding="utf-8"))
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    after = json.loads((copied / "manifest.json").read_text(encoding="utf-8"))
+    assert after == before
+    assert after["timestamp"] == "2026-07-28T18:43:41"
+    mdat = next(
+        item for item in after["files"] if item["path"] == "rew/baseline.mdat"
+    )
+    assert mdat["consumer"] == "USER"
+    assert mdat["format_role"] == "OPTIONAL_PROPRIETARY_ARCHIVE"
+    assert mdat["required"] is False
 
 
 def test_discovery_preserves_explicit_causal_protocol_step(tmp_path):

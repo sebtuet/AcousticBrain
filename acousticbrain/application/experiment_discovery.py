@@ -93,6 +93,22 @@ class ExperimentDiscoveryService:
             for item in inspected
             if item.channel is not None
         }
+        existing_files_by_path = self._existing_files_by_path(existing)
+        serialized_files = []
+        for item in inspected:
+            relative_path = item.path.relative_to(directory).as_posix()
+            serialized_file = dict(
+                existing_files_by_path.get(relative_path, {})
+            )
+            serialized_file.update(
+                {
+                    "path": relative_path,
+                    "type": item.file_type.value,
+                    "sha256": item.sha256,
+                    "channel": item.channel.value if item.channel else None,
+                }
+            )
+            serialized_files.append(serialized_file)
         manifest = dict(existing)
         manifest.update(
             {
@@ -104,15 +120,7 @@ class ExperimentDiscoveryService:
                 "state": state.value,
                 "content_hash": content_hash,
                 "channel_assignments": detected_assignments,
-                "files": [
-                    {
-                        "path": item.path.relative_to(directory).as_posix(),
-                        "type": item.file_type.value,
-                        "sha256": item.sha256,
-                        "channel": item.channel.value if item.channel else None,
-                    }
-                    for item in inspected
-                ],
+                "files": serialized_files,
             }
         )
         if comparison_metadata:
@@ -238,6 +246,23 @@ class ExperimentDiscoveryService:
             causal_discrimination_decisions=causal_decisions,
             experiment_declaration=declaration,
         )
+
+    @classmethod
+    def _existing_files_by_path(cls, manifest):
+        values = manifest.get("files", [])
+        if not isinstance(values, list):
+            return {}
+        files_by_path = {}
+        for value in values:
+            if not isinstance(value, dict):
+                continue
+            path = cls._optional_string(value.get("path"))
+            if path is None:
+                continue
+            if path in files_by_path:
+                raise ValueError("Manifest file paths must be unique.")
+            files_by_path[path] = value
+        return files_by_path
 
     @classmethod
     def _experiment_declaration(cls, manifest):
