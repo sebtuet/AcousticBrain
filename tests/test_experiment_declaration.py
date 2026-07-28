@@ -11,12 +11,14 @@ from acousticbrain.application import (
 )
 from acousticbrain.commands.declare_experiment import main as declare_main
 from acousticbrain.models import ExperimentDeclaration, ExperimentKind
+from acousticbrain.persistence import MeasurementRepository
 from acousticbrain.report import (
     ConsoleReporter,
     DecisionFirstReportPresenter,
     OneMinuteExecutiveSummaryPresenter,
     ExperimentComparisonPresenter,
 )
+from manifest_test_data import future_manifest_extension
 from test_automatic_experiment_comparison import comparison, descriptor
 from test_decision_first_report import (
     evolution,
@@ -149,6 +151,10 @@ def test_repeat_with_missing_reference_is_rejected(tmp_path):
 def test_persistence_is_atomic_idempotent_and_read_back_deterministically(tmp_path):
     root = experiment_root(tmp_path)
     ExperimentDiscoveryService().discover(root)
+    extension = future_manifest_extension()
+    existing = MeasurementRepository.load_manifest(root / "exp-006")
+    existing["future_extension"] = extension
+    MeasurementRepository.save_manifest(root / "exp-006", existing)
     service = ExperimentDeclarationService()
     arguments = dict(
         experiment_code="exp-006",
@@ -169,6 +175,8 @@ def test_persistence_is_atomic_idempotent_and_read_back_deterministically(tmp_pa
     assert manifest.read_text() == first_content
     assert descriptor.parent_experiment_ids == ("exp-005",)
     assert descriptor.experiment_declaration.controlled_variables == REPEAT_CONTROLS
+    persisted = MeasurementRepository.load_manifest(root / "exp-006")
+    assert persisted["future_extension"] == extension
     assert not (root / "exp-006/manifest.json.tmp").exists()
 
 

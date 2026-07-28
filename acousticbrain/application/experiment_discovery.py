@@ -93,25 +93,28 @@ class ExperimentDiscoveryService:
             for item in inspected
             if item.channel is not None
         }
-        manifest = {
-            "schema_version": self.SCHEMA_VERSION,
-            "experiment_id": directory.name,
-            "experiment_type": experiment_type.value,
-            "timestamp": timestamp,
-            "imported_at": imported_at,
-            "state": state.value,
-            "content_hash": content_hash,
-            "channel_assignments": detected_assignments,
-            "files": [
-                {
-                    "path": item.path.relative_to(directory).as_posix(),
-                    "type": item.file_type.value,
-                    "sha256": item.sha256,
-                    "channel": item.channel.value if item.channel else None,
-                }
-                for item in inspected
-            ],
-        }
+        manifest = dict(existing)
+        manifest.update(
+            {
+                "schema_version": self.SCHEMA_VERSION,
+                "experiment_id": directory.name,
+                "experiment_type": experiment_type.value,
+                "timestamp": timestamp,
+                "imported_at": imported_at,
+                "state": state.value,
+                "content_hash": content_hash,
+                "channel_assignments": detected_assignments,
+                "files": [
+                    {
+                        "path": item.path.relative_to(directory).as_posix(),
+                        "type": item.file_type.value,
+                        "sha256": item.sha256,
+                        "channel": item.channel.value if item.channel else None,
+                    }
+                    for item in inspected
+                ],
+            }
+        )
         if comparison_metadata:
             manifest["comparison"] = comparison_metadata
         if declaration.experiment_kind is not ExperimentKind.UNKNOWN:

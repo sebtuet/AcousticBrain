@@ -4,15 +4,24 @@ import pytest
 
 from acousticbrain.application import ExperimentProtocolDeclarationService
 
+from manifest_test_data import future_manifest_extension
+
 
 def test_user_confirmation_writes_modal_campaign_without_inventing_measurements(
     tmp_path,
 ):
+    extension = future_manifest_extension()
     for experiment_id in ("exp-003", "exp-004", "exp-005"):
         directory = tmp_path / experiment_id
         directory.mkdir()
         (directory / "manifest.json").write_text(
-            json.dumps({"experiment_id": experiment_id, "files": []}),
+            json.dumps(
+                {
+                    "experiment_id": experiment_id,
+                    "files": [],
+                    "future_extension": extension,
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -42,6 +51,10 @@ def test_user_confirmation_writes_modal_campaign_without_inventing_measurements(
     assert forward["comparison"]["parameters"]["position_role"] == "FORWARD"
     assert forward["experiment_id"] == "exp-005"
     assert forward["files"] == []
+    assert all(
+        manifest["future_extension"] == extension
+        for manifest in (reference, backward, forward)
+    )
 
 
 def test_confirmation_rejects_missing_or_invented_protocol_facts(tmp_path):
@@ -65,11 +78,18 @@ def test_confirmation_rejects_missing_or_invented_protocol_facts(tmp_path):
 
 
 def test_user_confirmation_declares_auditable_temporary_speaker_move(tmp_path):
+    extension = future_manifest_extension()
     for experiment_id in ("reference", "speaker-moved"):
         directory = tmp_path / experiment_id
         directory.mkdir()
         (directory / "manifest.json").write_text(
-            json.dumps({"experiment_id": experiment_id, "files": []}),
+            json.dumps(
+                {
+                    "experiment_id": experiment_id,
+                    "files": [],
+                    "future_extension": extension,
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -86,9 +106,14 @@ def test_user_confirmation_declares_auditable_temporary_speaker_move(tmp_path):
     assert result == "speaker-moved"
     reference = json.loads((tmp_path / "reference/manifest.json").read_text())
     moved = json.loads((tmp_path / "speaker-moved/manifest.json").read_text())
-    assert reference == {"experiment_id": "reference", "files": []}
+    assert reference == {
+        "experiment_id": "reference",
+        "files": [],
+        "future_extension": extension,
+    }
     assert moved["experiment_id"] == "speaker-moved"
     assert moved["files"] == []
+    assert moved["future_extension"] == extension
     comparison = moved["comparison"]
     assert comparison["parent_experiment_ids"] == ["reference"]
     assert comparison["source_protocol_id"] == "protocol.temporary_move_speaker.v1"
