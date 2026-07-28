@@ -1,4 +1,3 @@
-from pathlib import Path
 import json
 import shutil
 
@@ -7,8 +6,7 @@ from acousticbrain.brain import AcousticBrain
 from acousticbrain.report import AssessmentSummaryPresenter
 import pytest
 
-
-ROOT = Path(__file__).resolve().parents[1]
+from historical_campaign import HISTORICAL_CAMPAIGN_ROOT
 
 
 @pytest.fixture
@@ -16,7 +14,7 @@ def versioned_measurement_root(tmp_path):
     measurement_root = tmp_path / "measurements"
     for experiment_id in ("baseline", "exp-001", "exp-002"):
         shutil.copytree(
-            ROOT / "measurements" / experiment_id,
+            HISTORICAL_CAMPAIGN_ROOT / experiment_id,
             measurement_root / experiment_id,
         )
     return measurement_root
@@ -52,9 +50,11 @@ def test_comparison_is_absent_when_explicit_mode_is_disabled(
     assert report.optimization_session is None
 
 
-def test_multi_experiment_assessment_summary_matches_final_report():
+def test_multi_experiment_assessment_summary_matches_final_report(
+    historical_campaign_root,
+):
     report = AcousticBrain().analyze(
-        measurement_root=ROOT / "measurements",
+        measurement_root=historical_campaign_root,
         compare_experiments=True,
         synthesize_evidence_acquisition=True,
     )
@@ -68,8 +68,12 @@ def test_multi_experiment_assessment_summary_matches_final_report():
     assert report.assessment_summary.recommended_experiments
 
 
-def test_single_experiment_assessment_summary_remains_synchronized():
-    project = AcousticSession.auto_open(ROOT / "measurements").current_project
+def test_single_experiment_assessment_summary_remains_synchronized(
+    historical_campaign_root,
+):
+    project = AcousticSession.auto_open(
+        historical_campaign_root
+    ).current_project
 
     report = AcousticBrain().analyze(
         project,
@@ -157,10 +161,12 @@ def test_causal_mode_projects_only_explicit_repository_steps(
     assert report.optimization_session is None
 
 
-def test_causal_mode_requires_explicit_experiment_comparison():
+def test_causal_mode_requires_explicit_experiment_comparison(
+    historical_campaign_root,
+):
     with pytest.raises(ValueError, match="compare_experiments=True"):
         AcousticBrain().analyze(
-            measurement_root=ROOT / "measurements",
+            measurement_root=historical_campaign_root,
             analyze_causal_discrimination=True,
         )
 
@@ -169,7 +175,7 @@ def test_explicit_manifest_steps_are_projected_in_final_report(tmp_path):
     measurement_root = tmp_path / "measurements"
     for experiment_id in ("baseline", "exp-001"):
         shutil.copytree(
-            ROOT / "measurements" / experiment_id,
+            HISTORICAL_CAMPAIGN_ROOT / experiment_id,
             measurement_root / experiment_id,
         )
     causal_steps = {

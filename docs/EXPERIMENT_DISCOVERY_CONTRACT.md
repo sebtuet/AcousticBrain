@@ -1,9 +1,17 @@
 # Contrat de découverte automatique des expériences
 
-Le dossier de mesures devient une source technique explicite :
+La campagne active du dépôt contient uniquement la baseline réelle :
 
 ```text
 measurements/
+    baseline/
+```
+
+Le corpus historique utilisé par les tests d'intégration est isolé de cette
+campagne active :
+
+```text
+tests/fixtures/campaigns/historical_reference/
     baseline/
     exp-001/
     exp-002/

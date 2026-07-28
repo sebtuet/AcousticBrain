@@ -2,7 +2,6 @@ import json
 import shutil
 from contextlib import redirect_stdout
 from io import StringIO
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -26,10 +25,10 @@ from acousticbrain.models import (
 from acousticbrain.persistence import MeasurementRepository
 from acousticbrain.report import ConsoleReporter
 
+from historical_campaign import HISTORICAL_CAMPAIGN_ROOT
 from test_experiment_discovery import complete_experiment
 
 
-ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_ID = "protocol.verify_speaker_room_asymmetry.v1"
 HYPOTHESIS = "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
 CAUSAL_PROTOCOL = "VERIFY_SPEAKER_ROOM_ASYMMETRY"
@@ -344,7 +343,10 @@ def real_analogue_root(tmp_path):
         "exp-006": "exp-002",
     }
     for target, source in sources.items():
-        shutil.copytree(ROOT / "measurements" / source, measurement_root / target)
+        shutil.copytree(
+            HISTORICAL_CAMPAIGN_ROOT / source,
+            measurement_root / target,
+        )
         path = measurement_root / target / "manifest.json"
         value = json.loads(path.read_text())
         for key in (

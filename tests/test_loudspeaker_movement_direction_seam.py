@@ -1,5 +1,4 @@
 from dataclasses import FrozenInstanceError, replace
-from pathlib import Path
 
 import pytest
 
@@ -43,9 +42,6 @@ from acousticbrain.report import (
     Report,
 )
 from acousticbrain.brain import AcousticBrain
-
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
 def declaration(
@@ -122,8 +118,8 @@ def naturally_planned(*declarations, defer_asymmetry=True):
     return geometry, planning
 
 
-def public_pipeline_project():
-    project = ImportEngine().load_directory(str(ROOT / "measurements"))
+def public_pipeline_project(historical_campaign_root):
+    project = ImportEngine().load_directory(str(historical_campaign_root))
     project.add_speaker(
         Speaker(
             name="Left",
@@ -375,9 +371,11 @@ def test_typed_direction_reaches_engine_and_true_report_without_transformation()
     )
 
 
-def test_public_mono_analysis_exposes_typed_direction_in_true_report():
+def test_public_mono_analysis_exposes_typed_direction_in_true_report(
+    historical_campaign_root,
+):
     expected = declaration()
-    project = public_pipeline_project()
+    project = public_pipeline_project(historical_campaign_root)
     brain = AcousticBrain()
     session_context = complete_asymmetry_experiment(brain, project)
 
@@ -406,12 +404,13 @@ def test_public_mono_analysis_exposes_typed_direction_in_true_report():
 
 def test_public_multi_analysis_uses_declaration_only_in_final_current_pipeline(
     monkeypatch,
+    historical_campaign_root,
 ):
     expected = declaration()
-    session = AcousticSession.auto_open(ROOT / "measurements")
+    session = AcousticSession.auto_open(historical_campaign_root)
     for imported in session.experiments:
         if imported.project is not None:
-            configured = public_pipeline_project()
+            configured = public_pipeline_project(historical_campaign_root)
             imported.project.speakers = configured.speakers
             imported.project.room_description = configured.room_description
     monkeypatch.setattr(
@@ -421,7 +420,7 @@ def test_public_multi_analysis_uses_declaration_only_in_final_current_pipeline(
     )
 
     report = AcousticBrain().analyze(
-        measurement_root=ROOT / "measurements",
+        measurement_root=historical_campaign_root,
         compare_experiments=True,
         movement_direction_declarations=(expected,),
     )

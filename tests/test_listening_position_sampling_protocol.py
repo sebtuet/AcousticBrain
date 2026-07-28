@@ -1,5 +1,4 @@
 from dataclasses import replace
-from pathlib import Path
 
 import pytest
 
@@ -224,10 +223,11 @@ def test_protocol_does_not_change_scientific_results_or_historical_recommendatio
     )
 
 
-def test_protocol_preserves_real_causal_and_longitudinal_analyses():
-    measurement_root = Path(__file__).resolve().parents[1] / "measurements"
+def test_protocol_preserves_real_causal_and_longitudinal_analyses(
+    historical_campaign_root,
+):
     arguments = dict(
-        measurement_root=measurement_root,
+        measurement_root=historical_campaign_root,
         compare_experiments=True,
         analyze_causal_discrimination=True,
     )

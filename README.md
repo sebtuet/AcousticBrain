@@ -198,9 +198,11 @@ A measurement root may contain a baseline and versioned experiments. The
 standard CLI path discovers the available experiments and performs the existing
 comparison workflow when applicable; there is no separate comparison option.
 
-For example, the repository campaign contains `baseline`, `exp-001` and
-`exp-002`. The following command exposes the final diagnostic plans after that
-multi-experiment workflow:
+The active repository campaign contains only `measurements/baseline`. The
+historical `baseline → exp-001 → exp-002` campaign used by integration tests is
+isolated under `tests/fixtures/campaigns/historical_reference`. The following
+command exposes the final diagnostic plans for a supplied multi-experiment
+campaign:
 
 ```bash
 python main.py \
