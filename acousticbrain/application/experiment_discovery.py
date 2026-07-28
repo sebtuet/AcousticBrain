@@ -116,33 +116,63 @@ class ExperimentDiscoveryService:
             }
         )
         if comparison_metadata:
-            manifest["comparison"] = comparison_metadata
+            comparison = dict(existing.get("comparison", {}))
+            for key in (
+                "parent_experiment_id",
+                "parent_experiment_ids",
+                "source_protocol_id",
+                "source_hypothesis_code",
+                "declared_change_codes",
+                "required_fact_codes",
+                "parameters",
+            ):
+                comparison.pop(key, None)
+            comparison.update(comparison_metadata)
+            manifest["comparison"] = comparison
         if declaration.experiment_kind is not ExperimentKind.UNKNOWN:
-            manifest["experiment_declaration"] = self._serialize_declaration(
-                declaration
+            experiment_declaration = dict(
+                existing.get("experiment_declaration", {})
             )
+            experiment_declaration.update(self._serialize_declaration(declaration))
+            manifest["experiment_declaration"] = experiment_declaration
         if causal_step is not None:
-            manifest["causal_protocol_step"] = {
-                "protocol_code": causal_step.protocol_code,
-                "step_code": causal_step.step_code,
-                "step_index": causal_step.step_index,
-                "controlled_variable_codes": list(
-                    causal_step.controlled_variable_codes
-                ),
-                "changed_variable_codes": list(causal_step.changed_variable_codes),
-                "unknown_variable_codes": list(causal_step.unknown_variable_codes),
-                "observation_codes": list(causal_step.observation_codes),
-            }
-        if causal_decisions:
-            manifest["causal_discrimination_decisions"] = [
+            causal_protocol_step = dict(existing.get("causal_protocol_step", {}))
+            causal_protocol_step.update(
                 {
-                    "protocol_code": item.protocol_code,
-                    "discrimination_code": item.discrimination_code,
-                    "status": item.status.value,
-                    "reason": item.reason.value,
+                    "protocol_code": causal_step.protocol_code,
+                    "step_code": causal_step.step_code,
+                    "step_index": causal_step.step_index,
+                    "controlled_variable_codes": list(
+                        causal_step.controlled_variable_codes
+                    ),
+                    "changed_variable_codes": list(
+                        causal_step.changed_variable_codes
+                    ),
+                    "unknown_variable_codes": list(
+                        causal_step.unknown_variable_codes
+                    ),
+                    "observation_codes": list(causal_step.observation_codes),
                 }
-                for item in causal_decisions
-            ]
+            )
+            manifest["causal_protocol_step"] = causal_protocol_step
+        if causal_decisions:
+            existing_decisions = {
+                self._optional_string(item.get("discrimination_code")): item
+                for item in existing.get("causal_discrimination_decisions", [])
+            }
+            serialized_decisions = []
+            for item in causal_decisions:
+                serialized = dict(existing_decisions[item.discrimination_code])
+                serialized.update(
+                    {
+                        "protocol_code": item.protocol_code,
+                        "discrimination_code": item.discrimination_code,
+                        "status": item.status.value,
+                        "reason": item.reason.value,
+                    }
+                )
+                serialized_decisions.append(serialized)
+            manifest["causal_discrimination_decisions"] = serialized_decisions
         self.repository.save_manifest(directory, manifest)
         files = tuple(
             ExperimentFileDescriptor(

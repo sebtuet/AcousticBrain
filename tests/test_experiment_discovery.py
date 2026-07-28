@@ -116,6 +116,75 @@ def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
     )
 
 
+def test_discovery_preserves_extension_nested_in_comparison(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+    extension = future_manifest_extension()
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "state": "STALE",
+                "content_hash": "obsolete",
+                "comparison": {
+                    "parent_experiment_id": "baseline",
+                    "source_protocol_id": " protocol.repeat-pair ",
+                    "future_extension": extension,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    persisted = json.loads((directory / "manifest.json").read_text())
+    assert persisted["comparison"]["future_extension"] == extension
+    assert persisted["comparison"]["parent_experiment_ids"] == ["baseline"]
+    assert persisted["comparison"]["source_protocol_id"] == "protocol.repeat-pair"
+    assert "parent_experiment_id" not in persisted["comparison"]
+    assert persisted["state"] == "READY"
+    assert persisted["content_hash"] != "obsolete"
+
+
+def test_discovery_preserves_extension_nested_in_experiment_declaration(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+    extension = future_manifest_extension()
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "experiment_declaration": {
+                    "schema_version": 1,
+                    "experiment_kind": "CONTROLLED_INTERVENTION",
+                    "reference_experiment_code": " baseline ",
+                    "modified_variables": [" SPEAKER_POSITION "],
+                    "controlled_variables": [" ROOM_CONFIGURATION "],
+                    "user_note": " controlled movement ",
+                    "field_provenance": {
+                        "experiment_kind": "USER_CLI",
+                        "reference_experiment_code": "USER_CLI",
+                        "modified_variables": "USER_CLI",
+                        "controlled_variables": "USER_CLI",
+                        "user_note": "USER_CLI",
+                    },
+                    "future_extension": extension,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    persisted = json.loads((directory / "manifest.json").read_text())
+    declaration = persisted["experiment_declaration"]
+    assert declaration["future_extension"] == extension
+    assert declaration["reference_experiment_code"] == "baseline"
+    assert declaration["modified_variables"] == ["SPEAKER_POSITION"]
+    assert declaration["controlled_variables"] == ["ROOM_CONFIGURATION"]
+    assert declaration["user_note"] == "controlled movement"
+
+
 @pytest.mark.parametrize(
     ("section", "value"),
     (
@@ -274,6 +343,46 @@ def test_discovery_preserves_explicit_causal_protocol_step(tmp_path):
     ]
 
 
+def test_discovery_preserves_extension_nested_in_causal_protocol_step(tmp_path):
+    directory = tmp_path / "exp-002"
+    complete_experiment(directory)
+    extension = future_manifest_extension()
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "causal_protocol_step": {
+                    "protocol_code": " VERIFY_SPEAKER_ROOM_ASYMMETRY ",
+                    "step_code": " STEP_2_SPEAKER_SWAP ",
+                    "step_index": 2,
+                    "controlled_variable_codes": [
+                        " ROOM_SIDE ",
+                        "SIGNAL_CHAIN_ASSIGNMENT",
+                    ],
+                    "changed_variable_codes": [" LOUDSPEAKER_ASSIGNMENT "],
+                    "unknown_variable_codes": [],
+                    "observation_codes": [
+                        " ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER "
+                    ],
+                    "future_extension": extension,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    persisted = json.loads((directory / "manifest.json").read_text())
+    causal_step = persisted["causal_protocol_step"]
+    assert causal_step["future_extension"] == extension
+    assert causal_step["protocol_code"] == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    assert causal_step["step_code"] == "STEP_2_SPEAKER_SWAP"
+    assert causal_step["controlled_variable_codes"] == [
+        "ROOM_SIDE",
+        "SIGNAL_CHAIN_ASSIGNMENT",
+    ]
+
+
 def test_discovery_preserves_explicit_deferred_causal_discrimination(tmp_path):
     directory = tmp_path / "exp-002"
     complete_experiment(directory)
@@ -294,6 +403,36 @@ def test_discovery_preserves_explicit_deferred_causal_discrimination(tmp_path):
     assert decision.reason.value == "USER_DECISION"
     persisted = json.loads((directory / "manifest.json").read_text())
     assert persisted["causal_discrimination_decisions"][0]["status"] == "DEFERRED"
+
+
+def test_discovery_preserves_extension_nested_in_causal_decision(tmp_path):
+    directory = tmp_path / "exp-002"
+    complete_experiment(directory)
+    extension = future_manifest_extension()
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "causal_discrimination_decisions": [
+                    {
+                        "protocol_code": " VERIFY_SPEAKER_ROOM_ASYMMETRY ",
+                        "discrimination_code": " LOUDSPEAKER_VS_ROOM_SIDE ",
+                        "status": "DEFERRED",
+                        "reason": "USER_DECISION",
+                        "future_extension": extension,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    ExperimentDiscoveryService().discover(tmp_path)
+
+    persisted = json.loads((directory / "manifest.json").read_text())
+    decision = persisted["causal_discrimination_decisions"][0]
+    assert decision["future_extension"] == extension
+    assert decision["protocol_code"] == "VERIFY_SPEAKER_ROOM_ASYMMETRY"
+    assert decision["discrimination_code"] == "LOUDSPEAKER_VS_ROOM_SIDE"
 
 
 def test_identical_manifest_is_not_rewritten(tmp_path):
