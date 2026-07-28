@@ -550,15 +550,12 @@ class FrequencyResponseFeatureAnalyzer:
             candidates = []
             for stereo_feature in stereo_features:
                 scores = tuple(
-                    score
+                    self._compatibility_score(source, stereo_feature)
                     for source in source_features
-                    if (
-                        score := self._compatibility_score(source, stereo_feature)
-                    )
-                    is not None
                 )
-                if scores:
-                    candidates.append((fmean(scores), stereo_feature))
+                if any(score is None for score in scores):
+                    continue
+                candidates.append((fmean(scores), stereo_feature))
             candidates.sort(key=lambda item: (item[0], item[1].feature_id))
             if not candidates:
                 relations.append(

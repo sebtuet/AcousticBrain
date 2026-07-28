@@ -352,6 +352,53 @@ def test_one_stereo_feature_cannot_resolve_multiple_source_comparisons():
     assert len(resolved_ids) == len(set(resolved_ids))
 
 
+def test_common_stereo_relation_requires_compatibility_with_both_sources():
+    result = analyze(
+        measurement((100.0, -8.0, 0.05)),
+        measurement((105.0, -8.0, 0.05)),
+        measurement((98.0, -8.0, 0.05)),
+    )
+
+    comparison = result.left_right_comparisons[0]
+    assert comparison.classification is FrequencyFeatureChannelClassification.COMMON
+    relation = result.stereo_relations[0]
+    assert relation.classification is (
+        FrequencyFeatureStereoClassification.NOT_RESOLVED_IN_STEREO
+    )
+    assert relation.stereo_feature_id is None
+
+
+def test_channel_only_stereo_relations_require_the_single_source():
+    scenarios = (
+        (
+            measurement((100.0, -8.0, 0.04)),
+            measurement(),
+            FrequencyFeatureChannelClassification.LEFT_ONLY,
+        ),
+        (
+            measurement(),
+            measurement((100.0, -8.0, 0.04)),
+            FrequencyFeatureChannelClassification.RIGHT_ONLY,
+        ),
+    )
+
+    for left, right, expected_classification in scenarios:
+        result = analyze(
+            left,
+            right,
+            measurement((100.0, -8.0, 0.04)),
+        )
+
+        assert result.left_right_comparisons[0].classification is (
+            expected_classification
+        )
+        relation = result.stereo_relations[0]
+        assert relation.classification is (
+            FrequencyFeatureStereoClassification.PRESENT_IN_STEREO
+        )
+        assert relation.stereo_feature_id is not None
+
+
 def test_identifiers_and_order_are_stable_and_results_are_immutable():
     curves = (
         measurement((180.0, -7.0, 0.05), (100.0, 8.0, 0.04)),
