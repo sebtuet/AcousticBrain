@@ -232,3 +232,5 @@ class AnalysisContext:
     experiment_comparison_analysis = None
 
     causal_discrimination_analysis = None
+
+    frequency_response_feature_analysis = None

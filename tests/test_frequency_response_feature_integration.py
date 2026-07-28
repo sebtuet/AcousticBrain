@@ -1,0 +1,168 @@
+import hashlib
+import json
+import shutil
+from pathlib import Path
+
+import main as acousticbrain_main
+
+from acousticbrain.application import AcousticSession
+from acousticbrain.brain import AcousticBrain
+from acousticbrain.models import (
+    FrequencyFeatureChannelClassification,
+    FrequencyResponseFeatureType,
+    MeasurementAnalysisFamily,
+    MeasurementReadinessStatus,
+)
+
+
+BASELINE = Path(__file__).resolve().parents[1] / "measurements" / "baseline"
+
+
+def copy_campaign(tmp_path):
+    root = tmp_path / "measurements"
+    shutil.copytree(BASELINE, root / "baseline")
+    return root
+
+
+def hashes(root):
+    return {
+        path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
+def test_real_pipeline_analyzes_all_baseline_txt_without_mutating_campaign(tmp_path):
+    root = copy_campaign(tmp_path)
+    before = hashes(root)
+    session = AcousticSession.auto_open(root)
+
+    report, context = AcousticBrain().pipeline.run(
+        session.current_project,
+        experiment_descriptors=session.descriptors,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+
+    analysis = context.frequency_response_feature_analysis
+    assert analysis is not None
+    assert tuple(item.sample_count for item in analysis.channels) == (957, 957, 957)
+    assert all(item.features for item in analysis.channels)
+    assert any(
+        feature.feature_type is FrequencyResponseFeatureType.PEAK
+        for item in analysis.channels
+        for feature in item.features
+    )
+    assert any(
+        feature.feature_type is FrequencyResponseFeatureType.NOTCH
+        for item in analysis.channels
+        for feature in item.features
+    )
+    assert any(
+        item.classification is FrequencyFeatureChannelClassification.COMMON
+        for item in analysis.left_right_comparisons
+    )
+    observation_ids = tuple(
+        item.observation_id for item in report.acoustic_observations.observations
+    )
+    assert "FREQUENCY_RESPONSE_FEATURE_FACTS" in observation_ids
+    assert "LEFT_RIGHT_FREQUENCY_FEATURE_COMPARISON_FACTS" in observation_ids
+    assert "STEREO_FREQUENCY_FEATURE_RELATION_FACTS" in observation_ids
+    feature_observation = next(
+        item
+        for item in report.acoustic_observations.observations
+        if item.observation_id == "FREQUENCY_RESPONSE_FEATURE_FACTS"
+    )
+    assert feature_observation.source_analysis_ids == (
+        "FrequencyResponseFeatureAnalysis",
+    )
+    assert any(
+        value.startswith("frequency_features.left.peak_count=")
+        for value in feature_observation.supporting_evidence
+    )
+    assert any(
+        value.startswith("frequency_features.deepest_notch.depth_db=")
+        for value in feature_observation.supporting_evidence
+    )
+    assert "do not establish cause" in " ".join(feature_observation.limitations)
+    frequency_readiness = next(
+        item
+        for item in context.measurement_readiness_analysis.analyses
+        if item.family is MeasurementAnalysisFamily.FREQUENCY
+    )
+    assert frequency_readiness.status is MeasurementReadinessStatus.AVAILABLE
+    assert frequency_readiness.missing_facts == ()
+    assert before == hashes(root)
+
+
+def test_new_observations_do_not_enter_existing_causal_reasoning(tmp_path):
+    root = copy_campaign(tmp_path)
+
+    report = AcousticBrain().analyze(
+        measurement_root=root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+    )
+
+    new_observations = {
+        "FREQUENCY_RESPONSE_FEATURE_FACTS",
+        "LEFT_RIGHT_FREQUENCY_FEATURE_COMPARISON_FACTS",
+        "STEREO_FREQUENCY_FEATURE_RELATION_FACTS",
+    }
+    reasoning_observations = {
+        observation_id
+        for item in report.deterministic_acoustic_reasoning.reasonings
+        for observation_id in item.observation_ids
+    }
+    assert new_observations.isdisjoint(reasoning_observations)
+    assert all(
+        "RECOMMEND_GEOMETRY_ADJUSTMENT" not in item.title
+        for item in report.deterministic_corrective_actions.actions
+    )
+
+
+def test_cli_exposes_readiness_observations_and_full_assessment_deterministically(
+    tmp_path,
+    capsys,
+):
+    root = copy_campaign(tmp_path)
+    original_manifest = json.loads(
+        (root / "baseline" / "manifest.json").read_text(encoding="utf-8")
+    )
+    original_hashes = hashes(root)
+
+    assert acousticbrain_main.main(
+        ["--measurements-root", str(root), "--analysis-readiness"]
+    ) == 0
+    readiness_output = capsys.readouterr().out
+    assert "\nFREQUENCY\n" in readiness_output
+    assert "Status: AVAILABLE" in readiness_output
+
+    assert acousticbrain_main.main(
+        ["--measurements-root", str(root), "--observations"]
+    ) == 0
+    first_observations = capsys.readouterr().out
+    assert "FREQUENCY_RESPONSE_FEATURE_FACTS" in first_observations
+    assert "LEFT_RIGHT_FREQUENCY_FEATURE_COMPARISON_FACTS" in first_observations
+    assert "STEREO_FREQUENCY_FEATURE_RELATION_FACTS" in first_observations
+
+    assert acousticbrain_main.main(
+        ["--measurements-root", str(root), "--observations"]
+    ) == 0
+    second_observations = capsys.readouterr().out
+    assert second_observations == first_observations
+
+    assert acousticbrain_main.main(
+        ["--measurements-root", str(root), "--full-assessment"]
+    ) == 0
+    full_output = capsys.readouterr().out
+    assert "FREQUENCY_RESPONSE_FEATURE_FACTS" in full_output
+    assert full_output.index("DETERMINISTIC ACOUSTIC OBSERVATIONS") < (
+        full_output.index("DETERMINISTIC ACOUSTIC REASONING")
+    )
+
+    assert original_manifest == json.loads(
+        (root / "baseline" / "manifest.json").read_text(encoding="utf-8")
+    )
+    assert original_hashes == hashes(root)

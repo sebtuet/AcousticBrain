@@ -7,6 +7,7 @@ class PresentedAnalysisReadiness:
     status: str
     blocking_issue_codes: tuple[str, ...] = ()
     reservation_issue_codes: tuple[str, ...] = ()
+    missing_facts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class AnalysisReadinessPresenter:
                     reservation_issue_codes=tuple(
                         issue.code.value for issue in item.non_blocking_issues
                     ),
+                    missing_facts=item.missing_facts,
                 )
                 for item in readiness.analyses
             )

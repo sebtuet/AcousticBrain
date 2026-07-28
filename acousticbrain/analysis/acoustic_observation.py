@@ -2,6 +2,9 @@ from acousticbrain.models import (
     AcousticObservation,
     AcousticObservationCategory,
     AcousticObservationSynthesis,
+    FrequencyFeatureChannelClassification,
+    FrequencyFeatureStereoClassification,
+    FrequencyResponseFeatureType,
 )
 
 
@@ -12,6 +15,9 @@ class DeterministicAcousticObservationSynthesizer:
         observations = []
         for builder in (
             self._measurement_quality,
+            self._frequency_response_features,
+            self._left_right_frequency_features,
+            self._stereo_frequency_features,
             self._low_frequency_decay,
             self._rt60,
             self._early_reflections,
@@ -64,6 +70,154 @@ class DeterministicAcousticObservationSynthesizer:
             contradicting_evidence=tuple(issues),
             limitations=(),
             source_analysis_ids=("MeasurementQualityAnalysis",),
+        )
+
+    def _frequency_response_features(self, context):
+        analysis = getattr(context, "frequency_response_feature_analysis", None)
+        if analysis is None:
+            return None
+        evidence = []
+        all_features = []
+        for channel in analysis.channels:
+            evidence.extend(
+                (
+                    f"frequency_features.{channel.channel.value.lower()}."
+                    f"peak_count={channel.peak_count}",
+                    f"frequency_features.{channel.channel.value.lower()}."
+                    f"notch_count={channel.notch_count}",
+                    f"frequency_features.{channel.channel.value.lower()}."
+                    f"sample_count={channel.sample_count}",
+                )
+            )
+            all_features.extend(channel.features)
+        deepest = max(
+            (
+                item
+                for item in all_features
+                if item.feature_type is FrequencyResponseFeatureType.NOTCH
+            ),
+            key=lambda item: (
+                item.depth_db,
+                -item.center_frequency_hz,
+                item.feature_id,
+            ),
+            default=None,
+        )
+        if deepest is not None:
+            evidence.extend(
+                (
+                    "frequency_features.deepest_notch.center_hz="
+                    f"{self._number(deepest.center_frequency_hz)}",
+                    "frequency_features.deepest_notch.depth_db="
+                    f"{self._number(deepest.depth_db)}",
+                    "frequency_features.deepest_notch.channel="
+                    f"{deepest.channel.value}",
+                )
+            )
+        peak_count = sum(item.peak_count for item in analysis.channels)
+        notch_count = sum(item.notch_count for item in analysis.channels)
+        return AcousticObservation(
+            observation_id="FREQUENCY_RESPONSE_FEATURE_FACTS",
+            category=AcousticObservationCategory.FREQUENCY_RESPONSE,
+            title="Frequency-response feature facts",
+            description=(
+                f"Frequency-response analysis detected {peak_count} peaks and "
+                f"{notch_count} notches across LEFT, RIGHT and STEREO."
+            ),
+            confidence=analysis.confidence,
+            supporting_evidence=tuple(evidence),
+            contradicting_evidence=(),
+            limitations=analysis.limitations,
+            source_analysis_ids=("FrequencyResponseFeatureAnalysis",),
+        )
+
+    def _left_right_frequency_features(self, context):
+        analysis = getattr(context, "frequency_response_feature_analysis", None)
+        if analysis is None:
+            return None
+        counts = {
+            classification: sum(
+                item.classification is classification
+                for item in analysis.left_right_comparisons
+            )
+            for classification in FrequencyFeatureChannelClassification
+        }
+        common = tuple(
+            item
+            for item in analysis.left_right_comparisons
+            if item.classification
+            is FrequencyFeatureChannelClassification.COMMON
+        )
+        confidence = (
+            min(item.match_confidence for item in common)
+            if common
+            else analysis.confidence
+        )
+        return AcousticObservation(
+            observation_id="LEFT_RIGHT_FREQUENCY_FEATURE_COMPARISON_FACTS",
+            category=AcousticObservationCategory.FREQUENCY_RESPONSE,
+            title="LEFT/RIGHT frequency-feature comparison facts",
+            description=(
+                f"Channel comparison contains "
+                f"{counts[FrequencyFeatureChannelClassification.COMMON]} common, "
+                f"{counts[FrequencyFeatureChannelClassification.LEFT_ONLY]} "
+                "left-only and "
+                f"{counts[FrequencyFeatureChannelClassification.RIGHT_ONLY]} "
+                "right-only features."
+            ),
+            confidence=confidence,
+            supporting_evidence=(
+                "frequency_features.common_count="
+                f"{counts[FrequencyFeatureChannelClassification.COMMON]}",
+                "frequency_features.left_only_count="
+                f"{counts[FrequencyFeatureChannelClassification.LEFT_ONLY]}",
+                "frequency_features.right_only_count="
+                f"{counts[FrequencyFeatureChannelClassification.RIGHT_ONLY]}",
+            ),
+            contradicting_evidence=(),
+            limitations=analysis.limitations,
+            source_analysis_ids=("FrequencyResponseFeatureAnalysis",),
+        )
+
+    def _stereo_frequency_features(self, context):
+        analysis = getattr(context, "frequency_response_feature_analysis", None)
+        if analysis is None:
+            return None
+        counts = {
+            classification: sum(
+                item.classification is classification
+                for item in analysis.stereo_relations
+            )
+            for classification in FrequencyFeatureStereoClassification
+        }
+        resolved = tuple(
+            item
+            for item in analysis.stereo_relations
+            if item.stereo_feature_id is not None
+        )
+        confidence = (
+            min(item.match_confidence for item in resolved)
+            if resolved
+            else analysis.confidence
+        )
+        evidence = tuple(
+            "frequency_features.stereo."
+            f"{classification.value.lower()}_count={counts[classification]}"
+            for classification in FrequencyFeatureStereoClassification
+        )
+        return AcousticObservation(
+            observation_id="STEREO_FREQUENCY_FEATURE_RELATION_FACTS",
+            category=AcousticObservationCategory.FREQUENCY_RESPONSE,
+            title="STEREO frequency-feature relation facts",
+            description=(
+                f"Stereo comparison resolved {len(resolved)} of "
+                f"{len(analysis.stereo_relations)} descriptive feature relations."
+            ),
+            confidence=confidence,
+            supporting_evidence=evidence,
+            contradicting_evidence=(),
+            limitations=analysis.limitations,
+            source_analysis_ids=("FrequencyResponseFeatureAnalysis",),
         )
 
     def _low_frequency_decay(self, context):

@@ -30,6 +30,7 @@ class AnalysisReadinessConsoleReporter:
                 print(f"Status: {analysis.status}")
                 self._issues("Blocking issues", analysis.blocking_issue_codes)
                 self._issues("Reservations", analysis.reservation_issue_codes)
+                self._issues("Missing facts", analysis.missing_facts)
 
         print()
         print("These statuses describe technical analysis readiness.")
