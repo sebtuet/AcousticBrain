@@ -23,6 +23,9 @@ class PresentedLoudspeakerPositioningExperimentProposal:
     source_geometry_candidate_id: str | None = None
     source_surface_role: str | None = None
     source_observation_ids: tuple[str, ...] = ()
+    movement_direction_declaration_id: str | None = None
+    movement_direction_source_id: str | None = None
+    movement_direction_provenance_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,15 @@ class LoudspeakerPositioningExperimentPresenter:
                         if proposal.source_surface_role is not None else None
                     ),
                     source_observation_ids=proposal.source_observation_ids,
+                    movement_direction_declaration_id=(
+                        proposal.movement_direction_declaration_id
+                    ),
+                    movement_direction_source_id=(
+                        proposal.movement_direction_source_id
+                    ),
+                    movement_direction_provenance_code=(
+                        proposal.movement_direction_provenance_code
+                    ),
                 )
                 if proposal is not None else None
             ),

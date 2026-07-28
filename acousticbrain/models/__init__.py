@@ -67,6 +67,10 @@ from .loudspeaker_positioning_experiment import (
     LoudspeakerPositioningProposalStatus,
     LoudspeakerPositioningTarget,
 )
+from .loudspeaker_movement_direction_declaration import (
+    LoudspeakerMovementDirectionDeclaration,
+    MovementDirectionDeclarationResolutionError,
+)
 from .longitudinal_experimental_learning import (
     ExperimentInformationAssessment,
     ExperimentInformationStatus,

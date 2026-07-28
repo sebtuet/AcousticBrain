@@ -5,6 +5,9 @@ from types import MappingProxyType
 from typing import Mapping
 
 from .recommendation import RecommendationParameter
+from .loudspeaker_movement_direction_declaration import (
+    LoudspeakerMovementDirectionDeclaration,
+)
 
 
 class ExperimentPlanningStatus(Enum):
@@ -94,6 +97,9 @@ class ExperimentCandidate:
     )
     controlled_variable_codes: tuple[str, ...] = ()
     changed_variable_codes: tuple[str, ...] = ()
+    movement_direction_declaration: (
+        LoudspeakerMovementDirectionDeclaration | None
+    ) = None
 
     def __post_init__(self):
         for value in (
@@ -139,6 +145,14 @@ class ExperimentCandidate:
             raise ValueError("Experiment duration must be non-negative.")
         if self.eligible == bool(self.ineligibility_reasons):
             raise ValueError("Experiment eligibility and reasons are inconsistent.")
+        if (
+            self.movement_direction_declaration is not None
+            and not isinstance(
+                self.movement_direction_declaration,
+                LoudspeakerMovementDirectionDeclaration,
+            )
+        ):
+            raise ValueError("Experiment candidate direction declaration is invalid.")
         object.__setattr__(self, "parameters", MappingProxyType(dict(self.parameters)))
 
 

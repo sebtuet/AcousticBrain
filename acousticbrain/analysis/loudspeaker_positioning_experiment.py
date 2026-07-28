@@ -5,6 +5,7 @@ from re import sub
 from acousticbrain.models import (
     LoudspeakerMovementAxis,
     LoudspeakerMovementDirection,
+    LoudspeakerMovementDirectionDeclaration,
     LoudspeakerPositioningExperimentAnalysis,
     LoudspeakerPositioningExperimentProposal,
     LoudspeakerPositioningProposalStatus,
@@ -35,6 +36,8 @@ class _Source:
     geometry_candidate_id: str | None
     surface_role: RoomSurfaceKind | None
     observation_ids: tuple[str, ...]
+    direction_declaration: LoudspeakerMovementDirectionDeclaration | None
+    blocking_reason: str | None
 
 
 class LoudspeakerPositioningExperimentEngine:
@@ -146,6 +149,12 @@ class LoudspeakerPositioningExperimentEngine:
                 ("SOURCE_DEFERRED_BY_USER",),
                 considered,
             )
+        if source.blocking_reason is not None:
+            return self._negative(
+                LoudspeakerPositioningProposalStatus.NOT_ELIGIBLE,
+                (source.blocking_reason,),
+                considered,
+            )
         if source.geometry_required and not source.geometry_available:
             return self._negative(
                 LoudspeakerPositioningProposalStatus.MISSING_GEOMETRY,
@@ -224,7 +233,14 @@ class LoudspeakerPositioningExperimentEngine:
             provenance=(
                 ("source", source.source_id),
                 ("target", "SOURCE_PARAMETER"),
-                ("movement_direction", "SOURCE_PARAMETER"),
+                (
+                    "movement_direction",
+                    (
+                        source.direction_declaration.provenance_code
+                        if source.direction_declaration is not None
+                        else "SOURCE_PARAMETER"
+                    ),
+                ),
                 (
                     "step_distance_m",
                     "SOURCE_PARAMETER"
@@ -242,6 +258,18 @@ class LoudspeakerPositioningExperimentEngine:
             source_geometry_candidate_id=source.geometry_candidate_id,
             source_surface_role=source.surface_role,
             source_observation_ids=source.observation_ids,
+            movement_direction_declaration_id=(
+                source.direction_declaration.declaration_id
+                if source.direction_declaration is not None else None
+            ),
+            movement_direction_source_id=(
+                source.direction_declaration.source_id
+                if source.direction_declaration is not None else None
+            ),
+            movement_direction_provenance_code=(
+                source.direction_declaration.provenance_code
+                if source.direction_declaration is not None else None
+            ),
         )
         return LoudspeakerPositioningExperimentAnalysis(
             proposal=proposal,
@@ -263,6 +291,35 @@ class LoudspeakerPositioningExperimentEngine:
             candidate.source_protocol_id == "protocol.temporary_move_speaker.v1"
         )
         surface_id = self._identifier(parameters.get("surface"))
+        declaration = getattr(
+            candidate,
+            "movement_direction_declaration",
+            None,
+        )
+        historical_direction, blocking_reason = self._historical_direction(
+            parameters
+        )
+        if (
+            blocking_reason is None
+            and declaration is not None
+            and historical_direction is not None
+            and declaration.direction is not historical_direction
+        ):
+            blocking_reason = "CONFLICTING_MOVEMENT_DIRECTION_DECLARATIONS"
+        elif (
+            blocking_reason is None
+            and declaration is not None
+            and candidate.source_protocol_id
+            == "protocol.temporary_move_speaker.v1"
+            and declaration.direction
+            not in {
+                LoudspeakerMovementDirection.FORWARD,
+                LoudspeakerMovementDirection.BACKWARD,
+            }
+        ):
+            blocking_reason = (
+                "MOVEMENT_DIRECTION_INCOMPATIBLE_WITH_LONGITUDINAL_SBIR"
+            )
         return _Source(
             source_id=candidate.candidate_id,
             recommendation_ids=(
@@ -272,7 +329,10 @@ class LoudspeakerPositioningExperimentEngine:
             ),
             hypothesis_codes=(candidate.hypothesis_code,),
             target=self._target(parameters.get("speaker_id")),
-            direction=self._direction(parameters),
+            direction=(
+                declaration.direction
+                if declaration is not None else historical_direction
+            ),
             distance_m=parameters.get("proposed_displacement_m"),
             observable_codes=tuple(candidate.observable_fact_codes),
             confidence=candidate.confidence,
@@ -292,6 +352,8 @@ class LoudspeakerPositioningExperimentEngine:
             ),
             surface_role=self._surface_role(surface_id, room_geometry),
             observation_ids=(),
+            direction_declaration=declaration,
+            blocking_reason=blocking_reason,
         )
 
     def _recommendation_sources(self, analysis, room_geometry):
@@ -304,6 +366,7 @@ class LoudspeakerPositioningExperimentEngine:
 
     def _recommendation_source(self, item, room_geometry):
         parameters = dict(item.parameters)
+        direction, blocking_reason = self._historical_direction(parameters)
         geometry_required = item.code in {
             "TEST_SPEAKER_DISTANCE",
             "VERIFY_SBIR_PLACEMENT",
@@ -317,7 +380,7 @@ class LoudspeakerPositioningExperimentEngine:
                 parameters.get("speaker_id")
                 or ("STEREO" if item.target == "stereo_speakers" else None)
             ),
-            direction=self._direction(parameters),
+            direction=direction,
             distance_m=parameters.get("proposed_displacement_m"),
             observable_codes=self.RECOMMENDATION_OBSERVABLES.get(item.code, ()),
             confidence=float(item.confidence),
@@ -337,6 +400,8 @@ class LoudspeakerPositioningExperimentEngine:
             ),
             surface_role=self._surface_role(surface_id, room_geometry),
             observation_ids=(),
+            direction_declaration=None,
+            blocking_reason=blocking_reason,
         )
 
     @classmethod
@@ -367,8 +432,20 @@ class LoudspeakerPositioningExperimentEngine:
             "BOTH_SPEAKERS": LoudspeakerPositioningTarget.BOTH_SPEAKERS,
         }.get(value.strip().upper())
 
+    @classmethod
+    def _historical_direction(cls, parameters):
+        recognized = tuple(
+            direction
+            for key in ("movement_direction", "proposed_direction", "direction")
+            if (direction := cls._direction_value(parameters.get(key))) is not None
+        )
+        unique = set(recognized)
+        if len(unique) > 1:
+            return None, "CONFLICTING_MOVEMENT_DIRECTION_DECLARATIONS"
+        return (next(iter(unique)) if unique else None), None
+
     @staticmethod
-    def _direction(parameters):
+    def _direction_value(value):
         aliases = {
             "FORWARD": LoudspeakerMovementDirection.FORWARD,
             "VERS L’AVANT": LoudspeakerMovementDirection.FORWARD,
@@ -383,13 +460,11 @@ class LoudspeakerPositioningExperimentEngine:
             "VERS L’EXTÉRIEUR": LoudspeakerMovementDirection.OUTWARD,
             "VERS L'EXTERIEUR": LoudspeakerMovementDirection.OUTWARD,
         }
-        for key in ("movement_direction", "proposed_direction", "direction"):
-            value = parameters.get(key)
-            if isinstance(value, str):
-                result = aliases.get(value.strip().upper())
-                if result is not None:
-                    return result
-        return None
+        return (
+            aliases.get(value.strip().upper())
+            if isinstance(value, str)
+            else None
+        )
 
     @staticmethod
     def _axis(direction):

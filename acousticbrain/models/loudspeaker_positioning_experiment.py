@@ -55,6 +55,9 @@ class LoudspeakerPositioningExperimentProposal:
     source_geometry_candidate_id: str | None = None
     source_surface_role: RoomSurfaceKind | None = None
     source_observation_ids: tuple[str, ...] = ()
+    movement_direction_declaration_id: str | None = None
+    movement_direction_source_id: str | None = None
+    movement_direction_provenance_code: str | None = None
 
     def __post_init__(self):
         tuple_fields = (
@@ -72,6 +75,9 @@ class LoudspeakerPositioningExperimentProposal:
         for value in (
             self.source_surface_id,
             self.source_geometry_candidate_id,
+            self.movement_direction_declaration_id,
+            self.movement_direction_source_id,
+            self.movement_direction_provenance_code,
         ):
             if value is not None and (
                 not isinstance(value, str) or not value.strip()
