@@ -6,29 +6,66 @@ d'un fournisseur de LLM.
 
 ## Pipeline
 
+La vue suivante regroupe les stages par responsabilité afin de rester lisible.
+Elle est simplifiée, mais respecte leur ordre et leurs frontières dans
+`BrainPipeline`.
+
 ```text
 Project / Measurement
         ↓
-AnalysisStage
+Geometry and measurement preparation
+  ├─ RoomGeometryStage
+  ├─ PropagationGeometryStage
+  ├─ SurfaceMaterialStage
+  ├─ MeasurementQualityStage
+  └─ MeasurementReadinessStage
         ↓
-PhysicsStage
-  ├─ StereoAnalysis
-  ├─ SBIRAnalysis
-  ├─ ModalDensityAnalysis
-  └─ ConfidenceAnalysis
+Physical and descriptive analyses
+  ├─ AnalysisStage
+  ├─ FrequencyResponseFeatureStage
+  ├─ PhysicsStage
+  ├─ TemporalAnalysisStage
+  └─ SpatialAnalysisStage
         ↓
-TemporalAnalysisStage
-  ├─ RT60Analysis
-  └─ ETCAnalysis
+Correlations and confidence
+  ├─ DirectReverberantCorrelationStage
+  ├─ BassDecayCorrelationStage
+  ├─ ConfidenceStage
+  ├─ GeometryEarlyReflectionStage
+  ├─ GeometrySBIRStage
+  ├─ SBIRGeometryCorrelationStage
+  └─ ETCCorrelationStage
         ↓
-GlobalSynthesisStage
-  └─ GlobalAnalysis + GlobalCorrelation
+Reflection verification workflow
+  ├─ MaterialAwareReflectionCandidateStage
+  ├─ ControlledReflectionVerificationPlanningStage
+  ├─ ControlledReflectionExperimentDeclarationStage
+  ├─ ControlledReflectionExperimentComparisonStage
+  └─ ControlledReflectionHypothesisStatusUpdateStage
         ↓
-RecommendationStage
-  └─ RecommendationAnalysis
+Final physical correlations
+  ├─ ClarityCorrelationStage
+  └─ SpatialInterpretationStage
         ↓
-TraceabilityStage
-  └─ TraceabilityAnalysis
+Modern deterministic chain (opt-in projections where indicated)
+  ├─ AcousticObservationStage
+  ├─ AcousticReasoningStage
+  ├─ DeterministicAcousticReasoningStage
+  ├─ DeterministicCorrectiveActionStage
+  ├─ DeterministicEvidenceWeightingStage
+  └─ EvidenceAcquisitionPlanningStage
+        ↓
+Experimental projections
+  ├─ AcousticHypothesisExperimentGenerationStage
+  ├─ CampaignReferenceQualificationStage
+  ├─ ListeningPositionCampaignPlanStage
+  └─ ExperimentPlanningStage (opt-in)
+        ↓
+Synthesis, recommendations and experiment projection
+  ├─ GlobalSynthesisStage
+  ├─ RecommendationStage
+  ├─ LoudspeakerPositioningExperimentStage
+  └─ TraceabilityStage
         ↓
 ReportBuilder
         ↓
@@ -41,7 +78,9 @@ Report / ConsoleReporter
 
 Chaque stage orchestre uniquement son moteur. Les règles de calcul, de
 corrélation, de recommandation et de traçabilité restent dans leurs moteurs
-respectifs.
+respectifs. Les stages conditionnels ne sont exécutés que lorsque leur option
+de synthèse ou de planification est activée. Une projection expérimentale ne
+constitue ni une expérience réalisée, ni une causalité établie.
 
 ## Couches de connaissance
 
@@ -49,8 +88,12 @@ respectifs.
 
 Les objets `*Analysis` contiennent des faits, mesures, scores et confiances.
 Ils ne produisent aucun texte utilisateur et ne dépendent pas des diagnostics.
-Les connaissances temporelles comme `RT60Analysis` sont orchestrées dans un
-stage distinct des calculs géométriques et spectraux de `PhysicsStage`.
+`FrequencyResponseFeatureStage` produit des caractéristiques descriptives
+LEFT, RIGHT et STEREO sans en déduire de cause. Les connaissances temporelles
+RT60, ETC, clarté, rapport direct/réverbéré et décroissance du grave sont
+orchestrées dans un stage distinct des calculs géométriques et spectraux de
+`PhysicsStage`. `ConfidenceStage` agrège ensuite les confiances locales déjà
+disponibles.
 
 ### 2. Synthèse globale
 
@@ -74,8 +117,11 @@ crée jamais de preuve ou de lien artificiel.
 
 Les diagnostics interprètent les analyses pour l'utilisateur, sans être une
 source des moteurs de synthèse, de recommandation ou de traçabilité. Les
-présentateurs copient les connaissances structurées vers le rapport sans les
-trier, filtrer, dédupliquer ou recalculer.
+présentateurs détaillés projettent les connaissances structurées vers le
+rapport sans les recalculer. Les présentateurs synthétiques peuvent effectuer
+une sélection ou une répartition explicitement définie, comme la séparation
+des actions applicables et bloquées dans `AssessmentSummaryPresenter`, sans
+créer de fait, score, décision ou interprétation scientifique.
 
 `PrioritizationStage` ordonne les diagnostics après leur production. Il ne
 modifie pas les connaissances physiques ou structurées.
@@ -88,7 +134,7 @@ modifie pas les connaissances physiques ou structurées.
 - les identifiants de recommandation, corrélation et explication sont stables ;
 - toute valeur absente reste absente, sans connaissance inventée ;
 - les projections destinées au JSON ou à la console sont des consommateurs
-  purs.
+  purs ;
 - un consommateur ne dépend jamais d'un format historique lorsqu'une
   `Analysis` équivalente existe.
 

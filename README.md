@@ -154,7 +154,7 @@ shorter user-facing view:
 - main acoustic observations;
 - applicable actions;
 - blocked actions;
-- recommended evidence-acquisition experiments;
+- Evidence Acquisition Plans;
 - an explicit technical notice.
 
 It uses the finalized `Report` produced by the deterministic workflow. It does
