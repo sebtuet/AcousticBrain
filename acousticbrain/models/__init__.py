@@ -1,4 +1,15 @@
 from .measurement import Measurement
+from .frequency_response_feature import (
+    FrequencyFeatureChannelClassification,
+    FrequencyFeatureStereoClassification,
+    FrequencyResponseBand,
+    FrequencyResponseChannelAnalysis,
+    FrequencyResponseFeature,
+    FrequencyResponseFeatureAnalysis,
+    FrequencyResponseFeatureComparison,
+    FrequencyResponseFeatureType,
+    FrequencyResponseStereoRelation,
+)
 from .acoustic_observation import (
     AcousticObservation,
     AcousticObservationCategory,

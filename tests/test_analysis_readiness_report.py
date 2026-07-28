@@ -200,6 +200,37 @@ def test_console_reports_absent_readiness_without_inventing_families(capsys):
     assert "Status: BLOCKED" not in output
 
 
+def test_presenter_and_console_expose_structured_missing_frequency_txt_facts(
+    capsys,
+):
+    context = AnalysisContext(measurement=Measurement(name="L+R"))
+    context.measurement_readiness_analysis = MeasurementReadinessAnalysis(
+        analyses=(
+            AnalysisReadiness(
+                family=MeasurementAnalysisFamily.FREQUENCY,
+                status=MeasurementReadinessStatus.BLOCKED,
+                required_channels=(
+                    ImpulseChannel.LEFT,
+                    ImpulseChannel.RIGHT,
+                    ImpulseChannel.STEREO,
+                ),
+                missing_facts=("FREQUENCY_RESPONSE_TXT_RIGHT",),
+                confidence=90.0,
+            ),
+        ),
+        confidence=90.0,
+    )
+    report = Report(project_name="fixture")
+    report.analysis_readiness = AnalysisReadinessPresenter().present(context)
+
+    output = render(report, capsys)
+
+    assert report.analysis_readiness.analyses[0].missing_facts == (
+        "FREQUENCY_RESPONSE_TXT_RIGHT",
+    )
+    assert "Missing facts\n- FREQUENCY_RESPONSE_TXT_RIGHT" in output
+
+
 def test_console_explains_technical_scope_and_blocked_semantics(capsys):
     output = render(report_with_readiness(), capsys)
 

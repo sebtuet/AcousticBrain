@@ -1,4 +1,5 @@
 from .context import AnalysisContext
+from .frequency_response_feature import FrequencyResponseFeatureAnalyzer
 from .acoustic_observation import DeterministicAcousticObservationSynthesizer
 from .deterministic_acoustic_reasoning import DeterministicAcousticReasoningEngine
 from .deterministic_corrective_action import DeterministicCorrectiveActionEngine

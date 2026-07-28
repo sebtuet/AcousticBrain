@@ -20,6 +20,7 @@ from acousticbrain.diagnostics import (
 from acousticbrain.project import Measurements
 
 from .stages.analysis import AnalysisStage
+from .stages.frequency_response_feature import FrequencyResponseFeatureStage
 
 from .stages.physics import PhysicsStage
 from .stages.temporal_analysis import TemporalAnalysisStage
@@ -220,6 +221,11 @@ class BrainPipeline:
         )
         
         AnalysisStage().run(
+            project,
+            context,
+        )
+
+        FrequencyResponseFeatureStage().run(
             project,
             context,
         )
