@@ -49,6 +49,7 @@ class FrequencyResponseFeatureAnalyzer:
     MINIMUM_BANDWIDTH_OCTAVES = 1.0 / 48.0
     # The input declares 1/12-octave smoothing, so closer extrema are treated
     # as one resolved feature rather than independent micro-features.
+    SOURCE_SMOOTHING_OCTAVES = 1.0 / 12.0
     MERGE_SEPARATION_OCTAVES = 1.0 / 12.0
     # Half of the declared smoothing width protects unresolved domain edges.
     DOMAIN_EDGE_GUARD_OCTAVES = 1.0 / 24.0
@@ -355,15 +356,23 @@ class FrequencyResponseFeatureAnalyzer:
         bandwidth_octaves = log2(upper / lower) if upper > lower else None
         estimated_q = center / bandwidth if bandwidth > 0.0 else None
         magnitude = candidate.magnitude_db
-        sample_count = candidate.upper_index - candidate.lower_index + 1
         confidence = self._feature_confidence(
             magnitude=magnitude,
-            sample_count=sample_count,
+            bandwidth_octaves=bandwidth_octaves,
             bounds_resolved=(
                 candidate.lower_index > 0
                 and candidate.upper_index < len(frequencies) - 1
             ),
         )
+        limitations = self.ANALYSIS_LIMITATIONS
+        if (
+            bandwidth_octaves is not None
+            and bandwidth_octaves < self.SOURCE_SMOOTHING_OCTAVES
+        ):
+            limitations += (
+                "Estimated width and Q are resolution-limited by the "
+                "1/12-octave source smoothing.",
+            )
         feature_type = candidate.feature_type
         original_center_index = source_indices[candidate.center_index]
         return FrequencyResponseFeature(
@@ -397,7 +406,7 @@ class FrequencyResponseFeatureAnalyzer:
                 source_indices[candidate.lower_index],
                 source_indices[candidate.upper_index],
             ),
-            limitations=self.ANALYSIS_LIMITATIONS,
+            limitations=limitations,
         )
 
     def _compare_channels(self, left, right):
@@ -588,7 +597,48 @@ class FrequencyResponseFeatureAnalyzer:
                     score,
                 )
             )
-        return tuple(relations)
+        resolved_classifications = (
+            FrequencyFeatureStereoClassification.PRESENT_IN_STEREO,
+            FrequencyFeatureStereoClassification.ATTENUATED_IN_STEREO,
+            FrequencyFeatureStereoClassification.AMPLIFIED_IN_STEREO,
+        )
+        stereo_use_counts = {}
+        for relation in relations:
+            if (
+                relation.classification in resolved_classifications
+                and relation.stereo_feature_id is not None
+            ):
+                stereo_use_counts[relation.stereo_feature_id] = (
+                    stereo_use_counts.get(relation.stereo_feature_id, 0) + 1
+                )
+        duplicated_stereo_ids = {
+            identifier
+            for identifier, count in stereo_use_counts.items()
+            if count > 1
+        }
+        return tuple(
+            self._shared_stereo_relation(relation)
+            if relation.stereo_feature_id in duplicated_stereo_ids
+            else relation
+            for relation in relations
+        )
+
+    @staticmethod
+    def _shared_stereo_relation(relation):
+        return FrequencyResponseStereoRelation(
+            relation_id=relation.relation_id,
+            comparison_id=relation.comparison_id,
+            stereo_feature_id=None,
+            classification=FrequencyFeatureStereoClassification.AMBIGUOUS,
+            frequency_delta_hz=None,
+            magnitude_delta_db=None,
+            bandwidth_delta_octaves=None,
+            match_confidence=0.0,
+            limitations=(
+                "The same STEREO feature is compatible with multiple source "
+                "comparisons and is not resolved uniquely.",
+            ),
+        )
 
     def _resolved_stereo_relation(
         self,
@@ -714,14 +764,25 @@ class FrequencyResponseFeatureAnalyzer:
         return fmean(values)
 
     @classmethod
-    def _feature_confidence(cls, *, magnitude, sample_count, bounds_resolved):
+    def _feature_confidence(
+        cls,
+        *,
+        magnitude,
+        bandwidth_octaves,
+        bounds_resolved,
+    ):
         """Score detection quality, never causal confidence.
 
-        Strength contributes 50%, resolved sample support 30%, and complete
-        half-magnitude bounds 20%. Each component is explicitly bounded.
+        Strength contributes 50%, physically resolved bandwidth 30%, and
+        complete half-magnitude bounds 20%. Each component is explicitly
+        bounded. Physical bandwidth avoids rewarding denser sampling of the
+        same smoothed response.
         """
         strength = min(1.0, magnitude / (2.0 * cls.MINIMUM_MAGNITUDE_DB))
-        support = min(1.0, sample_count / 8.0)
+        support = min(
+            1.0,
+            bandwidth_octaves / (2.0 * cls.MINIMUM_BANDWIDTH_OCTAVES),
+        )
         bounds = 1.0 if bounds_resolved else 0.5
         return 100.0 * (0.5 * strength + 0.3 * support + 0.2 * bounds)
 

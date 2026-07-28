@@ -14,8 +14,16 @@ from acousticbrain.models import (
 )
 
 
-def measurement(*features, point_count=481, name="synthetic"):
-    frequencies = [20.0 * 2.0 ** (index / 96.0) for index in range(point_count)]
+def measurement(
+    *features,
+    point_count=481,
+    name="synthetic",
+    points_per_octave=96,
+):
+    frequencies = [
+        20.0 * 2.0 ** (index / points_per_octave)
+        for index in range(point_count)
+    ]
     levels = []
     for frequency in frequencies:
         coordinate = log2(frequency)
@@ -299,6 +307,49 @@ def test_missing_stereo_feature_is_explicitly_not_resolved():
         FrequencyFeatureStereoClassification.NOT_RESOLVED_IN_STEREO
     )
     assert result.stereo_relations[0].magnitude_delta_db is None
+
+
+def test_feature_narrower_than_source_smoothing_declares_resolution_limit():
+    feature = channel(analyze(measurement((100.0, -8.0, 0.025)))).features[0]
+
+    assert feature.bandwidth_octaves < 1.0 / 12.0
+    assert any(
+        "1/12-octave source smoothing" in limitation
+        for limitation in feature.limitations
+    )
+
+
+def test_detection_confidence_does_not_reward_higher_point_density():
+    confidences = []
+    for points_per_octave in (48, 96, 192):
+        curve = measurement(
+            (100.0, -8.0, 0.04),
+            point_count=points_per_octave * 5 + 1,
+            points_per_octave=points_per_octave,
+        )
+        confidences.append(channel(analyze(curve)).features[0].detection_confidence)
+
+    assert max(confidences) - min(confidences) <= 5.0
+
+
+def test_one_stereo_feature_cannot_resolve_multiple_source_comparisons():
+    result = analyze(
+        measurement((100.0, -8.0, 0.025)),
+        measurement((106.0, -8.0, 0.025)),
+        measurement((103.0, -8.0, 0.05)),
+    )
+
+    resolved_ids = tuple(
+        relation.stereo_feature_id
+        for relation in result.stereo_relations
+        if relation.classification
+        in (
+            FrequencyFeatureStereoClassification.PRESENT_IN_STEREO,
+            FrequencyFeatureStereoClassification.ATTENUATED_IN_STEREO,
+            FrequencyFeatureStereoClassification.AMPLIFIED_IN_STEREO,
+        )
+    )
+    assert len(resolved_ids) == len(set(resolved_ids))
 
 
 def test_identifiers_and_order_are_stable_and_results_are_immutable():
