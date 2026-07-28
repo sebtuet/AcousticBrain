@@ -2,7 +2,6 @@ import json
 import shutil
 from contextlib import redirect_stdout
 from io import StringIO
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -26,10 +25,11 @@ from acousticbrain.models import (
 from acousticbrain.persistence import MeasurementRepository
 from acousticbrain.report import ConsoleReporter
 
+from historical_campaign import HISTORICAL_CAMPAIGN_ROOT
+from manifest_test_data import future_manifest_extension
 from test_experiment_discovery import complete_experiment
 
 
-ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_ID = "protocol.verify_speaker_room_asymmetry.v1"
 HYPOTHESIS = "ASYMMETRIC_SPEAKER_ROOM_INTERACTION"
 CAUSAL_PROTOCOL = "VERIFY_SPEAKER_ROOM_ASYMMETRY"
@@ -237,6 +237,8 @@ def test_experiment_declaration_and_parent_must_remain_coherent(tmp_path):
 def test_existing_manifest_and_measurement_metadata_are_preserved(tmp_path):
     root = ready_root(tmp_path)
     before = load_manifest(root, "exp-005")
+    extension = future_manifest_extension()
+    before["future_extension"] = extension
     before["comparison"]["parameters"] = {"existing": "preserved"}
     before["comparison"]["custom"] = {"keep": True}
     save_manifest(root, "exp-005", before)
@@ -249,6 +251,7 @@ def test_existing_manifest_and_measurement_metadata_are_preserved(tmp_path):
     associate(root)
     after = load_manifest(root, "exp-005")
 
+    assert after["future_extension"] == extension
     for key in (
         "files",
         "content_hash",
@@ -344,7 +347,10 @@ def real_analogue_root(tmp_path):
         "exp-006": "exp-002",
     }
     for target, source in sources.items():
-        shutil.copytree(ROOT / "measurements" / source, measurement_root / target)
+        shutil.copytree(
+            HISTORICAL_CAMPAIGN_ROOT / source,
+            measurement_root / target,
+        )
         path = measurement_root / target / "manifest.json"
         value = json.loads(path.read_text())
         for key in (

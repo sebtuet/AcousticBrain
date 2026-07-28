@@ -1,13 +1,23 @@
 import copy
 import json
+from dataclasses import FrozenInstanceError
 from types import SimpleNamespace
 
 import pytest
 
-from acousticbrain.analysis import LoudspeakerPositioningExperimentEngine
+from acousticbrain.analysis import (
+    AcousticReasoningEngine,
+    ExperimentPlanner,
+    GeometryEarlyReflectionEngine,
+    GeometrySBIRPredictionEngine,
+    LoudspeakerPositioningExperimentEngine,
+    RoomGeometryBuilder,
+    SBIRGeometryCorrelationEngine,
+)
 from acousticbrain.application import PositioningProposalDeclarationService
 from acousticbrain.models import (
     ExperimentKind,
+    GeometryDatumQualityDescription,
     LoudspeakerMovementAxis,
     LoudspeakerMovementDirection,
     LoudspeakerPositioningExperimentProposal,
@@ -17,6 +27,13 @@ from acousticbrain.models import (
     RecommendationAnalysis,
     RecommendationPriority,
     RecommendationStatus,
+    RoomDescription,
+    RoomDimensions,
+    RoomSurfaceKind,
+    SpeakerOrientation,
+    SpeakerPosition,
+    ListeningPosition,
+    Peak,
 )
 from acousticbrain.report import (
     ActionOrientedPositioningPresenter,
@@ -24,6 +41,7 @@ from acousticbrain.report import (
     DecisionFirstReportPresenter,
     LoudspeakerPositioningExperimentPresenter,
     OneMinuteExecutiveSummaryPresenter,
+    PresentedLoudspeakerPositioningExperimentProposal,
     Report,
 )
 
@@ -37,6 +55,8 @@ def recommendation(
     distance=None,
     priority=RecommendationPriority.HIGH,
     status=RecommendationStatus.ACTIVE,
+    surface=None,
+    geometry_candidate_id=None,
 ):
     parameters = {}
     if speaker_id is not None:
@@ -45,6 +65,10 @@ def recommendation(
         parameters["movement_direction"] = direction
     if distance is not None:
         parameters["proposed_displacement_m"] = distance
+    if surface is not None:
+        parameters["surface"] = surface
+    if geometry_candidate_id is not None:
+        parameters["geometry_candidate_id"] = geometry_candidate_id
     return Recommendation(
         code=code,
         action="test",
@@ -233,6 +257,100 @@ def test_proposal_identifier_and_result_are_deterministic():
     assert first.proposal.proposal_id.endswith("left_speaker.outward.50mm")
 
 
+def test_provenance_fields_have_immutable_backward_compatible_defaults():
+    source = analyze(recommendation()).proposal
+    legacy_values = {
+        key: value
+        for key, value in source.__dict__.items()
+        if key not in {
+            "source_surface_id",
+            "source_geometry_candidate_id",
+            "source_surface_role",
+            "source_observation_ids",
+        }
+    }
+    proposal = LoudspeakerPositioningExperimentProposal(**legacy_values)
+    assert proposal.source_surface_id is None
+    assert proposal.source_geometry_candidate_id is None
+    assert proposal.source_surface_role is None
+    assert proposal.source_observation_ids == ()
+    with pytest.raises(FrozenInstanceError):
+        proposal.source_surface_id = "surface.front"
+
+
+def test_structured_geometry_provenance_is_preserved_without_scientific_change():
+    room_geometry = SimpleNamespace(
+        speakers=(object(),),
+        surfaces=(
+            SimpleNamespace(
+                surface_id="front_wall",
+                kind=RoomSurfaceKind.FRONT_WALL,
+            ),
+        ),
+    )
+    result = analyze(
+        recommendation(speaker_id="RIGHT", direction="FORWARD"),
+        planning=planned_candidate(),
+        room_geometry=room_geometry,
+    )
+    proposal = result.proposal
+    assert proposal.source_surface_id == "front_wall"
+    assert (
+        proposal.source_geometry_candidate_id
+        == "candidate.LEFT.front_wall"
+    )
+    assert proposal.source_surface_role is RoomSurfaceKind.FRONT_WALL
+    assert proposal.source_observation_ids == ()
+    assert proposal.source_recommendation_ids == ("VERIFY_SBIR_PLACEMENT",)
+    assert proposal.source_hypothesis_codes == ("SBIR_PLACEMENT_INTERACTION",)
+    assert proposal.target is LoudspeakerPositioningTarget.LEFT_SPEAKER
+    assert proposal.movement_direction is LoudspeakerMovementDirection.BACKWARD
+    assert proposal.step_distance_m == 0.10
+    assert proposal.confidence == 81.0
+    assert proposal.expected_observables[-1] == "SBIR_MOVES_WITH_SPEAKER"
+
+
+def test_provenance_is_not_invented_from_observables_or_other_identifiers():
+    proposal = analyze(
+        recommendation(
+            surface=None,
+            geometry_candidate_id=None,
+        ),
+        room_geometry=SimpleNamespace(
+            surfaces=(
+                SimpleNamespace(
+                    surface_id="front_wall",
+                    kind=RoomSurfaceKind.FRONT_WALL,
+                ),
+            ),
+        ),
+    ).proposal
+    assert proposal.source_surface_id is None
+    assert proposal.source_geometry_candidate_id is None
+    assert proposal.source_surface_role is None
+    assert proposal.source_observation_ids == ()
+    assert proposal.expected_observables
+    assert proposal.source_recommendation_ids
+    assert not hasattr(proposal, "minimum_distance_m")
+    assert not hasattr(proposal, "maximum_distance_m")
+    assert "TEST_BOTH_DIRECTIONS" not in {
+        item.value for item in LoudspeakerMovementDirection
+    }
+
+
+def test_unidentified_candidate_and_unknown_surface_role_remain_null():
+    proposal = analyze(
+        recommendation(
+            surface="unclassified_surface",
+            geometry_candidate_id=None,
+        ),
+        room_geometry=SimpleNamespace(surfaces=()),
+    ).proposal
+    assert proposal.source_surface_id == "unclassified_surface"
+    assert proposal.source_geometry_candidate_id is None
+    assert proposal.source_surface_role is None
+
+
 def test_engine_does_not_mutate_recommendations_scores_or_order():
     source = RecommendationAnalysis([
         recommendation(speaker_id="LEFT"),
@@ -280,6 +398,165 @@ def test_existing_plan_wins_and_preserves_ten_cm():
     assert result.proposal_status is LoudspeakerPositioningProposalStatus.ALREADY_PLANNED
     assert result.proposal.target is LoudspeakerPositioningTarget.LEFT_SPEAKER
     assert result.proposal.step_distance_m == 0.10
+
+
+def test_presenter_preserves_geometry_and_observation_provenance():
+    result = analyze(
+        planning=planned_candidate(),
+        room_geometry=SimpleNamespace(
+            speakers=(object(),),
+            surfaces=(
+                SimpleNamespace(
+                    surface_id="front_wall",
+                    kind=RoomSurfaceKind.FRONT_WALL,
+                ),
+            ),
+        ),
+    )
+    proposal = presented_analysis(result).proposal
+    assert proposal.source_surface_id == "front_wall"
+    assert (
+        proposal.source_geometry_candidate_id
+        == "candidate.LEFT.front_wall"
+    )
+    assert proposal.source_surface_role == "FRONT_WALL"
+    assert proposal.source_observation_ids == ()
+
+
+def test_presented_proposal_retains_the_historical_constructor_signature():
+    historical = (
+        "proposal.v1",
+        ("RECOMMENDATION",),
+        ("HYPOTHESIS",),
+        "LEFT_SPEAKER",
+        "LONGITUDINAL",
+        "BACKWARD",
+        0.10,
+        "LOUDSPEAKER_POSITION",
+        ("LISTENING_POSITION",),
+        ("L", "R", "L+R"),
+        ("SBIR_MOVES_WITH_SPEAKER",),
+        ("Reversible experiment.",),
+        81.0,
+        "NOT_ESTABLISHED",
+        "ELIGIBLE",
+        (("source", "fixture"),),
+    )
+    positional = PresentedLoudspeakerPositioningExperimentProposal(*historical)
+    named = PresentedLoudspeakerPositioningExperimentProposal(
+        **dict(zip(
+            (
+                "proposal_id",
+                "source_recommendation_ids",
+                "source_hypothesis_codes",
+                "target",
+                "movement_axis",
+                "movement_direction",
+                "step_distance_m",
+                "tested_variable",
+                "controlled_variables",
+                "required_measurements",
+                "expected_observables",
+                "rationale",
+                "confidence",
+                "causality_status",
+                "proposal_status",
+                "provenance",
+            ),
+            historical,
+        ))
+    )
+    for proposal in (positional, named):
+        assert proposal.source_surface_id is None
+        assert proposal.source_geometry_candidate_id is None
+        assert proposal.source_surface_role is None
+        assert proposal.source_observation_ids == ()
+
+
+def test_naturally_ready_sbir_plan_is_blocked_when_direction_is_missing():
+    quality_ids = (
+        "LEFT",
+        "MIC",
+        "front_wall",
+        "rear_wall",
+        "left_wall",
+        "right_wall",
+        "floor",
+        "ceiling",
+    )
+    geometry = RoomGeometryBuilder().from_description(RoomDescription(
+        "Natural positioning refusal fixture",
+        RoomDimensions(5.0, 4.0, 3.0),
+        speakers=(
+            SpeakerPosition(
+                "LEFT",
+                1.0,
+                1.0,
+                1.0,
+                SpeakerOrientation(0.0),
+            ),
+        ),
+        listening_positions=(
+            ListeningPosition("MIC", 3.0, 1.0, 1.0),
+        ),
+        geometry_data_quality=tuple(
+            GeometryDatumQualityDescription(
+                item,
+                0.01,
+                88.0,
+                ("LASER_MEASURED",),
+            )
+            for item in quality_ids
+        ),
+    ))
+    predictions = GeometrySBIRPredictionEngine().analyze(
+        GeometryEarlyReflectionEngine().analyze(geometry),
+        geometry,
+    )
+    correlations = SBIRGeometryCorrelationEngine().analyze(
+        predictions,
+        (Peak(86.0, 50.0, 1, 12.0),),
+    )
+    reasoning = AcousticReasoningEngine().analyze(
+        sbir_geometry_correlations=correlations,
+        room_geometry=geometry,
+    )
+    planning = ExperimentPlanner().plan(
+        reasoning,
+        deferred_action_codes=("VERIFY_SPEAKER_ROOM_ASYMMETRY",),
+    )
+    candidate = planning.plan.recommended_candidate
+
+    assert planning.status.value == "READY"
+    assert candidate is not None
+    assert candidate.eligible is True
+    for key in (
+        "geometry_candidate_id",
+        "surface",
+        "speaker_id",
+        "listening_position_id",
+        "proposed_displacement_m",
+    ):
+        assert candidate.parameters[key] is not None
+    assert not {
+        "movement_direction",
+        "proposed_direction",
+        "direction",
+    }.intersection(candidate.parameters)
+
+    result = LoudspeakerPositioningExperimentEngine().analyze(
+        experiment_planning=planning,
+        room_geometry=geometry,
+        measurements_available=True,
+    )
+    assert (
+        result.proposal_status
+        is LoudspeakerPositioningProposalStatus.MISSING_DIRECTION
+    )
+    assert result.blocking_reason_codes == (
+        "EXPLICIT_MOVEMENT_DIRECTION_MISSING",
+    )
+    assert result.proposal is None
 
 
 def test_geometry_dependent_plan_without_geometry_is_blocked():

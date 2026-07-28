@@ -13,6 +13,7 @@ from acousticbrain.commands.declare_causal_protocol_step import main as declare_
 from acousticbrain.persistence import MeasurementRepository
 from acousticbrain.report import CausalDiscriminationPresenter, ConsoleReporter, Report
 
+from manifest_test_data import future_manifest_extension
 from test_causal_discrimination import analyze, baseline, remeasurement, speaker_swap
 from test_experiment_discovery import complete_experiment
 
@@ -185,6 +186,8 @@ def test_manifest_measurements_and_existing_metadata_are_preserved(tmp_path):
     root = ready_root(tmp_path)
     path = root / "exp-005/manifest.json"
     before = manifest(root)
+    extension = future_manifest_extension()
+    before["future_extension"] = extension
     before["custom_key"] = {"preserve": True}
     before["comparison"] = {"parent_experiment_ids": ["exp-004"]}
     MeasurementRepository.save_manifest(root / "exp-005", before)
@@ -204,6 +207,7 @@ def test_manifest_measurements_and_existing_metadata_are_preserved(tmp_path):
     declare_step_2(root)
     after = manifest(root)
 
+    assert after["future_extension"] == extension
     assert after["custom_key"] == {"preserve": True}
     assert after["comparison"] == {"parent_experiment_ids": ["exp-004"]}
     assert after["files"] == before["files"]

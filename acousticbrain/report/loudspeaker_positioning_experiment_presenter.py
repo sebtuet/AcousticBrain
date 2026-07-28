@@ -19,6 +19,13 @@ class PresentedLoudspeakerPositioningExperimentProposal:
     causality_status: str
     proposal_status: str
     provenance: tuple[tuple[str, str], ...]
+    source_surface_id: str | None = None
+    source_geometry_candidate_id: str | None = None
+    source_surface_role: str | None = None
+    source_observation_ids: tuple[str, ...] = ()
+    movement_direction_declaration_id: str | None = None
+    movement_direction_source_id: str | None = None
+    movement_direction_provenance_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -57,6 +64,24 @@ class LoudspeakerPositioningExperimentPresenter:
                     causality_status=proposal.causality_status,
                     proposal_status=proposal.proposal_status.value,
                     provenance=proposal.provenance,
+                    source_surface_id=proposal.source_surface_id,
+                    source_geometry_candidate_id=(
+                        proposal.source_geometry_candidate_id
+                    ),
+                    source_surface_role=(
+                        proposal.source_surface_role.value
+                        if proposal.source_surface_role is not None else None
+                    ),
+                    source_observation_ids=proposal.source_observation_ids,
+                    movement_direction_declaration_id=(
+                        proposal.movement_direction_declaration_id
+                    ),
+                    movement_direction_source_id=(
+                        proposal.movement_direction_source_id
+                    ),
+                    movement_direction_provenance_code=(
+                        proposal.movement_direction_provenance_code
+                    ),
                 )
                 if proposal is not None else None
             ),

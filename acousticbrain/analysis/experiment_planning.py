@@ -14,6 +14,8 @@ from acousticbrain.models import (
     ExperimentSelectionReason,
     HypothesisCode,
     HypothesisStatus,
+    LoudspeakerMovementDirectionDeclaration,
+    MovementDirectionDeclarationResolutionError,
 )
 
 
@@ -216,6 +218,7 @@ class ExperimentPlanner:
         completed_protocol_ids=(),
         causal_discrimination_analysis=None,
         generated_experiment_analysis=None,
+        movement_direction_declarations=(),
     ):
         hypotheses = {
             item.code: item for item in reasoning_analysis.hypotheses
@@ -234,6 +237,10 @@ class ExperimentPlanner:
                 generated_experiment_analysis,
             )
             for definition in self.PROTOCOLS
+        )
+        candidates = self._attach_movement_direction_declarations(
+            candidates,
+            movement_direction_declarations,
         )
         ordered_all = tuple(sorted(candidates, key=self._sort_key))
         eligible = tuple(item for item in ordered_all if item.eligible)
@@ -292,6 +299,45 @@ class ExperimentPlanner:
             ),
             plan=plan,
             trace_links=trace_links,
+        )
+
+    @staticmethod
+    def _attach_movement_direction_declarations(candidates, declarations):
+        if not isinstance(declarations, tuple) or any(
+            not isinstance(item, LoudspeakerMovementDirectionDeclaration)
+            for item in declarations
+        ):
+            raise ValueError("Movement-direction declarations must be a typed tuple.")
+        targets = tuple(
+            item.target_geometry_candidate_id for item in declarations
+        )
+        if len(targets) != len(set(targets)):
+            raise MovementDirectionDeclarationResolutionError(
+                "CONFLICTING_MOVEMENT_DIRECTION_DECLARATIONS",
+                "Multiple movement-direction declarations target the same candidate.",
+            )
+        known_targets = {
+            item.parameters.get("geometry_candidate_id")
+            for item in candidates
+            if item.parameters.get("geometry_candidate_id") is not None
+        }
+        unknown = tuple(target for target in targets if target not in known_targets)
+        if unknown:
+            raise MovementDirectionDeclarationResolutionError(
+                "MOVEMENT_DIRECTION_TARGET_NOT_FOUND",
+                f"Movement-direction target was not found: {unknown[0]}",
+            )
+        by_target = {
+            item.target_geometry_candidate_id: item for item in declarations
+        }
+        return tuple(
+            replace(
+                candidate,
+                movement_direction_declaration=by_target.get(
+                    candidate.parameters.get("geometry_candidate_id")
+                ),
+            )
+            for candidate in candidates
         )
 
     @staticmethod

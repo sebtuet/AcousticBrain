@@ -52,6 +52,7 @@ from acousticbrain.models import (
     ControlledReflectionExperimentDeclaration,
     ControlledReflectionExperimentComparison,
     ControlledReflectionHypothesisStatusUpdate,
+    LoudspeakerMovementDirectionDeclaration,
 )
 
 from acousticbrain.project import Project
@@ -223,6 +224,10 @@ class AnalysisContext:
     ) = None
 
     campaign_reference_qualification: CampaignReferenceQualification | None = None
+
+    movement_direction_declarations: tuple[
+        LoudspeakerMovementDirectionDeclaration, ...
+    ] = ()
 
     experiment_comparison_analysis = None
 

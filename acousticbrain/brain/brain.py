@@ -76,6 +76,7 @@ class AcousticBrain:
         synthesize_actions=False,
         synthesize_weighting=False,
         synthesize_evidence_acquisition=False,
+        movement_direction_declarations=(),
     ):
 
         synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
@@ -134,6 +135,7 @@ class AcousticBrain:
                     synthesize_actions=synthesize_actions,
                     synthesize_weighting=synthesize_weighting,
                     synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+                    movement_direction_declarations=movement_direction_declarations,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -175,6 +177,7 @@ class AcousticBrain:
             synthesize_actions=synthesize_actions,
             synthesize_weighting=synthesize_weighting,
             synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+            movement_direction_declarations=movement_direction_declarations,
         )
 
     def _analyze_experiments(
@@ -193,6 +196,7 @@ class AcousticBrain:
         synthesize_actions,
         synthesize_weighting,
         synthesize_evidence_acquisition,
+        movement_direction_declarations,
     ):
         contexts = {}
         current_report = None
@@ -218,6 +222,7 @@ class AcousticBrain:
                 synthesize_actions=synthesize_actions,
                 synthesize_weighting=synthesize_weighting,
                 synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+                movement_direction_declarations=movement_direction_declarations,
                 return_context=True,
             )
             contexts[imported.descriptor.experiment_id] = context
@@ -244,6 +249,9 @@ class AcousticBrain:
                     ),
                     "campaign_reference_qualification_declaration_analysis": (
                         campaign_reference_qualification_declaration_analysis
+                    ),
+                    "movement_direction_declarations": tuple(
+                        movement_direction_declarations
                     ),
                 },
             )()
@@ -290,6 +298,7 @@ class AcousticBrain:
                 synthesize_actions=synthesize_actions,
                 synthesize_weighting=synthesize_weighting,
                 longitudinal_experimental_learning_analysis=learning_analysis,
+                movement_direction_declarations=movement_direction_declarations,
                 return_context=True,
             )
             current_context.experiment_comparison_analysis = comparison

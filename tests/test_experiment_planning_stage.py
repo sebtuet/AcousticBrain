@@ -24,6 +24,7 @@ class RecordingPlanner:
         completed_protocol_ids=(),
         causal_discrimination_analysis=None,
         generated_experiment_analysis=None,
+        movement_direction_declarations=(),
     ):
         self.arguments = (
             reasoning,
@@ -32,6 +33,7 @@ class RecordingPlanner:
             completed_protocol_ids,
             causal_discrimination_analysis,
             generated_experiment_analysis,
+            movement_direction_declarations,
         )
         return self.result
 
@@ -51,6 +53,7 @@ def test_stage_maps_reasoning_and_optional_session_without_side_effects():
         (),
         None,
         None,
+        (),
     )
     assert context.experiment_planning_analysis is planner.result
 

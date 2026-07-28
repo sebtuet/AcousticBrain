@@ -12,61 +12,121 @@
     "unknown_variable_codes": []
   },
   "channel_assignments": {
-    "impulse/L retour sans eq Jul 7.wav": "LEFT",
-    "impulse/L+R retour sans eq Jul 7.wav": "STEREO",
-    "impulse/R retour sans eq Jul 7.wav": "RIGHT",
-    "measurements/L retour sans eq Jul 7.txt": "LEFT",
-    "measurements/L+R retour sans eq Jul 7.txt": "STEREO",
-    "measurements/R retour sans eq Jul 7.txt": "RIGHT"
+    "impulse/L baseline Jul 28.wav": "LEFT",
+    "impulse/L+R baseline Jul 28.wav": "STEREO",
+    "impulse/R baseline Jul 28.wav": "RIGHT",
+    "measurements/L baseline Jul 28.txt": "LEFT",
+    "measurements/L+R baseline Jul 28.txt": "STEREO",
+    "measurements/R baseline Jul 28.txt": "RIGHT"
   },
-  "content_hash": "580c801020f786d130b85191655c9ca31d426bf3441a9830396c7c756b7647db",
+  "content_hash": "928d21e76da01bec68608f8b59590120b35557c2f5b9aa969b72bfb259f037fc",
+  "coordinate_system": {
+    "front_wall": "wall_behind_loudspeakers",
+    "origin": "front_left_floor_corner",
+    "rear_wall": "wall_behind_listening_position",
+    "unit": "m",
+    "x_axis": "front_to_rear",
+    "y_axis": "left_to_right",
+    "z_axis": "floor_to_ceiling"
+  },
   "experiment_id": "baseline",
   "experiment_type": "BASELINE",
   "files": [
     {
       "channel": "LEFT",
-      "path": "impulse/L retour sans eq Jul 7.wav",
-      "sha256": "01c7364baa9b5085d1395dc5beff39a5411faab9fe85bcec1396b1b3c5906ab6",
+      "path": "impulse/L baseline Jul 28.wav",
+      "sha256": "44337ea069634b160edd632b76a89cf808364db735ca8cb2346c92f31d907944",
       "type": "WAV"
     },
     {
       "channel": "STEREO",
-      "path": "impulse/L+R retour sans eq Jul 7.wav",
-      "sha256": "676b240b0ef2f10646f617fa4fe36238abca88bcd785572319f8232384346d19",
+      "path": "impulse/L+R baseline Jul 28.wav",
+      "sha256": "3c81d6149ff2df34c42b9bb319378069f5668092b27476220c7c8801fcd53460",
       "type": "WAV"
     },
     {
       "channel": "RIGHT",
-      "path": "impulse/R retour sans eq Jul 7.wav",
-      "sha256": "99562eeb6a173816f520d007ba2fd14db3c636c5297c4322f54655f7510ef3ef",
+      "path": "impulse/R baseline Jul 28.wav",
+      "sha256": "f363719d3231b3e293c600ef074aeaf0c2d9f7ce01fd2962d87dcd3fba52b2e9",
       "type": "WAV"
     },
     {
       "channel": "LEFT",
-      "path": "measurements/L retour sans eq Jul 7.txt",
-      "sha256": "d3030b505e0cbf70d7e80811bd2a4b440eedfea69e02e5015aa3ede91ea03c7d",
+      "path": "measurements/L baseline Jul 28.txt",
+      "sha256": "811a1f4e344bfccb50c860d7ee1e55c5c057eccd3f22ba15c366c3a8636b7f7d",
       "type": "TXT_MEASUREMENT"
     },
     {
       "channel": "STEREO",
-      "path": "measurements/L+R retour sans eq Jul 7.txt",
-      "sha256": "808026bfd2616887fdd379b5e6bf21f355185a7647eed2bf4bd0a9f15b2f3446",
+      "path": "measurements/L+R baseline Jul 28.txt",
+      "sha256": "60461afda0275563445bcdb1adb673a4a79a32fe9752cfcb73b34a83e83e2d4f",
       "type": "TXT_MEASUREMENT"
     },
     {
       "channel": "RIGHT",
-      "path": "measurements/R retour sans eq Jul 7.txt",
-      "sha256": "567363918dde353ffbf78c856e60059e4a797ac38e09c41a74591750250d09b8",
+      "path": "measurements/R baseline Jul 28.txt",
+      "sha256": "76475bfb186aae1ab93e6e3cbcdc3dff1438fd9bc61e3592043ea1b6fdeb4538",
       "type": "TXT_MEASUREMENT"
     },
     {
       "channel": null,
+      "consumer": "USER",
+      "format_role": "OPTIONAL_PROPRIETARY_ARCHIVE",
       "path": "rew/baseline.mdat",
-      "sha256": "4e9a9046bb32708dcd97387cce2aea3edf7ad5d37e71051b7aed19625a5624d1",
+      "required": false,
+      "sha256": "dca8e0c432e3b40d3ea7c595754160db5a6518d4fac2936cb13d4434c6b201db",
       "type": "MDAT"
     }
   ],
   "imported_at": "2026-07-13T18:42:59.089547+00:00",
+  "listening_position": {
+    "direct_measurements": {
+      "distance_to_left_tweeter": {
+        "unit": "m",
+        "value": 2.77
+      },
+      "distance_to_right_tweeter": {
+        "unit": "m",
+        "value": 2.89
+      }
+    },
+    "position": {
+      "x": 3.0,
+      "y": 1.91,
+      "z": 0.92
+    },
+    "reference_point": "microphone_capsule"
+  },
+  "loudspeakers": {
+    "direct_measurements": {
+      "tweeter_spacing": {
+        "unit": "m",
+        "value": 2.43
+      }
+    },
+    "left": {
+      "position": {
+        "x": 0.54,
+        "y": 0.79,
+        "z": 0.87
+      }
+    },
+    "reference_point": "tweeter_center",
+    "right": {
+      "position": {
+        "x": 0.51,
+        "y": 3.22,
+        "z": 0.87
+      }
+    }
+  },
+  "room": {
+    "dimensions": {
+      "height": 2.6,
+      "length": 5.84,
+      "width": 5.5
+    }
+  },
   "schema_version": 1,
   "state": "READY",
   "timestamp": "2026-07-07T15:57:39"

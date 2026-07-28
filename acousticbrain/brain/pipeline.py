@@ -148,6 +148,7 @@ class BrainPipeline:
         synthesize_weighting=False,
         synthesize_evidence_acquisition=False,
         return_context=False,
+        movement_direction_declarations=(),
     ):
 
         synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
@@ -189,6 +190,9 @@ class BrainPipeline:
         )
         context.longitudinal_experimental_learning_analysis = (
             longitudinal_experimental_learning_analysis
+        )
+        context.movement_direction_declarations = tuple(
+            movement_direction_declarations
         )
 
         RoomGeometryStage().run(

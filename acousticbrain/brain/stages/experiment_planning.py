@@ -26,6 +26,9 @@ class ExperimentPlanningStage:
                 "acoustic_hypothesis_experiment_generation_analysis",
                 None,
             ),
+            movement_direction_declarations=(
+                getattr(context, "movement_direction_declarations", ())
+            ),
         )
 
     @staticmethod

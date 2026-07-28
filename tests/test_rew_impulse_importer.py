@@ -84,10 +84,10 @@ def test_rejects_duplicate_metadata(tmp_path):
         REWImpulseImporter().load(inconsistent, channel=ImpulseChannel.LEFT)
 
 
-def test_directory_import_loads_reference_impulse_channels():
-    project = ImportEngine().load_directory(
-        Path(__file__).resolve().parents[1] / "measurements"
-    )
+def test_directory_import_loads_reference_impulse_channels(
+    historical_campaign_root,
+):
+    project = ImportEngine().load_directory(historical_campaign_root)
 
     assert set(project.impulse_responses) == {
         ImpulseChannel.LEFT,

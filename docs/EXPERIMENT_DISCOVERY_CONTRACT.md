@@ -1,9 +1,17 @@
 # Contrat de découverte automatique des expériences
 
-Le dossier de mesures devient une source technique explicite :
+La campagne active du dépôt contient uniquement la baseline réelle :
 
 ```text
 measurements/
+    baseline/
+```
+
+Le corpus historique utilisé par les tests d'intégration est isolé de cette
+campagne active :
+
+```text
+tests/fixtures/campaigns/historical_reference/
     baseline/
     exp-001/
     exp-002/
@@ -56,6 +64,40 @@ fichiers avec leurs SHA-256.
 Le hash agrégé dépend des contenus, pas des noms. `manifest.json` et les
 fichiers étrangers comme `.DS_Store` sont exclus. La date du premier import est
 conservée. Le fichier n’est réécrit que si sa représentation complète change.
+
+## Extensibilité et conservation sans perte
+
+Un manifest JSON est un document extensible. Chaque composant peut interpréter
+les champs qu’il connaît, mais toute réécriture d’un document existant DOIT
+partir du document complet chargé et ne modifier que les clés relevant
+explicitement de sa responsabilité.
+
+Toute clé inconnue et toute structure imbriquée inconnue DOIVENT être
+conservées. Cette conservation est évaluée structurellement après parsing JSON :
+l’ordre des clés, l’indentation et le formatage ne sont pas contractuels.
+
+La création initiale d’un manifest neuf peut construire les champs techniques
+requis sans document source. En revanche, lorsqu’un manifest existe déjà, une
+mutation ciblée est requise :
+
+```python
+manifest = dict(existing_manifest)
+manifest.update(recalculated_fields)
+repository.save_manifest(path, manifest)
+```
+
+La reconstruction suivante est interdite :
+
+```python
+manifest = {
+    "schema_version": existing_manifest["schema_version"],
+    "experiment_id": existing_manifest["experiment_id"],
+}
+repository.save_manifest(path, manifest)
+```
+
+Cette reconstruction fermée supprime silencieusement toute extension inconnue
+qui n’appartient pas à la liste recopiée.
 
 ## Compatibilité
 
