@@ -24,9 +24,20 @@ class PresentedEvidenceAcquisitionPlan:
     estimated_effort: str
     status: str
     limitations: tuple[str, ...]
+    compatible_protocol_ids: tuple[str, ...] = ()
+    scientific_justification: str = ""
 
     def to_dict(self):
-        return dict(self.__dict__)
+        return {
+            **self.__dict__,
+            "prerequisite_status": self.prerequisite_status,
+        }
+
+    @property
+    def prerequisite_status(self):
+        if not self.required_inputs:
+            return "NO_REQUIRED_INPUTS"
+        return "AVAILABILITY_NOT_VERIFIED"
 
 
 @dataclass(frozen=True)
@@ -62,10 +73,12 @@ class PresentedEvidenceAcquisitionPlanReport:
     @property
     def recommendation_status(self):
         if not self.plans:
-            return "NO_PLAN"
-        if self.recommended_plan is None:
-            return "ALL_PLANS_BLOCKED"
-        return "EXPERIMENT_RECOMMENDED"
+            return "NO_PLANS"
+        if self.recommended_plan is not None:
+            return "RECOMMENDED_EXPERIMENT"
+        if any(value.status == "PROPOSED" for value in self.plans):
+            return "PLANS_PROPOSED_BUT_NOT_READY"
+        return "ALL_PLANS_BLOCKED"
 
     @property
     def selection_justification(self):
@@ -75,7 +88,7 @@ class PresentedEvidenceAcquisitionPlanReport:
         return (
             f"Selected among READY plans by priority ({plan.priority}), "
             f"then estimated effort ({plan.estimated_effort}), "
-            "then stable plan id."
+            "with plan id used only as a stable final tie-breaker."
         )
 
     def to_dict(self):
@@ -104,6 +117,24 @@ class EvidenceAcquisitionPlanPresenter:
         synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
         if synthesis is None:
             return None
+        action_synthesis = getattr(
+            context,
+            "deterministic_corrective_action_synthesis",
+            None,
+        )
+        actions = {
+            value.action_id: value
+            for value in action_synthesis.actions
+        } if action_synthesis is not None else {}
+        reasoning_synthesis = getattr(
+            context,
+            "deterministic_acoustic_reasoning_synthesis",
+            None,
+        )
+        reasonings = {
+            value.reasoning_id: value
+            for value in reasoning_synthesis.reasonings
+        } if reasoning_synthesis is not None else {}
         return PresentedEvidenceAcquisitionPlanReport(
             plans=tuple(
                 PresentedEvidenceAcquisitionPlan(
@@ -127,7 +158,84 @@ class EvidenceAcquisitionPlanPresenter:
                     estimated_effort=value.estimated_effort.value,
                     status=value.status.value,
                     limitations=value.limitations,
+                    compatible_protocol_ids=tuple(
+                        sorted(
+                            actions[value.corrective_action_id].compatible_protocol_ids
+                        )
+                    ) if value.corrective_action_id in actions else (),
+                    scientific_justification=self._scientific_justification(
+                        value,
+                        reasonings.get(value.reasoning_id),
+                    ),
                 )
                 for value in synthesis.plans
             )
         )
+
+    @staticmethod
+    def _scientific_justification(plan, reasoning):
+        title = (
+            EvidenceAcquisitionPlanPresenter._readable_title(reasoning.title)
+            if reasoning is not None
+            else "the associated acoustic reasoning"
+        )
+        conclusion = (
+            reasoning.conclusion.value.replace("_", " ").lower()
+            if reasoning is not None
+            else "unresolved"
+        )
+        observation_count = (
+            len(reasoning.observation_ids)
+            if reasoning is not None
+            else 0
+        )
+        supporting_observation_count = sum(
+            1
+            for premise in getattr(reasoning, "premises", ())
+            if premise.source_type.value == "OBSERVATION"
+            and premise.role.value == "SUPPORTING"
+        )
+        evidence_context = (
+            f"{supporting_observation_count} structured observation"
+            f"{'s' if supporting_observation_count != 1 else ''} support the reasoning about "
+            f"{title}, which remains {conclusion}."
+            if supporting_observation_count
+            else (
+                f"{observation_count} structured observation"
+                f"{'s' if observation_count != 1 else ''} inform the reasoning about "
+                f"{title}, which remains {conclusion}."
+                if observation_count
+                else f"The experiment addresses {title}, which remains {conclusion}."
+            )
+        )
+        if reasoning is not None and getattr(
+            reasoning,
+            "contradicting_evidence",
+            (),
+        ):
+            evidence_context += " The reasoning also retains contradictory evidence."
+        if plan.test_type.value == "CHANNEL_ISOLATION":
+            method = (
+                "Acquiring LEFT and RIGHT separately while keeping the declared "
+                "controlled variables constant tests whether the observed channel "
+                "difference is stable and repeatable."
+            )
+        else:
+            outcomes = ", ".join(
+                value.replace("_", " ")
+                for value in plan.expected_observations
+            )
+            method = (
+                f"The declared procedure tests for {outcomes}."
+                if outcomes
+                else "The declared procedure acquires evidence for that reasoning."
+            )
+        return (
+            f"{evidence_context} {method} "
+            "The experiment acquires evidence and does not establish causality."
+        )
+
+    @staticmethod
+    def _readable_title(value):
+        title = value.rsplit(":", 1)[-1].strip()
+        return title.replace("_", " ").lower()
