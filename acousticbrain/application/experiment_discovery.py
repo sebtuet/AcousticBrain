@@ -245,6 +245,9 @@ class ExperimentDiscoveryService:
             causal_protocol_step=causal_step,
             causal_discrimination_decisions=causal_decisions,
             experiment_declaration=declaration,
+            source_evidence_acquisition_plan_id=(
+                self._source_evidence_acquisition_plan_id(existing)
+            ),
         )
 
     @classmethod
@@ -415,6 +418,19 @@ class ExperimentDiscoveryService:
     @staticmethod
     def _optional_string(value):
         return value.strip() if isinstance(value, str) and value.strip() else None
+
+    @staticmethod
+    def _source_evidence_acquisition_plan_id(manifest):
+        if "source_evidence_acquisition_plan_id" not in manifest:
+            return None
+        value = manifest["source_evidence_acquisition_plan_id"]
+        if value is None:
+            return None
+        if not isinstance(value, str) or not value:
+            raise ValueError(
+                "Source evidence acquisition plan id must be absent or non-empty."
+            )
+        return value
 
     @classmethod
     def _string_tuple(cls, value):

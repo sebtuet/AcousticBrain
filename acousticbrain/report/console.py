@@ -373,7 +373,9 @@ class ConsoleReporter:
             print()
             print("EXPERIMENTS DISCOVERED")
             print()
-            for experiment in discovery.experiments:
+            for index, experiment in enumerate(discovery.experiments):
+                if index:
+                    print()
                 print(experiment.experiment_id)
                 print(f"État : {experiment.state}")
                 print(f"Fichiers : {experiment.file_count}")
@@ -382,7 +384,17 @@ class ConsoleReporter:
                     "Canaux : "
                     + (", ".join(experiment.available_channels) or "aucun")
                 )
-                print()
+                print(
+                    "Source evidence acquisition plan : "
+                    + (
+                        experiment.source_evidence_acquisition_plan_id
+                        or "none"
+                    )
+                )
+                print(
+                    "Plan reference status : "
+                    f"{experiment.evidence_acquisition_plan_reference_status}"
+                )
 
         comparison_analysis = report.experiment_comparison
         if comparison_analysis is not None:
