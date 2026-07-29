@@ -60,7 +60,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Deterministic acoustic reasoning | `--reasoning` | Premises, inference steps, conclusions, contradictions and limitations |
 | Deterministic corrective actions | `--actions` | Declarative actions, applicability, parameters and blocking conditions |
 | Deterministic evidence weighting | `--weighting` | Independent evidence dimensions without a global score |
-| Evidence acquisition plans | `--evidence-acquisition` | Existing diagnostic plans for acquiring missing evidence |
+| Next recommended experiment | `--evidence-acquisition` | One selected READY acquisition plan, or why none can be recommended |
 | Technical analysis readiness | `--analysis-readiness` | Existing experiment and analysis-family readiness decisions |
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
@@ -113,7 +113,7 @@ completeness and action applicability remain independent. The report creates no
 evidence, decision or global score. See
 [`docs/DETERMINISTIC_EVIDENCE_WEIGHTING.md`](docs/DETERMINISTIC_EVIDENCE_WEIGHTING.md).
 
-Print plans for acquiring missing evidence:
+Print the next recommended experiment for acquiring missing evidence:
 
 ```bash
 python main.py \
@@ -121,8 +121,12 @@ python main.py \
   --evidence-acquisition
 ```
 
-These are diagnostic acquisition plans, not acoustic corrections. A plan does
-not make a corrective action applicable by itself. See
+The report selects one `READY` plan by priority, then lowest estimated effort,
+then stable plan id. It distinguishes an experiment recommendation, plans that
+are all blocked, and the absence of any produced plan. Missing protocol or
+measurement parameters remain missing and are never inferred. These are
+diagnostic acquisition plans, not acoustic corrections; a plan does not make a
+corrective action applicable by itself. See
 [`docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md`](docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md).
 
 ### Technical analysis readiness

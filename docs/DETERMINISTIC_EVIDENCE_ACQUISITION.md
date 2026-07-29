@@ -73,9 +73,22 @@ python main.py \
   --evidence-acquisition
 ```
 
-The report displays objective, traceability, blocking factors, test type,
-instructions, variables, measurements, criteria, limitations, priority, effort
-and status. It performs no write to the campaign.
+The report recommends exactly one `READY` plan. Selection is deterministic:
+highest priority, then lowest estimated effort, then lexicographically smallest
+stable `plan_id`. It displays the selected objective, selection justification,
+known test type, instructions, controlled variables, measurements, success and
+failure criteria, limitations, priority, effort and status. A protocol is
+reported only when the plan contains one; missing protocol parameters are never
+filled in.
+
+The visible result has three distinct states:
+
+- `EXPERIMENT_RECOMMENDED`: one `READY` plan is presented as the next experiment;
+- `ALL_PLANS_BLOCKED`: plans exist, but no experiment is recommended and their
+  required inputs and limitations explain the next prerequisite;
+- `NO_PLAN`: the analysis produced no evidence acquisition plan.
+
+The report performs no write to the campaign.
 
 ## Optional Advisor
 
