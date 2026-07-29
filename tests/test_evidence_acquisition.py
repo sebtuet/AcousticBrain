@@ -1,4 +1,6 @@
 import json
+from contextlib import redirect_stdout
+from io import StringIO
 from types import SimpleNamespace
 
 import pytest
@@ -20,6 +22,7 @@ from acousticbrain.models import (
     WeightedActionApplicability,
 )
 from acousticbrain.report import (
+    EvidenceAcquisitionPlanConsoleReporter,
     EvidenceAcquisitionPlanPresenter,
     PresentedEvidenceAcquisitionPlan,
     PresentedEvidenceAcquisitionPlanReport,
@@ -253,6 +256,270 @@ def test_presented_json_is_byte_stable_and_ordered():
     report = EvidenceAcquisitionPlanPresenter().present(context)
     assert report.to_json() == EvidenceAcquisitionPlanPresenter().present(context).to_json()
     assert json.loads(report.to_json())["plans"][0]["plan_id"] == valid_plan().plan_id
+
+
+def test_single_ready_plan_is_the_recommended_experiment():
+    plan = valid_plan()
+    report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((plan,))
+        )
+    )
+
+    assert report.recommendation_status == "RECOMMENDED_EXPERIMENT"
+    assert report.recommended_plan.plan_id == plan.plan_id
+
+
+def test_multiple_ready_plans_use_priority_then_effort_then_stable_id():
+    low_priority = valid_plan(
+        plan_id="PLAN_A",
+        priority=EvidenceAcquisitionPriority.LOW,
+        estimated_effort=EvidenceAcquisitionEffort.LOW,
+    )
+    high_effort = valid_plan(
+        plan_id="PLAN_B",
+        priority=EvidenceAcquisitionPriority.HIGH,
+        estimated_effort=EvidenceAcquisitionEffort.HIGH,
+    )
+    expected = valid_plan(
+        plan_id="PLAN_C",
+        priority=EvidenceAcquisitionPriority.HIGH,
+        estimated_effort=EvidenceAcquisitionEffort.LOW,
+    )
+
+    def selected(plans):
+        return EvidenceAcquisitionPlanPresenter().present(
+            SimpleNamespace(
+                evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(plans)
+            )
+        ).recommended_plan.plan_id
+
+    assert selected((low_priority, high_effort, expected)) == expected.plan_id
+    assert selected((expected, low_priority, high_effort)) == expected.plan_id
+
+
+def test_plan_id_breaks_equal_ready_plan_ranks_independently_of_input_order():
+    first = valid_plan(plan_id="PLAN_A")
+    second = valid_plan(plan_id="PLAN_B")
+
+    reports = tuple(
+        EvidenceAcquisitionPlanPresenter().present(
+            SimpleNamespace(
+                evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(plans)
+            )
+        )
+        for plans in ((first, second), (second, first))
+    )
+
+    assert tuple(value.recommended_plan.plan_id for value in reports) == (
+        "PLAN_A",
+        "PLAN_A",
+    )
+    assert reports[0].selection_justification == reports[1].selection_justification
+
+
+def test_blocked_plans_and_no_plan_have_distinct_results():
+    blocked = valid_plan(status=EvidenceAcquisitionStatus.BLOCKED)
+    blocked_report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((blocked,))
+        )
+    )
+    empty_report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis()
+        )
+    )
+
+    assert blocked_report.recommendation_status == "ALL_PLANS_BLOCKED"
+    assert blocked_report.recommended_plan is None
+    assert empty_report.recommendation_status == "NO_PLANS"
+    assert empty_report.recommended_plan is None
+
+
+def test_proposed_and_mixed_non_ready_plans_are_not_reported_as_all_blocked():
+    proposed = valid_plan(
+        plan_id="PLAN_PROPOSED",
+        status=EvidenceAcquisitionStatus.PROPOSED,
+    )
+    blocked = valid_plan(
+        plan_id="PLAN_BLOCKED",
+        status=EvidenceAcquisitionStatus.BLOCKED,
+    )
+
+    for plans in ((proposed,), (blocked, proposed)):
+        report = EvidenceAcquisitionPlanPresenter().present(
+            SimpleNamespace(
+                evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+                    plans
+                )
+            )
+        )
+        assert report.recommendation_status == "PLANS_PROPOSED_BUT_NOT_READY"
+        assert report.recommended_plan is None
+
+
+def presentation_context(plan, *, protocols=(), reasoning=None):
+    action = SimpleNamespace(
+        action_id=plan.corrective_action_id,
+        compatible_protocol_ids=tuple(protocols),
+    )
+    values = {
+        "evidence_acquisition_plan_synthesis": EvidenceAcquisitionPlanSynthesis(
+            (plan,)
+        ),
+        "deterministic_corrective_action_synthesis": SimpleNamespace(
+            actions=(action,)
+        ),
+    }
+    if reasoning is not None:
+        values["deterministic_acoustic_reasoning_synthesis"] = SimpleNamespace(
+            reasonings=(reasoning,)
+        )
+    return SimpleNamespace(**values)
+
+
+def test_protocol_projection_uses_exact_source_action_and_stable_order():
+    plan = valid_plan()
+    context = presentation_context(
+        plan,
+        protocols=("protocol.z", "VERIFY_SPEAKER_ROOM_ASYMMETRY", "protocol.a"),
+    )
+
+    first = EvidenceAcquisitionPlanPresenter().present(context).recommended_plan
+    second = EvidenceAcquisitionPlanPresenter().present(context).recommended_plan
+
+    assert first.corrective_action_id == plan.corrective_action_id
+    assert first.compatible_protocol_ids == (
+        "VERIFY_SPEAKER_ROOM_ASYMMETRY",
+        "protocol.a",
+        "protocol.z",
+    )
+    assert second.compatible_protocol_ids == first.compatible_protocol_ids
+
+
+def test_protocol_projection_does_not_guess_when_source_action_has_none():
+    plan = valid_plan()
+    presented = EvidenceAcquisitionPlanPresenter().present(
+        presentation_context(plan)
+    ).recommended_plan
+
+    assert presented.compatible_protocol_ids == ()
+
+
+def test_protocol_projection_does_not_leak_from_an_unrelated_action():
+    plan = valid_plan()
+    context = SimpleNamespace(
+        evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+            (plan,)
+        ),
+        deterministic_corrective_action_synthesis=SimpleNamespace(
+            actions=(
+                SimpleNamespace(
+                    action_id="UNRELATED_ACTION",
+                    compatible_protocol_ids=("UNRELATED_PROTOCOL",),
+                ),
+            )
+        ),
+    )
+
+    presented = EvidenceAcquisitionPlanPresenter().present(
+        context
+    ).recommended_plan
+
+    assert presented.compatible_protocol_ids == ()
+
+
+def test_required_input_availability_is_not_invented():
+    required = EvidenceAcquisitionPlanPresenter().present(
+        presentation_context(valid_plan())
+    ).recommended_plan
+    not_required = EvidenceAcquisitionPlanPresenter().present(
+        presentation_context(valid_plan(required_inputs=()))
+    ).recommended_plan
+
+    assert required.prerequisite_status == "AVAILABILITY_NOT_VERIFIED"
+    assert not_required.prerequisite_status == "NO_REQUIRED_INPUTS"
+
+
+def test_scientific_justification_is_distinct_from_selection_rationale():
+    plan = valid_plan(
+        test_type=EvidenceAcquisitionTestType.CHANNEL_ISOLATION,
+        expected_observations=("channel_difference", "repeatability"),
+        limitations=("The plan does not establish the cause.",),
+    )
+    reasoning = SimpleNamespace(
+        reasoning_id=plan.reasoning_id,
+        title="Existing hypothesis explanation: SPEAKER_ROOM_ASYMMETRY",
+        conclusion=SimpleNamespace(value="NON_DISCRIMINATED"),
+        observation_ids=("OBSERVATION_LEFT_RIGHT", "OBSERVATION_ETC"),
+        premises=(
+            SimpleNamespace(
+                source_type=SimpleNamespace(value="OBSERVATION"),
+                role=SimpleNamespace(value="SUPPORTING"),
+            ),
+            SimpleNamespace(
+                source_type=SimpleNamespace(value="OBSERVATION"),
+                role=SimpleNamespace(value="SUPPORTING"),
+            ),
+        ),
+        contradicting_evidence=("INTERNAL_CONTRADICTION_ID",),
+    )
+    report = EvidenceAcquisitionPlanPresenter().present(
+        presentation_context(plan, reasoning=reasoning)
+    )
+
+    assert "2 structured observations" in report.recommended_plan.scientific_justification
+    assert "speaker room asymmetry" in report.recommended_plan.scientific_justification
+    assert "retains contradictory evidence" in report.recommended_plan.scientific_justification
+    assert "LEFT and RIGHT separately" in report.recommended_plan.scientific_justification
+    assert "stable and repeatable" in report.recommended_plan.scientific_justification
+    assert "does not establish causality" in report.recommended_plan.scientific_justification
+    assert plan.reasoning_id not in report.recommended_plan.scientific_justification
+    assert "INTERNAL_CONTRADICTION_ID" not in report.recommended_plan.scientific_justification
+    assert "priority" not in report.recommended_plan.scientific_justification
+    assert "priority" in report.selection_justification
+
+
+def test_recommended_output_preserves_fields_and_does_not_invent_protocol_parameters():
+    limitation = "No distance, position, repetition or acquisition parameter is known."
+    plan = valid_plan(
+        limitations=(limitation,),
+        instructions=("Use only the already documented acquisition settings.",),
+    )
+    report = Report(project_name="campaign")
+    report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((plan,))
+        )
+    )
+    output = StringIO()
+
+    with redirect_stdout(output):
+        EvidenceAcquisitionPlanConsoleReporter().print(report)
+
+    rendered = output.getvalue()
+    for label in (
+        "Objective",
+        "Why This Experiment",
+        "Protocol",
+        "Required Inputs",
+        "Prerequisite Availability",
+        "Procedure",
+        "Keep Constant",
+        "Variables Under Test",
+        "Measurements",
+        "Expected Observations",
+        "Success Criteria",
+        "Failure Criteria",
+        "Limitations",
+        "Selection Rationale",
+    ):
+        assert label in rendered
+    assert "- not specified" in rendered
+    assert "Not verified by the evidence acquisition plan" in rendered
+    assert limitation in rendered
+    assert " cm" not in rendered
 
 
 def test_advisor_can_reference_only_existing_plans_without_changing_historical_default():

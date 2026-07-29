@@ -73,7 +73,7 @@ def test_empty_sections_are_printed_in_exact_order():
         "DETERMINISTIC ACOUSTIC REASONING",
         "DETERMINISTIC CORRECTIVE ACTIONS",
         "DETERMINISTIC EVIDENCE WEIGHTING",
-        "EVIDENCE ACQUISITION PLANS",
+        "NEXT RECOMMENDED EXPERIMENT",
     )
 
     assert all(heading in output for heading in headings)
@@ -84,7 +84,7 @@ def test_empty_sections_are_printed_in_exact_order():
     assert "No deterministic acoustic reasoning is available." in output
     assert "No deterministic corrective action is available." in output
     assert "No existing evidence object is available for weighting." in output
-    assert "No blocking factor justifies an evidence acquisition plan." in output
+    assert "No evidence acquisition plan was produced." in output
 
 
 def test_present_and_empty_sections_are_printed_deterministically():
@@ -114,7 +114,7 @@ def test_present_and_empty_sections_are_printed_deterministically():
     assert "No deterministic acoustic reasoning is available." in first
     assert "No deterministic corrective action is available." in first
     assert "No existing evidence object is available for weighting." in first
-    assert "No blocking factor justifies an evidence acquisition plan." in first
+    assert "No evidence acquisition plan was produced." in first
 
 
 def test_two_empty_assessments_are_byte_for_byte_identical():
