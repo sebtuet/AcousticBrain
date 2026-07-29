@@ -33,8 +33,62 @@ class PresentedEvidenceAcquisitionPlan:
 class PresentedEvidenceAcquisitionPlanReport:
     plans: tuple[PresentedEvidenceAcquisitionPlan, ...]
 
+    _PRIORITY_ORDER = {
+        "CRITICAL": 0,
+        "HIGH": 1,
+        "MEDIUM": 2,
+        "LOW": 3,
+    }
+    _EFFORT_ORDER = {
+        "LOW": 0,
+        "MEDIUM": 1,
+        "HIGH": 2,
+    }
+
+    @property
+    def recommended_plan(self):
+        ready = tuple(value for value in self.plans if value.status == "READY")
+        if not ready:
+            return None
+        return min(
+            ready,
+            key=lambda value: (
+                self._PRIORITY_ORDER[value.priority],
+                self._EFFORT_ORDER[value.estimated_effort],
+                value.plan_id,
+            ),
+        )
+
+    @property
+    def recommendation_status(self):
+        if not self.plans:
+            return "NO_PLAN"
+        if self.recommended_plan is None:
+            return "ALL_PLANS_BLOCKED"
+        return "EXPERIMENT_RECOMMENDED"
+
+    @property
+    def selection_justification(self):
+        plan = self.recommended_plan
+        if plan is None:
+            return None
+        return (
+            f"Selected among READY plans by priority ({plan.priority}), "
+            f"then estimated effort ({plan.estimated_effort}), "
+            "then stable plan id."
+        )
+
     def to_dict(self):
-        return {"plans": tuple(value.to_dict() for value in self.plans)}
+        return {
+            "plans": tuple(value.to_dict() for value in self.plans),
+            "recommendation_status": self.recommendation_status,
+            "recommended_plan": (
+                self.recommended_plan.to_dict()
+                if self.recommended_plan is not None
+                else None
+            ),
+            "selection_justification": self.selection_justification,
+        }
 
     def to_json(self):
         return json.dumps(

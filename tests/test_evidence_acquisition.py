@@ -1,4 +1,6 @@
 import json
+from contextlib import redirect_stdout
+from io import StringIO
 from types import SimpleNamespace
 
 import pytest
@@ -20,6 +22,7 @@ from acousticbrain.models import (
     WeightedActionApplicability,
 )
 from acousticbrain.report import (
+    EvidenceAcquisitionPlanConsoleReporter,
     EvidenceAcquisitionPlanPresenter,
     PresentedEvidenceAcquisitionPlan,
     PresentedEvidenceAcquisitionPlanReport,
@@ -253,6 +256,120 @@ def test_presented_json_is_byte_stable_and_ordered():
     report = EvidenceAcquisitionPlanPresenter().present(context)
     assert report.to_json() == EvidenceAcquisitionPlanPresenter().present(context).to_json()
     assert json.loads(report.to_json())["plans"][0]["plan_id"] == valid_plan().plan_id
+
+
+def test_single_ready_plan_is_the_recommended_experiment():
+    plan = valid_plan()
+    report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((plan,))
+        )
+    )
+
+    assert report.recommendation_status == "EXPERIMENT_RECOMMENDED"
+    assert report.recommended_plan.plan_id == plan.plan_id
+
+
+def test_multiple_ready_plans_use_priority_then_effort_then_stable_id():
+    low_priority = valid_plan(
+        plan_id="PLAN_A",
+        priority=EvidenceAcquisitionPriority.LOW,
+        estimated_effort=EvidenceAcquisitionEffort.LOW,
+    )
+    high_effort = valid_plan(
+        plan_id="PLAN_B",
+        priority=EvidenceAcquisitionPriority.HIGH,
+        estimated_effort=EvidenceAcquisitionEffort.HIGH,
+    )
+    expected = valid_plan(
+        plan_id="PLAN_C",
+        priority=EvidenceAcquisitionPriority.HIGH,
+        estimated_effort=EvidenceAcquisitionEffort.LOW,
+    )
+
+    def selected(plans):
+        return EvidenceAcquisitionPlanPresenter().present(
+            SimpleNamespace(
+                evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(plans)
+            )
+        ).recommended_plan.plan_id
+
+    assert selected((low_priority, high_effort, expected)) == expected.plan_id
+    assert selected((expected, low_priority, high_effort)) == expected.plan_id
+
+
+def test_plan_id_breaks_equal_ready_plan_ranks_independently_of_input_order():
+    first = valid_plan(plan_id="PLAN_A")
+    second = valid_plan(plan_id="PLAN_B")
+
+    reports = tuple(
+        EvidenceAcquisitionPlanPresenter().present(
+            SimpleNamespace(
+                evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(plans)
+            )
+        )
+        for plans in ((first, second), (second, first))
+    )
+
+    assert tuple(value.recommended_plan.plan_id for value in reports) == (
+        "PLAN_A",
+        "PLAN_A",
+    )
+    assert reports[0].selection_justification == reports[1].selection_justification
+
+
+def test_blocked_plans_and_no_plan_have_distinct_results():
+    blocked = valid_plan(status=EvidenceAcquisitionStatus.BLOCKED)
+    blocked_report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((blocked,))
+        )
+    )
+    empty_report = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis()
+        )
+    )
+
+    assert blocked_report.recommendation_status == "ALL_PLANS_BLOCKED"
+    assert blocked_report.recommended_plan is None
+    assert empty_report.recommendation_status == "NO_PLAN"
+    assert empty_report.recommended_plan is None
+
+
+def test_recommended_output_preserves_fields_and_does_not_invent_protocol_parameters():
+    limitation = "No distance, position, repetition or acquisition parameter is known."
+    plan = valid_plan(
+        limitations=(limitation,),
+        instructions=("Use only the already documented acquisition settings.",),
+    )
+    report = Report(project_name="campaign")
+    report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis((plan,))
+        )
+    )
+    output = StringIO()
+
+    with redirect_stdout(output):
+        EvidenceAcquisitionPlanConsoleReporter().print(report)
+
+    rendered = output.getvalue()
+    for label in (
+        "Objective",
+        "Justification",
+        "Protocol",
+        "Instructions",
+        "Controlled Variables",
+        "Measurements To Capture",
+        "Success Criteria",
+        "Failure Criteria",
+        "Limitations",
+    ):
+        assert label in rendered
+    assert "Not specified by the evidence acquisition plan." in rendered
+    assert limitation in rendered
+    assert " cm" not in rendered
 
 
 def test_advisor_can_reference_only_existing_plans_without_changing_historical_default():
