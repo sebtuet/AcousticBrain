@@ -368,6 +368,9 @@ class AcousticBrain:
         current_report.longitudinal_experimental_learning = (
             LongitudinalExperimentalLearningPresenter().present(current_context)
         )
+        current_report.experiments_discovered = (
+            ExperimentDiscoveryPresenter().present(current_context)
+        )
         current_report.assessment_summary = AssessmentSummaryPresenter().present(
             current_report
         )

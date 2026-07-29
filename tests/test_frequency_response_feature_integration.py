@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 
 import main as acousticbrain_main
+import pytest
 
 from acousticbrain.application import AcousticSession
 from acousticbrain.brain import AcousticBrain
@@ -120,6 +121,49 @@ def test_new_observations_do_not_enter_existing_causal_reasoning(tmp_path):
         "RECOMMEND_GEOMETRY_ADJUSTMENT" not in item.title
         for item in report.deterministic_corrective_actions.actions
     )
+
+
+@pytest.mark.parametrize(
+    ("source_plan_id", "expected_source", "expected_status"),
+    (
+        (None, "none", "PLAN_NOT_REFERENCED"),
+        (
+            "EVIDENCE_ACQUISITION_ASYMMETRIC_SPEAKER_ROOM_INTERACTION_"
+            "REASONING_RESOLVE_CONTRADICTION",
+            "EVIDENCE_ACQUISITION_ASYMMETRIC_SPEAKER_ROOM_INTERACTION_"
+            "REASONING_RESOLVE_CONTRADICTION",
+            "PLAN_REFERENCE_RESOLVED",
+        ),
+        (
+            "EVIDENCE_ACQUISITION_PLAN_UNKNOWN",
+            "EVIDENCE_ACQUISITION_PLAN_UNKNOWN",
+            "PLAN_REFERENCE_UNKNOWN",
+        ),
+    ),
+)
+def test_standard_cli_resolves_plan_reference_against_real_pipeline(
+    tmp_path,
+    capsys,
+    source_plan_id,
+    expected_source,
+    expected_status,
+):
+    root = copy_campaign(tmp_path)
+    manifest_path = root / "baseline" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if source_plan_id is not None:
+        manifest["source_evidence_acquisition_plan_id"] = source_plan_id
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    acousticbrain_main.run(root)
+
+    output = capsys.readouterr().out
+    assert f"Source evidence acquisition plan : {expected_source}" in output
+    assert f"Plan reference status : {expected_status}" in output
+    assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
 def test_cli_exposes_readiness_observations_and_full_assessment_deterministically(

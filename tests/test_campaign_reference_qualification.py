@@ -586,6 +586,7 @@ def test_without_cli_argument_historical_call_is_strictly_unchanged(tmp_path):
             "measurement_root": campaign,
             "compare_experiments": True,
             "analyze_causal_discrimination": True,
+            "synthesize_evidence_acquisition": True,
         }
     ]
 

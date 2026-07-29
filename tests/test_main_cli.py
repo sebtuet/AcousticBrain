@@ -1,11 +1,18 @@
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
 import main as acousticbrain_main
+from acousticbrain.models import (
+    ExperimentDescriptor,
+    ExperimentState,
+    ExperimentType,
+)
 from acousticbrain.report import (
+    ExperimentDiscoveryPresenter,
     PresentedAnalysisReadiness,
     PresentedAnalysisReadinessReport,
     PresentedAssessmentSummary,
@@ -29,6 +36,46 @@ class RecordingReporter:
 
     def print(self, report):
         self.reports.append(report)
+
+
+class PlanReferenceRoutingBrain:
+    EXISTING_PLAN_ID = "EVIDENCE_ACQUISITION_PLAN_EXISTING"
+
+    def __init__(self, source_plan_id):
+        self.source_plan_id = source_plan_id
+        self.calls = []
+
+    def analyze(self, **arguments):
+        self.calls.append(arguments)
+        context = SimpleNamespace(
+            experiment_descriptors=(
+                ExperimentDescriptor(
+                    experiment_id="baseline",
+                    directory="/measurements/baseline",
+                    experiment_type=ExperimentType.BASELINE,
+                    available_files=(),
+                    available_channels=(),
+                    wav_files=(),
+                    txt_files=(),
+                    mdat_file=None,
+                    manifest_present=True,
+                    content_hash="a" * 64,
+                    timestamp="2026-07-28T18:43:41",
+                    imported_at="2026-07-28T18:43:41",
+                    state=ExperimentState.READY,
+                    source_evidence_acquisition_plan_id=self.source_plan_id,
+                ),
+            ),
+        )
+        if arguments.get("synthesize_evidence_acquisition"):
+            context.evidence_acquisition_plan_synthesis = SimpleNamespace(
+                plans=(SimpleNamespace(plan_id=self.EXISTING_PLAN_ID),)
+            )
+        report = Report(project_name="routing")
+        report.experiments_discovered = ExperimentDiscoveryPresenter().present(
+            context
+        )
+        return report
 
 
 def test_parser_uses_historical_measurements_default():
@@ -141,9 +188,50 @@ def test_main_passes_exact_relative_path_without_changing_cwd(tmp_path, monkeypa
             "measurement_root": relative,
             "compare_experiments": True,
             "analyze_causal_discrimination": True,
+            "synthesize_evidence_acquisition": True,
         }
     ]
     assert reporter.reports == [brain.report]
+
+
+@pytest.mark.parametrize(
+    ("source_plan_id", "expected_source", "expected_status"),
+    (
+        (None, "none", "PLAN_NOT_REFERENCED"),
+        (
+            PlanReferenceRoutingBrain.EXISTING_PLAN_ID,
+            PlanReferenceRoutingBrain.EXISTING_PLAN_ID,
+            "PLAN_REFERENCE_RESOLVED",
+        ),
+        (
+            "EVIDENCE_ACQUISITION_PLAN_UNKNOWN",
+            "EVIDENCE_ACQUISITION_PLAN_UNKNOWN",
+            "PLAN_REFERENCE_UNKNOWN",
+        ),
+    ),
+)
+def test_standard_cli_resolves_explicit_plan_references_without_printing_plan_report(
+    tmp_path,
+    capsys,
+    source_plan_id,
+    expected_source,
+    expected_status,
+):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    brain = PlanReferenceRoutingBrain(source_plan_id)
+
+    result = acousticbrain_main.main(
+        ["--measurements-root", str(campaign)],
+        brain=brain,
+    )
+
+    assert result == 0
+    assert brain.calls[0]["synthesize_evidence_acquisition"] is True
+    output = capsys.readouterr().out
+    assert f"Source evidence acquisition plan : {expected_source}" in output
+    assert f"Plan reference status : {expected_status}" in output
+    assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
 def test_main_passes_exact_absolute_path(tmp_path):

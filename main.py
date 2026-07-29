@@ -251,7 +251,23 @@ def run(
         arguments["synthesize_actions"] = True
     if weighting:
         arguments["synthesize_weighting"] = True
-    if evidence_acquisition or full_assessment or assessment_summary:
+    standard_report = not any((
+        observations,
+        reasoning,
+        actions,
+        weighting,
+        evidence_acquisition,
+        full_assessment,
+        analysis_readiness,
+        assessment_summary,
+        advisor,
+    ))
+    if (
+        evidence_acquisition
+        or full_assessment
+        or assessment_summary
+        or standard_report
+    ):
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
         if evidence_acquisition:

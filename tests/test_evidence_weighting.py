@@ -262,7 +262,7 @@ class RecordingReporter:
 @pytest.mark.parametrize(
     ("extra", "expected"),
     (
-        ([], {}),
+        ([], {"synthesize_evidence_acquisition": True}),
         (["--observations"], {"synthesize_observations": True}),
         (["--reasoning"], {"synthesize_reasoning": True}),
         (["--actions"], {"synthesize_actions": True}),
