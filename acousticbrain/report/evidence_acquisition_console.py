@@ -39,7 +39,7 @@ class EvidenceAcquisitionPlanConsoleReporter:
             return
         plan = presented.recommended_plan
         self._value("Plan", plan.plan_id)
-        self._value("Objective", plan.objective)
+        self._value("Objective", plan.display_objective or plan.objective)
         self._value("Why This Experiment", plan.scientific_justification)
         self._collection(
             "Protocol",
@@ -90,7 +90,7 @@ class EvidenceAcquisitionPlanConsoleReporter:
     def _unready_plans(self, plans):
         for plan in sorted(plans, key=lambda value: value.plan_id):
             self._value(f"{plan.status.title()} Plan", plan.plan_id)
-            self._value("Objective", plan.objective)
+            self._value("Objective", plan.display_objective or plan.objective)
             self._collection("Required Inputs", plan.required_inputs)
             self._collection("Limitations", plan.limitations)
             print()

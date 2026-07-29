@@ -130,7 +130,7 @@ class AssessmentSummaryPresenter:
         return tuple(
             PresentedRecommendedExperiment(
                 plan_id=item.plan_id,
-                objective=item.objective,
+                objective=item.display_objective or item.objective,
                 status=item.status,
             )
             for item in presented.plans

@@ -208,6 +208,28 @@ def test_presenter_uses_report_collections_without_reordering_or_rewriting():
     )
 
 
+def test_presenter_uses_display_objective_without_losing_plan_identity():
+    report = source_report()
+    source = report.evidence_acquisition_plans.plans[0]
+    report.evidence_acquisition_plans = PresentedEvidenceAcquisitionPlanReport(
+        plans=(
+            PresentedEvidenceAcquisitionPlan(
+                **{
+                    **source.__dict__,
+                    "display_objective": "Readable experiment objective.",
+                }
+            ),
+        )
+    )
+
+    summary = AssessmentSummaryPresenter().present(report)
+
+    assert summary.recommended_experiments[0].plan_id == source.plan_id
+    assert summary.recommended_experiments[0].objective == (
+        "Readable experiment objective."
+    )
+
+
 def test_report_builder_creates_summary_from_the_partially_populated_report():
     context = AnalysisContext(measurement=Measurement(name="L+R"))
 

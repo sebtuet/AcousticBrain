@@ -258,6 +258,87 @@ def test_presented_json_is_byte_stable_and_ordered():
     assert json.loads(report.to_json())["plans"][0]["plan_id"] == valid_plan().plan_id
 
 
+def test_display_objective_preserves_structured_source_and_traceability():
+    source_objective = (
+        "Acquire repeatable evidence for contradiction "
+        "reasoning.internal.technical_identifier."
+    )
+    plan = valid_plan(
+        objective=source_objective,
+        test_type=EvidenceAcquisitionTestType.CHANNEL_ISOLATION,
+        independent_variables=("active_channel",),
+        expected_observations=("channel_specific_metric", "repeatability_metric"),
+    )
+    presented = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+                (plan,)
+            )
+        )
+    ).recommended_plan
+    serialized = presented.to_dict()
+
+    assert presented.display_objective == (
+        "Determine whether the observed left/right acoustic difference "
+        "is stable and repeatable."
+    )
+    assert "reasoning." not in presented.display_objective
+    assert "caus" not in presented.display_objective.casefold()
+    assert serialized["objective"] == source_objective
+    assert serialized["reasoning_id"] == plan.reasoning_id
+    assert serialized["plan_id"] == plan.plan_id
+
+
+def test_display_objective_supports_another_existing_test_type():
+    plan = valid_plan(
+        test_type=EvidenceAcquisitionTestType.COMPARATIVE_MEASUREMENT,
+        independent_variables=("active_speaker", "microphone_position"),
+        expected_observations=("spatial_change_pattern", "source_tied_pattern"),
+    )
+
+    presented = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+                (plan,)
+            )
+        )
+    ).recommended_plan
+
+    assert presented.display_objective == (
+        "Compare the declared experimental variables to determine whether "
+        "the expected acoustic patterns differ."
+    )
+
+
+def test_display_objective_has_an_honest_deterministic_fallback():
+    plan = valid_plan(
+        objective="Technical source objective reasoning.internal.id.",
+        test_type=EvidenceAcquisitionTestType.CONTROLLED_MICROPHONE_DISPLACEMENT,
+        independent_variables=(),
+        expected_observations=(),
+    )
+    context = SimpleNamespace(
+        evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+            (plan,)
+        )
+    )
+
+    first = EvidenceAcquisitionPlanPresenter().present(
+        context
+    ).recommended_plan.display_objective
+    second = EvidenceAcquisitionPlanPresenter().present(
+        context
+    ).recommended_plan.display_objective
+
+    assert first == second
+    assert first == (
+        "Acquire the evidence required by the associated acoustic reasoning "
+        "without establishing causality."
+    )
+    assert plan.reasoning_id not in first
+    assert "reasoning.internal.id" not in first
+
+
 def test_single_ready_plan_is_the_recommended_experiment():
     plan = valid_plan()
     report = EvidenceAcquisitionPlanPresenter().present(
@@ -520,6 +601,36 @@ def test_recommended_output_preserves_fields_and_does_not_invent_protocol_parame
     assert "Not verified by the evidence acquisition plan" in rendered
     assert limitation in rendered
     assert " cm" not in rendered
+
+
+def test_console_uses_display_objective_without_exposing_source_identifier():
+    source_identifier = "reasoning.internal.technical_identifier"
+    plan = valid_plan(
+        objective=f"Acquire evidence for contradiction {source_identifier}.",
+        test_type=EvidenceAcquisitionTestType.CHANNEL_ISOLATION,
+        independent_variables=("active_channel",),
+        expected_observations=("channel_specific_metric", "repeatability_metric"),
+    )
+    report = Report(project_name="campaign")
+    report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+                (plan,)
+            )
+        )
+    )
+    output = StringIO()
+
+    with redirect_stdout(output):
+        EvidenceAcquisitionPlanConsoleReporter().print(report)
+
+    rendered = output.getvalue()
+    objective = rendered.split("Objective\n", 1)[1].split("\n\n", 1)[0]
+    assert objective == (
+        "Determine whether the observed left/right acoustic difference "
+        "is stable and repeatable."
+    )
+    assert source_identifier not in objective
 
 
 def test_advisor_can_reference_only_existing_plans_without_changing_historical_default():

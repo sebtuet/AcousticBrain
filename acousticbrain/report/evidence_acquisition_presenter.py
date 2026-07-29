@@ -26,6 +26,7 @@ class PresentedEvidenceAcquisitionPlan:
     limitations: tuple[str, ...]
     compatible_protocol_ids: tuple[str, ...] = ()
     scientific_justification: str = ""
+    display_objective: str | None = None
 
     def to_dict(self):
         return {
@@ -167,9 +168,70 @@ class EvidenceAcquisitionPlanPresenter:
                         value,
                         reasonings.get(value.reasoning_id),
                     ),
+                    display_objective=self._display_objective(value),
                 )
                 for value in synthesis.plans
             )
+        )
+
+    @staticmethod
+    def _display_objective(plan):
+        expected = set(plan.expected_observations)
+        variables = set(plan.independent_variables)
+        measurements = set(plan.measurements_to_capture)
+        test_type = plan.test_type.value
+
+        if (
+            test_type == "CHANNEL_ISOLATION"
+            and "active_channel" in variables
+            and "repeatability_metric" in expected
+        ):
+            return (
+                "Determine whether the observed left/right acoustic difference "
+                "is stable and repeatable."
+            )
+        if (
+            test_type == "REPEAT_MEASUREMENT"
+            and "repeatability" in expected
+        ):
+            return (
+                "Determine whether the observed acoustic result is stable "
+                "and repeatable."
+            )
+        if (
+            test_type == "COMPARATIVE_MEASUREMENT"
+            and variables
+            and expected
+        ):
+            return (
+                "Compare the declared experimental variables to determine "
+                "whether the expected acoustic patterns differ."
+            )
+        if (
+            test_type == "PARAMETER_COMPLETION"
+            and "validated_protocol_compatibility" in expected
+        ):
+            return (
+                "Identify and validate the protocol or plan required before "
+                "measurement execution."
+            )
+        if test_type == "ADDITIONAL_OBSERVATION" and expected:
+            return (
+                "Acquire an additional traceable observation for the associated "
+                "acoustic reasoning."
+            )
+        if (
+            test_type == "GEOMETRY_ACQUISITION"
+            and "speaker_position_m" in measurements
+            and "listening_position_m" in measurements
+        ):
+            return (
+                "Document the speaker, listening and microphone geometry "
+                "required for a future acoustic comparison."
+            )
+        return (
+            "Acquire the evidence required by the associated acoustic "
+            "reasoning without establishing causality."
         )
 
     @staticmethod
