@@ -92,6 +92,74 @@ reasoning, horodatage, nom de fichier ou contenu de mesure. Un lien résolu
 établit uniquement la traçabilité vers le plan source ; il ne valide ni
 l’exécution, ni le protocole, ni le résultat, ni une conclusion scientifique.
 
+### Couverture déclarée d’un plan `CHANNEL_ISOLATION`
+
+La résolution de référence et la couverture du plan sont deux qualifications
+distinctes. Une référence peut être `PLAN_REFERENCE_RESOLVED` tandis que sa
+couverture reste partielle ou insuffisamment déclarée.
+
+La validation de couverture est volontairement spécialisée au seul type
+`CHANNEL_ISOLATION`. Elle compare exactement :
+
+- les acquisitions LEFT et RIGHT structurées par la découverte ;
+- les répétitions par canal, variables, entrées disponibles et mesures
+  déclarées dans l’extension optionnelle suivante :
+
+```json
+{
+  "channel_isolation_declaration": {
+    "repeated_channels": ["LEFT", "RIGHT"],
+    "available_inputs": [
+      "documented_microphone_position",
+      "existing_acquisition_settings"
+    ],
+    "controlled_variables": [
+      "gain",
+      "microphone_position",
+      "signal_chain",
+      "time_window"
+    ],
+    "independent_variables": ["active_channel"],
+    "measurements": [
+      "left_channel_response",
+      "right_channel_response",
+      "repeat_response"
+    ]
+  }
+}
+```
+
+Les identifiants sont comparés sans normalisation ni correspondance
+approximative. Les noms de projet, d’expérience et de fichiers ne participent
+jamais à la décision. Une acquisition STEREO ne couvre pas implicitement les
+acquisitions isolées LEFT et RIGHT. Les variables de
+`experiment_declaration`, historiquement normalisées à l’import, ne sont pas
+utilisées comme raccourci pour cette comparaison exacte.
+
+Les états de couverture sont :
+
+- `PLAN_COVERAGE_NOT_APPLICABLE` : aucun plan n’est résolu, ou le plan résolu
+  n’est pas de type `CHANNEL_ISOLATION` ;
+- `PLAN_COVERAGE_INSUFFICIENT_DECLARATION` : le plan est applicable mais les
+  déclarations structurées ne permettent pas de qualifier honnêtement sa
+  couverture ;
+- `PLAN_COVERAGE_PARTIAL` : au moins une exigence vérifiable est couverte et
+  au moins une autre est explicitement absente ;
+- `PLAN_COVERAGE_COMPLETE` : toutes les exigences vérifiables sont
+  explicitement couvertes.
+
+Une exigence `missing` est comparable mais absente des déclarations
+structurées. Une exigence `unverifiable` ne possède pas de représentation
+comparable dans le modèle actuel. L’exécution des instructions et les
+observations attendues restent ainsi non vérifiables dans cette portée.
+
+`PLAN_COVERAGE_COMPLETE` qualifie uniquement la structure déclarée. Il ne
+prouve ni que les répétitions ont été correctement réalisées, ni que les
+variables sont réellement restées constantes, ni que les mesures sont
+valides, ni qu’un critère de succès est satisfait, ni qu’une causalité est
+établie. Cette validation n’est pas un moteur général de conformité
+expérimentale.
+
 ## Extensibilité et conservation sans perte
 
 Un manifest JSON est un document extensible. Chaque composant peut interpréter

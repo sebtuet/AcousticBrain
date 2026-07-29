@@ -166,6 +166,72 @@ def test_standard_cli_resolves_plan_reference_against_real_pipeline(
     assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
+def test_standard_cli_exposes_complete_channel_isolation_coverage(
+    tmp_path,
+    capsys,
+):
+    root = copy_campaign(tmp_path)
+    manifest_path = root / "baseline" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest.update({
+        "source_evidence_acquisition_plan_id": (
+            "EVIDENCE_ACQUISITION_ASYMMETRIC_SPEAKER_ROOM_INTERACTION_"
+            "REASONING_RESOLVE_CONTRADICTION"
+        ),
+        "experiment_declaration": {
+            "schema_version": 1,
+            "experiment_kind": "CONTROLLED_INTERVENTION",
+            "reference_experiment_code": "pre-plan-baseline",
+            "modified_variables": ["active_channel"],
+            "controlled_variables": [
+                "gain",
+                "microphone_position",
+                "signal_chain",
+                "time_window",
+            ],
+            "user_note": None,
+            "field_provenance": {
+                "experiment_kind": "USER_MANIFEST",
+                "reference_experiment_code": "USER_MANIFEST",
+                "modified_variables": "USER_MANIFEST",
+                "controlled_variables": "USER_MANIFEST",
+                "user_note": "USER_MANIFEST",
+            },
+        },
+        "channel_isolation_declaration": {
+            "repeated_channels": ["LEFT", "RIGHT"],
+            "available_inputs": [
+                "documented_microphone_position",
+                "existing_acquisition_settings",
+            ],
+            "controlled_variables": [
+                "gain",
+                "microphone_position",
+                "signal_chain",
+                "time_window",
+            ],
+            "independent_variables": ["active_channel"],
+            "measurements": [
+                "left_channel_response",
+                "right_channel_response",
+                "repeat_response",
+            ],
+        },
+    })
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    acousticbrain_main.run(root)
+
+    output = capsys.readouterr().out
+    assert "Plan reference status : PLAN_REFERENCE_RESOLVED" in output
+    assert "Plan coverage status : PLAN_COVERAGE_COMPLETE" in output
+    assert "Missing plan requirements :\n- none" in output
+    assert "NEXT RECOMMENDED EXPERIMENT" not in output
+
+
 def test_cli_exposes_readiness_observations_and_full_assessment_deterministically(
     tmp_path,
     capsys,

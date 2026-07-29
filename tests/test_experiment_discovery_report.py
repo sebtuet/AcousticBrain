@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from acousticbrain.models import (
+    ExperimentDeclaration,
     ExperimentDescriptor,
     ExperimentFileDescriptor,
     ExperimentFileType,
@@ -23,6 +24,9 @@ def descriptor(
     *,
     source_plan_id=None,
     source_protocol_id=None,
+    available_channels=(ImpulseChannel.STEREO,),
+    experiment_declaration=None,
+    channel_isolation_declaration=None,
 ):
     return ExperimentDescriptor(
         experiment_id=experiment_id,
@@ -36,7 +40,7 @@ def descriptor(
                 channel=ImpulseChannel.STEREO,
             ),
         ),
-        available_channels=(ImpulseChannel.STEREO,),
+        available_channels=available_channels,
         wav_files=(),
         txt_files=("measurements/arbitrary.txt",),
         mdat_file=None,
@@ -47,6 +51,10 @@ def descriptor(
         state=state,
         source_evidence_acquisition_plan_id=source_plan_id,
         source_protocol_id=source_protocol_id,
+        experiment_declaration=(
+            experiment_declaration or ExperimentDeclaration.unknown()
+        ),
+        channel_isolation_declaration=channel_isolation_declaration,
     )
 
 
@@ -72,7 +80,9 @@ def test_discovery_presenter_and_console_match_golden(capsys):
 
     ConsoleReporter().print(report)
 
-    expected = (ROOT / "tests/golden/experiment_discovery_report.txt").read_text()
+    expected = (
+        ROOT / "tests/golden/experiment_discovery_report.txt"
+    ).read_text() + "\n\n"
     assert capsys.readouterr().out == expected
 
 
@@ -184,3 +194,50 @@ def test_presenter_never_infers_plan_reference_from_similar_metadata():
         presented.evidence_acquisition_plan_reference_status
         == "PLAN_NOT_REFERENCED"
     )
+
+
+def test_presenter_exposes_channel_isolation_coverage_and_console_details(capsys):
+    from test_channel_isolation_plan_coverage import (
+        complete_channel_declaration,
+        experimental_declaration,
+        plan,
+    )
+
+    source_plan = plan()
+    context = SimpleNamespace(
+        experiment_descriptors=(
+            descriptor(
+                "exp-001",
+                ExperimentType.EXPERIMENT,
+                ExperimentState.READY,
+                "2026-07-13T10:53:20",
+                source_plan_id=source_plan.plan_id,
+                available_channels=(
+                    ImpulseChannel.LEFT,
+                    ImpulseChannel.RIGHT,
+                ),
+                experiment_declaration=experimental_declaration(),
+                channel_isolation_declaration=complete_channel_declaration(),
+            ),
+        ),
+        evidence_acquisition_plan_synthesis=SimpleNamespace(
+            plans=(source_plan,)
+        ),
+    )
+    report = Report(project_name="measurements")
+    report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
+
+    ConsoleReporter().print(report)
+
+    presented = report.experiments_discovered.experiments[0]
+    assert presented.evidence_acquisition_plan_reference_status == (
+        "PLAN_REFERENCE_RESOLVED"
+    )
+    assert presented.evidence_acquisition_plan_coverage_status == (
+        "PLAN_COVERAGE_COMPLETE"
+    )
+    assert presented.missing_plan_requirements == ()
+    output = capsys.readouterr().out
+    assert "Plan coverage status : PLAN_COVERAGE_COMPLETE" in output
+    assert "Missing plan requirements :\n- none" in output
+    assert "Unverifiable plan requirements :" in output

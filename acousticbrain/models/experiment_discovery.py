@@ -4,6 +4,7 @@ from enum import Enum
 from .impulse_channel import ImpulseChannel
 from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolStep
 from .experiment_declaration import ExperimentDeclaration
+from .channel_isolation_plan_coverage import ChannelIsolationDeclaration
 
 
 ExperimentParameterValue = str | int | float | bool
@@ -62,6 +63,7 @@ class ExperimentDescriptor:
         default_factory=ExperimentDeclaration.unknown
     )
     source_evidence_acquisition_plan_id: str | None = None
+    channel_isolation_declaration: ChannelIsolationDeclaration | None = None
 
     def __post_init__(self):
         collections = (
@@ -88,6 +90,16 @@ class ExperimentDescriptor:
         ):
             raise ValueError(
                 "Source evidence acquisition plan id must be absent or non-empty."
+            )
+        if (
+            self.channel_isolation_declaration is not None
+            and not isinstance(
+                self.channel_isolation_declaration,
+                ChannelIsolationDeclaration,
+            )
+        ):
+            raise ValueError(
+                "Channel isolation declaration has an invalid type."
             )
         if any(
             not isinstance(item, tuple)

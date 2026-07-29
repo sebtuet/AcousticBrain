@@ -395,6 +395,35 @@ class ConsoleReporter:
                     "Plan reference status : "
                     f"{experiment.evidence_acquisition_plan_reference_status}"
                 )
+                print(
+                    "Plan coverage status : "
+                    f"{experiment.evidence_acquisition_plan_coverage_status}"
+                )
+                if (
+                    experiment.evidence_acquisition_plan_coverage_status
+                    != "PLAN_COVERAGE_NOT_APPLICABLE"
+                ):
+                    self._print_plan_coverage_values(
+                        "Covered plan requirements",
+                        experiment.covered_plan_requirements,
+                    )
+                    self._print_plan_coverage_values(
+                        "Missing plan requirements",
+                        experiment.missing_plan_requirements,
+                    )
+                    self._print_plan_coverage_values(
+                        "Unverifiable plan requirements",
+                        experiment.unverifiable_plan_requirements,
+                    )
+                    self._print_plan_coverage_values(
+                        "Plan coverage limitations",
+                        experiment.plan_coverage_limitations,
+                    )
+                elif experiment.source_evidence_acquisition_plan_id is not None:
+                    self._print_plan_coverage_values(
+                        "Plan coverage limitations",
+                        experiment.plan_coverage_limitations,
+                    )
 
         comparison_analysis = report.experiment_comparison
         if comparison_analysis is not None:
@@ -1427,6 +1456,15 @@ class ConsoleReporter:
                     print(f" • {recommendation}")
 
                 print()
+
+    @staticmethod
+    def _print_plan_coverage_values(label, values):
+        print(f"{label} :")
+        if not values:
+            print("- none")
+            return
+        for value in values:
+            print(f"- {value}")
 
     def _print_experiment_evolution(self, comparison, detailed_traceability=False):
         print()

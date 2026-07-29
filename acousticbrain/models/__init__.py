@@ -55,6 +55,11 @@ from .evidence_acquisition import (
     EvidenceAcquisitionStatus,
     EvidenceAcquisitionTestType,
 )
+from .channel_isolation_plan_coverage import (
+    ChannelIsolationDeclaration,
+    PlanCoverageResult,
+    PlanCoverageStatus,
+)
 from .advisor import (
     AdvisorAudience,
     AdvisorClaim,

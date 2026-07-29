@@ -148,6 +148,59 @@ def test_historical_experiment_without_source_plan_remains_compatible(tmp_path):
     assert "source_evidence_acquisition_plan_id" not in persisted
 
 
+def test_discovery_preserves_structured_channel_isolation_declaration(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+    declaration = {
+        "repeated_channels": ["RIGHT", "LEFT"],
+        "available_inputs": ["input_b", "input_a"],
+        "controlled_variables": ["control_b", "control_a"],
+        "independent_variables": ["active_channel"],
+        "measurements": ["measurement_b", "measurement_a"],
+    }
+    (directory / "manifest.json").write_text(
+        json.dumps({"channel_isolation_declaration": declaration}),
+        encoding="utf-8",
+    )
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    assert tuple(
+        channel.value
+        for channel in descriptor.channel_isolation_declaration.repeated_channels
+    ) == ("LEFT", "RIGHT")
+    assert descriptor.channel_isolation_declaration.available_inputs == (
+        "input_a",
+        "input_b",
+    )
+    assert descriptor.channel_isolation_declaration.controlled_variables == (
+        "control_a",
+        "control_b",
+    )
+    assert descriptor.channel_isolation_declaration.independent_variables == (
+        "active_channel",
+    )
+    assert descriptor.channel_isolation_declaration.measurements == (
+        "measurement_a",
+        "measurement_b",
+    )
+    assert persisted["channel_isolation_declaration"] == declaration
+
+
+def test_historical_experiment_without_channel_isolation_declaration_is_compatible(
+    tmp_path,
+):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    assert descriptor.channel_isolation_declaration is None
+    assert "channel_isolation_declaration" not in persisted
+
+
 def test_discovery_preserves_extension_nested_in_comparison(tmp_path):
     directory = tmp_path / "exp-001"
     complete_experiment(directory)

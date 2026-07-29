@@ -15,6 +15,7 @@ from acousticbrain.models import (
     ExperimentKind,
     ImpulseChannel,
     CausalProtocolStep,
+    ChannelIsolationDeclaration,
 )
 from acousticbrain.persistence import MeasurementRepository
 
@@ -248,6 +249,9 @@ class ExperimentDiscoveryService:
             source_evidence_acquisition_plan_id=(
                 self._source_evidence_acquisition_plan_id(existing)
             ),
+            channel_isolation_declaration=(
+                self._channel_isolation_declaration(existing)
+            ),
         )
 
     @classmethod
@@ -431,6 +435,68 @@ class ExperimentDiscoveryService:
                 "Source evidence acquisition plan id must be absent or non-empty."
             )
         return value
+
+    @classmethod
+    def _channel_isolation_declaration(cls, manifest):
+        value = manifest.get("channel_isolation_declaration")
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ValueError(
+                "Channel isolation declaration manifest entry must be an object."
+            )
+        repeated_values = cls._exact_string_tuple(
+            value.get("repeated_channels", ())
+        )
+        try:
+            repeated_channels = tuple(
+                sorted(
+                    (ImpulseChannel(item) for item in repeated_values),
+                    key=lambda item: item.value,
+                )
+            )
+        except ValueError as error:
+            raise ValueError(
+                "Channel isolation repeated channels are invalid."
+            ) from error
+        if any(
+            channel not in (ImpulseChannel.LEFT, ImpulseChannel.RIGHT)
+            for channel in repeated_channels
+        ):
+            raise ValueError(
+                "Channel isolation repetitions support LEFT and RIGHT only."
+            )
+        return ChannelIsolationDeclaration(
+            repeated_channels=repeated_channels,
+            available_inputs=tuple(sorted(cls._exact_string_tuple(
+                value.get("available_inputs", ())
+            ))),
+            controlled_variables=tuple(sorted(cls._exact_string_tuple(
+                value.get("controlled_variables", ())
+            ))),
+            independent_variables=tuple(sorted(cls._exact_string_tuple(
+                value.get("independent_variables", ())
+            ))),
+            measurements=tuple(sorted(cls._exact_string_tuple(
+                value.get("measurements", ())
+            ))),
+        )
+
+    @staticmethod
+    def _exact_string_tuple(value):
+        if not isinstance(value, (list, tuple)):
+            raise ValueError(
+                "Channel isolation declaration collections must be lists."
+            )
+        if any(not isinstance(item, str) or not item for item in value):
+            raise ValueError(
+                "Channel isolation declaration values must be non-empty strings."
+            )
+        if len(value) != len(set(value)):
+            raise ValueError(
+                "Channel isolation declaration values must be unique."
+            )
+        return tuple(value)
 
     @classmethod
     def _string_tuple(cls, value):
