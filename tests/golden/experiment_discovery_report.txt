@@ -79,6 +79,7 @@ Date : 2026-07-07T15:57:39
 Canaux : STEREO
 Source evidence acquisition plan : none
 Plan reference status : PLAN_NOT_REFERENCED
+Plan coverage status : PLAN_COVERAGE_NOT_APPLICABLE
 
 exp-001
 État : INCOMPLETE
@@ -87,5 +88,4 @@ Date : 2026-07-13T10:53:20
 Canaux : STEREO
 Source evidence acquisition plan : none
 Plan reference status : PLAN_NOT_REFERENCED
-
-
+Plan coverage status : PLAN_COVERAGE_NOT_APPLICABLE
