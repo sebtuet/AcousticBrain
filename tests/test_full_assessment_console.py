@@ -86,6 +86,7 @@ def test_empty_sections_are_printed_in_exact_order():
     assert "No existing evidence object is available for weighting." in output
     assert "No evidence acquisition plan was produced." in output
     assert "Plan coverage status" not in output
+    assert "Plan result evaluation status" not in output
 
 
 def test_present_and_empty_sections_are_printed_deterministically():

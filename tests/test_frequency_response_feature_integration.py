@@ -163,6 +163,15 @@ def test_standard_cli_resolves_plan_reference_against_real_pipeline(
     output = capsys.readouterr().out
     assert f"Source evidence acquisition plan : {expected_source}" in output
     assert f"Plan reference status : {expected_status}" in output
+    expected_result_status = (
+        "PLAN_RESULT_CRITERIA_NOT_EVALUABLE"
+        if expected_status == "PLAN_REFERENCE_RESOLVED"
+        else "PLAN_RESULT_NOT_APPLICABLE"
+    )
+    assert (
+        f"Plan result evaluation status : {expected_result_status}"
+        in output
+    )
     assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
@@ -228,6 +237,10 @@ def test_standard_cli_exposes_complete_channel_isolation_coverage(
     output = capsys.readouterr().out
     assert "Plan reference status : PLAN_REFERENCE_RESOLVED" in output
     assert "Plan coverage status : PLAN_COVERAGE_COMPLETE" in output
+    assert (
+        "Plan result evaluation status : "
+        "PLAN_RESULT_CRITERIA_NOT_EVALUABLE"
+    ) in output
     assert "Missing plan requirements :\n- none" in output
     assert "NEXT RECOMMENDED EXPERIMENT" not in output
 

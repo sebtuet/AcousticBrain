@@ -80,6 +80,7 @@ Canaux : STEREO
 Source evidence acquisition plan : none
 Plan reference status : PLAN_NOT_REFERENCED
 Plan coverage status : PLAN_COVERAGE_NOT_APPLICABLE
+Plan result evaluation status : PLAN_RESULT_NOT_APPLICABLE
 
 exp-001
 État : INCOMPLETE
@@ -89,3 +90,4 @@ Canaux : STEREO
 Source evidence acquisition plan : none
 Plan reference status : PLAN_NOT_REFERENCED
 Plan coverage status : PLAN_COVERAGE_NOT_APPLICABLE
+Plan result evaluation status : PLAN_RESULT_NOT_APPLICABLE

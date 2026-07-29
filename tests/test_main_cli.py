@@ -234,6 +234,88 @@ def test_standard_cli_resolves_explicit_plan_references_without_printing_plan_re
     assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
+@pytest.mark.parametrize(
+    ("case", "expected_status"),
+    (
+        ("criteria_absent", "PLAN_RESULT_CRITERIA_NOT_EVALUABLE"),
+        ("results_absent", "PLAN_RESULT_INSUFFICIENT_EVIDENCE"),
+        ("compatible", "PLAN_RESULT_COMPATIBLE"),
+        ("incompatible", "PLAN_RESULT_INCOMPATIBLE"),
+        ("mixed", "PLAN_RESULT_MIXED"),
+    ),
+)
+def test_standard_cli_exposes_channel_isolation_result_evaluation_states(
+    tmp_path,
+    capsys,
+    case,
+    expected_status,
+):
+    from acousticbrain.models import ChannelIsolationResultDeclaration
+    from test_channel_isolation_plan_result import criterion, plan, result
+
+    criteria = ()
+    results = ()
+    if case != "criteria_absent":
+        criteria = (criterion("A", "result_a"),)
+    if case == "compatible":
+        results = (result("result_a", "0"),)
+    elif case == "incompatible":
+        results = (result("result_a", "1"),)
+    elif case == "mixed":
+        criteria = (
+            criterion("A", "result_a"),
+            criterion("B", "result_b"),
+        )
+        results = (
+            result("result_a", "0"),
+            result("result_b", "1"),
+        )
+    elif case == "criteria_absent":
+        results = (result("result_a", "0"),)
+    source_plan = plan(*criteria)
+    descriptor = ExperimentDescriptor(
+        experiment_id="baseline",
+        directory="/measurements/baseline",
+        experiment_type=ExperimentType.BASELINE,
+        available_files=(),
+        available_channels=(),
+        wav_files=(),
+        txt_files=(),
+        mdat_file=None,
+        manifest_present=True,
+        content_hash="a" * 64,
+        timestamp="2026-07-28T18:43:41",
+        imported_at="2026-07-28T18:43:41",
+        state=ExperimentState.READY,
+        source_evidence_acquisition_plan_id=source_plan.plan_id,
+        channel_isolation_result_declaration=(
+            ChannelIsolationResultDeclaration(results)
+            if results
+            else None
+        ),
+    )
+    context = SimpleNamespace(
+        experiment_descriptors=(descriptor,),
+        evidence_acquisition_plan_synthesis=SimpleNamespace(
+            plans=(source_plan,)
+        ),
+    )
+    report = Report(project_name="routing")
+    report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+
+    result_code = acousticbrain_main.main(
+        ["--measurements-root", str(campaign)],
+        brain=RecordingBrain(report),
+    )
+
+    assert result_code == 0
+    output = capsys.readouterr().out
+    assert f"Plan result evaluation status : {expected_status}" in output
+    assert "NEXT RECOMMENDED EXPERIMENT" not in output
+
+
 def test_main_passes_exact_absolute_path(tmp_path):
     campaign = tmp_path / "campaign"
     campaign.mkdir()
