@@ -122,11 +122,13 @@ python main.py \
 ```
 
 The report selects one `READY` plan by priority, then lowest estimated effort,
-then stable plan id. It distinguishes an experiment recommendation, plans that
-are all blocked, and the absence of any produced plan. Missing protocol or
-measurement parameters remain missing and are never inferred. These are
-diagnostic acquisition plans, not acoustic corrections; a plan does not make a
-corrective action applicable by itself. See
+then stable plan id. It distinguishes a recommendation, proposed plans that are
+not ready, plans that are all blocked, and the absence of any produced plan.
+The report projects protocols explicitly linked by the source corrective
+action, lists required inputs, and states when their availability has not been
+verified. Missing protocol or measurement parameters remain missing and are
+never inferred. These are diagnostic acquisition plans, not acoustic
+corrections; a plan does not make a corrective action applicable by itself. See
 [`docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md`](docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md).
 
 ### Technical analysis readiness

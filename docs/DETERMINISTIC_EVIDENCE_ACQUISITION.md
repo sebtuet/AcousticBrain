@@ -65,6 +65,12 @@ Effort is `LOW`, `MEDIUM` or `HIGH`. Status is `PROPOSED`, `READY` or
 and protocol-defined positions are absent. Geometry acquisition can be ready
 because its purpose is precisely to document those parameters.
 
+`READY` means that the planner has produced a sufficiently defined acquisition
+plan. `EvidenceAcquisitionPlan` does not contain evidence that every named
+`required_input` is currently available. The user projection therefore lists
+those inputs and marks their availability as unverified before execution; it
+does not reinterpret their names as proof that they are satisfied.
+
 ## CLI
 
 ```bash
@@ -75,18 +81,28 @@ python main.py \
 
 The report recommends exactly one `READY` plan. Selection is deterministic:
 highest priority, then lowest estimated effort, then lexicographically smallest
-stable `plan_id`. It displays the selected objective, selection justification,
-known test type, instructions, controlled variables, measurements, success and
-failure criteria, limitations, priority, effort and status. A protocol is
-reported only when the plan contains one; missing protocol parameters are never
-filled in.
+stable `plan_id`. The id is only a technical final tie-breaker and is not a
+scientific preference.
 
-The visible result has three distinct states:
+The scientific justification explains what uncertainty the experiment tests
+from the associated structured reasoning. A separate selection rationale
+explains why this `READY` plan ranked first. The report also displays required
+inputs, procedure, controlled and independent variables, measurements, expected
+observations, success and failure criteria, and limitations.
 
-- `EXPERIMENT_RECOMMENDED`: one `READY` plan is presented as the next experiment;
+Protocol ids come only from `compatible_protocol_ids` on the corrective action
+referenced by the plan's exact `corrective_action_id`. Multiple ids are
+displayed in stable lexical order. No text parsing, approximate matching or
+protocol invention is performed.
+
+The visible result has four distinct states:
+
+- `RECOMMENDED_EXPERIMENT`: one `READY` plan is presented as the next experiment;
+- `PLANS_PROPOSED_BUT_NOT_READY`: at least one plan is `PROPOSED`, but none is
+  `READY`; any coexisting blocked plans remain identified as blocked;
 - `ALL_PLANS_BLOCKED`: plans exist, but no experiment is recommended and their
   required inputs and limitations explain the next prerequisite;
-- `NO_PLAN`: the analysis produced no evidence acquisition plan.
+- `NO_PLANS`: the analysis produced no evidence acquisition plan.
 
 The report performs no write to the campaign.
 
