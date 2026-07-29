@@ -50,14 +50,26 @@ class ExperimentImporter:
                 f"TXT files are assigned to the same channel ({details})."
             )
 
-        project = Project(
-            name=descriptor.experiment_id,
-            room=Room(
+        room_description = descriptor.room_description
+        room = (
+            Room(
+                name=room_description.name,
+                length=room_description.dimensions.length_m,
+                width=room_description.dimensions.width_m,
+                height=room_description.dimensions.height_m,
+            )
+            if room_description is not None
+            else Room(
                 name="Unknown Room",
                 length=5.84,
                 width=5.51,
                 height=2.60,
-            ),
+            )
+        )
+        project = Project(
+            name=descriptor.experiment_id,
+            room=room,
+            room_description=room_description,
         )
         directory = Path(descriptor.directory)
         impulse_channels = set()

@@ -316,6 +316,26 @@ qui n’appartient pas à la liste recopiée.
 
 ## Compatibilité
 
+### Géométrie déclarée dans un manifest
+
+Une géométrie de manifest est projetée dans `Project.room_description`
+uniquement lorsque son repère, les dimensions de la pièce, les deux positions
+d’enceintes et la position d’écoute sont tous explicitement présents et
+valides. Une géométrie partielle reste absente : aucune coordonnée ni unité
+manquante n’est reconstruite.
+
+Lorsqu’une expérience ne possède aucune géométrie locale, la géométrie complète
+de sa référence explicitement déclarée peut être réutilisée seulement si
+`ROOM_CONFIGURATION`, `LOUDSPEAKER_POSITION` et au moins l’une des variables
+`LISTENING_POSITION` ou `MICROPHONE_POSITION` sont déclarées contrôlées. Il
+n’existe aucun fallback implicite vers le baseline de la campagne.
+
+La géométrie locale est prioritaire. Si elle diffère de la géométrie référencée
+alors que ces variables sont déclarées contrôlées, l’import de session refuse
+le conflit au lieu de sélectionner ou fusionner une valeur. Les manifests
+historiques sans géométrie ni référence explicite admissible conservent
+l’import historique limité à la pièce.
+
 Le chemin historique `AcousticBrain.analyze(project)` reste inchangé et
 n’affiche aucune section de découverte. `ImportEngine.load_directory` sait
 retrouver `baseline` lorsque l’ancien appel pointe désormais vers une racine

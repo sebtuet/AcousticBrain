@@ -15,6 +15,10 @@ from acousticbrain.models import (
     ExperimentDeclaration,
     ExperimentKind,
     ImpulseChannel,
+    ListeningPosition,
+    RoomDescription,
+    RoomDimensions,
+    SpeakerPosition,
     CausalProtocolStep,
     ChannelIsolationDeclaration,
     ChannelIsolationMeasurementResult,
@@ -258,6 +262,7 @@ class ExperimentDiscoveryService:
             channel_isolation_result_declaration=(
                 self._channel_isolation_result_declaration(existing)
             ),
+            room_description=self._room_description(existing, directory.name),
         )
 
     @classmethod
@@ -312,6 +317,80 @@ class ExperimentDiscoveryService:
                 and (source := cls._optional_string(raw_source)) is not None
             )),
         )
+
+    @classmethod
+    def _room_description(cls, manifest, experiment_id):
+        keys = ("coordinate_system", "room", "loudspeakers", "listening_position")
+        values = tuple(manifest.get(key) for key in keys)
+        if all(value is None for value in values):
+            return None
+        if any(value is None for value in values):
+            return None
+        if any(not isinstance(value, dict) for value in values):
+            raise ValueError(f"Manifest geometry is invalid for {experiment_id}.")
+
+        coordinate_system, room, loudspeakers, listening_position = values
+        if coordinate_system.get("unit") != "m":
+            raise ValueError("Manifest geometry coordinate unit must be m.")
+        for key in (
+            "origin",
+            "x_axis",
+            "y_axis",
+            "z_axis",
+        ):
+            if cls._optional_string(coordinate_system.get(key)) is None:
+                raise ValueError(
+                    f"Manifest geometry coordinate system is incomplete: {key}."
+                )
+
+        dimensions = cls._geometry_object(room, "dimensions")
+        left = cls._geometry_object(loudspeakers, "left")
+        right = cls._geometry_object(loudspeakers, "right")
+        listening = cls._geometry_object(listening_position, "position")
+        return RoomDescription(
+            name=f"Manifest geometry for {experiment_id}",
+            dimensions=RoomDimensions(
+                length_m=cls._geometry_number(dimensions, "length"),
+                width_m=cls._geometry_number(dimensions, "width"),
+                height_m=cls._geometry_number(dimensions, "height"),
+            ),
+            speakers=(
+                cls._speaker_position("LEFT", left),
+                cls._speaker_position("RIGHT", right),
+            ),
+            listening_positions=(
+                ListeningPosition(
+                    position_id="LISTENING_POSITION",
+                    x_m=cls._geometry_number(listening, "x"),
+                    y_m=cls._geometry_number(listening, "y"),
+                    z_m=cls._geometry_number(listening, "z"),
+                ),
+            ),
+        )
+
+    @staticmethod
+    def _geometry_object(value, key):
+        item = value.get(key)
+        if not isinstance(item, dict):
+            raise ValueError(f"Manifest geometry object is missing: {key}.")
+        return item
+
+    @classmethod
+    def _speaker_position(cls, speaker_id, value):
+        position = cls._geometry_object(value, "position")
+        return SpeakerPosition(
+            speaker_id=speaker_id,
+            x_m=cls._geometry_number(position, "x"),
+            y_m=cls._geometry_number(position, "y"),
+            z_m=cls._geometry_number(position, "z"),
+        )
+
+    @staticmethod
+    def _geometry_number(value, key):
+        item = value.get(key)
+        if not isinstance(item, (int, float)) or isinstance(item, bool):
+            raise ValueError(f"Manifest geometry value is missing: {key}.")
+        return float(item)
 
     @staticmethod
     def _serialize_declaration(declaration):
