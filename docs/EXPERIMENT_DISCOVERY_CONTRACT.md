@@ -229,6 +229,52 @@ Les plans `CHANNEL_ISOLATION` produits actuellement ne déclarent aucun seuil
 numérique structuré : leurs critères textuels restent donc
 `PLAN_RESULT_CRITERIA_NOT_EVALUABLE`. Aucun seuil n’est déduit de leur texte.
 
+#### `CHANNEL_ISOLATION` structured result criteria
+
+L’inspection du plan réel ne fournit actuellement aucun critère
+`STRUCTURABLE_NOW`. La collection
+`channel_isolation_evaluation_criteria` reste donc vide. Ce choix est une
+absence explicite de règle scientifique, pas une valeur par défaut.
+
+Les candidats sont classés comme suit :
+
+| Classement | Exigence du plan | Décision |
+| --- | --- | --- |
+| `REQUIRES_DOMAIN_DECISION` | `channel_specific_metric` | La grandeur comparée, le `result_id`, l’unité, l’opérateur, la valeur attendue et une éventuelle tolérance ne sont pas définis. |
+| `REQUIRES_DOMAIN_DECISION` | `repeatability_metric` | La métrique de répétabilité, le `result_id`, l’unité, la valeur attendue et la marge acceptable ne sont pas définis. Une absence de tolérance ne signifie pas une tolérance nulle. |
+| `NOT_NUMERICALLY_EVALUABLE` | `left_channel_response`, `right_channel_response`, `repeat_response` | Ces identifiants demandent des acquisitions. Leur présence relève de la couverture déclarée et ne constitue pas une valeur numérique de résultat. |
+| `NOT_NUMERICALLY_EVALUABLE` | position identique et variables contrôlées | Le plan formule une exigence procédurale. La déclaration ne prouve pas son maintien effectif pendant l’exécution. |
+| `NOT_NUMERICALLY_EVALUABLE` | branches textuelles des critères de succès | « Supporter une branche contradictoire de manière stable » et « montrer qu’aucune branche n’est stable » nécessitent une définition scientifique supplémentaire avant toute comparaison numérique. |
+
+Les seuils acoustiques déjà utilisés pour qualifier les faits amont ne sont
+pas des critères de résultat de cette expérience. En particulier, les règles
+sur la symétrie stéréo, les différences d’événements ETC, les écarts D/R et
+les écarts de Bass Decay décrivent le raisonnement acoustique existant ; elles
+ne définissent ni la répétabilité de nouvelles acquisitions, ni leur
+compatibilité avec le plan. De même, les tolérances internes de mise en
+correspondance des caractéristiques stéréo sont des paramètres d’analyse, pas
+des seuils d’acceptation expérimentale.
+
+Les valeurs et unités utilisées dans les exemples de manifestes ou les
+fixtures de l’évaluateur démontrent uniquement le fonctionnement de `EQUAL`
+et `WITHIN_TOLERANCE`. Elles ne sont jamais normatives et ne doivent pas être
+recopiées dans le plan réel.
+
+Pour rendre au moins un candidat évaluable, une décision de domaine doit
+établir ensemble :
+
+1. la grandeur réellement déclarée et son `result_id` stable ;
+2. son unité exacte ;
+3. l’opérateur correspondant à la règle scientifique ;
+4. la valeur attendue ;
+5. pour `WITHIN_TOLERANCE`, une tolérance explicitement justifiée.
+
+Tant que ces éléments ne sont pas établis, le plan réel conserve
+`PLAN_RESULT_CRITERIA_NOT_EVALUABLE`. AcousticBrain ne calcule aucune de ces
+valeurs, ne les déduit pas des fichiers de mesure et n’en tire aucune
+conclusion sur la validité de l’exécution, le succès scientifique,
+l’hypothèse ou la causalité.
+
 `PLAN_RESULT_COMPATIBLE` signifie uniquement que les valeurs déclarées sont
 compatibles avec les critères structurés évalués. Il ne valide ni l’exécution
 du protocole, ni les mesures brutes, ni une réussite scientifique, ni une
