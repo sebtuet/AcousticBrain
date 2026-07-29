@@ -49,6 +49,20 @@ imply `CAUSE`, `CAUSED_BY`, `CONFIRMED` or an equivalent causal assertion.
 Reasoning may create a structured `SBIR_PLACEMENT_INTERACTION` hypothesis from
 that compatibility while retaining the explicit non-causal limitation.
 
+The reasoning contract preserves three distinct analysis states:
+
+- an absent `SBIRGeometryCorrelationAnalysis` is `NOT_EVALUATED` and leaves
+  the expected SBIR result unavailable;
+- a present analysis with `best_match = None` is
+  `NO_ADMISSIBLE_MATCH`, a valid negative analysis result that contributes
+  context but neither supporting nor counter-evidence;
+- a present `best_match` is `MATCH_FOUND` and retains the existing
+  non-causal compatibility semantics.
+
+`NO_ADMISSIBLE_MATCH` never requests geometry merely because no best match was
+retained. Geometry acquisition remains limited to explicitly absent geometry
+inputs.
+
 ## Discriminating protocol
 
 `protocol.temporary_move_speaker.v1` is eligible only when all of the following

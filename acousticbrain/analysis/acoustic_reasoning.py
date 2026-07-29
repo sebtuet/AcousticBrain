@@ -322,7 +322,7 @@ class AcousticReasoningEngine:
             if sbir_geometry_correlations is not None else None
         )
         if sbir is None:
-            if geometry_match is None:
+            if sbir_geometry_correlations is None:
                 missing.append(self._missing("sbir.best_match", "SBIRAnalysis", "SBIR_REQUIRE_ANALYSIS"))
             else:
                 available += 1
@@ -400,6 +400,19 @@ class AcousticReasoningEngine:
                     "AutomaticExperimentComparison",
                     "SBIR_REQUIRE_DISCRIMINATING_PROTOCOL",
                 ))
+            else:
+                context.append(self._evidence(
+                    code,
+                    "geometry_no_admissible_match",
+                    EvidenceRole.CONTEXT,
+                    "sbir.geometry_correlation_status",
+                    "SBIRGeometryCorrelationAnalysis",
+                    "NO_ADMISSIBLE_MATCH",
+                    0.0,
+                    100.0,
+                    "SBIR_GEOMETRY_ANALYSIS_COMPLETED",
+                ))
+                rules.append("SBIR_GEOMETRY_NO_ADMISSIBLE_MATCH")
         if etc_correlations is not None and best is not None:
             matched = [item for item in etc_correlations.correlations if item.surface is best.surface]
             if matched:

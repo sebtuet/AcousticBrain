@@ -1,4 +1,5 @@
 import inspect
+from types import SimpleNamespace
 
 from acousticbrain.analysis import AcousticReasoningEngine, RoomGeometryBuilder
 from acousticbrain.models import (
@@ -23,6 +24,7 @@ from acousticbrain.models import (
     Room,
     SBIRAnalysis,
     SBIRCandidate,
+    SBIRGeometryCorrelationAnalysis,
     SpatialAnalysis,
     SpatialChannelPairAnalysis,
     SpatialCorrelation,
@@ -87,6 +89,96 @@ def test_engine_always_returns_four_ordered_hypotheses_with_missing_facts():
     assert all(item.support_score == 0.0 for item in result.hypotheses)
     assert all(item.missing_facts for item in result.hypotheses)
     assert all(not item.verification_actions for item in result.hypotheses)
+
+
+def test_sbir_analysis_states_distinguish_not_evaluated_from_no_admissible_match():
+    room_geometry = RoomGeometryBuilder().from_legacy_room(
+        Room("Room", 5.84, 5.5, 2.6)
+    )
+
+    not_evaluated = AcousticReasoningEngine().analyze(
+        room_geometry=room_geometry,
+    ).hypotheses[3]
+    no_match_analysis = SBIRGeometryCorrelationAnalysis(
+        correlations=(),
+        best_match=None,
+        unmatched_candidate_ids=("geometry_sbir.front_wall",),
+        evaluated_candidate_count=1,
+        observed_dip_count=1,
+        confidence=0.0,
+        source_analysis_codes=(
+            "GeometrySBIRAnalysis",
+            "PeakDetectionAnalysis",
+        ),
+        applied_rule_codes=("SBIR_DETERMINISTIC_BEST_MATCH_V1",),
+    )
+    no_admissible_match = AcousticReasoningEngine().analyze(
+        sbir_geometry_correlations=no_match_analysis,
+        room_geometry=room_geometry,
+    ).hypotheses[3]
+
+    assert {
+        item.fact_code for item in not_evaluated.missing_facts
+    } >= {"sbir.best_match"}
+    assert "sbir.best_match" not in {
+        item.fact_code for item in no_admissible_match.missing_facts
+    }
+    status = next(
+        item
+        for item in no_admissible_match.context_evidence
+        if item.fact_code == "sbir.geometry_correlation_status"
+    )
+    assert status.value == "NO_ADMISSIBLE_MATCH"
+    assert status.role.name == "CONTEXT"
+    assert no_admissible_match.supporting_evidence == ()
+    assert no_admissible_match.counter_evidence == ()
+    assert "SBIR_GEOMETRY_NO_ADMISSIBLE_MATCH" in (
+        no_admissible_match.applied_rule_codes
+    )
+
+
+def test_sbir_geometry_match_found_remains_positive_non_causal_evidence():
+    candidate = SimpleNamespace(
+        surface_id="front_wall",
+        base_surface_id="front_wall",
+        speaker_id="LEFT",
+        listening_position_id="LISTENING_POSITION",
+        relationship_code="FRONT_WALL",
+        candidate_id="geometry_sbir.front_wall",
+        geometry_path_id="geometry_reflection.front_wall",
+        speaker_boundary_distance_m=0.54,
+        extra_distance_m=1.0,
+        expected_cancellation_frequency_hz=85.75,
+        frequency_uncertainty_hz=None,
+        confidence=88.0,
+    )
+    match = SimpleNamespace(
+        code="sbir_geometry.left.front_wall.1",
+        candidate=candidate,
+        observed_dip=Peak(86.0, 50.0, 1, 12.0),
+        frequency_error_hz=0.25,
+        frequency_error_percent=0.29,
+        match_score=98.0,
+        confidence=93.0,
+    )
+    result = AcousticReasoningEngine().analyze(
+        sbir_geometry_correlations=SimpleNamespace(best_match=match),
+        room_geometry=RoomGeometryBuilder().from_legacy_room(
+            Room("Room", 5.84, 5.5, 2.6)
+        ),
+    ).hypotheses[3]
+
+    assert any(
+        item.fact_code == "sbir.geometry_frequency_match"
+        for item in result.supporting_evidence
+    )
+    assert "SBIR_GEOMETRY_COMPATIBILITY_NON_CAUSAL" in (
+        result.applied_rule_codes
+    )
+    assert not any(
+        item.fact_code == "sbir.geometry_correlation_status"
+        for item in result.context_evidence
+    )
 
 
 def test_asymmetry_rule_combines_independent_structured_evidence():
