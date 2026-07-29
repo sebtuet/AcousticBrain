@@ -9,6 +9,9 @@ The deterministic workflow is separate from the optional LLM Advisor. The
 Advisor can explain validated report objects, but it is disabled by default and
 is not a source of scientific authority.
 
+AI-assisted contributions must follow the repository workflow defined in
+[`AGENTS.md`](AGENTS.md).
+
 ## Quick start
 
 Create and activate a virtual environment, then install the project
