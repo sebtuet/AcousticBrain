@@ -90,6 +90,14 @@ explains why this `READY` plan ranked first. The report also displays required
 inputs, procedure, controlled and independent variables, measurements, expected
 observations, success and failure criteria, and limitations.
 
+The console and assessment summary use a deterministic `display_objective`
+projected from the plan's structured test type, variables, measurements and
+expected observations. The source `objective`, `plan_id` and `reasoning_id`
+remain unchanged in the presented structured data and JSON for traceability.
+Known planner test types use explicit local projections; insufficient or
+unrecognized structured input receives a fixed non-causal fallback. No
+reasoning identifier is parsed or translated into scientific prose.
+
 Protocol ids come only from `compatible_protocol_ids` on the corrective action
 referenced by the plan's exact `corrective_action_id`. Multiple ids are
 displayed in stable lexical order. No text parsing, approximate matching or
