@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from .channel_isolation_plan_result import (
+    ChannelIsolationEvaluationCriterion,
+)
 
 class EvidenceAcquisitionTestType(Enum):
     REPEAT_MEASUREMENT = "REPEAT_MEASUREMENT"
@@ -55,6 +58,10 @@ class EvidenceAcquisitionPlan:
     estimated_effort: EvidenceAcquisitionEffort
     status: EvidenceAcquisitionStatus
     limitations: tuple[str, ...]
+    channel_isolation_evaluation_criteria: tuple[
+        ChannelIsolationEvaluationCriterion,
+        ...,
+    ] = ()
 
     _PERMANENT_LANGUAGE = (
         "permanently",
@@ -83,7 +90,7 @@ class EvidenceAcquisitionPlan:
         )
         if any(not isinstance(value, kind) for value, kind in enums):
             raise ValueError("Evidence acquisition plan enum value is invalid.")
-        collections = (
+        string_collections = (
             self.blocking_factor_ids,
             self.instructions,
             self.required_inputs,
@@ -95,6 +102,10 @@ class EvidenceAcquisitionPlan:
             self.failure_criteria,
             self.resulting_evidence_targets,
             self.limitations,
+        )
+        collections = (
+            *string_collections,
+            self.channel_isolation_evaluation_criteria,
         )
         if any(not isinstance(values, tuple) for values in collections):
             raise ValueError("Evidence acquisition collections must be tuples.")
@@ -109,9 +120,31 @@ class EvidenceAcquisitionPlan:
         if any(
             len(values) != len(set(values))
             or any(not isinstance(value, str) or not value for value in values)
-            for values in collections
+            for values in string_collections
         ):
             raise ValueError("Evidence acquisition values must be unique strings.")
+        if any(
+            not isinstance(value, ChannelIsolationEvaluationCriterion)
+            for value in self.channel_isolation_evaluation_criteria
+        ):
+            raise ValueError(
+                "Channel isolation evaluation criteria have an invalid type."
+            )
+        criterion_ids = tuple(
+            value.criterion_id
+            for value in self.channel_isolation_evaluation_criteria
+        )
+        if len(criterion_ids) != len(set(criterion_ids)):
+            raise ValueError(
+                "Channel isolation evaluation criterion ids must be unique."
+            )
+        if (
+            self.test_type is not EvidenceAcquisitionTestType.CHANNEL_ISOLATION
+            and self.channel_isolation_evaluation_criteria
+        ):
+            raise ValueError(
+                "Only CHANNEL_ISOLATION plans may declare evaluation criteria."
+            )
         language = " ".join((self.objective, *self.instructions, *self.success_criteria)).casefold()
         if any(value in language for value in self._PERMANENT_LANGUAGE):
             raise ValueError("Evidence acquisition cannot prescribe permanent correction.")
@@ -142,6 +175,10 @@ class EvidenceAcquisitionPlan:
             "estimated_effort": self.estimated_effort.value,
             "status": self.status.value,
             "limitations": self.limitations,
+            "channel_isolation_evaluation_criteria": tuple(
+                value.to_dict()
+                for value in self.channel_isolation_evaluation_criteria
+            ),
         }
 
 

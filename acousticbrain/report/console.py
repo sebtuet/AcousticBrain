@@ -424,6 +424,51 @@ class ConsoleReporter:
                         "Plan coverage limitations",
                         experiment.plan_coverage_limitations,
                     )
+                print(
+                    "Plan result evaluation status : "
+                    f"{experiment.plan_result_evaluation_status}"
+                )
+                if (
+                    experiment.plan_result_evaluation_status
+                    != "PLAN_RESULT_NOT_APPLICABLE"
+                ):
+                    self._print_plan_coverage_values(
+                        "Compatible criteria",
+                        experiment.compatible_criteria,
+                    )
+                    self._print_plan_coverage_values(
+                        "Incompatible criteria",
+                        experiment.incompatible_criteria,
+                    )
+                    self._print_plan_coverage_values(
+                        "Unevaluable criteria",
+                        experiment.unevaluable_criteria,
+                    )
+                    self._print_plan_coverage_values(
+                        "Missing results",
+                        experiment.missing_results,
+                    )
+                    self._print_plan_coverage_values(
+                        "Unused results",
+                        experiment.unused_results,
+                    )
+                    self._print_plan_coverage_values(
+                        "Evaluation limitations",
+                        experiment.plan_result_evaluation_limitations,
+                    )
+                    for evaluation in experiment.criterion_evaluations:
+                        print(
+                            "Criterion evaluation : "
+                            f"{evaluation.criterion_id} | "
+                            f"{evaluation.result_id} | "
+                            f"{evaluation.evaluation_status} | "
+                            f"{evaluation.reason_code}"
+                        )
+                elif experiment.source_evidence_acquisition_plan_id is not None:
+                    self._print_plan_coverage_values(
+                        "Evaluation limitations",
+                        experiment.plan_result_evaluation_limitations,
+                    )
 
         comparison_analysis = report.experiment_comparison
         if comparison_analysis is not None:

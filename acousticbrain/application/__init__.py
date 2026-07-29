@@ -10,6 +10,9 @@ from .experiment_discovery import ExperimentDiscoveryService
 from .channel_isolation_plan_coverage import (
     ChannelIsolationPlanCoverageValidator,
 )
+from .channel_isolation_plan_result import (
+    ChannelIsolationPlanResultEvaluator,
+)
 from .experiment_declaration import ExperimentDeclarationService
 from .positioning_proposal_declaration import (
     PositioningProposalDeclarationDraft,

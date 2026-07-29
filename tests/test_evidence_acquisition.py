@@ -1,5 +1,6 @@
 import json
 from contextlib import redirect_stdout
+from decimal import Decimal
 from io import StringIO
 from types import SimpleNamespace
 
@@ -11,6 +12,8 @@ from acousticbrain.models import (
     AdvisorAudience,
     AdvisorDetailLevel,
     AdvisorValidationStatus,
+    ChannelIsolationCriterionOperator,
+    ChannelIsolationEvaluationCriterion,
     EvidenceAcquisitionEffort,
     EvidenceAcquisitionPlan,
     EvidenceAcquisitionPlanSynthesis,
@@ -256,6 +259,40 @@ def test_presented_json_is_byte_stable_and_ordered():
     report = EvidenceAcquisitionPlanPresenter().present(context)
     assert report.to_json() == EvidenceAcquisitionPlanPresenter().present(context).to_json()
     assert json.loads(report.to_json())["plans"][0]["plan_id"] == valid_plan().plan_id
+
+
+def test_presented_plan_preserves_structured_channel_isolation_criteria():
+    criterion = ChannelIsolationEvaluationCriterion(
+        criterion_id="criterion.channel_balance",
+        result_id="result.channel_balance_db",
+        operator=ChannelIsolationCriterionOperator.WITHIN_TOLERANCE,
+        expected_value=Decimal("0.0"),
+        unit="dB",
+        tolerance=Decimal("0.5"),
+    )
+    plan = valid_plan(
+        test_type=EvidenceAcquisitionTestType.CHANNEL_ISOLATION,
+        channel_isolation_evaluation_criteria=(criterion,),
+    )
+
+    presented = EvidenceAcquisitionPlanPresenter().present(
+        SimpleNamespace(
+            evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(
+                (plan,)
+            )
+        )
+    ).recommended_plan
+
+    assert presented.to_dict()["channel_isolation_evaluation_criteria"] == (
+        {
+            "criterion_id": "criterion.channel_balance",
+            "result_id": "result.channel_balance_db",
+            "operator": "WITHIN_TOLERANCE",
+            "expected_value": "0.0",
+            "unit": "dB",
+            "tolerance": "0.5",
+        },
+    )
 
 
 def test_display_objective_preserves_structured_source_and_traceability():

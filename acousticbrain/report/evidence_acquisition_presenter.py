@@ -3,6 +3,19 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class PresentedChannelIsolationEvaluationCriterion:
+    criterion_id: str
+    result_id: str
+    operator: str
+    expected_value: str
+    unit: str
+    tolerance: str | None
+
+    def to_dict(self):
+        return self.__dict__
+
+
+@dataclass(frozen=True)
 class PresentedEvidenceAcquisitionPlan:
     plan_id: str
     reasoning_id: str
@@ -27,10 +40,18 @@ class PresentedEvidenceAcquisitionPlan:
     compatible_protocol_ids: tuple[str, ...] = ()
     scientific_justification: str = ""
     display_objective: str | None = None
+    channel_isolation_evaluation_criteria: tuple[
+        PresentedChannelIsolationEvaluationCriterion,
+        ...,
+    ] = ()
 
     def to_dict(self):
         return {
             **self.__dict__,
+            "channel_isolation_evaluation_criteria": tuple(
+                value.to_dict()
+                for value in self.channel_isolation_evaluation_criteria
+            ),
             "prerequisite_status": self.prerequisite_status,
         }
 
@@ -169,6 +190,21 @@ class EvidenceAcquisitionPlanPresenter:
                         reasonings.get(value.reasoning_id),
                     ),
                     display_objective=self._display_objective(value),
+                    channel_isolation_evaluation_criteria=tuple(
+                        PresentedChannelIsolationEvaluationCriterion(
+                            criterion_id=criterion.criterion_id,
+                            result_id=criterion.result_id,
+                            operator=criterion.operator.value,
+                            expected_value=str(criterion.expected_value),
+                            unit=criterion.unit,
+                            tolerance=(
+                                str(criterion.tolerance)
+                                if criterion.tolerance is not None
+                                else None
+                            ),
+                        )
+                        for criterion in value.channel_isolation_evaluation_criteria
+                    ),
                 )
                 for value in synthesis.plans
             )

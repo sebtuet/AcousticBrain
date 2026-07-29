@@ -115,6 +115,7 @@ from .evidence_weighting_console import (
 from .advisor_console import AdvisorConsoleReporter
 from .evidence_acquisition_presenter import (
     EvidenceAcquisitionPlanPresenter,
+    PresentedChannelIsolationEvaluationCriterion,
     PresentedEvidenceAcquisitionPlan,
     PresentedEvidenceAcquisitionPlanReport,
 )

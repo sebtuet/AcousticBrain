@@ -201,6 +201,48 @@ def test_historical_experiment_without_channel_isolation_declaration_is_compatib
     assert "channel_isolation_declaration" not in persisted
 
 
+def test_discovery_preserves_exact_channel_isolation_results(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+    results = {
+        "measurements": [
+            {"result_id": "metric", "value": "1.2300", "unit": "dB"},
+            {"result_id": "metric", "value": "1.2300", "unit": "dB"},
+            {"result_id": "unitless", "value": "-0.5", "unit": None},
+        ]
+    }
+    (directory / "manifest.json").write_text(
+        json.dumps({"channel_isolation_results": results}),
+        encoding="utf-8",
+    )
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    measurements = descriptor.channel_isolation_result_declaration.measurements
+    assert tuple(value.result_id for value in measurements) == (
+        "metric",
+        "metric",
+        "unitless",
+    )
+    assert str(measurements[0].value) == "1.2300"
+    assert measurements[-1].unit is None
+    assert persisted["channel_isolation_results"] == results
+
+
+def test_historical_experiment_without_channel_isolation_results_is_compatible(
+    tmp_path,
+):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    assert descriptor.channel_isolation_result_declaration is None
+    assert "channel_isolation_results" not in persisted
+
+
 def test_discovery_preserves_extension_nested_in_comparison(tmp_path):
     directory = tmp_path / "exp-001"
     complete_experiment(directory)

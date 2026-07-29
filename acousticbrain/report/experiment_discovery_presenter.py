@@ -1,6 +1,17 @@
 from dataclasses import asdict, dataclass
 
-from acousticbrain.application import ChannelIsolationPlanCoverageValidator
+from acousticbrain.application import (
+    ChannelIsolationPlanCoverageValidator,
+    ChannelIsolationPlanResultEvaluator,
+)
+
+
+@dataclass(frozen=True)
+class PresentedCriterionEvaluation:
+    criterion_id: str
+    result_id: str
+    evaluation_status: str
+    reason_code: str
 
 
 @dataclass(frozen=True)
@@ -20,6 +31,14 @@ class PresentedDiscoveredExperiment:
     missing_plan_requirements: tuple[str, ...] = ()
     unverifiable_plan_requirements: tuple[str, ...] = ()
     plan_coverage_limitations: tuple[str, ...] = ()
+    plan_result_evaluation_status: str = "PLAN_RESULT_NOT_APPLICABLE"
+    criterion_evaluations: tuple[PresentedCriterionEvaluation, ...] = ()
+    compatible_criteria: tuple[str, ...] = ()
+    incompatible_criteria: tuple[str, ...] = ()
+    unevaluable_criteria: tuple[str, ...] = ()
+    missing_results: tuple[str, ...] = ()
+    unused_results: tuple[str, ...] = ()
+    plan_result_evaluation_limitations: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,6 +87,19 @@ class ExperimentDiscoveryPresenter:
             item,
             resolved_plan,
         )
+        result_evaluation = ChannelIsolationPlanResultEvaluator().evaluate(
+            item,
+            resolved_plan,
+        )
+        criterion_evaluations = tuple(
+            PresentedCriterionEvaluation(
+                criterion_id=value.criterion_id,
+                result_id=value.result_id,
+                evaluation_status=value.evaluation_status.value,
+                reason_code=value.reason_code.value,
+            )
+            for value in result_evaluation.criteria
+        )
         return PresentedDiscoveredExperiment(
             experiment_id=item.experiment_id,
             experiment_type=item.experiment_type.value,
@@ -84,6 +116,26 @@ class ExperimentDiscoveryPresenter:
             missing_plan_requirements=coverage.missing_requirements,
             unverifiable_plan_requirements=coverage.unverifiable_requirements,
             plan_coverage_limitations=coverage.limitations,
+            plan_result_evaluation_status=result_evaluation.status.value,
+            criterion_evaluations=criterion_evaluations,
+            compatible_criteria=tuple(
+                value.criterion_id
+                for value in criterion_evaluations
+                if value.evaluation_status == "COMPATIBLE"
+            ),
+            incompatible_criteria=tuple(
+                value.criterion_id
+                for value in criterion_evaluations
+                if value.evaluation_status == "INCOMPATIBLE"
+            ),
+            unevaluable_criteria=tuple(
+                value.criterion_id
+                for value in criterion_evaluations
+                if value.evaluation_status == "UNEVALUABLE"
+            ),
+            missing_results=result_evaluation.missing_results,
+            unused_results=result_evaluation.unused_results,
+            plan_result_evaluation_limitations=result_evaluation.limitations,
         )
 
     @staticmethod

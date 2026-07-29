@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from acousticbrain.models import (
@@ -16,6 +17,8 @@ from acousticbrain.models import (
     ImpulseChannel,
     CausalProtocolStep,
     ChannelIsolationDeclaration,
+    ChannelIsolationMeasurementResult,
+    ChannelIsolationResultDeclaration,
 )
 from acousticbrain.persistence import MeasurementRepository
 
@@ -251,6 +254,9 @@ class ExperimentDiscoveryService:
             ),
             channel_isolation_declaration=(
                 self._channel_isolation_declaration(existing)
+            ),
+            channel_isolation_result_declaration=(
+                self._channel_isolation_result_declaration(existing)
             ),
         )
 
@@ -497,6 +503,65 @@ class ExperimentDiscoveryService:
                 "Channel isolation declaration values must be unique."
             )
         return tuple(value)
+
+    @classmethod
+    def _channel_isolation_result_declaration(cls, manifest):
+        value = manifest.get("channel_isolation_results")
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ValueError(
+                "Channel isolation results manifest entry must be an object."
+            )
+        measurements = value.get("measurements", ())
+        if not isinstance(measurements, list):
+            raise ValueError(
+                "Channel isolation result measurements must be a list."
+            )
+        parsed = []
+        for measurement in measurements:
+            if not isinstance(measurement, dict):
+                raise ValueError(
+                    "Channel isolation measurement results must be objects."
+                )
+            result_id = measurement.get("result_id")
+            raw_value = measurement.get("value")
+            unit = measurement.get("unit")
+            if not isinstance(result_id, str) or not result_id:
+                raise ValueError(
+                    "Channel isolation result ids must be non-empty strings."
+                )
+            if not isinstance(raw_value, str) or not raw_value:
+                raise ValueError(
+                    "Channel isolation result values must be decimal strings."
+                )
+            if unit is not None and (
+                not isinstance(unit, str) or not unit
+            ):
+                raise ValueError(
+                    "Channel isolation result units must be absent or non-empty."
+                )
+            try:
+                decimal_value = Decimal(raw_value)
+            except InvalidOperation as error:
+                raise ValueError(
+                    "Channel isolation result values must be valid decimals."
+                ) from error
+            parsed.append(ChannelIsolationMeasurementResult(
+                result_id=result_id,
+                value=decimal_value,
+                unit=unit,
+            ))
+        return ChannelIsolationResultDeclaration(
+            measurements=tuple(sorted(
+                parsed,
+                key=lambda item: (
+                    item.result_id,
+                    item.value,
+                    item.unit or "",
+                ),
+            )),
+        )
 
     @classmethod
     def _string_tuple(cls, value):

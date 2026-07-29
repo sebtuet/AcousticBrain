@@ -160,6 +160,80 @@ valides, ni qu’un critère de succès est satisfait, ni qu’une causalité es
 établie. Cette validation n’est pas un moteur général de conformité
 expérimentale.
 
+### Évaluation déclarative des résultats `CHANNEL_ISOLATION`
+
+La référence du plan, sa couverture déclarée et l’évaluation de ses résultats
+sont trois qualifications indépendantes. Une couverture partielle peut ainsi
+coexister avec des résultats compatibles avec tous les critères effectivement
+évaluables.
+
+L’évaluation ne s’applique qu’après résolution exacte d’un plan
+`CHANNEL_ISOLATION`. Le plan peut porter une collection optionnelle de critères
+`ChannelIsolationEvaluationCriterion`. Chaque critère possède :
+
+- un `criterion_id` et un `result_id` exacts ;
+- un opérateur fermé `EQUAL` ou `WITHIN_TOLERANCE` ;
+- une valeur attendue décimale ;
+- une unité exacte ;
+- une tolérance décimale explicite uniquement pour `WITHIN_TOLERANCE`.
+
+Les résultats déjà calculés hors d’AcousticBrain sont déclarés sans lecture des
+fichiers bruts :
+
+```json
+{
+  "channel_isolation_results": {
+    "measurements": [
+      {
+        "result_id": "declared_metric",
+        "value": "1.25",
+        "unit": "dB"
+      }
+    ]
+  }
+}
+```
+
+La valeur est obligatoirement une chaîne décimale finie. Ce choix évite qu’un
+arrondi binaire implicite modifie la décision. Les identifiants et unités sont
+comparés exactement, sans normalisation, synonymie ni conversion (`ms` ne
+devient pas `s`, `dB` ne devient pas un ratio). `EQUAL` utilise l’égalité
+décimale exacte. `WITHIN_TOLERANCE` inclut les deux limites et n’existe que si
+la tolérance est explicitement fournie.
+
+Les états sont :
+
+- `PLAN_RESULT_NOT_APPLICABLE` : le plan n’est pas résolu ou n’est pas
+  `CHANNEL_ISOLATION` ;
+- `PLAN_RESULT_CRITERIA_NOT_EVALUABLE` : aucun critère structuré n’existe, ou
+  les résultats correspondants ont une unité absente/incompatible ou sont
+  dupliqués ;
+- `PLAN_RESULT_INSUFFICIENT_EVIDENCE` : les critères sont structurés mais tous
+  leurs résultats correspondants sont absents ;
+- `PLAN_RESULT_COMPATIBLE` : au moins un critère est compatible et aucun
+  critère évalué n’est incompatible ;
+- `PLAN_RESULT_INCOMPATIBLE` : au moins un critère est incompatible et aucun
+  critère évalué n’est compatible ;
+- `PLAN_RESULT_MIXED` : au moins un critère est compatible et au moins un autre
+  est incompatible.
+
+Un mélange de critères compatibles et non évaluables reste
+`PLAN_RESULT_COMPATIBLE`, avec une limitation explicite indiquant que la
+compatibilité ne porte que sur les critères évalués. La règle symétrique
+s’applique à `INCOMPATIBLE`. Un résultat absent produit `RESULT_MISSING`, pas
+une incompatibilité. Une unité absente ou différente, ou plusieurs résultats
+portant le même identifiant, rendent le critère non évaluable. Les résultats
+supplémentaires sont ignorés par l’agrégation et signalés comme non utilisés.
+
+Les plans `CHANNEL_ISOLATION` produits actuellement ne déclarent aucun seuil
+numérique structuré : leurs critères textuels restent donc
+`PLAN_RESULT_CRITERIA_NOT_EVALUABLE`. Aucun seuil n’est déduit de leur texte.
+
+`PLAN_RESULT_COMPATIBLE` signifie uniquement que les valeurs déclarées sont
+compatibles avec les critères structurés évalués. Il ne valide ni l’exécution
+du protocole, ni les mesures brutes, ni une réussite scientifique, ni une
+hypothèse, ni une causalité.
+
 ## Extensibilité et conservation sans perte
 
 Un manifest JSON est un document extensible. Chaque composant peut interpréter

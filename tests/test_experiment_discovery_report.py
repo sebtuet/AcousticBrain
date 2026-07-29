@@ -27,6 +27,7 @@ def descriptor(
     available_channels=(ImpulseChannel.STEREO,),
     experiment_declaration=None,
     channel_isolation_declaration=None,
+    channel_isolation_result_declaration=None,
 ):
     return ExperimentDescriptor(
         experiment_id=experiment_id,
@@ -55,6 +56,9 @@ def descriptor(
             experiment_declaration or ExperimentDeclaration.unknown()
         ),
         channel_isolation_declaration=channel_isolation_declaration,
+        channel_isolation_result_declaration=(
+            channel_isolation_result_declaration
+        ),
     )
 
 
@@ -241,3 +245,67 @@ def test_presenter_exposes_channel_isolation_coverage_and_console_details(capsys
     assert "Plan coverage status : PLAN_COVERAGE_COMPLETE" in output
     assert "Missing plan requirements :\n- none" in output
     assert "Unverifiable plan requirements :" in output
+
+
+def test_presenter_keeps_partial_coverage_independent_from_compatible_result(
+    capsys,
+):
+    from test_channel_isolation_plan_coverage import (
+        complete_channel_declaration,
+    )
+    from test_channel_isolation_plan_result import (
+        criterion,
+        plan,
+        result,
+    )
+    from acousticbrain.models import ChannelIsolationResultDeclaration
+
+    source_plan = plan(criterion(
+        "DECLARED_METRIC_EXPECTED",
+        "declared_metric",
+        expected_value="1.5",
+    ))
+    context = SimpleNamespace(
+        experiment_descriptors=(
+            descriptor(
+                "exp-001",
+                ExperimentType.EXPERIMENT,
+                ExperimentState.READY,
+                "2026-07-13T10:53:20",
+                source_plan_id=source_plan.plan_id,
+                available_channels=(ImpulseChannel.LEFT,),
+                channel_isolation_declaration=complete_channel_declaration(
+                    repeated_channels=(ImpulseChannel.LEFT,),
+                    available_inputs=(),
+                    controlled_variables=(),
+                    measurements=(),
+                ),
+                channel_isolation_result_declaration=(
+                    ChannelIsolationResultDeclaration((
+                        result("declared_metric", "1.5"),
+                    ))
+                ),
+            ),
+        ),
+        evidence_acquisition_plan_synthesis=SimpleNamespace(
+            plans=(source_plan,)
+        ),
+    )
+    report = Report(project_name="measurements")
+    report.experiments_discovered = ExperimentDiscoveryPresenter().present(context)
+
+    ConsoleReporter().print(report)
+
+    presented = report.experiments_discovered.experiments[0]
+    assert presented.evidence_acquisition_plan_coverage_status == (
+        "PLAN_COVERAGE_PARTIAL"
+    )
+    assert presented.plan_result_evaluation_status == "PLAN_RESULT_COMPATIBLE"
+    assert presented.compatible_criteria == ("DECLARED_METRIC_EXPECTED",)
+    output = capsys.readouterr().out
+    assert "Plan coverage status : PLAN_COVERAGE_PARTIAL" in output
+    assert "Plan result evaluation status : PLAN_RESULT_COMPATIBLE" in output
+    assert (
+        "Criterion evaluation : DECLARED_METRIC_EXPECTED | declared_metric | "
+        "COMPATIBLE | VALUE_MATCHES_EXPECTATION"
+    ) in output

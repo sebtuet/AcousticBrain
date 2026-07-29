@@ -5,6 +5,7 @@ from .impulse_channel import ImpulseChannel
 from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolStep
 from .experiment_declaration import ExperimentDeclaration
 from .channel_isolation_plan_coverage import ChannelIsolationDeclaration
+from .channel_isolation_plan_result import ChannelIsolationResultDeclaration
 
 
 ExperimentParameterValue = str | int | float | bool
@@ -64,6 +65,9 @@ class ExperimentDescriptor:
     )
     source_evidence_acquisition_plan_id: str | None = None
     channel_isolation_declaration: ChannelIsolationDeclaration | None = None
+    channel_isolation_result_declaration: (
+        ChannelIsolationResultDeclaration | None
+    ) = None
 
     def __post_init__(self):
         collections = (
@@ -100,6 +104,16 @@ class ExperimentDescriptor:
         ):
             raise ValueError(
                 "Channel isolation declaration has an invalid type."
+            )
+        if (
+            self.channel_isolation_result_declaration is not None
+            and not isinstance(
+                self.channel_isolation_result_declaration,
+                ChannelIsolationResultDeclaration,
+            )
+        ):
+            raise ValueError(
+                "Channel isolation result declaration has an invalid type."
             )
         if any(
             not isinstance(item, tuple)

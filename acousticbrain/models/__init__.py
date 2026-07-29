@@ -60,6 +60,17 @@ from .channel_isolation_plan_coverage import (
     PlanCoverageResult,
     PlanCoverageStatus,
 )
+from .channel_isolation_plan_result import (
+    ChannelIsolationCriterionEvaluation,
+    ChannelIsolationCriterionOperator,
+    ChannelIsolationEvaluationCriterion,
+    ChannelIsolationMeasurementResult,
+    ChannelIsolationResultDeclaration,
+    CriterionEvaluationReason,
+    CriterionEvaluationStatus,
+    PlanResultEvaluation,
+    PlanResultEvaluationStatus,
+)
 from .advisor import (
     AdvisorAudience,
     AdvisorClaim,
