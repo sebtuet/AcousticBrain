@@ -117,6 +117,37 @@ def test_discovery_preserves_explicit_comparison_metadata(tmp_path):
     )
 
 
+def test_discovery_preserves_exact_source_evidence_acquisition_plan_id(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+    source_plan_id = "EVIDENCE_ACQUISITION_PLAN_EXACT"
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "source_evidence_acquisition_plan_id": source_plan_id,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    assert descriptor.source_evidence_acquisition_plan_id == source_plan_id
+    assert persisted["source_evidence_acquisition_plan_id"] == source_plan_id
+
+
+def test_historical_experiment_without_source_plan_remains_compatible(tmp_path):
+    directory = tmp_path / "exp-001"
+    complete_experiment(directory)
+
+    descriptor = ExperimentDiscoveryService().discover(tmp_path)[0]
+    persisted = json.loads((directory / "manifest.json").read_text())
+
+    assert descriptor.source_evidence_acquisition_plan_id is None
+    assert "source_evidence_acquisition_plan_id" not in persisted
+
+
 def test_discovery_preserves_extension_nested_in_comparison(tmp_path):
     directory = tmp_path / "exp-001"
     complete_experiment(directory)

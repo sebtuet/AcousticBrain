@@ -77,12 +77,15 @@ baseline
 Fichiers : 1
 Date : 2026-07-07T15:57:39
 Canaux : STEREO
+Source evidence acquisition plan : none
+Plan reference status : PLAN_NOT_REFERENCED
 
 exp-001
 État : INCOMPLETE
 Fichiers : 1
 Date : 2026-07-13T10:53:20
 Canaux : STEREO
-
+Source evidence acquisition plan : none
+Plan reference status : PLAN_NOT_REFERENCED
 
 

@@ -61,6 +61,7 @@ class ExperimentDescriptor:
     experiment_declaration: ExperimentDeclaration = field(
         default_factory=ExperimentDeclaration.unknown
     )
+    source_evidence_acquisition_plan_id: str | None = None
 
     def __post_init__(self):
         collections = (
@@ -78,6 +79,16 @@ class ExperimentDescriptor:
             raise ValueError("Experiment descriptor collections must be tuples.")
         if not self.experiment_id or not self.directory or not self.content_hash:
             raise ValueError("Experiment descriptor identifiers are required.")
+        if (
+            self.source_evidence_acquisition_plan_id is not None
+            and (
+                not isinstance(self.source_evidence_acquisition_plan_id, str)
+                or not self.source_evidence_acquisition_plan_id
+            )
+        ):
+            raise ValueError(
+                "Source evidence acquisition plan id must be absent or non-empty."
+            )
         if any(
             not isinstance(item, tuple)
             or len(item) != 2

@@ -65,6 +65,33 @@ Le hash agrégé dépend des contenus, pas des noms. `manifest.json` et les
 fichiers étrangers comme `.DS_Store` sont exclus. La date du premier import est
 conservée. Le fichier n’est réécrit que si sa représentation complète change.
 
+### Référence explicite au plan d’acquisition
+
+Une expérience exécutée peut déclarer à la racine du manifest l’identifiant
+exact du plan d’acquisition dont elle provient :
+
+```json
+{
+  "source_evidence_acquisition_plan_id":
+    "EVIDENCE_ACQUISITION_ASYMMETRIC_SPEAKER_ROOM_INTERACTION_REASONING_RESOLVE_CONTRADICTION"
+}
+```
+
+Cette référence est optionnelle afin de préserver les expériences historiques.
+La découverte la conserve sans normalisation et la projection compare
+uniquement cet identifiant exact aux `EvidenceAcquisitionPlan` disponibles :
+
+- `PLAN_NOT_REFERENCED` : aucune référence n’a été déclarée ;
+- `PLAN_REFERENCE_RESOLVED` : l’identifiant correspond exactement à un plan
+  disponible ;
+- `PLAN_REFERENCE_UNKNOWN` : une référence est déclarée, mais aucun plan
+  disponible ne porte cet identifiant.
+
+Aucune référence n’est déduite d’un protocole, type de test, objectif,
+reasoning, horodatage, nom de fichier ou contenu de mesure. Un lien résolu
+établit uniquement la traçabilité vers le plan source ; il ne valide ni
+l’exécution, ni le protocole, ni le résultat, ni une conclusion scientifique.
+
 ## Extensibilité et conservation sans perte
 
 Un manifest JSON est un document extensible. Chaque composant peut interpréter
