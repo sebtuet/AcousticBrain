@@ -168,6 +168,27 @@ def test_reference_without_geometry_does_not_create_geometry():
     assert "exp-001" not in AcousticSession._resolve_geometry(descriptors)
 
 
+def test_reference_with_incomplete_geometry_does_not_create_geometry():
+    incomplete = geometry()
+    del incomplete["loudspeakers"]["right"]["position"]["z"]
+
+    reference_geometry = ExperimentDiscoveryService._room_description(
+        incomplete,
+        "baseline",
+    )
+    descriptors = (
+        descriptor("baseline", room_description=reference_geometry),
+        descriptor(
+            "exp-001",
+            reference="baseline",
+            controls=FULL_GEOMETRY_CONTROLS,
+        ),
+    )
+
+    assert reference_geometry is None
+    assert "exp-001" not in AcousticSession._resolve_geometry(descriptors)
+
+
 def test_local_geometry_has_priority_when_reference_is_not_controlled():
     reference = parsed_geometry()
     local = parsed_geometry(left_x=0.6, experiment_id="exp-001")

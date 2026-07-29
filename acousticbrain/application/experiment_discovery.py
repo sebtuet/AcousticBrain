@@ -330,6 +330,13 @@ class ExperimentDiscoveryService:
             raise ValueError(f"Manifest geometry is invalid for {experiment_id}.")
 
         coordinate_system, room, loudspeakers, listening_position = values
+        if not cls._room_geometry_is_complete(
+            coordinate_system,
+            room,
+            loudspeakers,
+            listening_position,
+        ):
+            return None
         if coordinate_system.get("unit") != "m":
             raise ValueError("Manifest geometry coordinate unit must be m.")
         for key in (
@@ -367,6 +374,51 @@ class ExperimentDiscoveryService:
                 ),
             ),
         )
+
+    @classmethod
+    def _room_geometry_is_complete(
+        cls,
+        coordinate_system,
+        room,
+        loudspeakers,
+        listening_position,
+    ):
+        dimensions = room.get("dimensions")
+        left = loudspeakers.get("left")
+        right = loudspeakers.get("right")
+        listening = listening_position.get("position")
+        if not all(
+            isinstance(value, dict)
+            for value in (dimensions, left, right, listening)
+        ):
+            return False
+        left_position = left.get("position")
+        right_position = right.get("position")
+        if not all(
+            isinstance(value, dict)
+            for value in (left_position, right_position)
+        ):
+            return False
+        return (
+            all(
+                cls._optional_string(coordinate_system.get(key)) is not None
+                for key in ("origin", "unit", "x_axis", "y_axis", "z_axis")
+            )
+            and all(
+                cls._geometry_number_is_present(dimensions, key)
+                for key in ("length", "width", "height")
+            )
+            and all(
+                cls._geometry_number_is_present(position, key)
+                for position in (left_position, right_position, listening)
+                for key in ("x", "y", "z")
+            )
+        )
+
+    @staticmethod
+    def _geometry_number_is_present(value, key):
+        item = value.get(key)
+        return isinstance(item, (int, float)) and not isinstance(item, bool)
 
     @staticmethod
     def _geometry_object(value, key):
