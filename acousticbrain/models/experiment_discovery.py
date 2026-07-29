@@ -6,6 +6,7 @@ from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolS
 from .experiment_declaration import ExperimentDeclaration
 from .channel_isolation_plan_coverage import ChannelIsolationDeclaration
 from .channel_isolation_plan_result import ChannelIsolationResultDeclaration
+from .room_description import RoomDescription
 
 
 ExperimentParameterValue = str | int | float | bool
@@ -68,6 +69,7 @@ class ExperimentDescriptor:
     channel_isolation_result_declaration: (
         ChannelIsolationResultDeclaration | None
     ) = None
+    room_description: RoomDescription | None = None
 
     def __post_init__(self):
         collections = (
@@ -115,6 +117,11 @@ class ExperimentDescriptor:
             raise ValueError(
                 "Channel isolation result declaration has an invalid type."
             )
+        if (
+            self.room_description is not None
+            and not isinstance(self.room_description, RoomDescription)
+        ):
+            raise ValueError("Experiment room description has an invalid type.")
         if any(
             not isinstance(item, tuple)
             or len(item) != 2
