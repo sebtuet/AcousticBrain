@@ -187,6 +187,28 @@ def test_sbir_missing_observation_creates_observation_and_geometry_plans():
     assert "speaker_boundary_distance_m" in synthesis.plans[1].measurements_to_capture
 
 
+def test_sbir_no_match_without_missing_geometry_does_not_request_geometry():
+    reasoning_id = "SBIR_PLACEMENT_INTERACTION_REASONING"
+    action_id = f"ACTION_{reasoning_id}"
+    missing = factor(
+        action_id,
+        "MISSING_PARAMETERS",
+        ("additional_supporting_observation",),
+    )
+    synthesis = EvidenceAcquisitionPlanner().plan(
+        *planner_inputs(
+            reasoning_id,
+            (missing,),
+            missing=("additional_supporting_observation",),
+            limitations=("sbir.best_match",),
+        )
+    )
+
+    assert tuple(value.test_type for value in synthesis.plans) == (
+        EvidenceAcquisitionTestType.ADDITIONAL_OBSERVATION,
+    )
+
+
 def test_no_blocking_factor_produces_no_plan():
     synthesis = EvidenceAcquisitionPlanner().plan(
         *planner_inputs(factors=(), applicability=WeightedActionApplicability.APPLICABLE)

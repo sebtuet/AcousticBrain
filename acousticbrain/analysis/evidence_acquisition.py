@@ -223,7 +223,7 @@ class EvidenceAcquisitionPlanner:
     def _needs_geometry(weight, action, reasoning_id):
         values = (*weight.limitations, *action.limitations)
         return "SBIR" in reasoning_id and any(
-            "geometry" in value or "speaker_positions" in value or "sbir.best_match" in value
+            "geometry" in value or "speaker_positions" in value
             for value in values
         )
 
