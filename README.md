@@ -280,6 +280,13 @@ rules. CLI reporters and the optional Advisor do not add, replace or bypass
 those rules. Scientific conclusions, contradictions, limitations and missing
 evidence remain under the authority of the deterministic core.
 
+The frozen product contract for the future deterministic `EXPLORATORY` mode is
+documented in
+[`docs/EXPLORATORY_V1_CONTRACT.md`](docs/EXPLORATORY_V1_CONTRACT.md).
+It defines bounded reversible tests, explicit user feasibility decisions and
+non-causal result semantics. The contract does not claim that this mode is
+already implemented.
+
 ## Tests
 
 Run the complete test suite:
