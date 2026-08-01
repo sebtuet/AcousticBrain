@@ -21,6 +21,46 @@ class EvidencePlanPreparationConfirmationJsonLoader:
     OPTIONAL_FIELDS = frozenset(("user_note",))
     PREREQUISITE_FIELDS = frozenset(("code", "status"))
 
+    def dumps(self, value, *, indent=2):
+        if not isinstance(value, EvidencePlanPreparationConfirmationInput):
+            raise TypeError("Evidence-plan preparation input is required.")
+        payload = {
+            "schema_version": value.schema_version,
+            "confirmation_id": value.confirmation_id,
+            "plan_id": value.plan_id,
+            "plan_contract_fingerprint": value.plan_contract_fingerprint,
+            "prerequisites": [
+                {"code": item.code, "status": item.status.value}
+                for item in value.prerequisites
+            ],
+            "declaration_source": value.declaration_source,
+            "user_note": value.user_note,
+        }
+        return json.dumps(
+            payload,
+            indent=indent,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+
+    def save_new(self, path, value):
+        target = Path(path)
+        if target.exists():
+            raise ValueError(
+                f"Evidence-plan preparation draft output already exists: {target}"
+            )
+        if not target.parent.exists() or not target.parent.is_dir():
+            raise ValueError(
+                "Evidence-plan preparation draft output parent is unavailable: "
+                f"{target.parent}"
+            )
+        serialized = self.dumps(value) + "\n"
+        temporary = target.with_suffix(target.suffix + ".tmp")
+        temporary.write_text(serialized, encoding="utf-8")
+        temporary.replace(target)
+        return target
+
     def load(self, path):
         source = Path(path)
         try:
