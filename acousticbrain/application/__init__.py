@@ -19,6 +19,7 @@ from .evidence_acquisition_contract import (
     EvidenceAcquisitionPlanContractValidator,
 )
 from .evidence_plan_completion import (
+    DerivedEvidenceAcquisitionPlanFactory,
     EvidencePlanCompletionCompatibilityValidator,
     EvidencePlanCompletionReferenceResolver,
 )

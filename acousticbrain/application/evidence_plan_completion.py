@@ -1,5 +1,11 @@
+from dataclasses import asdict, replace
+import hashlib
+import json
+
 from acousticbrain.models import (
     DeterministicCorrectiveAction,
+    DerivedEvidenceAcquisitionPlan,
+    DerivedEvidencePlanStatus,
     EvidenceAcquisitionPlan,
     EvidenceAcquisitionStatus,
     EvidenceBlockingFactor,
@@ -204,3 +210,176 @@ class EvidencePlanCompletionCompatibilityValidator:
                 EvidencePlanCompletionCompatibilityStatus.REFERENCE_COMPATIBLE
             ),
         )
+
+
+class DerivedEvidenceAcquisitionPlanFactory:
+    """Creates one immutable READY derivation without persistence or execution."""
+
+    def create(self, compatibility):
+        if not isinstance(compatibility, EvidencePlanCompletionCompatibility):
+            raise TypeError("EvidencePlanCompletionCompatibility is required.")
+        resolution = compatibility.resolution
+        source = resolution.source_plan
+        completion_input = resolution.completion_input
+        reference = resolution.reference
+        parameters = self._reference_parameters(reference, completion_input)
+        reference_fingerprint = self._reference_fingerprint(
+            reference,
+            completion_input.reference_kind,
+        )
+        plan_id = self._plan_id(compatibility)
+        required_inputs = tuple(sorted((
+            *(
+                value for value in source.required_inputs
+                if value != DerivedEvidenceAcquisitionPlan.MISSING_INPUT
+            ),
+            (
+                f"resolved_reference:{completion_input.reference_kind.value}:"
+                f"{completion_input.reference_id}"
+            ),
+        )))
+        derived = replace(
+            source,
+            plan_id=plan_id,
+            required_inputs=required_inputs,
+            status=EvidenceAcquisitionStatus.READY,
+        )
+        return DerivedEvidenceAcquisitionPlan(
+            plan=derived,
+            source_plan=source,
+            source_plan_id=source.plan_id,
+            completion_input_id=completion_input.completion_input_id,
+            reference_kind=completion_input.reference_kind,
+            reference_id=completion_input.reference_id,
+            compatibility_authority_id=compatibility.authority_id,
+            compatibility_authority_version=compatibility.authority_version,
+            reference_parameter_codes=parameters,
+            reference_contract_fingerprint=reference_fingerprint,
+            contract_id=DerivedEvidenceAcquisitionPlan.CONTRACT_ID,
+            contract_version=DerivedEvidenceAcquisitionPlan.CONTRACT_VERSION,
+            status=DerivedEvidencePlanStatus.DERIVED_PLAN_READY,
+        )
+
+    @staticmethod
+    def _reference_parameters(reference, completion_input):
+        if (
+            completion_input.reference_kind
+            is EvidencePlanCompletionReferenceKind.PROTOCOL
+        ):
+            completeness = reference.definition_completeness
+            if not completeness.complete:
+                raise ValueError(
+                    "REFERENCE_CONTRACT_INCOMPLETE: "
+                    f"{reference.protocol_id} is missing "
+                    + ", ".join(completeness.missing_condition_codes)
+                    + "."
+                )
+            values = {
+                f"protocol_version:{reference.version}",
+                f"comparability_rule:{reference.comparability_rule_code}",
+            }
+            values.update(
+                "position:"
+                f"{value.position_code}:"
+                f"role={value.position_role}:"
+                f"longitudinal_m={value.longitudinal_offset_m}:"
+                f"lateral_m={value.lateral_offset_m}:"
+                f"vertical_m={value.vertical_offset_m}:"
+                f"parent={value.parent_position_code}:"
+                f"reference={value.reference_position_code}:"
+                f"order={value.acquisition_order}"
+                for value in reference.positions
+            )
+            values.update(
+                f"position_measurement:{position.position_code}:{measurement}"
+                for position in reference.positions
+                for measurement in position.required_measurements
+            )
+            values.update(
+                f"modified_variable:{value}"
+                for value in reference.modified_variables
+            )
+            values.update(
+                f"controlled_variable:{value}"
+                for value in reference.controlled_variables
+            )
+            values.update(
+                f"completion_condition:{value}"
+                for value in reference.completion_condition_codes
+            )
+            return tuple(sorted(values))
+        if reference.status is not EvidenceAcquisitionStatus.READY:
+            raise ValueError(
+                "REFERENCE_CONTRACT_INCOMPLETE: "
+                f"{reference.plan_id} is {reference.status.value}."
+            )
+        return tuple(sorted((
+            f"plan_status:{reference.status.value}",
+            f"plan_test_type:{reference.test_type.value}",
+            *(f"required_input:{value}" for value in reference.required_inputs),
+            *(
+                f"controlled_variable:{value}"
+                for value in reference.controlled_variables
+            ),
+            *(
+                f"independent_variable:{value}"
+                for value in reference.independent_variables
+            ),
+            *(
+                f"measurement:{value}"
+                for value in reference.measurements_to_capture
+            ),
+        )))
+
+    @staticmethod
+    def _reference_snapshot(reference, reference_kind):
+        return (
+            asdict(reference)
+            if reference_kind is EvidencePlanCompletionReferenceKind.PROTOCOL
+            else reference.to_dict()
+        )
+
+    @classmethod
+    def _reference_fingerprint(cls, reference, reference_kind):
+        canonical = json.dumps(
+            cls._reference_snapshot(reference, reference_kind),
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _plan_id(compatibility):
+        resolution = compatibility.resolution
+        completion_input = resolution.completion_input
+        reference = resolution.reference
+        reference_snapshot = DerivedEvidenceAcquisitionPlanFactory._reference_snapshot(
+            reference,
+            completion_input.reference_kind,
+        )
+        payload = {
+            "contract_id": DerivedEvidenceAcquisitionPlan.CONTRACT_ID,
+            "contract_version": DerivedEvidenceAcquisitionPlan.CONTRACT_VERSION,
+            "source_plan": resolution.source_plan.to_dict(),
+            "completion_input": {
+                "schema_version": completion_input.schema_version,
+                "completion_input_id": completion_input.completion_input_id,
+                "source_plan_id": completion_input.source_plan_id,
+                "reference_kind": completion_input.reference_kind.value,
+                "reference_id": completion_input.reference_id,
+                "declaration_source": completion_input.declaration_source,
+                "user_note": completion_input.user_note,
+            },
+            "reference": reference_snapshot,
+            "compatibility_authority_id": compatibility.authority_id,
+            "compatibility_authority_version": compatibility.authority_version,
+        }
+        canonical = json.dumps(
+            payload,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:24]
+        return f"DERIVED_EVIDENCE_ACQUISITION_{digest}"
