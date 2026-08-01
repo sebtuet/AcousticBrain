@@ -84,7 +84,7 @@ class EvidencePlanCompletionRegistry:
         if existing:
             if existing[0] == record:
                 return self
-            fields = _different_fields(existing[0], record)
+            fields = tuple(sorted(_different_fields(existing[0], record)))
             raise ValueError(
                 "COMPLETION_INPUT_DIVERGENT: incompatible fields: "
                 + ", ".join(fields)
