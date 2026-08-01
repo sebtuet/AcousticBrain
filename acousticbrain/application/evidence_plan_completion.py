@@ -1,7 +1,10 @@
 from acousticbrain.models import (
+    DeterministicCorrectiveAction,
     EvidenceAcquisitionPlan,
     EvidenceAcquisitionStatus,
     EvidenceBlockingFactor,
+    EvidencePlanCompletionCompatibility,
+    EvidencePlanCompletionCompatibilityStatus,
     EvidencePlanCompletionInput,
     EvidencePlanCompletionReferenceKind,
     EvidencePlanCompletionResolution,
@@ -150,3 +153,54 @@ class EvidencePlanCompletionReferenceResolver:
         if len(matches) != 1:
             raise ValueError(f"{ambiguous}: {expected}.")
         return matches[0]
+
+
+class EvidencePlanCompletionCompatibilityValidator:
+    """Uses existing action associations without inferring compatibility."""
+
+    AUTHORITY_ID = EvidencePlanCompletionCompatibility.AUTHORITY_ID
+    AUTHORITY_VERSION = EvidencePlanCompletionCompatibility.AUTHORITY_VERSION
+
+    def validate(self, resolution, *, actions):
+        if not isinstance(resolution, EvidencePlanCompletionResolution):
+            raise TypeError("EvidencePlanCompletionResolution is required.")
+        actions = EvidencePlanCompletionReferenceResolver._typed(
+            actions,
+            DeterministicCorrectiveAction,
+            "corrective actions",
+        )
+        action = EvidencePlanCompletionReferenceResolver._one(
+            actions,
+            key="action_id",
+            expected=resolution.source_plan.corrective_action_id,
+            unknown="SOURCE_ACTION_UNKNOWN",
+            ambiguous="SOURCE_ACTION_AMBIGUOUS",
+        )
+        if resolution.source_plan.reasoning_id not in action.source_reasoning_ids:
+            raise ValueError(
+                "REFERENCE_COMPATIBILITY_NOT_ESTABLISHED: source reasoning "
+                f"is inconsistent for {resolution.source_plan.plan_id}."
+            )
+        completion_input = resolution.completion_input
+        compatible_ids = (
+            action.compatible_protocol_ids
+            if completion_input.reference_kind
+            is EvidencePlanCompletionReferenceKind.PROTOCOL
+            else action.compatible_plan_ids
+        )
+        if completion_input.reference_id not in compatible_ids:
+            raise ValueError(
+                "REFERENCE_COMPATIBILITY_NOT_ESTABLISHED: "
+                f"{completion_input.reference_kind.value} "
+                f"{completion_input.reference_id} is not associated with "
+                f"action {action.action_id}."
+            )
+        return EvidencePlanCompletionCompatibility(
+            resolution=resolution,
+            source_action=action,
+            authority_id=self.AUTHORITY_ID,
+            authority_version=self.AUTHORITY_VERSION,
+            status=(
+                EvidencePlanCompletionCompatibilityStatus.REFERENCE_COMPATIBLE
+            ),
+        )

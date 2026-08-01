@@ -60,6 +60,8 @@ from .evidence_acquisition_contract import (
     ExperimentContractMode,
 )
 from .evidence_plan_completion import (
+    EvidencePlanCompletionCompatibility,
+    EvidencePlanCompletionCompatibilityStatus,
     EvidencePlanCompletionInput,
     EvidencePlanCompletionReferenceKind,
     EvidencePlanCompletionResolution,

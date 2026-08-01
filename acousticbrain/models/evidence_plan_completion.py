@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from .deterministic_corrective_action import DeterministicCorrectiveAction
 from .evidence_acquisition import EvidenceAcquisitionPlan
 from .listening_position_sampling_protocol import (
     ListeningPositionSamplingProtocol,
@@ -14,6 +15,10 @@ class EvidencePlanCompletionReferenceKind(Enum):
 
 class EvidencePlanCompletionResolutionStatus(Enum):
     REFERENCE_RESOLVED = "REFERENCE_RESOLVED"
+
+
+class EvidencePlanCompletionCompatibilityStatus(Enum):
+    REFERENCE_COMPATIBLE = "REFERENCE_COMPATIBLE"
 
 
 @dataclass(frozen=True)
@@ -116,4 +121,62 @@ class EvidencePlanCompletionResolution:
         ):
             raise ValueError(
                 "Evidence-plan completion resolution status is invalid."
+            )
+
+
+@dataclass(frozen=True)
+class EvidencePlanCompletionCompatibility:
+    resolution: EvidencePlanCompletionResolution
+    source_action: DeterministicCorrectiveAction
+    authority_id: str
+    authority_version: int
+    status: EvidencePlanCompletionCompatibilityStatus
+
+    AUTHORITY_ID = "deterministic_corrective_action.compatible_reference.v1"
+    AUTHORITY_VERSION = 1
+
+    def __post_init__(self):
+        if not isinstance(self.resolution, EvidencePlanCompletionResolution):
+            raise TypeError("Evidence-plan completion resolution is required.")
+        if not isinstance(self.source_action, DeterministicCorrectiveAction):
+            raise TypeError("Evidence-plan completion source action is required.")
+        if (
+            self.source_action.action_id
+            != self.resolution.source_plan.corrective_action_id
+        ):
+            raise ValueError(
+                "Evidence-plan completion compatibility action is inconsistent."
+            )
+        if (
+            self.resolution.source_plan.reasoning_id
+            not in self.source_action.source_reasoning_ids
+        ):
+            raise ValueError(
+                "Evidence-plan completion compatibility reasoning is inconsistent."
+            )
+        completion_input = self.resolution.completion_input
+        compatible_ids = (
+            self.source_action.compatible_protocol_ids
+            if completion_input.reference_kind
+            is EvidencePlanCompletionReferenceKind.PROTOCOL
+            else self.source_action.compatible_plan_ids
+        )
+        if completion_input.reference_id not in compatible_ids:
+            raise ValueError(
+                "Evidence-plan completion reference is not associated with the "
+                "source action."
+            )
+        if self.authority_id != self.AUTHORITY_ID:
+            raise ValueError(
+                "Evidence-plan completion compatibility authority is invalid."
+            )
+        if self.authority_version != self.AUTHORITY_VERSION:
+            raise ValueError(
+                "Evidence-plan completion compatibility authority version is invalid."
+            )
+        if self.status is not (
+            EvidencePlanCompletionCompatibilityStatus.REFERENCE_COMPATIBLE
+        ):
+            raise ValueError(
+                "Evidence-plan completion compatibility status is invalid."
             )
