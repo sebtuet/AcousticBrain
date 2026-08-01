@@ -66,12 +66,12 @@ class ExperimentDescriptor:
         default_factory=ExperimentDeclaration.unknown
     )
     source_evidence_acquisition_plan_id: str | None = None
-    evidence_acquisition_plan_contract: EvidenceAcquisitionPlanContract | None = None
     channel_isolation_declaration: ChannelIsolationDeclaration | None = None
     channel_isolation_result_declaration: (
         ChannelIsolationResultDeclaration | None
     ) = None
     room_description: RoomDescription | None = None
+    evidence_acquisition_plan_contract: EvidenceAcquisitionPlanContract | None = None
 
     def __post_init__(self):
         collections = (

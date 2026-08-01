@@ -54,6 +54,8 @@ class EvidenceAcquisitionPlanContractJsonCodec:
                 source_plan=plan,
                 mode=ExperimentContractMode(value["mode"]),
                 declaration_source=value["declaration_source"],
+                reference_experiment_code=value["reference_experiment_code"],
+                declaration_user_note=value.get("declaration_user_note"),
             )
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError("Invalid evidence-acquisition plan contract.") from error

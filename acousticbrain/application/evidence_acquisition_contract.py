@@ -39,7 +39,9 @@ class EvidenceAcquisitionPlanContractService:
         mode = mode if isinstance(mode, ExperimentContractMode) else ExperimentContractMode(mode)
         if mode is ExperimentContractMode.PRESCRIPTIVE:
             raise ValueError("PRESCRIPTIVE mode requires a future scientific contract.")
-        contract = EvidenceAcquisitionPlanContract(plan, mode, declaration_source)
+        contract = EvidenceAcquisitionPlanContract(
+            plan, mode, declaration_source, reference_experiment_code, user_note
+        )
         directory = Path(measurement_root) / experiment_code
         if not directory.is_dir():
             raise ValueError(f"Unknown experiment directory: {experiment_code}")
@@ -84,6 +86,8 @@ class EvidenceAcquisitionPlanContractService:
             "schema_version": 1,
             "mode": contract.mode.value,
             "declaration_source": contract.declaration_source,
+            "reference_experiment_code": contract.reference_experiment_code,
+            "declaration_user_note": contract.declaration_user_note,
             "plan": plan.to_dict(),
         }, allow_nan=False))
 

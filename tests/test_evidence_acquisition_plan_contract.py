@@ -147,6 +147,30 @@ def test_identical_contract_declaration_is_idempotent(tmp_path):
     assert manifest.read_bytes() == first_content
 
 
+@pytest.mark.parametrize(
+    ("changed", "expected_field"),
+    (
+        ({"reference_experiment_code": "alternate"}, "reference_experiment_code"),
+        ({"user_note": "Different operator note."}, "declaration_user_note"),
+    ),
+)
+def test_same_plan_cannot_reinterpret_experiment_declaration(
+    tmp_path, changed, expected_field
+):
+    root = campaign(tmp_path)
+    (root / "alternate").mkdir()
+    service = EvidenceAcquisitionPlanContractService()
+    initial = dict(
+        experiment_code="exp-001", reference_experiment_code="baseline",
+        plan=plan(), user_note=None,
+    )
+    service.declare(root, **initial)
+    requested = {**initial, **changed}
+    with pytest.raises(ValueError) as error:
+        service.declare(root, **requested)
+    assert f"incompatible fields: {expected_field}." in str(error.value)
+
+
 def test_contract_declaration_does_not_modify_measurement_files(tmp_path):
     root = campaign(tmp_path)
     measurement = root / "exp-001/measurements/LEFT.txt"

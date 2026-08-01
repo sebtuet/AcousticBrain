@@ -47,6 +47,8 @@ def main(argv=None, *, brain=None, contract_service=None):
         "schema_version": 1,
         "mode": "EXPLORATORY",
         "declaration_source": "RESOLVED_EVIDENCE_ACQUISITION_PLAN",
+        "reference_experiment_code": arguments.reference,
+        "declaration_user_note": arguments.note,
         "plan": presented.to_dict(),
     })
     (contract_service or EvidenceAcquisitionPlanContractService()).declare(

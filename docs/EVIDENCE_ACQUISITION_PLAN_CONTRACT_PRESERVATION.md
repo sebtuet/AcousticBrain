@@ -24,6 +24,7 @@ experiment, and stores an immutable snapshot containing:
 - success and failure criteria;
 - evidence targets, limitations, priority and effort;
 - explicit mode (`EXPLORATORY` in the current contract).
+- exact reference experiment and operator note used by the declaration.
 
 `PRESCRIPTIVE` is represented as a future semantic value but is rejected until
 a separate scientific contract authorizes it. Free text is never parsed to
