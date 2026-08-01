@@ -83,6 +83,55 @@ Required fields are:
 identifier, parameter, compatibility claim, justification, criterion or
 scientific rule.
 
+A minimal valid input is:
+
+```json
+{
+  "schema_version": 1,
+  "completion_input_id": "completion-input-001",
+  "source_plan_id": "source-plan-001",
+  "reference_kind": "PROTOCOL",
+  "reference_id": "protocol.example.v1",
+  "declaration_source": "USER_JSON"
+}
+```
+
+These inputs are invalid:
+
+```json
+{"schema_version": 1, "source_plan_id": "source-plan-001"}
+```
+
+Required identity and reference fields are absent.
+
+```json
+{
+  "schema_version": 1,
+  "completion_input_id": "completion-input-001",
+  "source_plan_id": "source-plan-001",
+  "reference_kind": "PROTOCOL",
+  "reference_id": "protocol.example.v1",
+  "declaration_source": "USER_JSON",
+  "protocol_is_compatible": true
+}
+```
+
+`protocol_is_compatible` is unknown and attempts to assert a decision that does
+not belong to the input contract.
+
+```json
+{
+  "schema_version": 1,
+  "completion_input_id": "completion-input-001",
+  "source_plan_id": "source-plan-001",
+  "reference_kind": "PLAN",
+  "reference_id": "source-plan-001",
+  "declaration_source": "USER_JSON"
+}
+```
+
+The selected plan reference is the source plan itself.
+
 Unknown fields are rejected. No field is inferred from filenames, labels,
 notes, objectives, instructions, hypotheses, measurements or collection
 position.
