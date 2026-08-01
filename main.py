@@ -16,6 +16,7 @@ from acousticbrain.advisor import (
 from acousticbrain.brain import AcousticBrain
 from acousticbrain.application import (
     EvidencePlanCompletionService,
+    EvidencePlanPreparationWorkflowService,
     ExploratoryExperimentDeclarationService,
 )
 from acousticbrain.report import (
@@ -55,6 +56,8 @@ from acousticbrain.persistence import (
     ExploratoryProposalInputJsonLoader,
     EvidencePlanCompletionInputJsonLoader,
     EvidencePlanCompletionRegistryJsonRepository,
+    EvidencePlanPreparationConfirmationJsonLoader,
+    EvidencePlanPreparationRegistryJsonRepository,
 )
 
 
@@ -166,6 +169,20 @@ def create_parser():
         default=None,
         metavar="PATH",
         help="dedicated completion registry JSON (required for completion)",
+    )
+    parser.add_argument(
+        "--confirm-evidence-plan-preparation",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="record explicit prerequisite statuses for one exact READY plan",
+    )
+    parser.add_argument(
+        "--evidence-plan-preparation-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="dedicated preparation registry JSON (required for confirmation)",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -343,6 +360,57 @@ def complete_evidence_plan(
     return result
 
 
+def confirm_evidence_plan_preparation(
+    measurements_root,
+    confirmation_input,
+    registry_path,
+    *,
+    campaign_instance_analysis=None,
+    brain=None,
+    service=None,
+    registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        listening_position_campaign_instance_analysis=campaign_instance_analysis,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError(
+            "Evidence-plan preparation requires an exact analysis context."
+        )
+    _, context = analysis
+    plan_synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if plan_synthesis is None:
+        raise ValueError(
+            "Evidence-plan preparation analysis contracts are unavailable."
+        )
+    repository = (
+        registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    )
+    result = (service or EvidencePlanPreparationWorkflowService(
+        repository=repository
+    )).record(
+        confirmation_input,
+        registry_path=registry_path,
+        plans=plan_synthesis.plans,
+    )
+    state = "recorded" if result.persisted else "already recorded"
+    print("Evidence plan preparation " + state + ": " + confirmation_input.plan_id)
+    print("PLAN_EXACTLY_RESOLVED")
+    print("PREPARATION_DECLARED")
+    if result.record.all_prerequisites_status is not None:
+        print("ALL_PREREQUISITES_USER_CONFIRMED")
+    else:
+        print("ALL_PREREQUISITES_USER_CONFIRMED: unavailable")
+    print("No experiment was declared or executed.")
+    print(f"Registry: {Path(result.registry_path).resolve()}")
+    return result
+
+
 def run(
     measurements_root,
     *,
@@ -515,6 +583,9 @@ def main(
     evidence_plan_completion_loader=None,
     evidence_plan_completion_service=None,
     evidence_plan_completion_registry_repository=None,
+    evidence_plan_preparation_loader=None,
+    evidence_plan_preparation_service=None,
+    evidence_plan_preparation_registry_repository=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -585,6 +656,42 @@ def main(
                 if enabled:
                     raise ValueError(
                         f"--complete-evidence-plan cannot be combined with {option}."
+                    )
+        if (
+            arguments.confirm_evidence_plan_preparation is None
+            and arguments.evidence_plan_preparation_registry is not None
+        ):
+            raise ValueError(
+                "--evidence-plan-preparation-registry requires "
+                "--confirm-evidence-plan-preparation."
+            )
+        if arguments.confirm_evidence_plan_preparation is not None:
+            if arguments.evidence_plan_preparation_registry is None:
+                raise ValueError(
+                    "--confirm-evidence-plan-preparation requires "
+                    "--evidence-plan-preparation-registry."
+                )
+            conflicting = (
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--confirm-evidence-plan-preparation cannot be combined "
+                        f"with {option}."
                     )
         if arguments.exploratory_proposal and not arguments.exploratory:
             raise ValueError("--exploratory-proposal requires --exploratory.")
@@ -788,6 +895,23 @@ def main(
                 service=evidence_plan_completion_service,
                 registry_repository=(
                     evidence_plan_completion_registry_repository
+                ),
+            )
+            return 0
+        if arguments.confirm_evidence_plan_preparation is not None:
+            confirmation_input = (
+                evidence_plan_preparation_loader
+                or EvidencePlanPreparationConfirmationJsonLoader()
+            ).load(arguments.confirm_evidence_plan_preparation)
+            confirm_evidence_plan_preparation(
+                measurements_root,
+                confirmation_input,
+                arguments.evidence_plan_preparation_registry,
+                campaign_instance_analysis=campaign_instance_analysis,
+                brain=brain,
+                service=evidence_plan_preparation_service,
+                registry_repository=(
+                    evidence_plan_preparation_registry_repository
                 ),
             )
             return 0
