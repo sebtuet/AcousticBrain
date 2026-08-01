@@ -73,6 +73,8 @@ from .evidence_plan_completion import (
 )
 from .evidence_plan_preparation import (
     EvidencePlanPreparationConfirmationInput,
+    EvidencePlanPreparationResolution,
+    EvidencePlanPreparationResolutionStatus,
     EvidencePlanPrerequisiteDeclaration,
     EvidencePlanPrerequisiteStatus,
 )
