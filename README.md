@@ -103,6 +103,8 @@ When scientific compatibility is not established, this view says that no safe
 user action is available. It never asks the user to attest compatibility.
 For a `READY` plan, the same view displays the complete declared preparation
 checklist and asks only for prerequisite verification before declaration.
+The future structured confirmation boundary is frozen in
+[`docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md`](docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md).
 
 List every plan before choosing one to inspect:
 
