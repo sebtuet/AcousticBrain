@@ -39,6 +39,8 @@ from acousticbrain.report import (
     EvidencePlanUserViewPresenter,
     EvidencePlanOverviewConsoleReporter,
     EvidencePlanOverviewPresenter,
+    EvidencePlanPreparationUserViewConsoleReporter,
+    EvidencePlanPreparationUserViewPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -183,6 +185,12 @@ def create_parser():
         default=None,
         metavar="PATH",
         help="dedicated preparation registry JSON (required for confirmation)",
+    )
+    parser.add_argument(
+        "--evidence-plan-preparation-view",
+        default=None,
+        metavar="CONFIRMATION_ID",
+        help="show one exact persisted preparation confirmation read-only",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -411,6 +419,46 @@ def confirm_evidence_plan_preparation(
     return result
 
 
+def view_evidence_plan_preparation(
+    measurements_root,
+    confirmation_id,
+    registry_path,
+    *,
+    campaign_instance_analysis=None,
+    brain=None,
+    registry_repository=None,
+    presenter=None,
+    reporter=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        listening_position_campaign_instance_analysis=campaign_instance_analysis,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError(
+            "Evidence-plan preparation view requires an exact analysis context."
+        )
+    _, context = analysis
+    plan_synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if plan_synthesis is None:
+        raise ValueError(
+            "Evidence-plan preparation view analysis contracts are unavailable."
+        )
+    repository = (
+        registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    )
+    registry = repository.load(registry_path)
+    view = (presenter or EvidencePlanPreparationUserViewPresenter()).present(
+        registry, plan_synthesis.plans, confirmation_id
+    )
+    (reporter or EvidencePlanPreparationUserViewConsoleReporter()).print(view)
+    return view
+
+
 def run(
     measurements_root,
     *,
@@ -586,6 +634,8 @@ def main(
     evidence_plan_preparation_loader=None,
     evidence_plan_preparation_service=None,
     evidence_plan_preparation_registry_repository=None,
+    evidence_plan_preparation_view_presenter=None,
+    evidence_plan_preparation_view_reporter=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -659,11 +709,13 @@ def main(
                     )
         if (
             arguments.confirm_evidence_plan_preparation is None
+            and arguments.evidence_plan_preparation_view is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
             raise ValueError(
                 "--evidence-plan-preparation-registry requires "
-                "--confirm-evidence-plan-preparation."
+                "--confirm-evidence-plan-preparation or "
+                "--evidence-plan-preparation-view."
             )
         if arguments.confirm_evidence_plan_preparation is not None:
             if arguments.evidence_plan_preparation_registry is None:
@@ -691,6 +743,38 @@ def main(
                 if enabled:
                     raise ValueError(
                         "--confirm-evidence-plan-preparation cannot be combined "
+                        f"with {option}."
+                    )
+        if arguments.evidence_plan_preparation_view is not None:
+            if arguments.evidence_plan_preparation_registry is None:
+                raise ValueError(
+                    "--evidence-plan-preparation-view requires "
+                    "--evidence-plan-preparation-registry."
+                )
+            conflicting = (
+                (
+                    "--confirm-evidence-plan-preparation",
+                    arguments.confirm_evidence_plan_preparation is not None,
+                ),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--evidence-plan-preparation-view cannot be combined "
                         f"with {option}."
                     )
         if arguments.exploratory_proposal and not arguments.exploratory:
@@ -913,6 +997,20 @@ def main(
                 registry_repository=(
                     evidence_plan_preparation_registry_repository
                 ),
+            )
+            return 0
+        if arguments.evidence_plan_preparation_view is not None:
+            view_evidence_plan_preparation(
+                measurements_root,
+                arguments.evidence_plan_preparation_view,
+                arguments.evidence_plan_preparation_registry,
+                campaign_instance_analysis=campaign_instance_analysis,
+                brain=brain,
+                registry_repository=(
+                    evidence_plan_preparation_registry_repository
+                ),
+                presenter=evidence_plan_preparation_view_presenter,
+                reporter=evidence_plan_preparation_view_reporter,
             )
             return 0
     except (OSError, TypeError, ValueError) as error:

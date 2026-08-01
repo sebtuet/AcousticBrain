@@ -88,12 +88,13 @@ class EvidencePlanUserViewPresenter:
 
     @classmethod
     def _user_label(cls, plan):
+        test_type = getattr(plan.test_type, "value", plan.test_type)
         subject = cls.SUBJECT_LABELS.get(
             plan.reasoning_id,
             "Plan d’acquisition de preuves",
         )
         operation = cls.TEST_TYPE_LABELS.get(
-            plan.test_type,
+            test_type,
             "objectif expérimental déclaré",
         )
         return f"{subject} — {operation}"
