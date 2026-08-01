@@ -8,6 +8,10 @@ from .evidence_acquisition_contract_json import (
     EvidenceAcquisitionPlanContractJsonCodec,
 )
 from .evidence_plan_completion_json import EvidencePlanCompletionInputJsonLoader
+from .evidence_plan_completion_registry_json import (
+    EvidencePlanCompletionRegistryJsonCodec,
+    EvidencePlanCompletionRegistryJsonRepository,
+)
 from .reflection_experiment_json import (
     ControlledReflectionExperimentJsonCodec,
     ControlledReflectionExperimentJsonRepository,
