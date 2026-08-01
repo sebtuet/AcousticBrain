@@ -84,6 +84,7 @@ class AcousticBrain:
         exploratory_proposal_inputs=(),
         exploratory_feasibility_decisions=None,
         analyze_exploratory=False,
+        return_context=False,
     ):
 
         synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
@@ -146,6 +147,7 @@ class AcousticBrain:
                     exploratory_proposal_inputs=exploratory_proposal_inputs,
                     exploratory_feasibility_decisions=exploratory_feasibility_decisions,
                     analyze_exploratory=analyze_exploratory,
+                    return_context=return_context,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -157,7 +159,7 @@ class AcousticBrain:
                 report.experiments_discovered = (
                     ExperimentDiscoveryPresenter().present(context)
                 )
-                return report
+                return (report, context) if return_context else report
         if project is None:
             raise ValueError("A project or measurement_root is required.")
         if compare_experiments:
@@ -188,6 +190,7 @@ class AcousticBrain:
             synthesize_weighting=synthesize_weighting,
             synthesize_evidence_acquisition=synthesize_evidence_acquisition,
             movement_direction_declarations=movement_direction_declarations,
+            return_context=return_context,
         )
 
     def _analyze_experiments(
@@ -210,6 +213,7 @@ class AcousticBrain:
         exploratory_proposal_inputs,
         exploratory_feasibility_decisions,
         analyze_exploratory,
+        return_context,
     ):
         contexts = {}
         current_report = None
@@ -421,4 +425,8 @@ class AcousticBrain:
         current_report.assessment_summary = AssessmentSummaryPresenter().present(
             current_report
         )
-        return current_report
+        return (
+            (current_report, current_context)
+            if return_context
+            else current_report
+        )

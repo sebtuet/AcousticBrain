@@ -74,6 +74,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
+| Evidence-plan completion | `--complete-evidence-plan INPUT_JSON` | One exact audited derivation from a BLOCKED plan |
 
 These options select different presentations of established deterministic
 objects. They do not introduce a separate acoustic analysis.
@@ -334,6 +335,39 @@ directory can be declared explicitly with
 `--declare-exploratory-experiment EXPERIMENT_ID`. This writes declaration
 metadata to its manifest; it never executes an acquisition or modifies a
 measurement file.
+
+## Complete one blocked evidence-acquisition plan
+
+Completion requires an explicit structured input and a dedicated registry. For
+a protocol reference, also provide the existing validated campaign instance
+that declares that exact protocol:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --listening-position-campaign campaign-instance.json \
+  --complete-evidence-plan completion-input.json \
+  --evidence-plan-completion-registry state/evidence-plan-completions.json
+```
+
+Minimal input:
+
+```json
+{
+  "schema_version": 1,
+  "completion_input_id": "completion-input-001",
+  "source_plan_id": "EXACT_BLOCKED_PLAN_ID",
+  "reference_kind": "PROTOCOL",
+  "reference_id": "EXACT_COMPATIBLE_PROTOCOL_ID",
+  "declaration_source": "completion-input.json"
+}
+```
+
+The command succeeds only when the source, reference and existing structured
+compatibility authority resolve exactly. It records `REFERENCE_RESOLVED`,
+`REFERENCE_COMPATIBLE` and `DERIVED_PLAN_READY` atomically. It does not modify
+the source plan, measurements, manifests or protocol declaration, and it does
+not declare or execute an experiment.
 
 ## Preserve an evidence-acquisition plan contract
 

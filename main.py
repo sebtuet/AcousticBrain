@@ -14,7 +14,10 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
-from acousticbrain.application import ExploratoryExperimentDeclarationService
+from acousticbrain.application import (
+    EvidencePlanCompletionService,
+    ExploratoryExperimentDeclarationService,
+)
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
     ConsoleReporter,
@@ -46,6 +49,8 @@ from acousticbrain.persistence import (
     ListeningPositionCampaignInstanceJsonLoader,
     ExploratoryFeasibilityJsonRepository,
     ExploratoryProposalInputJsonLoader,
+    EvidencePlanCompletionInputJsonLoader,
+    EvidencePlanCompletionRegistryJsonRepository,
 )
 
 
@@ -132,6 +137,20 @@ def create_parser():
         default=None,
         metavar="EXPERIMENT_ID",
         help="print the read-only four-block view for one exact experiment",
+    )
+    parser.add_argument(
+        "--complete-evidence-plan",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="complete one exact BLOCKED evidence plan from structured input",
+    )
+    parser.add_argument(
+        "--evidence-plan-completion-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="dedicated completion registry JSON (required for completion)",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -241,6 +260,72 @@ def write_full_assessment_stdout(data):
         )
     output.write(data)
     output.flush()
+
+
+def complete_evidence_plan(
+    measurements_root,
+    completion_input,
+    registry_path,
+    *,
+    campaign_instance_analysis=None,
+    brain=None,
+    service=None,
+    registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        listening_position_campaign_instance_analysis=campaign_instance_analysis,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Evidence-plan completion requires an exact analysis context.")
+    _, context = analysis
+    plan_synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    weighting = getattr(context, "deterministic_evidence_weighting_synthesis", None)
+    action_synthesis = getattr(
+        context, "deterministic_corrective_action_synthesis", None
+    )
+    if plan_synthesis is None or weighting is None or action_synthesis is None:
+        raise ValueError("Evidence-plan completion analysis contracts are unavailable.")
+    repository = (
+        registry_repository or EvidencePlanCompletionRegistryJsonRepository()
+    )
+    persisted = repository.load(registry_path)
+    existing_derived_plans = tuple(
+        item.derived_plan.plan for item in persisted.records
+    )
+    protocol = getattr(context, "listening_position_sampling_protocol", None)
+    result = (service or EvidencePlanCompletionService(
+        repository=repository
+    )).complete(
+        completion_input,
+        registry_path=registry_path,
+        source_plans=plan_synthesis.plans,
+        blocking_factors=tuple(
+            factor
+            for weight in weighting.weights
+            for factor in weight.blocking_factors
+        ),
+        actions=action_synthesis.actions,
+        protocol_references=((protocol,) if protocol is not None else ()),
+        plan_references=tuple((
+            *plan_synthesis.plans,
+            *existing_derived_plans,
+        )),
+    )
+    state = "recorded" if result.persisted else "already recorded"
+    print(
+        "Evidence plan completion " + state + ": "
+        + result.record.derived_plan.plan.plan_id
+    )
+    print("REFERENCE_RESOLVED")
+    print("REFERENCE_COMPATIBLE")
+    print("DERIVED_PLAN_READY")
+    print(f"Registry: {Path(result.registry_path).resolve()}")
+    return result
 
 
 def run(
@@ -394,6 +479,9 @@ def main(
     exploratory_proposal_loader=None,
     exploratory_decision_repository=None,
     exploratory_declaration_service=None,
+    evidence_plan_completion_loader=None,
+    evidence_plan_completion_service=None,
+    evidence_plan_completion_registry_repository=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -431,6 +519,38 @@ def main(
         measurements_root = validate_measurements_root(arguments.measurements_root)
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
+        if (
+            arguments.complete_evidence_plan is None
+            and arguments.evidence_plan_completion_registry is not None
+        ):
+            raise ValueError(
+                "--evidence-plan-completion-registry requires "
+                "--complete-evidence-plan."
+            )
+        if arguments.complete_evidence_plan is not None:
+            if arguments.evidence_plan_completion_registry is None:
+                raise ValueError(
+                    "--complete-evidence-plan requires "
+                    "--evidence-plan-completion-registry."
+                )
+            conflicting = (
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        f"--complete-evidence-plan cannot be combined with {option}."
+                    )
         if arguments.exploratory_proposal and not arguments.exploratory:
             raise ValueError("--exploratory-proposal requires --exploratory.")
         if arguments.exploratory_decisions is not None and not arguments.exploratory:
@@ -587,7 +707,24 @@ def main(
                     )
                 )
                 raise ValueError(details)
-    except ValueError as error:
+        if arguments.complete_evidence_plan is not None:
+            completion_input = (
+                evidence_plan_completion_loader
+                or EvidencePlanCompletionInputJsonLoader()
+            ).load(arguments.complete_evidence_plan)
+            complete_evidence_plan(
+                measurements_root,
+                completion_input,
+                arguments.evidence_plan_completion_registry,
+                campaign_instance_analysis=campaign_instance_analysis,
+                brain=brain,
+                service=evidence_plan_completion_service,
+                registry_repository=(
+                    evidence_plan_completion_registry_repository
+                ),
+            )
+            return 0
+    except (OSError, TypeError, ValueError) as error:
         parser.error(str(error))
     try:
         report = run(
