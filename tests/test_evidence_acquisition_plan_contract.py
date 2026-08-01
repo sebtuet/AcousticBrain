@@ -225,3 +225,100 @@ def test_explicit_command_resolves_ready_plan_and_preserves_exact_contract(tmp_p
         if item.experiment_id == "exp-001"
     )
     assert descriptor.evidence_acquisition_plan_contract.source_plan == source
+
+
+def test_explicit_command_resolves_derived_plan_from_completion_registry(tmp_path):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+    from acousticbrain.models import EvidencePlanCompletionRegistry
+    from acousticbrain.persistence import EvidencePlanCompletionRegistryJsonRepository
+    from test_evidence_plan_completion_registry import record
+
+    root = campaign(tmp_path)
+    completion = record()
+    registry_path = tmp_path / "completion-registry.json"
+    EvidencePlanCompletionRegistryJsonRepository().save(
+        registry_path,
+        EvidencePlanCompletionRegistry().with_record(completion),
+    )
+    report = SimpleNamespace(
+        evidence_acquisition_plans=SimpleNamespace(plans=())
+    )
+    brain = SimpleNamespace(analyze=lambda **arguments: report)
+
+    command.main([
+        str(root),
+        "--completion-registry", str(registry_path),
+        "--plan-id", completion.derived_plan.plan.plan_id,
+        "--experiment", "exp-derived",
+        "--reference", "baseline",
+    ], brain=brain)
+
+    from acousticbrain.persistence import (
+        EvidenceAcquisitionPlanContractJsonCodec,
+        MeasurementRepository,
+    )
+
+    manifest = MeasurementRepository.load_manifest(root / "exp-derived")
+    contract = EvidenceAcquisitionPlanContractJsonCodec().loads(
+        manifest["evidence_acquisition_plan_contract"]
+    )
+    assert contract.source_plan == completion.derived_plan.plan
+    assert contract.declaration_source == (
+        "RESOLVED_DERIVED_EVIDENCE_ACQUISITION_PLAN:"
+        + completion.completion_input.completion_input_id
+    )
+    assert completion.derived_plan.source_plan.status.value == "BLOCKED"
+
+
+def test_derived_plan_ambiguity_fails_before_creating_experiment_directory(tmp_path):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+    from acousticbrain.models import EvidencePlanCompletionRegistry
+    from acousticbrain.persistence import EvidencePlanCompletionRegistryJsonRepository
+    from acousticbrain.report import EvidenceAcquisitionPlanPresenter
+    from test_evidence_plan_completion_registry import record
+
+    root = campaign(tmp_path)
+    completion = record()
+    registry_path = tmp_path / "completion-registry.json"
+    EvidencePlanCompletionRegistryJsonRepository().save(
+        registry_path,
+        EvidencePlanCompletionRegistry().with_record(completion),
+    )
+    presented = EvidenceAcquisitionPlanPresenter().present(SimpleNamespace(
+        evidence_acquisition_plan_synthesis=SimpleNamespace(
+            plans=(completion.derived_plan.plan,)
+        ),
+    ))
+    brain = SimpleNamespace(analyze=lambda **arguments: SimpleNamespace(
+        evidence_acquisition_plans=presented
+    ))
+
+    with pytest.raises(ValueError, match="not uniquely READY"):
+        command.main([
+            str(root),
+            "--completion-registry", str(registry_path),
+            "--plan-id", completion.derived_plan.plan.plan_id,
+            "--experiment", "exp-ambiguous",
+            "--reference", "baseline",
+        ], brain=brain)
+
+    assert not (root / "exp-ambiguous").exists()
+
+
+def test_unknown_derived_plan_fails_without_creating_experiment_directory(tmp_path):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+
+    root = campaign(tmp_path)
+    brain = SimpleNamespace(analyze=lambda **arguments: SimpleNamespace(
+        evidence_acquisition_plans=SimpleNamespace(plans=())
+    ))
+
+    with pytest.raises(ValueError, match="not uniquely READY"):
+        command.main([
+            str(root),
+            "--plan-id", "DERIVED_UNKNOWN",
+            "--experiment", "exp-unknown",
+            "--reference", "baseline",
+        ], brain=brain)
+
+    assert not (root / "exp-unknown").exists()
