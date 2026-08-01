@@ -125,7 +125,8 @@ def test_console_always_renders_the_four_contractual_blocks(capsys):
     EvidencePlanUserViewConsoleReporter().print(value)
     output = capsys.readouterr().out
     assert "Intention\n" in output
-    assert "Pourquoi le plan est bloqué\n" in output
+    assert "État du plan\n" in output
+    assert "Préparation déclarée\n" in output
     assert "Action utilisateur\n" in output
     assert "Frontière scientifique\n" in output
     assert "Causality status: NOT_ESTABLISHED" in output
@@ -164,9 +165,63 @@ def test_overview_lists_every_plan_in_stable_order_without_selection():
     assert tuple(item.plan_id for item in overview.plans) == (
         "AAA_PLAN", "SOURCE_PLAN"
     )
-    assert overview.plans[0].user_action_state == "NO_COMPLETION_ACTION"
+    assert overview.plans[0].user_action_state == (
+        "VERIFY_DECLARED_PREREQUISITES"
+    )
     assert overview.plans[1].user_action_state == "EXPERT_VALIDATION_REQUIRED"
     assert overview.causality_status == "NOT_ESTABLISHED"
+
+
+def test_ready_plan_exposes_only_its_declared_preparation_contract():
+    value = report()
+    original = value.evidence_acquisition_plans.plans[0]
+    ready = replace(
+        original,
+        status="READY",
+        required_inputs=("documented_microphone_position", "same_gain"),
+        independent_variables=("active_channel",),
+        controlled_variables=("gain", "microphone_position"),
+        measurements_to_capture=("left_response", "right_response"),
+        expected_observations=("channel_difference",),
+        instructions=("Measure left.", "Measure right."),
+        success_criteria=("Difference is repeatable.",),
+        failure_criteria=("Gain changed.",),
+        limitations=("Causality is not established.",),
+    )
+    value.evidence_acquisition_plans = SimpleNamespace(plans=(ready,))
+
+    view = EvidencePlanUserViewPresenter().present(value, "SOURCE_PLAN")
+
+    assert view.user_action_state == "VERIFY_DECLARED_PREREQUISITES"
+    assert view.user_action == (
+        "Vérifier explicitement les prérequis déclarés avant toute déclaration : "
+        "documented_microphone_position, same_gain."
+    )
+    assert view.preparation_lines == (
+        "Prérequis à confirmer : documented_microphone_position, same_gain",
+        "Variables modifiées : active_channel",
+        "Variables contrôlées : gain, microphone_position",
+        "Mesures à réaliser : left_response, right_response",
+        "Observations attendues : channel_difference",
+        "Procédure 1 : Measure left.",
+        "Procédure 2 : Measure right.",
+        "Critères de réussite : Difference is repeatable.",
+        "Critères d’échec : Gain changed.",
+        "Limites scientifiques : Causality is not established.",
+    )
+    assert view.scientific_boundary_lines[-1] == (
+        "READY signifie seulement que le contrat de préparation est complet ; "
+        "les prérequis ne sont pas vérifiés et l’expérience n’est ni déclarée "
+        "ni exécutée."
+    )
+
+
+def test_blocked_plan_never_exposes_an_execution_checklist():
+    view = EvidencePlanUserViewPresenter().present(report(), "SOURCE_PLAN")
+    assert view.preparation_lines == (
+        "Préparation indisponible : le plan doit rester BLOCKED tant que son "
+        "contrat n’est pas complet.",
+    )
 
 
 def test_overview_rejects_duplicate_plan_identity():

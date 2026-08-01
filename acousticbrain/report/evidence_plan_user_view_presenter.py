@@ -8,6 +8,7 @@ class PresentedEvidencePlanUserView:
     plan_status: str
     intention_lines: tuple[str, ...]
     blocker_lines: tuple[str, ...]
+    preparation_lines: tuple[str, ...]
     user_action_state: str
     user_action: str
     scientific_boundary_lines: tuple[str, ...]
@@ -78,15 +79,10 @@ class EvidencePlanUserViewPresenter:
                 + (", ".join(plan.measurements_to_capture) or "indisponibles"),
             ),
             blocker_lines=self._blocker_lines(plan, factors),
+            preparation_lines=self._preparation_lines(plan),
             user_action_state=action_state,
             user_action=user_action,
-            scientific_boundary_lines=(
-                "Le plan source reste immuable et son statut n’est jamais promu.",
-                "Aucune compatibilité, causalité, correction permanente ou "
-                "configuration optimale n’est déduite.",
-                "Une référence absente doit être établie par une source "
-                "scientifique structurée ou une expertise acoustique.",
-            ),
+            scientific_boundary_lines=self._scientific_boundary_lines(plan),
             causality_status="NOT_ESTABLISHED",
         )
 
@@ -156,12 +152,63 @@ class EvidencePlanUserViewPresenter:
                 )
         return tuple(lines)
 
+    @staticmethod
+    def _preparation_lines(plan):
+        if plan.status != "READY":
+            return (
+                "Préparation indisponible : le plan doit rester BLOCKED tant "
+                "que son contrat n’est pas complet.",
+            )
+
+        def values(label, items, *, empty="aucun déclaré"):
+            return f"{label} : " + (", ".join(items) if items else empty)
+
+        return (
+            values("Prérequis à confirmer", plan.required_inputs),
+            values("Variables modifiées", plan.independent_variables),
+            values("Variables contrôlées", plan.controlled_variables),
+            values("Mesures à réaliser", plan.measurements_to_capture),
+            values("Observations attendues", plan.expected_observations),
+            *tuple(
+                f"Procédure {index} : {instruction}"
+                for index, instruction in enumerate(plan.instructions, start=1)
+            ),
+            values("Critères de réussite", plan.success_criteria),
+            values("Critères d’échec", plan.failure_criteria),
+            values("Limites scientifiques", plan.limitations),
+        )
+
+    @staticmethod
+    def _scientific_boundary_lines(plan):
+        common = (
+            "Le plan source reste immuable.",
+            "Aucune compatibilité, causalité, correction permanente ou "
+            "configuration optimale n’est déduite.",
+        )
+        if plan.status == "READY":
+            return (*common,
+                "READY signifie seulement que le contrat de préparation est "
+                "complet ; les prérequis ne sont pas vérifiés et l’expérience "
+                "n’est ni déclarée ni exécutée.",
+            )
+        return (*common,
+            "Une référence absente doit être établie par une source "
+            "scientifique structurée ou une expertise acoustique.",
+        )
+
     @classmethod
     def _user_action(cls, plan, factors, action):
         if plan.status == "READY":
+            prerequisites = ", ".join(plan.required_inputs)
             return (
-                "NO_COMPLETION_ACTION",
-                "Aucune action de complétion : ce plan est déjà READY.",
+                "VERIFY_DECLARED_PREREQUISITES",
+                (
+                    "Vérifier explicitement les prérequis déclarés avant toute "
+                    "déclaration : " + prerequisites + "."
+                    if prerequisites
+                    else "Relire et confirmer la procédure déclarée avant toute "
+                    "déclaration."
+                ),
             )
         missing_reference = (
             cls.MISSING_REFERENCE in plan.required_inputs
@@ -202,9 +249,12 @@ class EvidencePlanUserViewConsoleReporter:
         print("Intention")
         print("\n".join(view.intention_lines))
         print()
-        print("Pourquoi le plan est bloqué")
+        print("État du plan")
         print(view.plan_status)
         print("\n".join(view.blocker_lines))
+        print()
+        print("Préparation déclarée")
+        print("\n".join(view.preparation_lines))
         print()
         print("Action utilisateur")
         print(view.user_action)
