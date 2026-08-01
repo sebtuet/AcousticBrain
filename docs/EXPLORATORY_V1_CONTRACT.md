@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = PRODUCT_OPERATIONAL
 scientific_authority = NONE
-implementation_status = NOT_IMPLEMENTED
+implementation_status = IMPLEMENTED_AND_ACCEPTED
 ```
 
 ## Purpose and authority
@@ -278,6 +278,11 @@ A separate local, read-only validation against
 `AcousticBrain-measurements-real` must demonstrate that the historical
 `baseline → exp-007` replay remains `MIXED`. The private real-measurement corpus
 is not a CI dependency and must not be committed.
+
+The local acceptance replay was completed on 2026-08-01 through
+`main.py --exploratory`. It reported `MIXED`, `NOT_ESTABLISHED`, no robust
+winner and `NO_ACTION_AVAILABLE`; the historical intervention was not proposed
+again. The private corpus remains outside this repository.
 
 ## Explicitly outside V1
 

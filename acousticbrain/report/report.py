@@ -62,6 +62,10 @@ from .evidence_weighting_presenter import (
 from .evidence_acquisition_presenter import PresentedEvidenceAcquisitionPlanReport
 from .analysis_readiness_presenter import PresentedAnalysisReadinessReport
 from .assessment_summary_presenter import PresentedAssessmentSummary
+from .exploratory_presenter import (
+    PresentedExploratoryAnalysis,
+    PresentedExploratoryResult,
+)
 
 
 @dataclass
@@ -140,6 +144,9 @@ class Report:
     assessment_summary: PresentedAssessmentSummary | None = None
 
     advisor_response: AdvisorResponse | None = None
+
+    exploratory_analysis: PresentedExploratoryAnalysis | None = None
+    exploratory_result: PresentedExploratoryResult | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 

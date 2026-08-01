@@ -6,11 +6,14 @@ from types import SimpleNamespace
 import pytest
 
 import main as acousticbrain_main
+from acousticbrain.application import ExploratoryFeasibilityRegistry
 from acousticbrain.models import (
     ExperimentDescriptor,
     ExperimentState,
     ExperimentType,
+    ExploratoryProposalInput,
 )
+from acousticbrain.persistence import ExploratoryFeasibilityJsonRepository
 from acousticbrain.report import (
     ExperimentDiscoveryPresenter,
     PresentedAnalysisReadiness,
@@ -112,6 +115,66 @@ def test_parser_accepts_assessment_summary():
     )
 
     assert arguments.assessment_summary is True
+
+
+def test_parser_accepts_exploratory_mode():
+    arguments = acousticbrain_main.create_parser().parse_args(["--exploratory"])
+
+    assert arguments.exploratory is True
+
+
+def test_exploratory_cli_loads_explicit_input_and_decisions(tmp_path):
+    campaign = tmp_path / "campaign"
+    campaign.mkdir()
+    proposal_path = tmp_path / "proposal.json"
+    proposal_path.write_text("{}", encoding="utf-8")
+    decisions_path = tmp_path / "decisions.json"
+    expected_input = ExploratoryProposalInput(
+        candidate_id="candidate.one", reference_experiment_id="baseline",
+        reference_content_fingerprint="hash",
+        reference_configuration=(("room", "reference"),),
+        action_parameters=(("target", "LEFT_FIRST_REFLECTION_AREA"),),
+        return_action="RESTORE_REFERENCE", feasibility_question="Can you?",
+        limitations=("CAUSALITY_NOT_ESTABLISHED",),
+        field_provenance=(("target", "USER_DECLARATION"),),
+    )
+    loader = SimpleNamespace(load=lambda path: expected_input)
+    repository = ExploratoryFeasibilityJsonRepository()
+    repository.save(ExploratoryFeasibilityRegistry(), decisions_path)
+    brain = RecordingBrain()
+
+    result = acousticbrain_main.main(
+        ["--measurements-root", str(campaign), "--exploratory",
+         "--exploratory-proposal", str(proposal_path),
+         "--exploratory-decisions", str(decisions_path)],
+        brain=brain, reporter=RecordingReporter(),
+        exploratory_proposal_loader=loader,
+        exploratory_decision_repository=repository,
+    )
+
+    assert result == 0
+    assert brain.calls[0]["analyze_exploratory"] is True
+    assert brain.calls[0]["exploratory_proposal_inputs"] == (expected_input,)
+    assert brain.calls[0]["exploratory_feasibility_decisions"].decisions == ()
+
+
+def test_record_feasibility_is_a_separate_command_and_does_not_analyze(tmp_path):
+    path = tmp_path / "decisions.json"
+    brain = RecordingBrain()
+
+    result = acousticbrain_main.main([
+        "--record-exploratory-feasibility", "FEASIBLE",
+        "--exploratory-decisions", str(path),
+        "--exploratory-proposal-id", "proposal.one",
+        "--exploratory-reference-scope-id", "reference.one",
+        "--exploratory-note", "Possible this weekend",
+    ], brain=brain)
+
+    assert result == 0
+    assert brain.calls == []
+    decision = ExploratoryFeasibilityJsonRepository().load(path).decisions[0]
+    assert decision.answer.value == "FEASIBLE"
+    assert decision.user_note == "Possible this weekend"
 
 
 @pytest.mark.parametrize(

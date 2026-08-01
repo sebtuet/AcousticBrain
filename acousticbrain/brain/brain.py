@@ -5,6 +5,8 @@ from acousticbrain.application import (
     AutomaticExperimentComparisonService,
     CausalDiscriminationService,
     ExperimentCampaignSynthesisService,
+    DeterministicExploratoryService,
+    ExploratoryResultService,
 )
 from acousticbrain.report import (
     ExperimentComparisonPresenter,
@@ -25,6 +27,8 @@ from acousticbrain.report import (
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
+    ExploratoryAnalysisPresenter,
+    ExploratoryResultPresenter,
 )
 from .stages.longitudinal_experimental_learning import (
     LongitudinalExperimentalLearningStage,
@@ -77,6 +81,9 @@ class AcousticBrain:
         synthesize_weighting=False,
         synthesize_evidence_acquisition=False,
         movement_direction_declarations=(),
+        exploratory_proposal_inputs=(),
+        exploratory_feasibility_decisions=None,
+        analyze_exploratory=False,
     ):
 
         synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
@@ -136,6 +143,9 @@ class AcousticBrain:
                     synthesize_weighting=synthesize_weighting,
                     synthesize_evidence_acquisition=synthesize_evidence_acquisition,
                     movement_direction_declarations=movement_direction_declarations,
+                    exploratory_proposal_inputs=exploratory_proposal_inputs,
+                    exploratory_feasibility_decisions=exploratory_feasibility_decisions,
+                    analyze_exploratory=analyze_exploratory,
                 )
             if project is None:
                 report = Report(project_name=str(measurement_root))
@@ -197,6 +207,9 @@ class AcousticBrain:
         synthesize_weighting,
         synthesize_evidence_acquisition,
         movement_direction_declarations,
+        exploratory_proposal_inputs,
+        exploratory_feasibility_decisions,
+        analyze_exploratory,
     ):
         contexts = {}
         current_report = None
@@ -305,6 +318,33 @@ class AcousticBrain:
             current_context.experiment_campaign_analyses = campaign_analyses
             current_context.causal_discrimination_analysis = causal_analysis
         AcousticHypothesisExperimentGenerationStage().run(current_context)
+        if analyze_exploratory:
+            current_context.exploratory_analysis = (
+                DeterministicExploratoryService().analyze(
+                    current_context.acoustic_hypothesis_experiment_generation_analysis,
+                    exploratory_proposal_inputs,
+                    exploratory_feasibility_decisions,
+                    reference_content_hashes={
+                        item.experiment_id: item.content_hash
+                        for item in acoustic_session.descriptors
+                    },
+                )
+            )
+            exploratory_protocol_ids = tuple(dict.fromkeys(
+                item.source_protocol_id
+                for item in comparison.sequence.local_comparisons
+                if item.source_protocol_id
+                and item.source_protocol_id.startswith("exploratory.v1.")
+            ))
+            current_context.exploratory_result = (
+                ExploratoryResultService().project(
+                    exploratory_protocol_ids[-1], comparison
+                )
+                if exploratory_protocol_ids
+                else ExploratoryResultService().project_historical_first_slice(
+                    comparison
+                )
+            )
         CampaignReferenceQualificationStage().run(current_context)
         ListeningPositionCampaignPlanStage().run(current_context)
         if synthesize_observations:
@@ -332,6 +372,13 @@ class AcousticBrain:
         current_report.acoustic_hypothesis_experiment_generation = (
             AcousticHypothesisExperimentGenerationPresenter().present(current_context)
         )
+        if analyze_exploratory:
+            current_report.exploratory_analysis = (
+                ExploratoryAnalysisPresenter().present(current_context)
+            )
+            current_report.exploratory_result = ExploratoryResultPresenter().present(
+                current_context.exploratory_result
+            )
         current_report.listening_position_campaign_plan = (
             ListeningPositionCampaignPlanPresenter().present(current_context)
         )
