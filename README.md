@@ -383,6 +383,19 @@ python -m acousticbrain.commands.declare_evidence_plan_experiment \
   --reference baseline
 ```
 
+For a `READY` plan created by evidence-plan completion, provide its dedicated
+registry explicitly; the same declaration service and manifest contract are
+used:
+
+```bash
+python -m acousticbrain.commands.declare_evidence_plan_experiment \
+  measurements \
+  --completion-registry state/evidence-plan-completions.json \
+  --plan-id DERIVED_EVIDENCE_ACQUISITION_ID \
+  --experiment exp-XXX \
+  --reference baseline
+```
+
 This extends the existing plan → declaration → comparison pipeline; it does not
 introduce a parallel engine. See
 [`docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md`](docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md).
