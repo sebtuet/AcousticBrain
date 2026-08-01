@@ -25,6 +25,10 @@ from .evidence_plan_completion import (
     EvidencePlanCompletionService,
     EvidencePlanCompletionWorkflowResult,
 )
+from .evidence_plan_preparation import (
+    EvidencePlanPreparationResolver,
+    evidence_acquisition_plan_fingerprint,
+)
 from .exploratory import (
     DeterministicExploratoryService,
     ExploratoryExperimentDeclarationService,

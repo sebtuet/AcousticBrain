@@ -1,11 +1,17 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from .evidence_acquisition import EvidenceAcquisitionPlan
+
 
 class EvidencePlanPrerequisiteStatus(Enum):
     CONFIRMED = "CONFIRMED"
     NOT_CONFIRMED = "NOT_CONFIRMED"
     UNKNOWN = "UNKNOWN"
+
+
+class EvidencePlanPreparationResolutionStatus(Enum):
+    PLAN_EXACTLY_RESOLVED = "PLAN_EXACTLY_RESOLVED"
 
 
 @dataclass(frozen=True)
@@ -97,3 +103,25 @@ class EvidencePlanPreparationConfirmationInput:
                     "Evidence-plan preparation user note must be absent or exact "
                     "non-empty text."
                 )
+
+
+@dataclass(frozen=True)
+class EvidencePlanPreparationResolution:
+    confirmation_input: EvidencePlanPreparationConfirmationInput
+    plan: EvidenceAcquisitionPlan
+    status: EvidencePlanPreparationResolutionStatus
+
+    def __post_init__(self):
+        if not isinstance(
+            self.confirmation_input,
+            EvidencePlanPreparationConfirmationInput,
+        ):
+            raise TypeError("Evidence-plan preparation input is required.")
+        if not isinstance(self.plan, EvidenceAcquisitionPlan):
+            raise TypeError("Evidence-plan preparation plan is required.")
+        if self.plan.plan_id != self.confirmation_input.plan_id:
+            raise ValueError("Evidence-plan preparation plan identity is inconsistent.")
+        if self.status is not (
+            EvidencePlanPreparationResolutionStatus.PLAN_EXACTLY_RESOLVED
+        ):
+            raise ValueError("Evidence-plan preparation resolution status is invalid.")
