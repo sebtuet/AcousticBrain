@@ -67,7 +67,10 @@ from .exploratory_presenter import (
     PresentedExploratoryResult,
 )
 from .experiment_user_view_presenter import PresentedExperimentUserView
-from .evidence_plan_user_view_presenter import PresentedEvidencePlanUserView
+from .evidence_plan_user_view_presenter import (
+    PresentedEvidencePlanOverview,
+    PresentedEvidencePlanUserView,
+)
 
 
 @dataclass
@@ -152,6 +155,7 @@ class Report:
 
     experiment_user_view: PresentedExperimentUserView | None = None
     evidence_plan_user_view: PresentedEvidencePlanUserView | None = None
+    evidence_plan_overview: PresentedEvidencePlanOverview | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 

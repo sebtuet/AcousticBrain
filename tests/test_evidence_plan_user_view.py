@@ -7,6 +7,8 @@ import main as acousticbrain_main
 from acousticbrain.report import (
     DeterministicCorrectiveActionPresenter,
     EvidenceAcquisitionPlanPresenter,
+    EvidencePlanOverviewConsoleReporter,
+    EvidencePlanOverviewPresenter,
     EvidencePlanUserViewConsoleReporter,
     EvidencePlanUserViewPresenter,
 )
@@ -121,4 +123,66 @@ def test_main_run_requests_existing_syntheses_and_projects_one_plan():
 
     assert calls[0]["synthesize_evidence_acquisition"] is True
     assert result.evidence_plan_user_view.plan_id == "SOURCE_PLAN"
+    assert reporter.reports == [result]
+
+
+def test_overview_lists_every_plan_in_stable_order_without_selection():
+    value = report()
+    original = value.evidence_acquisition_plans.plans[0]
+    second = replace(original, plan_id="AAA_PLAN", status="READY")
+    value.evidence_acquisition_plans = SimpleNamespace(
+        plans=(original, second)
+    )
+
+    overview = EvidencePlanOverviewPresenter().present(value)
+
+    assert tuple(item.plan_id for item in overview.plans) == (
+        "AAA_PLAN", "SOURCE_PLAN"
+    )
+    assert overview.plans[0].user_action_state == "NO_COMPLETION_ACTION"
+    assert overview.plans[1].user_action_state == "EXPERT_VALIDATION_REQUIRED"
+    assert overview.causality_status == "NOT_ESTABLISHED"
+
+
+def test_overview_rejects_duplicate_plan_identity():
+    value = report()
+    value.evidence_acquisition_plans = SimpleNamespace(
+        plans=value.evidence_acquisition_plans.plans * 2
+    )
+    with pytest.raises(ValueError, match="Ambiguous evidence plan_id"):
+        EvidencePlanOverviewPresenter().present(value)
+
+
+def test_empty_overview_is_explicit(capsys):
+    value = SimpleNamespace(
+        evidence_acquisition_plans=SimpleNamespace(plans=()),
+        deterministic_evidence_weighting=SimpleNamespace(weights=()),
+        deterministic_corrective_actions=SimpleNamespace(actions=()),
+    )
+    value.evidence_plan_overview = EvidencePlanOverviewPresenter().present(value)
+    EvidencePlanOverviewConsoleReporter().print(value)
+    output = capsys.readouterr().out
+    assert "Aucun plan disponible." in output
+    assert "Aucun plan n’est sélectionné ou recommandé" in output
+
+
+def test_main_run_projects_overview_without_selecting_a_plan():
+    value = report()
+    calls = []
+    brain = SimpleNamespace(analyze=lambda **arguments: (
+        calls.append(arguments) or value
+    ))
+    reporter = SimpleNamespace(reports=[], print=lambda item: reporter.reports.append(item))
+
+    result = acousticbrain_main.run(
+        SimpleNamespace(resolve=lambda: "/measurements"),
+        evidence_plan_overview=True,
+        brain=brain,
+        reporter=reporter,
+    )
+
+    assert calls[0]["synthesize_evidence_acquisition"] is True
+    assert tuple(item.plan_id for item in result.evidence_plan_overview.plans) == (
+        "SOURCE_PLAN",
+    )
     assert reporter.reports == [result]
