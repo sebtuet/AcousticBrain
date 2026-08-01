@@ -36,6 +36,8 @@ from acousticbrain.report import (
     ExperimentUserViewPresenter,
     EvidencePlanUserViewConsoleReporter,
     EvidencePlanUserViewPresenter,
+    EvidencePlanOverviewConsoleReporter,
+    EvidencePlanOverviewPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -145,6 +147,11 @@ def create_parser():
         default=None,
         metavar="PLAN_ID",
         help="explain one exact evidence plan without changing it",
+    )
+    parser.add_argument(
+        "--evidence-plan-overview",
+        action="store_true",
+        help="list every evidence plan and its safe user action",
     )
     parser.add_argument(
         "--complete-evidence-plan",
@@ -353,6 +360,7 @@ def run(
     exploratory=False,
     experiment_view=None,
     evidence_plan_view=None,
+    evidence_plan_overview=False,
     exploratory_proposal_inputs=(),
     exploratory_feasibility_decisions=None,
     advisor=False,
@@ -367,7 +375,9 @@ def run(
 ):
     brain = brain or AcousticBrain()
     reporter = reporter or (
-        EvidencePlanUserViewConsoleReporter()
+        EvidencePlanOverviewConsoleReporter()
+        if evidence_plan_overview
+        else EvidencePlanUserViewConsoleReporter()
         if evidence_plan_view is not None
         else ExperimentUserViewConsoleReporter()
         if experiment_view is not None
@@ -427,6 +437,7 @@ def run(
         exploratory,
         experiment_view is not None,
         evidence_plan_view is not None,
+        evidence_plan_overview,
     ))
     if (
         evidence_acquisition
@@ -435,6 +446,7 @@ def run(
         or standard_report
         or experiment_view is not None
         or evidence_plan_view is not None
+        or evidence_plan_overview
     ):
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
@@ -451,6 +463,10 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
+    if evidence_plan_overview:
+        report.evidence_plan_overview = EvidencePlanOverviewPresenter().present(
+            report
+        )
     if evidence_plan_view is not None:
         report.evidence_plan_user_view = EvidencePlanUserViewPresenter().present(
             report, evidence_plan_view
@@ -563,6 +579,7 @@ def main(
                 ("--advisor", arguments.advisor),
                 ("--experiment-view", arguments.experiment_view is not None),
                 ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
             )
             for option, enabled in conflicting:
                 if enabled:
@@ -592,6 +609,7 @@ def main(
             ("--advisor", arguments.advisor),
             ("--experiment-view", arguments.experiment_view is not None),
             ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+            ("--evidence-plan-overview", arguments.evidence_plan_overview),
         )
         for option, enabled in incompatible_exploratory_options:
             if arguments.exploratory and enabled:
@@ -605,6 +623,7 @@ def main(
             ("--advisor", arguments.advisor),
             ("--experiment-view", arguments.experiment_view is not None),
             ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+            ("--evidence-plan-overview", arguments.evidence_plan_overview),
         )
         for option, enabled in incompatible_full_assessment_options:
             if arguments.full_assessment and enabled:
@@ -623,6 +642,7 @@ def main(
             ("--advisor", arguments.advisor),
             ("--experiment-view", arguments.experiment_view is not None),
             ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+            ("--evidence-plan-overview", arguments.evidence_plan_overview),
         )
         for option, enabled in incompatible_analysis_readiness_options:
             if arguments.analysis_readiness and enabled:
@@ -644,6 +664,7 @@ def main(
             ("--advisor", arguments.advisor),
             ("--experiment-view", arguments.experiment_view is not None),
             ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+            ("--evidence-plan-overview", arguments.evidence_plan_overview),
         )
         for option, enabled in incompatible_assessment_summary_options:
             if arguments.assessment_summary and enabled:
@@ -682,10 +703,22 @@ def main(
             raise ValueError(
                 "--evidence-plan-view cannot be combined with --experiment-view."
             )
+        if arguments.evidence_plan_overview and (
+            arguments.experiment_view is not None
+            or arguments.evidence_plan_view is not None
+        ):
+            raise ValueError(
+                "--evidence-plan-overview cannot be combined with another "
+                "user view."
+            )
         for option, enabled in dedicated_modes:
             if arguments.evidence_plan_view is not None and enabled:
                 raise ValueError(
                     f"--evidence-plan-view cannot be combined with {option}."
+                )
+            if arguments.evidence_plan_overview and enabled:
+                raise ValueError(
+                    f"--evidence-plan-overview cannot be combined with {option}."
                 )
         campaign_instance_analysis = None
         reference_qualification_declaration_analysis = None
@@ -779,6 +812,7 @@ def main(
             exploratory=arguments.exploratory,
             experiment_view=arguments.experiment_view,
             evidence_plan_view=arguments.evidence_plan_view,
+            evidence_plan_overview=arguments.evidence_plan_overview,
             exploratory_proposal_inputs=proposal_inputs,
             exploratory_feasibility_decisions=feasibility_decisions,
             advisor=arguments.advisor,

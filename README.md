@@ -75,6 +75,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 | Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
+| Evidence-plan overview | `--evidence-plan-overview` | Every plan and its safe action, without ranking |
 | Evidence-plan completion | `--complete-evidence-plan INPUT_JSON` | One exact audited derivation from a BLOCKED plan |
 
 These options select different presentations of established deterministic
@@ -100,6 +101,17 @@ python main.py \
 
 When scientific compatibility is not established, this view says that no safe
 user action is available. It never asks the user to attest compatibility.
+
+List every plan before choosing one to inspect:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --evidence-plan-overview
+```
+
+The overview is ordered by stable plan id and does not select or recommend a
+plan.
 
 ### Individual deterministic reports
 

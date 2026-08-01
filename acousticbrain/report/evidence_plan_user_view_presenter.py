@@ -13,6 +13,12 @@ class PresentedEvidencePlanUserView:
     causality_status: str
 
 
+@dataclass(frozen=True)
+class PresentedEvidencePlanOverview:
+    plans: tuple[PresentedEvidencePlanUserView, ...]
+    causality_status: str = "NOT_ESTABLISHED"
+
+
 class EvidencePlanUserViewPresenter:
     """Read-only explanation of one exact existing evidence plan."""
 
@@ -165,3 +171,44 @@ class EvidencePlanUserViewConsoleReporter:
         print("Frontière scientifique")
         print("\n".join(view.scientific_boundary_lines))
         print(f"Causality status: {view.causality_status}")
+
+
+class EvidencePlanOverviewPresenter:
+    """Projects every plan without ranking or selecting a candidate."""
+
+    def present(self, report):
+        plans = tuple(getattr(
+            getattr(report, "evidence_acquisition_plans", None), "plans", ()
+        ))
+        identities = tuple(value.plan_id for value in plans)
+        if len(identities) != len(set(identities)):
+            duplicates = ", ".join(sorted(
+                value for value in set(identities) if identities.count(value) > 1
+            ))
+            raise ValueError(f"Ambiguous evidence plan_id: {duplicates}")
+        presenter = EvidencePlanUserViewPresenter()
+        return PresentedEvidencePlanOverview(plans=tuple(
+            presenter.present(report, plan_id)
+            for plan_id in sorted(identities)
+        ))
+
+
+class EvidencePlanOverviewConsoleReporter:
+    def print(self, report):
+        overview = report.evidence_plan_overview
+        print("EVIDENCE PLAN OVERVIEW")
+        print()
+        if not overview.plans:
+            print("Aucun plan disponible.")
+        for index, view in enumerate(overview.plans):
+            if index:
+                print()
+                print("------------------------------------------------------------")
+                print()
+            print(view.plan_id)
+            print(f"Statut : {view.plan_status}")
+            print(f"Objectif contractuel : {view.intention_lines[0]}")
+            print(f"Action utilisateur : {view.user_action}")
+        print()
+        print("Aucun plan n’est sélectionné ou recommandé par cette vue.")
+        print(f"Causality status: {overview.causality_status}")

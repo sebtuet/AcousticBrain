@@ -191,8 +191,11 @@ from .experiment_user_view_presenter import (
     PresentedExperimentUserView,
 )
 from .evidence_plan_user_view_presenter import (
+    EvidencePlanOverviewConsoleReporter,
+    EvidencePlanOverviewPresenter,
     EvidencePlanUserViewConsoleReporter,
     EvidencePlanUserViewPresenter,
+    PresentedEvidencePlanOverview,
     PresentedEvidencePlanUserView,
 )
 from .experiment_campaign_presenter import (
