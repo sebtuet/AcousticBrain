@@ -12,6 +12,12 @@ is not a source of scientific authority.
 AI-assisted contributions must follow the repository workflow defined in
 [`AGENTS.md`](AGENTS.md).
 
+The frozen presentation-only contract for a non-specialist experiment view is
+documented in
+[`docs/EXPERIMENT_USER_VIEW_CONTRACT.md`](docs/EXPERIMENT_USER_VIEW_CONTRACT.md).
+It defines a four-block view of intent, user action, observed result and
+scientific boundary without adding analysis or recommendation logic.
+
 ## Quick start
 
 Create and activate a virtual environment, then install the project
