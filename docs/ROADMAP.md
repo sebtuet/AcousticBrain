@@ -137,6 +137,11 @@ exécutables à partir de déclarations complètes. Cette étape future concerne
 liaison générique depuis un plan d'acquisition incomplet, pas le remplacement
 des contrats expérimentaux existants.
 
+La continuité contractuelle d'un plan `READY` vers le manifeste expérimental
+est maintenant disponible : le snapshot complet du plan et sa provenance sont
+préservés sans dupliquer le moteur de planification. La conformité de
+l'exécution et la validité de la comparaison restent des décisions séparées.
+
 ## 🚧 Recommendations
 
 - recommandations temporelles ;

@@ -24,7 +24,10 @@ from acousticbrain.models import (
     ChannelIsolationMeasurementResult,
     ChannelIsolationResultDeclaration,
 )
-from acousticbrain.persistence import MeasurementRepository
+from acousticbrain.persistence import (
+    EvidenceAcquisitionPlanContractJsonCodec,
+    MeasurementRepository,
+)
 
 
 class ExperimentDiscoveryService:
@@ -255,6 +258,11 @@ class ExperimentDiscoveryService:
             experiment_declaration=declaration,
             source_evidence_acquisition_plan_id=(
                 self._source_evidence_acquisition_plan_id(existing)
+            ),
+            evidence_acquisition_plan_contract=(
+                EvidenceAcquisitionPlanContractJsonCodec().loads(
+                    existing.get("evidence_acquisition_plan_contract")
+                )
             ),
             channel_isolation_declaration=(
                 self._channel_isolation_declaration(existing)

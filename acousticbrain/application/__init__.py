@@ -14,6 +14,10 @@ from .channel_isolation_plan_result import (
     ChannelIsolationPlanResultEvaluator,
 )
 from .experiment_declaration import ExperimentDeclarationService
+from .evidence_acquisition_contract import (
+    EvidenceAcquisitionPlanContractService,
+    EvidenceAcquisitionPlanContractValidator,
+)
 from .exploratory import (
     DeterministicExploratoryService,
     ExploratoryExperimentDeclarationService,

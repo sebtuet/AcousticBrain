@@ -399,6 +399,26 @@ class ConsoleReporter:
                     "Plan coverage status : "
                     f"{experiment.evidence_acquisition_plan_coverage_status}"
                 )
+                if experiment.source_evidence_acquisition_plan_id is not None:
+                    print(
+                        "Plan contract preservation status : "
+                        f"{experiment.plan_contract_preservation_status}"
+                    )
+                if experiment.plan_contract_preservation_status != (
+                    "PLAN_COVERAGE_NOT_APPLICABLE"
+                ):
+                    self._print_plan_coverage_values(
+                        "Preserved plan contract fields",
+                        experiment.preserved_plan_contract_fields,
+                    )
+                    self._print_plan_coverage_values(
+                        "Missing plan contract fields",
+                        experiment.missing_plan_contract_fields,
+                    )
+                    self._print_plan_coverage_values(
+                        "Unverifiable plan contract fields",
+                        experiment.unverifiable_plan_contract_fields,
+                    )
                 if (
                     experiment.evidence_acquisition_plan_coverage_status
                     != "PLAN_COVERAGE_NOT_APPLICABLE"

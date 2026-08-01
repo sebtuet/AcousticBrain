@@ -7,6 +7,7 @@ from .experiment_declaration import ExperimentDeclaration
 from .channel_isolation_plan_coverage import ChannelIsolationDeclaration
 from .channel_isolation_plan_result import ChannelIsolationResultDeclaration
 from .room_description import RoomDescription
+from .evidence_acquisition_contract import EvidenceAcquisitionPlanContract
 
 
 ExperimentParameterValue = str | int | float | bool
@@ -70,6 +71,7 @@ class ExperimentDescriptor:
         ChannelIsolationResultDeclaration | None
     ) = None
     room_description: RoomDescription | None = None
+    evidence_acquisition_plan_contract: EvidenceAcquisitionPlanContract | None = None
 
     def __post_init__(self):
         collections = (
@@ -97,6 +99,20 @@ class ExperimentDescriptor:
             raise ValueError(
                 "Source evidence acquisition plan id must be absent or non-empty."
             )
+        if (
+            self.evidence_acquisition_plan_contract is not None
+            and not isinstance(
+                self.evidence_acquisition_plan_contract,
+                EvidenceAcquisitionPlanContract,
+            )
+        ):
+            raise ValueError("Evidence-acquisition plan contract has an invalid type.")
+        if (
+            self.evidence_acquisition_plan_contract is not None
+            and self.source_evidence_acquisition_plan_id
+            != self.evidence_acquisition_plan_contract.source_plan.plan_id
+        ):
+            raise ValueError("Evidence-acquisition plan identity is inconsistent.")
         if (
             self.channel_isolation_declaration is not None
             and not isinstance(
