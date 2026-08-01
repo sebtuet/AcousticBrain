@@ -29,6 +29,8 @@ from acousticbrain.report import (
     AssessmentSummaryConsoleReporter,
     AdvisorConsoleReporter,
     ExploratoryConsoleReporter,
+    ExperimentUserViewConsoleReporter,
+    ExperimentUserViewPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -124,6 +126,12 @@ def create_parser():
         "--exploratory",
         action="store_true",
         help="print the deterministic Exploratory V1 proposal and feasibility state",
+    )
+    parser.add_argument(
+        "--experiment-view",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="print the read-only four-block view for one exact experiment",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -250,6 +258,7 @@ def run(
     analysis_readiness=False,
     assessment_summary=False,
     exploratory=False,
+    experiment_view=None,
     exploratory_proposal_inputs=(),
     exploratory_feasibility_decisions=None,
     advisor=False,
@@ -264,7 +273,9 @@ def run(
 ):
     brain = brain or AcousticBrain()
     reporter = reporter or (
-        AdvisorConsoleReporter()
+        ExperimentUserViewConsoleReporter()
+        if experiment_view is not None
+        else AdvisorConsoleReporter()
         if advisor
         else ExploratoryConsoleReporter()
         if exploratory
@@ -318,12 +329,14 @@ def run(
         assessment_summary,
         advisor,
         exploratory,
+        experiment_view is not None,
     ))
     if (
         evidence_acquisition
         or full_assessment
         or assessment_summary
         or standard_report
+        or experiment_view is not None
     ):
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
@@ -340,6 +353,10 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
+    if experiment_view is not None:
+        report.experiment_user_view = ExperimentUserViewPresenter().present(
+            report, experiment_view
+        )
     if advisor:
         report.advisor_response = (advisor_service or AdvisorService()).advise(
             report,
@@ -435,6 +452,7 @@ def main(
             ("--analysis-readiness", arguments.analysis_readiness),
             ("--assessment-summary", arguments.assessment_summary),
             ("--advisor", arguments.advisor),
+            ("--experiment-view", arguments.experiment_view is not None),
         )
         for option, enabled in incompatible_exploratory_options:
             if arguments.exploratory and enabled:
@@ -446,6 +464,7 @@ def main(
             ("--weighting", arguments.weighting),
             ("--evidence-acquisition", arguments.evidence_acquisition),
             ("--advisor", arguments.advisor),
+            ("--experiment-view", arguments.experiment_view is not None),
         )
         for option, enabled in incompatible_full_assessment_options:
             if arguments.full_assessment and enabled:
@@ -462,6 +481,7 @@ def main(
                 arguments.full_assessment_output is not None,
             ),
             ("--advisor", arguments.advisor),
+            ("--experiment-view", arguments.experiment_view is not None),
         )
         for option, enabled in incompatible_analysis_readiness_options:
             if arguments.analysis_readiness and enabled:
@@ -481,6 +501,7 @@ def main(
                 arguments.full_assessment_output is not None,
             ),
             ("--advisor", arguments.advisor),
+            ("--experiment-view", arguments.experiment_view is not None),
         )
         for option, enabled in incompatible_assessment_summary_options:
             if arguments.assessment_summary and enabled:
@@ -501,6 +522,17 @@ def main(
         )
         if arguments.advisor and not arguments.question:
             raise ValueError("--advisor requires --question.")
+        dedicated_modes = (
+            ("--observations", arguments.observations),
+            ("--reasoning", arguments.reasoning),
+            ("--actions", arguments.actions),
+            ("--weighting", arguments.weighting),
+            ("--evidence-acquisition", arguments.evidence_acquisition),
+            ("--advisor", arguments.advisor),
+        )
+        for option, enabled in dedicated_modes:
+            if arguments.experiment_view is not None and enabled:
+                raise ValueError(f"--experiment-view cannot be combined with {option}.")
         campaign_instance_analysis = None
         reference_qualification_declaration_analysis = None
         proposal_inputs = ()
@@ -574,6 +606,7 @@ def main(
             analysis_readiness=arguments.analysis_readiness,
             assessment_summary=arguments.assessment_summary,
             exploratory=arguments.exploratory,
+            experiment_view=arguments.experiment_view,
             exploratory_proposal_inputs=proposal_inputs,
             exploratory_feasibility_decisions=feasibility_decisions,
             advisor=arguments.advisor,

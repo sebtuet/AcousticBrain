@@ -185,6 +185,11 @@ from .experiment_comparison_presenter import (
     PresentedExperimentComparison,
     PresentedExperimentEvolution,
 )
+from .experiment_user_view_presenter import (
+    ExperimentUserViewConsoleReporter,
+    ExperimentUserViewPresenter,
+    PresentedExperimentUserView,
+)
 from .experiment_campaign_presenter import (
     ExperimentCampaignPresenter,
     PresentedCampaignBranchResult,
