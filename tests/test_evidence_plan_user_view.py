@@ -74,6 +74,31 @@ def test_existing_compatible_authority_is_displayed_without_selecting_it():
     assert view.user_action.endswith("protocol.example.v1")
 
 
+def test_readable_label_uses_closed_vocabulary_without_changing_contract():
+    value = report()
+    original = value.evidence_acquisition_plans.plans[0]
+    contractual_objective = original.objective
+    value.evidence_acquisition_plans = SimpleNamespace(plans=(replace(
+        original,
+        reasoning_id="MODAL_BASS_PERSISTENCE_REASONING",
+        test_type="PARAMETER_COMPLETION",
+    ),))
+
+    view = EvidencePlanUserViewPresenter().present(value, "SOURCE_PLAN")
+
+    assert view.user_label == (
+        "Persistance modale dans le grave — compléter un prérequis documentaire"
+    )
+    assert view.intention_lines[0] == contractual_objective
+
+
+def test_unknown_vocabulary_has_neutral_deterministic_fallback():
+    view = EvidencePlanUserViewPresenter().present(report(), "SOURCE_PLAN")
+    assert view.user_label == (
+        "Plan d’acquisition de preuves — vérifier séparément les canaux"
+    )
+
+
 def test_unknown_and_ambiguous_plan_id_are_explicit():
     value = report()
     with pytest.raises(ValueError, match="Unknown evidence plan_id"):
