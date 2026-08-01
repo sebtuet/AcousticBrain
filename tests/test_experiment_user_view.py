@@ -118,10 +118,10 @@ def test_historical_manifest_remains_readable_without_reconstructed_intent():
     )
 
     assert presented.lifecycle_state == "CONTRACT_MISSING"
-    assert presented.intent_lines[0] == "Original plan intent unavailable."
+    assert presented.intent_lines[0] == "Intention originale du plan indisponible."
     assert presented.observed_result == "MIXED"
     assert presented.user_action_state == "NO_USER_ACTION"
-    assert any("Historical limit" in line for line in presented.scientific_boundary_lines)
+    assert any("Limite historique" in line for line in presented.scientific_boundary_lines)
 
 
 @pytest.mark.parametrize("outcome", ("IMPROVED", "DEGRADED", "UNCHANGED", "INCONCLUSIVE"))
@@ -154,3 +154,33 @@ def test_collection_order_does_not_change_exact_experiment_resolution():
         report(experiments=(experiment(), unrelated)), "exp-007"
     )
     assert first == second
+
+
+def test_preserved_contract_has_no_historical_limit_without_live_plan():
+    presented = ExperimentUserViewPresenter().present(
+        report(plans=()), "exp-007"
+    )
+
+    assert presented.intent_lines[0] == plan().objective
+    assert not any(
+        "Limite historique" in line
+        for line in presented.scientific_boundary_lines
+    )
+
+
+def test_presenter_labels_are_consistently_french_while_codes_remain_verbatim():
+    source_limit = "Validation requires an exactly resolved plan."
+    presented = ExperimentUserViewPresenter().present(
+        report(experiments=(experiment(plan_contract_limitations=(source_limit,)),)),
+        "exp-007",
+    )
+
+    assert presented.intent_lines[1].startswith("Variables modifiées :")
+    assert presented.observed_result_lines[0].startswith("Faits améliorés :")
+    assert presented.observed_result == "MIXED"
+    assert "FACT_UP" in presented.observed_result_lines[0]
+    assert presented.causality_status == "NOT_ESTABLISHED"
+    assert (
+        f"Limite contractuelle : {source_limit}"
+        in presented.scientific_boundary_lines
+    )
