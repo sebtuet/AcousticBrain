@@ -1,5 +1,6 @@
 import hashlib
 import json
+from dataclasses import dataclass
 
 from acousticbrain.models import (
     EvidenceAcquisitionPlan,
@@ -10,7 +11,18 @@ from acousticbrain.models import (
     EvidencePlanPreparationDeclarationStatus,
     EvidencePlanPreparationResolution,
     EvidencePlanPreparationResolutionStatus,
+    EvidencePlanPreparationRecord,
 )
+from acousticbrain.persistence.evidence_plan_preparation_registry_json import (
+    EvidencePlanPreparationRegistryJsonRepository,
+)
+
+
+@dataclass(frozen=True)
+class EvidencePlanPreparationWorkflowResult:
+    record: EvidencePlanPreparationRecord
+    registry_path: str
+    persisted: bool
 
 
 def evidence_acquisition_plan_fingerprint(plan):
@@ -104,4 +116,28 @@ class EvidencePlanPreparationDeclarationService:
                 if all_confirmed
                 else None
             ),
+        )
+
+
+class EvidencePlanPreparationWorkflowService:
+    """Resolves, declares and atomically records one preparation input."""
+
+    def __init__(self, resolver=None, declarer=None, repository=None):
+        self.resolver = resolver or EvidencePlanPreparationResolver()
+        self.declarer = declarer or EvidencePlanPreparationDeclarationService()
+        self.repository = (
+            repository or EvidencePlanPreparationRegistryJsonRepository()
+        )
+
+    def record(self, confirmation_input, *, registry_path, plans):
+        resolution = self.resolver.resolve(confirmation_input, plans=plans)
+        declaration = self.declarer.declare(resolution)
+        record = EvidencePlanPreparationRecord.from_declaration(declaration)
+        registry = self.repository.load(registry_path)
+        updated = registry.with_record(record)
+        persisted = self.repository.save(registry_path, updated)
+        return EvidencePlanPreparationWorkflowResult(
+            record=record,
+            registry_path=str(registry_path),
+            persisted=persisted,
         )
