@@ -7,6 +7,7 @@ from .exploratory_json import (
 from .evidence_acquisition_contract_json import (
     EvidenceAcquisitionPlanContractJsonCodec,
 )
+from .evidence_plan_completion_json import EvidencePlanCompletionInputJsonLoader
 from .reflection_experiment_json import (
     ControlledReflectionExperimentJsonCodec,
     ControlledReflectionExperimentJsonRepository,
