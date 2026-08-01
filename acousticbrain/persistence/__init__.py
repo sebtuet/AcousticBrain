@@ -1,5 +1,9 @@
 from .room_description_json import RoomDescriptionJsonCodec
 from .optimization_session_json import OptimizationSessionJsonRepository
+from .exploratory_json import (
+    ExploratoryFeasibilityJsonRepository,
+    ExploratoryProposalInputJsonLoader,
+)
 from .reflection_experiment_json import (
     ControlledReflectionExperimentJsonCodec,
     ControlledReflectionExperimentJsonRepository,

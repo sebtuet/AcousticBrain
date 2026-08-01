@@ -470,6 +470,8 @@ class AutomaticExperimentComparisonService:
             controlled_variables=declaration.controlled_variables,
             declaration_user_note=declaration.user_note,
             declaration_field_provenance=declaration.field_provenance,
+            required_fact_codes=required_facts,
+            causality_status="NOT_ESTABLISHED",
         )
 
     def _fact_deltas(self, before, after):

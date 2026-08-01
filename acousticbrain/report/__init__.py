@@ -1,4 +1,11 @@
 from .report import Report
+from .exploratory_presenter import (
+    ExploratoryAnalysisPresenter,
+    ExploratoryConsoleReporter,
+    ExploratoryResultPresenter,
+    PresentedExploratoryAnalysis,
+    PresentedExploratoryResult,
+)
 from .acoustic_observation_presenter import (
     AcousticObservationPresenter,
     PresentedAcousticObservation,

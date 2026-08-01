@@ -14,6 +14,7 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.application import ExploratoryExperimentDeclarationService
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
     ConsoleReporter,
@@ -27,6 +28,7 @@ from acousticbrain.report import (
     AnalysisReadinessConsoleReporter,
     AssessmentSummaryConsoleReporter,
     AdvisorConsoleReporter,
+    ExploratoryConsoleReporter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -34,10 +36,14 @@ from acousticbrain.models import (
     AdvisorResponseLanguage,
     CampaignReferenceDeclarationStatus,
     ListeningPositionCampaignInstanceStatus,
+    ExploratoryFeasibilityDecision,
+    FeasibilityAnswer,
 )
 from acousticbrain.persistence import (
     CampaignReferenceQualificationJsonLoader,
     ListeningPositionCampaignInstanceJsonLoader,
+    ExploratoryFeasibilityJsonRepository,
+    ExploratoryProposalInputJsonLoader,
 )
 
 
@@ -113,6 +119,43 @@ def create_parser():
         "--assessment-summary",
         action="store_true",
         help="print a concise summary of existing deterministic report content",
+    )
+    parser.add_argument(
+        "--exploratory",
+        action="store_true",
+        help="print the deterministic Exploratory V1 proposal and feasibility state",
+    )
+    parser.add_argument(
+        "--exploratory-proposal",
+        type=Path,
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="explicit structured proposal-input JSON (repeatable)",
+    )
+    parser.add_argument(
+        "--exploratory-decisions",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="versioned feasibility-decision JSON",
+    )
+    parser.add_argument(
+        "--record-exploratory-feasibility",
+        choices=tuple(value.value for value in FeasibilityAnswer),
+        default=None,
+        metavar="ANSWER",
+        help="record an explicit FEASIBLE or INFEASIBLE decision and exit",
+    )
+    parser.add_argument("--exploratory-proposal-id", default=None)
+    parser.add_argument("--exploratory-reference-scope-id", default=None)
+    parser.add_argument("--exploratory-rule-version", type=int, default=1)
+    parser.add_argument("--exploratory-note", default=None)
+    parser.add_argument(
+        "--declare-exploratory-experiment",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="explicitly declare the READY proposal for an existing experiment directory",
     )
     parser.add_argument("--advisor", action="store_true", help="enable the optional read-only advisor")
     parser.add_argument("--question", default=None, help="question for the enabled advisor")
@@ -206,6 +249,9 @@ def run(
     full_assessment_output=None,
     analysis_readiness=False,
     assessment_summary=False,
+    exploratory=False,
+    exploratory_proposal_inputs=(),
+    exploratory_feasibility_decisions=None,
     advisor=False,
     question=None,
     advisor_audience=AdvisorAudience.GENERAL,
@@ -220,6 +266,8 @@ def run(
     reporter = reporter or (
         AdvisorConsoleReporter()
         if advisor
+        else ExploratoryConsoleReporter()
+        if exploratory
         else AssessmentSummaryConsoleReporter()
         if assessment_summary
         else AnalysisReadinessConsoleReporter()
@@ -243,6 +291,14 @@ def run(
         compare_experiments=True,
         analyze_causal_discrimination=True,
     )
+    if exploratory:
+        arguments["analyze_exploratory"] = True
+        arguments["exploratory_proposal_inputs"] = tuple(
+            exploratory_proposal_inputs
+        )
+        arguments["exploratory_feasibility_decisions"] = (
+            exploratory_feasibility_decisions
+        )
     if observations:
         arguments["synthesize_observations"] = True
     if reasoning:
@@ -261,6 +317,7 @@ def run(
         analysis_readiness,
         assessment_summary,
         advisor,
+        exploratory,
     ))
     if (
         evidence_acquisition
@@ -317,15 +374,71 @@ def main(
     reporter=None,
     campaign_loader=None,
     reference_qualification_loader=None,
+    exploratory_proposal_loader=None,
+    exploratory_decision_repository=None,
+    exploratory_declaration_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
     parser = create_parser()
     arguments = parser.parse_args(argv)
+    decision_repository = (
+        exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
+    )
+    if arguments.record_exploratory_feasibility is not None:
+        required = {
+            "--exploratory-decisions": arguments.exploratory_decisions,
+            "--exploratory-proposal-id": arguments.exploratory_proposal_id,
+            "--exploratory-reference-scope-id": arguments.exploratory_reference_scope_id,
+        }
+        missing = tuple(option for option, value in required.items() if not value)
+        if missing:
+            parser.error(
+                "--record-exploratory-feasibility requires " + ", ".join(missing)
+            )
+        try:
+            registry = decision_repository.load(arguments.exploratory_decisions)
+            registry = registry.record(ExploratoryFeasibilityDecision(
+                proposal_id=arguments.exploratory_proposal_id,
+                reference_scope_id=arguments.exploratory_reference_scope_id,
+                rule_version=arguments.exploratory_rule_version,
+                answer=FeasibilityAnswer(arguments.record_exploratory_feasibility),
+                user_note=arguments.exploratory_note,
+            ))
+            decision_repository.save(registry, arguments.exploratory_decisions)
+        except (OSError, ValueError, TypeError) as error:
+            parser.error(str(error))
+        print("Exploratory feasibility decision recorded.")
+        return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
+        if arguments.exploratory_proposal and not arguments.exploratory:
+            raise ValueError("--exploratory-proposal requires --exploratory.")
+        if arguments.exploratory_decisions is not None and not arguments.exploratory:
+            raise ValueError("--exploratory-decisions requires --exploratory.")
+        if (
+            arguments.declare_exploratory_experiment is not None
+            and not arguments.exploratory
+        ):
+            raise ValueError(
+                "--declare-exploratory-experiment requires --exploratory."
+            )
+        incompatible_exploratory_options = (
+            ("--observations", arguments.observations),
+            ("--reasoning", arguments.reasoning),
+            ("--actions", arguments.actions),
+            ("--weighting", arguments.weighting),
+            ("--evidence-acquisition", arguments.evidence_acquisition),
+            ("--full-assessment", arguments.full_assessment),
+            ("--analysis-readiness", arguments.analysis_readiness),
+            ("--assessment-summary", arguments.assessment_summary),
+            ("--advisor", arguments.advisor),
+        )
+        for option, enabled in incompatible_exploratory_options:
+            if arguments.exploratory and enabled:
+                raise ValueError(f"--exploratory cannot be combined with {option}.")
         incompatible_full_assessment_options = (
             ("--observations", arguments.observations),
             ("--reasoning", arguments.reasoning),
@@ -390,6 +503,17 @@ def main(
             raise ValueError("--advisor requires --question.")
         campaign_instance_analysis = None
         reference_qualification_declaration_analysis = None
+        proposal_inputs = ()
+        feasibility_decisions = None
+        if arguments.exploratory:
+            loader = exploratory_proposal_loader or ExploratoryProposalInputJsonLoader()
+            proposal_inputs = tuple(
+                loader.load(path) for path in arguments.exploratory_proposal
+            )
+            if arguments.exploratory_decisions is not None:
+                feasibility_decisions = decision_repository.load(
+                    arguments.exploratory_decisions
+                )
         if arguments.listening_position_campaign is not None:
             campaign_path = validate_listening_position_campaign(
                 arguments.listening_position_campaign
@@ -434,7 +558,7 @@ def main(
     except ValueError as error:
         parser.error(str(error))
     try:
-        run(
+        report = run(
             measurements_root,
             campaign_instance_analysis=campaign_instance_analysis,
             reference_qualification_declaration_analysis=(
@@ -449,6 +573,9 @@ def main(
             full_assessment_output=full_assessment_output,
             analysis_readiness=arguments.analysis_readiness,
             assessment_summary=arguments.assessment_summary,
+            exploratory=arguments.exploratory,
+            exploratory_proposal_inputs=proposal_inputs,
+            exploratory_feasibility_decisions=feasibility_decisions,
             advisor=arguments.advisor,
             question=arguments.question,
             advisor_audience=AdvisorAudience(arguments.advisor_audience),
@@ -467,7 +594,19 @@ def main(
             brain=brain,
             reporter=reporter,
         )
-    except (AdvisorError, FullAssessmentTextExportError) as error:
+        if arguments.declare_exploratory_experiment is not None:
+            (exploratory_declaration_service or
+             ExploratoryExperimentDeclarationService()).declare(
+                measurements_root,
+                experiment_code=arguments.declare_exploratory_experiment,
+                analysis=report.exploratory_analysis,
+                user_note=arguments.exploratory_note,
+            )
+            print(
+                "Exploratory experiment declared: "
+                + arguments.declare_exploratory_experiment
+            )
+    except (AdvisorError, FullAssessmentTextExportError, ValueError) as error:
         parser.error(str(error))
     return 0
 

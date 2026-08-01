@@ -284,8 +284,39 @@ The frozen product contract for the future deterministic `EXPLORATORY` mode is
 documented in
 [`docs/EXPLORATORY_V1_CONTRACT.md`](docs/EXPLORATORY_V1_CONTRACT.md).
 It defines bounded reversible tests, explicit user feasibility decisions and
-non-causal result semantics. The contract does not claim that this mode is
-already implemented.
+non-causal result semantics.
+
+Analyze an explicit proposal without modifying measurements or decisions:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --exploratory \
+  --exploratory-proposal /path/to/exploratory-proposal.json \
+  --exploratory-decisions /path/to/exploratory-decisions.json
+```
+
+The proposal document must provide structured action parameters and exact
+reference provenance. Free-form notes are never parsed to reconstruct missing
+parameters. A documented shape is available in
+[`docs/EXPLORATORY_V1_PROPOSAL_INPUT.example.json`](docs/EXPLORATORY_V1_PROPOSAL_INPUT.example.json).
+
+Record the answer with a separate explicit command, using the identifiers
+printed by the read-only analysis:
+
+```bash
+python main.py \
+  --record-exploratory-feasibility FEASIBLE \
+  --exploratory-decisions /path/to/exploratory-decisions.json \
+  --exploratory-proposal-id PROPOSAL_ID \
+  --exploratory-reference-scope-id REFERENCE_SCOPE_ID
+```
+
+Once the same analysis reports `EXPLORATORY_READY`, an existing acquisition
+directory can be declared explicitly with
+`--declare-exploratory-experiment EXPERIMENT_ID`. This writes declaration
+metadata to its manifest; it never executes an acquisition or modifies a
+measurement file.
 
 ## Tests
 

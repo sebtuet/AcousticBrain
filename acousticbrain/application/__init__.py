@@ -14,6 +14,12 @@ from .channel_isolation_plan_result import (
     ChannelIsolationPlanResultEvaluator,
 )
 from .experiment_declaration import ExperimentDeclarationService
+from .exploratory import (
+    DeterministicExploratoryService,
+    ExploratoryExperimentDeclarationService,
+    ExploratoryResultService,
+    ExploratoryFeasibilityRegistry,
+)
 from .positioning_proposal_declaration import (
     PositioningProposalDeclarationDraft,
     PositioningProposalDeclarationService,

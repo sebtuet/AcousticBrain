@@ -86,6 +86,17 @@ from .advisor import (
     AdvisorValidationStatus,
 )
 from .experiment_declaration import ExperimentDeclaration, ExperimentKind
+from .exploratory import (
+    ExploratoryAnalysis,
+    ExploratoryFeasibilityDecision,
+    ExploratoryFeasibilityRegistry,
+    ExploratoryProposal,
+    ExploratoryProposalInput,
+    ExploratoryResult,
+    ExploratoryStatus,
+    FeasibilityAnswer,
+    ReferenceStabilityStatus,
+)
 from .loudspeaker_positioning_experiment import (
     LoudspeakerMovementAxis,
     LoudspeakerMovementDirection,

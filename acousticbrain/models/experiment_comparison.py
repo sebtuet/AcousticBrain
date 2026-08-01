@@ -164,6 +164,8 @@ class ExperimentEvolutionResult:
     controlled_variables: tuple[str, ...] = ()
     declaration_user_note: str | None = None
     declaration_field_provenance: tuple[tuple[str, str], ...] = ()
+    required_fact_codes: tuple[str, ...] = ()
+    causality_status: str = "NOT_ESTABLISHED"
 
     def __post_init__(self):
         collections = (
@@ -175,9 +177,12 @@ class ExperimentEvolutionResult:
             self.applied_threshold_codes, self.provenance_codes,
             self.modified_variables, self.controlled_variables,
             self.declaration_field_provenance,
+            self.required_fact_codes,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Evolution-result collections must be tuples.")
+        if self.causality_status != "NOT_ESTABLISHED":
+            raise ValueError("Automatic comparison cannot establish causality.")
         if self.technical_confidence is not None and (
             not isfinite(self.technical_confidence)
             or not 0.0 <= self.technical_confidence <= 100.0
