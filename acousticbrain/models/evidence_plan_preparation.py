@@ -161,3 +161,103 @@ class EvidencePlanPreparationDeclaration:
             raise ValueError(
                 "Evidence-plan preparation all-prerequisites decision is invalid."
             )
+
+
+@dataclass(frozen=True)
+class EvidencePlanPreparationRecord:
+    confirmation_input: EvidencePlanPreparationConfirmationInput
+    resolution_status: EvidencePlanPreparationResolutionStatus
+    declaration_status: EvidencePlanPreparationDeclarationStatus
+    all_prerequisites_status: EvidencePlanAllPrerequisitesStatus | None
+
+    def __post_init__(self):
+        if not isinstance(
+            self.confirmation_input, EvidencePlanPreparationConfirmationInput
+        ):
+            raise TypeError("Evidence-plan preparation record requires its input.")
+        if self.resolution_status is not (
+            EvidencePlanPreparationResolutionStatus.PLAN_EXACTLY_RESOLVED
+        ):
+            raise ValueError("Evidence-plan preparation record resolution is invalid.")
+        if self.declaration_status is not (
+            EvidencePlanPreparationDeclarationStatus.PREPARATION_DECLARED
+        ):
+            raise ValueError("Evidence-plan preparation record declaration is invalid.")
+        all_confirmed = all(
+            value.status is EvidencePlanPrerequisiteStatus.CONFIRMED
+            for value in self.confirmation_input.prerequisites
+        )
+        expected = (
+            EvidencePlanAllPrerequisitesStatus.ALL_PREREQUISITES_USER_CONFIRMED
+            if all_confirmed
+            else None
+        )
+        if self.all_prerequisites_status is not expected:
+            raise ValueError(
+                "Evidence-plan preparation record all-prerequisites decision is invalid."
+            )
+
+    @classmethod
+    def from_declaration(cls, declaration):
+        if not isinstance(declaration, EvidencePlanPreparationDeclaration):
+            raise TypeError("Evidence-plan preparation declaration is required.")
+        return cls(
+            confirmation_input=declaration.resolution.confirmation_input,
+            resolution_status=declaration.resolution.status,
+            declaration_status=declaration.declaration_status,
+            all_prerequisites_status=declaration.all_prerequisites_status,
+        )
+
+
+@dataclass(frozen=True)
+class EvidencePlanPreparationRegistry:
+    records: tuple[EvidencePlanPreparationRecord, ...] = ()
+
+    def __post_init__(self):
+        if not isinstance(self.records, tuple) or any(
+            not isinstance(value, EvidencePlanPreparationRecord)
+            for value in self.records
+        ):
+            raise TypeError("Evidence-plan preparation registry requires typed records.")
+        identifiers = tuple(
+            value.confirmation_input.confirmation_id for value in self.records
+        )
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("Evidence-plan preparation confirmation ids must be unique.")
+
+    def with_record(self, record):
+        if not isinstance(record, EvidencePlanPreparationRecord):
+            raise TypeError("Evidence-plan preparation record is required.")
+        identifier = record.confirmation_input.confirmation_id
+        existing = tuple(
+            value for value in self.records
+            if value.confirmation_input.confirmation_id == identifier
+        )
+        if existing:
+            if existing[0] == record:
+                return self
+            fields = tuple(sorted(_different_preparation_fields(existing[0], record)))
+            raise ValueError(
+                "PREPARATION_CONFIRMATION_DIVERGENT: incompatible fields: "
+                + ", ".join(fields)
+            )
+        return EvidencePlanPreparationRegistry(tuple(sorted(
+            (*self.records, record),
+            key=lambda value: value.confirmation_input.confirmation_id,
+        )))
+
+
+def _different_preparation_fields(left, right, prefix=""):
+    from dataclasses import fields, is_dataclass
+
+    if type(left) is not type(right):
+        return (prefix or "record",)
+    if is_dataclass(left):
+        result = ()
+        for field in fields(left):
+            name = f"{prefix}.{field.name}" if prefix else field.name
+            result += _different_preparation_fields(
+                getattr(left, field.name), getattr(right, field.name), name
+            )
+        return result
+    return () if left == right else (prefix,)

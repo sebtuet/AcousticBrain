@@ -11,6 +11,10 @@ from .evidence_plan_completion_json import EvidencePlanCompletionInputJsonLoader
 from .evidence_plan_preparation_json import (
     EvidencePlanPreparationConfirmationJsonLoader,
 )
+from .evidence_plan_preparation_registry_json import (
+    EvidencePlanPreparationRegistryJsonCodec,
+    EvidencePlanPreparationRegistryJsonRepository,
+)
 from .evidence_plan_completion_registry_json import (
     EvidencePlanCompletionRegistryJsonCodec,
     EvidencePlanCompletionRegistryJsonRepository,
