@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from acousticbrain.application import (
     ChannelIsolationPlanCoverageValidator,
     ChannelIsolationPlanResultEvaluator,
+    EvidenceAcquisitionPlanContractValidator,
 )
 
 
@@ -31,6 +32,11 @@ class PresentedDiscoveredExperiment:
     missing_plan_requirements: tuple[str, ...] = ()
     unverifiable_plan_requirements: tuple[str, ...] = ()
     plan_coverage_limitations: tuple[str, ...] = ()
+    plan_contract_preservation_status: str = "PLAN_COVERAGE_NOT_APPLICABLE"
+    preserved_plan_contract_fields: tuple[str, ...] = ()
+    missing_plan_contract_fields: tuple[str, ...] = ()
+    unverifiable_plan_contract_fields: tuple[str, ...] = ()
+    plan_contract_limitations: tuple[str, ...] = ()
     plan_result_evaluation_status: str = "PLAN_RESULT_NOT_APPLICABLE"
     criterion_evaluations: tuple[PresentedCriterionEvaluation, ...] = ()
     compatible_criteria: tuple[str, ...] = ()
@@ -87,6 +93,10 @@ class ExperimentDiscoveryPresenter:
             item,
             resolved_plan,
         )
+        contract_coverage = EvidenceAcquisitionPlanContractValidator().validate(
+            item.evidence_acquisition_plan_contract,
+            resolved_plan,
+        )
         result_evaluation = ChannelIsolationPlanResultEvaluator().evaluate(
             item,
             resolved_plan,
@@ -116,6 +126,13 @@ class ExperimentDiscoveryPresenter:
             missing_plan_requirements=coverage.missing_requirements,
             unverifiable_plan_requirements=coverage.unverifiable_requirements,
             plan_coverage_limitations=coverage.limitations,
+            plan_contract_preservation_status=contract_coverage.status.value,
+            preserved_plan_contract_fields=contract_coverage.covered_requirements,
+            missing_plan_contract_fields=contract_coverage.missing_requirements,
+            unverifiable_plan_contract_fields=(
+                contract_coverage.unverifiable_requirements
+            ),
+            plan_contract_limitations=contract_coverage.limitations,
             plan_result_evaluation_status=result_evaluation.status.value,
             criterion_evaluations=criterion_evaluations,
             compatible_criteria=tuple(

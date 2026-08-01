@@ -55,6 +55,10 @@ from .evidence_acquisition import (
     EvidenceAcquisitionStatus,
     EvidenceAcquisitionTestType,
 )
+from .evidence_acquisition_contract import (
+    EvidenceAcquisitionPlanContract,
+    ExperimentContractMode,
+)
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,
     PlanCoverageResult,

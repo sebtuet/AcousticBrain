@@ -4,6 +4,9 @@ from .exploratory_json import (
     ExploratoryFeasibilityJsonRepository,
     ExploratoryProposalInputJsonLoader,
 )
+from .evidence_acquisition_contract_json import (
+    EvidenceAcquisitionPlanContractJsonCodec,
+)
 from .reflection_experiment_json import (
     ControlledReflectionExperimentJsonCodec,
     ControlledReflectionExperimentJsonRepository,

@@ -318,6 +318,24 @@ directory can be declared explicitly with
 metadata to its manifest; it never executes an acquisition or modifies a
 measurement file.
 
+## Preserve an evidence-acquisition plan contract
+
+A `READY` evidence-acquisition plan can be declared as an experiment without
+losing its objective, variables, prerequisites, expected observations,
+criteria, limitations or provenance:
+
+```bash
+python -m acousticbrain.commands.declare_evidence_plan_experiment \
+  measurements \
+  --plan-id PLAN_ID \
+  --experiment exp-XXX \
+  --reference baseline
+```
+
+This extends the existing plan → declaration → comparison pipeline; it does not
+introduce a parallel engine. See
+[`docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md`](docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md).
+
 ## Tests
 
 Run the complete test suite:
