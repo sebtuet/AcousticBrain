@@ -111,7 +111,8 @@ python main.py \
 ```
 
 The overview is ordered by stable plan id and does not select or recommend a
-plan.
+plan. A separate French label identifies the acoustic subject and operation;
+the original contractual objective remains visible and unchanged.
 
 ### Individual deterministic reports
 

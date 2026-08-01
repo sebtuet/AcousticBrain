@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class PresentedEvidencePlanUserView:
     plan_id: str
+    user_label: str
     plan_status: str
     intention_lines: tuple[str, ...]
     blocker_lines: tuple[str, ...]
@@ -23,6 +24,31 @@ class EvidencePlanUserViewPresenter:
     """Read-only explanation of one exact existing evidence plan."""
 
     MISSING_REFERENCE = "compatible_protocol_or_plan_id"
+    SUBJECT_LABELS = {
+        "ASYMMETRIC_SPEAKER_ROOM_INTERACTION_REASONING": (
+            "Asymétrie entre les enceintes et la pièce"
+        ),
+        "MODAL_BASS_PERSISTENCE_REASONING": "Persistance modale dans le grave",
+        "DOMINANT_EARLY_REFLECTION_INTERACTION_REASONING": (
+            "Interaction avec une réflexion précoce dominante"
+        ),
+        "SBIR_PLACEMENT_INTERACTION_REASONING": "Interaction SBIR et placement",
+    }
+    TEST_TYPE_LABELS = {
+        "CHANNEL_ISOLATION": "vérifier séparément les canaux",
+        "COMPARATIVE_MEASUREMENT": "comparer des mesures contrôlées",
+        "PARAMETER_COMPLETION": "compléter un prérequis documentaire",
+        "ADDITIONAL_OBSERVATION": "acquérir une observation supplémentaire",
+        "REPEAT_MEASUREMENT": "vérifier la répétabilité d’une mesure",
+        "CONTROLLED_SPEAKER_DISPLACEMENT": (
+            "tester un déplacement temporaire d’enceinte"
+        ),
+        "CONTROLLED_MICROPHONE_DISPLACEMENT": (
+            "tester un déplacement temporaire du microphone"
+        ),
+        "GEOMETRY_ACQUISITION": "documenter la géométrie",
+        "PROTOCOL_EXECUTION": "exécuter un protocole déclaré",
+    }
 
     def present(self, report, plan_id):
         plans = tuple(
@@ -43,6 +69,7 @@ class EvidencePlanUserViewPresenter:
         action_state, user_action = self._user_action(plan, factors, action)
         return PresentedEvidencePlanUserView(
             plan_id=plan.plan_id,
+            user_label=self._user_label(plan),
             plan_status=plan.status,
             intention_lines=(
                 plan.objective,
@@ -62,6 +89,18 @@ class EvidencePlanUserViewPresenter:
             ),
             causality_status="NOT_ESTABLISHED",
         )
+
+    @classmethod
+    def _user_label(cls, plan):
+        subject = cls.SUBJECT_LABELS.get(
+            plan.reasoning_id,
+            "Plan d’acquisition de preuves",
+        )
+        operation = cls.TEST_TYPE_LABELS.get(
+            plan.test_type,
+            "objectif expérimental déclaré",
+        )
+        return f"{subject} — {operation}"
 
     @staticmethod
     def _factors(report, expected_ids):
@@ -158,6 +197,8 @@ class EvidencePlanUserViewConsoleReporter:
         view = report.evidence_plan_user_view
         print(f"EVIDENCE PLAN VIEW — {view.plan_id}")
         print()
+        print(view.user_label)
+        print()
         print("Intention")
         print("\n".join(view.intention_lines))
         print()
@@ -206,6 +247,7 @@ class EvidencePlanOverviewConsoleReporter:
                 print("------------------------------------------------------------")
                 print()
             print(view.plan_id)
+            print(f"Lecture utilisateur : {view.user_label}")
             print(f"Statut : {view.plan_status}")
             print(f"Objectif contractuel : {view.intention_lines[0]}")
             print(f"Action utilisateur : {view.user_action}")
