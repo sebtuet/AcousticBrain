@@ -12,6 +12,9 @@ from acousticbrain.models import (
     EvidencePlanPreparationResolution,
     EvidencePlanPreparationResolutionStatus,
     EvidencePlanPreparationRecord,
+    EvidencePlanPreparationRegistry,
+    EvidencePlanPrerequisiteDeclaration,
+    EvidencePlanPrerequisiteStatus,
 )
 from acousticbrain.persistence.evidence_plan_preparation_registry_json import (
     EvidencePlanPreparationRegistryJsonRepository,
@@ -23,6 +26,75 @@ class EvidencePlanPreparationWorkflowResult:
     record: EvidencePlanPreparationRecord
     registry_path: str
     persisted: bool
+
+
+@dataclass(frozen=True)
+class GuidedEvidencePlanPreparationDraft:
+    plan: EvidenceAcquisitionPlan
+    confirmation_input: EvidencePlanPreparationConfirmationInput
+
+    def __post_init__(self):
+        if not isinstance(self.plan, EvidenceAcquisitionPlan):
+            raise TypeError("Guided preparation draft requires an evidence plan.")
+        if not isinstance(
+            self.confirmation_input, EvidencePlanPreparationConfirmationInput
+        ):
+            raise TypeError("Guided preparation draft requires a typed input.")
+        if self.plan.plan_id != self.confirmation_input.plan_id:
+            raise ValueError("Guided preparation draft plan identity is inconsistent.")
+
+
+class GuidedEvidencePlanPreparationDraftService:
+    """Builds a safe UNKNOWN-only input draft without recording it."""
+
+    DECLARATION_SOURCE = "GUIDED_USER_CONFIRMATION"
+
+    def generate(self, plan_id, *, plans, registry):
+        if not isinstance(plan_id, str) or not plan_id:
+            raise ValueError("An exact evidence plan_id is required.")
+        if not isinstance(plans, tuple) or any(
+            not isinstance(value, EvidenceAcquisitionPlan) for value in plans
+        ):
+            raise TypeError("Guided preparation plans must be a typed tuple.")
+        if not isinstance(registry, EvidencePlanPreparationRegistry):
+            raise TypeError("EvidencePlanPreparationRegistry is required.")
+        matches = tuple(value for value in plans if value.plan_id == plan_id)
+        if not matches:
+            raise ValueError(f"GUIDED_PREPARATION_PLAN_UNKNOWN: {plan_id}.")
+        if len(matches) != 1:
+            raise ValueError(f"GUIDED_PREPARATION_PLAN_AMBIGUOUS: {plan_id}.")
+        plan = matches[0]
+        if plan.status is not EvidenceAcquisitionStatus.READY:
+            raise ValueError(
+                f"GUIDED_PREPARATION_PLAN_NOT_READY: {plan_id} is "
+                f"{plan.status.value}."
+            )
+        fingerprint = evidence_acquisition_plan_fingerprint(plan)
+        prefix = f"preparation-{fingerprint[:12]}-"
+        existing = {
+            value.confirmation_input.confirmation_id for value in registry.records
+        }
+        ordinal = 1
+        while f"{prefix}{ordinal}" in existing:
+            ordinal += 1
+        confirmation_input = EvidencePlanPreparationConfirmationInput(
+            schema_version=1,
+            confirmation_id=f"{prefix}{ordinal}",
+            plan_id=plan.plan_id,
+            plan_contract_fingerprint=fingerprint,
+            prerequisites=tuple(
+                EvidencePlanPrerequisiteDeclaration(
+                    code=code,
+                    status=EvidencePlanPrerequisiteStatus.UNKNOWN,
+                )
+                for code in plan.required_inputs
+            ),
+            declaration_source=self.DECLARATION_SOURCE,
+        )
+        return GuidedEvidencePlanPreparationDraft(
+            plan=plan,
+            confirmation_input=confirmation_input,
+        )
 
 
 def evidence_acquisition_plan_fingerprint(plan):
