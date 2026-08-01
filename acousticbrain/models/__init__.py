@@ -76,6 +76,8 @@ from .evidence_plan_preparation import (
     EvidencePlanPreparationConfirmationInput,
     EvidencePlanPreparationDeclaration,
     EvidencePlanPreparationDeclarationStatus,
+    EvidencePlanPreparationRecord,
+    EvidencePlanPreparationRegistry,
     EvidencePlanPreparationResolution,
     EvidencePlanPreparationResolutionStatus,
     EvidencePlanPrerequisiteDeclaration,
