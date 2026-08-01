@@ -62,6 +62,8 @@ from .evidence_acquisition_contract import (
 from .evidence_plan_completion import (
     DerivedEvidenceAcquisitionPlan,
     DerivedEvidencePlanStatus,
+    EvidencePlanCompletionRecord,
+    EvidencePlanCompletionRegistry,
     EvidencePlanCompletionCompatibility,
     EvidencePlanCompletionCompatibilityStatus,
     EvidencePlanCompletionInput,

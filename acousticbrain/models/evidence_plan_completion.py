@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -23,6 +25,93 @@ class EvidencePlanCompletionCompatibilityStatus(Enum):
 
 class DerivedEvidencePlanStatus(Enum):
     DERIVED_PLAN_READY = "DERIVED_PLAN_READY"
+
+
+@dataclass(frozen=True)
+class EvidencePlanCompletionRecord:
+    completion_input: EvidencePlanCompletionInput
+    resolution_status: EvidencePlanCompletionResolutionStatus
+    compatibility_status: EvidencePlanCompletionCompatibilityStatus
+    derived_plan: "DerivedEvidenceAcquisitionPlan"
+
+    def __post_init__(self):
+        if not isinstance(self.completion_input, EvidencePlanCompletionInput):
+            raise TypeError("Evidence-plan completion record requires its input.")
+        if self.resolution_status is not EvidencePlanCompletionResolutionStatus.REFERENCE_RESOLVED:
+            raise ValueError("Evidence-plan completion record resolution is invalid.")
+        if self.compatibility_status is not EvidencePlanCompletionCompatibilityStatus.REFERENCE_COMPATIBLE:
+            raise ValueError("Evidence-plan completion record compatibility is invalid.")
+        if not isinstance(self.derived_plan, DerivedEvidenceAcquisitionPlan):
+            raise TypeError("Evidence-plan completion record requires a derived plan.")
+        derived = self.derived_plan
+        value = self.completion_input
+        if (
+            derived.completion_input_id != value.completion_input_id
+            or derived.source_plan_id != value.source_plan_id
+            or derived.reference_kind is not value.reference_kind
+            or derived.reference_id != value.reference_id
+        ):
+            raise ValueError("Evidence-plan completion record provenance is inconsistent.")
+
+
+@dataclass(frozen=True)
+class EvidencePlanCompletionRegistry:
+    records: tuple[EvidencePlanCompletionRecord, ...] = ()
+
+    def __post_init__(self):
+        if not isinstance(self.records, tuple) or any(
+            not isinstance(value, EvidencePlanCompletionRecord)
+            for value in self.records
+        ):
+            raise TypeError("Evidence-plan completion registry requires typed records.")
+        input_ids = tuple(
+            value.completion_input.completion_input_id for value in self.records
+        )
+        plan_ids = tuple(value.derived_plan.plan.plan_id for value in self.records)
+        if len(input_ids) != len(set(input_ids)):
+            raise ValueError("Evidence-plan completion input ids must be unique.")
+        if len(plan_ids) != len(set(plan_ids)):
+            raise ValueError("DERIVED_IDENTITY_AMBIGUOUS: derived plan ids must be unique.")
+
+    def with_record(self, record):
+        if not isinstance(record, EvidencePlanCompletionRecord):
+            raise TypeError("Evidence-plan completion record is required.")
+        identifier = record.completion_input.completion_input_id
+        existing = tuple(
+            value for value in self.records
+            if value.completion_input.completion_input_id == identifier
+        )
+        if existing:
+            if existing[0] == record:
+                return self
+            fields = tuple(sorted(_different_fields(existing[0], record)))
+            raise ValueError(
+                "COMPLETION_INPUT_DIVERGENT: incompatible fields: "
+                + ", ".join(fields)
+            )
+        plan_id = record.derived_plan.plan.plan_id
+        if any(value.derived_plan.plan.plan_id == plan_id for value in self.records):
+            raise ValueError(f"DERIVED_IDENTITY_AMBIGUOUS: {plan_id}.")
+        return EvidencePlanCompletionRegistry(tuple(sorted(
+            (*self.records, record),
+            key=lambda value: value.completion_input.completion_input_id,
+        )))
+
+
+def _different_fields(left, right, prefix=""):
+    from dataclasses import fields, is_dataclass
+
+    if type(left) is not type(right):
+        return (prefix or "record",)
+    if is_dataclass(left):
+        result = ()
+        for field in fields(left):
+            name = f"{prefix}.{field.name}" if prefix else field.name
+            result += _different_fields(
+                getattr(left, field.name), getattr(right, field.name), name
+            )
+        return result
+    return () if left == right else (prefix,)
 
 
 @dataclass(frozen=True)
