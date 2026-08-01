@@ -62,6 +62,8 @@ from .evidence_acquisition_contract import (
 from .evidence_plan_completion import (
     EvidencePlanCompletionInput,
     EvidencePlanCompletionReferenceKind,
+    EvidencePlanCompletionResolution,
+    EvidencePlanCompletionResolutionStatus,
 )
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,

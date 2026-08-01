@@ -18,6 +18,7 @@ from .evidence_acquisition_contract import (
     EvidenceAcquisitionPlanContractService,
     EvidenceAcquisitionPlanContractValidator,
 )
+from .evidence_plan_completion import EvidencePlanCompletionReferenceResolver
 from .exploratory import (
     DeterministicExploratoryService,
     ExploratoryExperimentDeclarationService,
