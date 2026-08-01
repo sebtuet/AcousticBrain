@@ -4,7 +4,10 @@ import json
 from acousticbrain.models import (
     EvidenceAcquisitionPlan,
     EvidenceAcquisitionStatus,
+    EvidencePlanAllPrerequisitesStatus,
     EvidencePlanPreparationConfirmationInput,
+    EvidencePlanPreparationDeclaration,
+    EvidencePlanPreparationDeclarationStatus,
     EvidencePlanPreparationResolution,
     EvidencePlanPreparationResolutionStatus,
 )
@@ -77,5 +80,28 @@ class EvidencePlanPreparationResolver:
             plan=plan,
             status=(
                 EvidencePlanPreparationResolutionStatus.PLAN_EXACTLY_RESOLVED
+            ),
+        )
+
+
+class EvidencePlanPreparationDeclarationService:
+    """Records user statuses as declarations, never as independent proof."""
+
+    def declare(self, resolution):
+        if not isinstance(resolution, EvidencePlanPreparationResolution):
+            raise TypeError("EvidencePlanPreparationResolution is required.")
+        all_confirmed = all(
+            value.status.value == "CONFIRMED"
+            for value in resolution.confirmation_input.prerequisites
+        )
+        return EvidencePlanPreparationDeclaration(
+            resolution=resolution,
+            declaration_status=(
+                EvidencePlanPreparationDeclarationStatus.PREPARATION_DECLARED
+            ),
+            all_prerequisites_status=(
+                EvidencePlanAllPrerequisitesStatus.ALL_PREREQUISITES_USER_CONFIRMED
+                if all_confirmed
+                else None
             ),
         )
