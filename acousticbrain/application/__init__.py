@@ -22,6 +22,8 @@ from .evidence_plan_completion import (
     DerivedEvidenceAcquisitionPlanFactory,
     EvidencePlanCompletionCompatibilityValidator,
     EvidencePlanCompletionReferenceResolver,
+    EvidencePlanCompletionService,
+    EvidencePlanCompletionWorkflowResult,
 )
 from .exploratory import (
     DeterministicExploratoryService,

@@ -1,4 +1,4 @@
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 
@@ -13,10 +13,72 @@ from acousticbrain.models import (
     EvidencePlanCompletionCompatibilityStatus,
     EvidencePlanCompletionInput,
     EvidencePlanCompletionReferenceKind,
+    EvidencePlanCompletionRecord,
     EvidencePlanCompletionResolution,
     EvidencePlanCompletionResolutionStatus,
     ListeningPositionSamplingProtocol,
 )
+from acousticbrain.persistence.evidence_plan_completion_registry_json import (
+    EvidencePlanCompletionRegistryJsonRepository,
+)
+
+
+@dataclass(frozen=True)
+class EvidencePlanCompletionWorkflowResult:
+    record: EvidencePlanCompletionRecord
+    registry_path: str
+    persisted: bool
+
+
+class EvidencePlanCompletionService:
+    """Completes and atomically records one exact V1 derivation."""
+
+    def __init__(
+        self,
+        resolver=None,
+        validator=None,
+        factory=None,
+        repository=None,
+    ):
+        self.resolver = resolver or EvidencePlanCompletionReferenceResolver()
+        self.validator = validator or EvidencePlanCompletionCompatibilityValidator()
+        self.factory = factory or DerivedEvidenceAcquisitionPlanFactory()
+        self.repository = repository or EvidencePlanCompletionRegistryJsonRepository()
+
+    def complete(
+        self,
+        completion_input,
+        *,
+        registry_path,
+        source_plans,
+        blocking_factors,
+        actions,
+        protocol_references=(),
+        plan_references=(),
+    ):
+        resolution = self.resolver.resolve(
+            completion_input,
+            source_plans=source_plans,
+            blocking_factors=blocking_factors,
+            protocol_references=protocol_references,
+            plan_references=plan_references,
+        )
+        compatibility = self.validator.validate(resolution, actions=actions)
+        derived = self.factory.create(compatibility)
+        record = EvidencePlanCompletionRecord(
+            completion_input=completion_input,
+            resolution_status=resolution.status,
+            compatibility_status=compatibility.status,
+            derived_plan=derived,
+        )
+        registry = self.repository.load(registry_path)
+        updated = registry.with_record(record)
+        persisted = self.repository.save(registry_path, updated)
+        return EvidencePlanCompletionWorkflowResult(
+            record=record,
+            registry_path=str(registry_path),
+            persisted=persisted,
+        )
 
 
 class EvidencePlanCompletionReferenceResolver:
