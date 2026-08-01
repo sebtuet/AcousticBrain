@@ -71,6 +71,11 @@ from .evidence_plan_completion import (
     EvidencePlanCompletionResolution,
     EvidencePlanCompletionResolutionStatus,
 )
+from .evidence_plan_preparation import (
+    EvidencePlanPreparationConfirmationInput,
+    EvidencePlanPrerequisiteDeclaration,
+    EvidencePlanPrerequisiteStatus,
+)
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,
     PlanCoverageResult,
