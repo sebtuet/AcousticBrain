@@ -74,6 +74,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
+| Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
 | Evidence-plan completion | `--complete-evidence-plan INPUT_JSON` | One exact audited derivation from a BLOCKED plan |
 
 These options select different presentations of established deterministic
@@ -88,6 +89,17 @@ python main.py --measurements-root measurements --experiment-view exp-007
 The view preserves the existing outcome and causal status verbatim. Missing
 historical contract information is displayed as unavailable and is never
 reconstructed.
+
+Explain one exact evidence plan without changing or completing it:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --evidence-plan-view EXACT_PLAN_ID
+```
+
+When scientific compatibility is not established, this view says that no safe
+user action is available. It never asks the user to attest compatibility.
 
 ### Individual deterministic reports
 

@@ -190,6 +190,11 @@ from .experiment_user_view_presenter import (
     ExperimentUserViewPresenter,
     PresentedExperimentUserView,
 )
+from .evidence_plan_user_view_presenter import (
+    EvidencePlanUserViewConsoleReporter,
+    EvidencePlanUserViewPresenter,
+    PresentedEvidencePlanUserView,
+)
 from .experiment_campaign_presenter import (
     ExperimentCampaignPresenter,
     PresentedCampaignBranchResult,
