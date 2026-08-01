@@ -17,6 +17,7 @@ from acousticbrain.brain import AcousticBrain
 from acousticbrain.application import (
     EvidencePlanCompletionService,
     EvidencePlanPreparationWorkflowService,
+    GuidedEvidencePlanPreparationDraftService,
     ExploratoryExperimentDeclarationService,
 )
 from acousticbrain.report import (
@@ -191,6 +192,19 @@ def create_parser():
         default=None,
         metavar="CONFIRMATION_ID",
         help="show one exact persisted preparation confirmation read-only",
+    )
+    parser.add_argument(
+        "--generate-evidence-plan-preparation",
+        default=None,
+        metavar="PLAN_ID",
+        help="preview an UNKNOWN-only preparation draft for one exact READY plan",
+    )
+    parser.add_argument(
+        "--evidence-plan-preparation-output",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="write the generated preparation draft to a new JSON file",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -459,6 +473,65 @@ def view_evidence_plan_preparation(
     return view
 
 
+def generate_evidence_plan_preparation(
+    measurements_root,
+    plan_id,
+    registry_path,
+    *,
+    output_path=None,
+    campaign_instance_analysis=None,
+    brain=None,
+    service=None,
+    registry_repository=None,
+    serializer=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        listening_position_campaign_instance_analysis=campaign_instance_analysis,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Guided preparation requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Guided preparation analysis contracts are unavailable.")
+    repository = (
+        registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    )
+    registry = repository.load(registry_path)
+    draft = (service or GuidedEvidencePlanPreparationDraftService()).generate(
+        plan_id, plans=synthesis.plans, registry=registry
+    )
+    codec = serializer or EvidencePlanPreparationConfirmationJsonLoader()
+    value = draft.confirmation_input
+    print(f"EVIDENCE PLAN PREPARATION DRAFT — {value.confirmation_id}")
+    print()
+    print(EvidencePlanUserViewPresenter._user_label(draft.plan))
+    print(f"Plan : {value.plan_id}")
+    print()
+    print("Statuts proposés")
+    if value.prerequisites:
+        for item in value.prerequisites:
+            print(f"{item.code} : {item.status.value}")
+    else:
+        print("Aucun prérequis déclaré.")
+    print()
+    print("JSON canonique")
+    print(codec.dumps(value))
+    print()
+    if output_path is not None:
+        codec.save_new(output_path, value)
+        print(f"Brouillon écrit : {output_path.resolve()}")
+    else:
+        print("Brouillon non écrit : aucun chemin de sortie demandé.")
+    print("Aucune préparation enregistrée et aucune expérience exécutée.")
+    return draft
+
+
 def run(
     measurements_root,
     *,
@@ -636,6 +709,8 @@ def main(
     evidence_plan_preparation_registry_repository=None,
     evidence_plan_preparation_view_presenter=None,
     evidence_plan_preparation_view_reporter=None,
+    guided_preparation_draft_service=None,
+    guided_preparation_draft_serializer=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -710,13 +785,46 @@ def main(
         if (
             arguments.confirm_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_view is None
+            and arguments.generate_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
             raise ValueError(
                 "--evidence-plan-preparation-registry requires "
                 "--confirm-evidence-plan-preparation or "
-                "--evidence-plan-preparation-view."
+                "--evidence-plan-preparation-view or "
+                "--generate-evidence-plan-preparation."
             )
+        if (
+            arguments.evidence_plan_preparation_output is not None
+            and arguments.generate_evidence_plan_preparation is None
+        ):
+            raise ValueError(
+                "--evidence-plan-preparation-output requires "
+                "--generate-evidence-plan-preparation."
+            )
+        if arguments.generate_evidence_plan_preparation is not None:
+            if arguments.evidence_plan_preparation_registry is None:
+                raise ValueError(
+                    "--generate-evidence-plan-preparation requires "
+                    "--evidence-plan-preparation-registry."
+                )
+            conflicting = (
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--full-assessment", arguments.full_assessment),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--generate-evidence-plan-preparation cannot be combined "
+                        f"with {option}."
+                    )
         if arguments.confirm_evidence_plan_preparation is not None:
             if arguments.evidence_plan_preparation_registry is None:
                 raise ValueError(
@@ -980,6 +1088,21 @@ def main(
                 registry_repository=(
                     evidence_plan_completion_registry_repository
                 ),
+            )
+            return 0
+        if arguments.generate_evidence_plan_preparation is not None:
+            generate_evidence_plan_preparation(
+                measurements_root,
+                arguments.generate_evidence_plan_preparation,
+                arguments.evidence_plan_preparation_registry,
+                output_path=arguments.evidence_plan_preparation_output,
+                campaign_instance_analysis=campaign_instance_analysis,
+                brain=brain,
+                service=guided_preparation_draft_service,
+                registry_repository=(
+                    evidence_plan_preparation_registry_repository
+                ),
+                serializer=guided_preparation_draft_serializer,
             )
             return 0
         if arguments.confirm_evidence_plan_preparation is not None:
