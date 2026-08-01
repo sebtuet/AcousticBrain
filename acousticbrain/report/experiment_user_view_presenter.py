@@ -64,13 +64,12 @@ class ExperimentUserViewPresenter:
         ) if plan_id is not None else ()
         if len(plans) > 1:
             raise ValueError(f"Ambiguous source plan_id: {plan_id}")
-        plan = plans[0] if plans else None
 
-        intent = self._intent(experiment, plan, comparison)
-        lifecycle = self._lifecycle(experiment, plan, comparison)
+        intent = self._intent(experiment, comparison)
+        lifecycle = self._lifecycle(experiment, comparison)
         action_state, action = self._action(lifecycle, experiment, comparison)
         observed, observed_lines = self._observed(comparison)
-        boundary = self._boundary(experiment, plan, comparison)
+        boundary = self._boundary(experiment, comparison)
         return PresentedExperimentUserView(
             experiment_id=experiment_id,
             lifecycle_state=lifecycle,
@@ -93,11 +92,11 @@ class ExperimentUserViewPresenter:
         )
 
     @staticmethod
-    def _intent(experiment, plan, comparison):
+    def _intent(experiment, comparison):
         lines = []
         preserved_objective = getattr(experiment, "preserved_plan_objective", None)
         if preserved_objective is None:
-            lines.append("Original plan intent unavailable.")
+            lines.append("Intention originale du plan indisponible.")
         else:
             lines.append(preserved_objective)
         modified = comparison.modified_variables if comparison else ()
@@ -105,24 +104,32 @@ class ExperimentUserViewPresenter:
         if not controlled and comparison:
             controlled = comparison.controlled_variables
         lines.append(
-            "Modified variables: " + (", ".join(modified) if modified else "unavailable")
+            "Variables modifiées : "
+            + (", ".join(modified) if modified else "indisponibles")
         )
         lines.append(
-            "Controlled variables: "
-            + (", ".join(controlled) if controlled else "unavailable")
+            "Variables contrôlées : "
+            + (", ".join(controlled) if controlled else "indisponibles")
         )
         lines.append(
-            "Expected observations: "
-            + (", ".join(getattr(experiment, "preserved_plan_expected_observations", ())) or "unavailable")
+            "Observations attendues : "
+            + (
+                ", ".join(getattr(
+                    experiment,
+                    "preserved_plan_expected_observations",
+                    (),
+                ))
+                or "indisponibles"
+            )
         )
         lines.append(
-            "Plan limitations: "
-            + (", ".join(getattr(experiment, "preserved_plan_limitations", ())) or "none declared")
+            "Limites du plan : "
+            + (", ".join(getattr(experiment, "preserved_plan_limitations", ())) or "aucune déclarée")
         )
         return tuple(lines)
 
     @staticmethod
-    def _lifecycle(experiment, plan, comparison):
+    def _lifecycle(experiment, comparison):
         if (
             experiment.source_evidence_acquisition_plan_id is None
             or getattr(experiment, "preserved_plan_objective", None) is None
@@ -157,43 +164,65 @@ class ExperimentUserViewPresenter:
                 )
             return (
                 "RESOLVE_PLAN_CONTRACT_MISMATCH",
-                "Restore the already-referenced plan contract without reconstructing it.",
+                "Restaurer le contrat du plan déjà référencé sans le reconstruire.",
             )
         if lifecycle == "CONTRACT_INCONSISTENT":
-            return "RESOLVE_PLAN_CONTRACT_MISMATCH", "Resolve the declared plan contract mismatch."
+            return (
+                "RESOLVE_PLAN_CONTRACT_MISMATCH",
+                "Résoudre la divergence du contrat de plan déclaré.",
+            )
         if lifecycle in ("ACQUISITION_PENDING", "ACQUISITION_INCOMPLETE"):
-            return "COMPLETE_REQUIRED_ACQUISITION", "Complete the already-declared required acquisition."
+            return (
+                "COMPLETE_REQUIRED_ACQUISITION",
+                "Compléter l’acquisition requise déjà déclarée.",
+            )
         if lifecycle == "COMPARISON_UNAVAILABLE":
-            return "RESTORE_COMPARABILITY", "Restore comparability using the existing declaration."
+            return (
+                "RESTORE_COMPARABILITY",
+                "Rétablir la comparabilité à partir de la déclaration existante.",
+            )
         if comparison is not None:
-            return "REVIEW_OBSERVED_RESULT", "Review the observed result."
-        return "NO_USER_ACTION", "No action."
+            return "REVIEW_OBSERVED_RESULT", "Examiner le résultat observé."
+        return "NO_USER_ACTION", "Aucune action."
 
     @staticmethod
     def _observed(comparison):
         if comparison is None:
-            return "NOT_AVAILABLE", ("No unique local comparison is available.",)
+            return "NOT_AVAILABLE", (
+                "Aucune comparaison locale unique n’est disponible.",
+            )
         if comparison.eligibility != "COMPARABLE":
-            reasons = comparison.ineligibility_reasons or ("reason unavailable",)
-            return "NOT_COMPARABLE", ("Ineligibility: " + ", ".join(reasons),)
+            reasons = comparison.ineligibility_reasons or ("motif indisponible",)
+            return "NOT_COMPARABLE", ("Inéligibilité : " + ", ".join(reasons),)
         return comparison.acoustic_outcome, (
-            "Improved facts: " + (", ".join(comparison.improved_fact_codes) or "none"),
-            "Degraded facts: " + (", ".join(comparison.degraded_fact_codes) or "none"),
-            "Changed facts: " + (", ".join(comparison.changed_fact_codes) or "none"),
-            "Unchanged facts: " + (", ".join(comparison.unchanged_fact_codes) or "none"),
-            "Unavailable facts: " + (", ".join(comparison.unavailable_fact_codes) or "none"),
+            "Faits améliorés : "
+            + (", ".join(comparison.improved_fact_codes) or "aucun"),
+            "Faits dégradés : "
+            + (", ".join(comparison.degraded_fact_codes) or "aucun"),
+            "Faits modifiés : "
+            + (", ".join(comparison.changed_fact_codes) or "aucun"),
+            "Faits inchangés : "
+            + (", ".join(comparison.unchanged_fact_codes) or "aucun"),
+            "Faits indisponibles : "
+            + (", ".join(comparison.unavailable_fact_codes) or "aucun"),
         )
 
     @staticmethod
-    def _boundary(experiment, plan, comparison):
-        lines = ["No cause, permanent correction, optimum, or general recommendation is established."]
+    def _boundary(experiment, comparison):
+        lines = [
+            "Aucune cause, correction permanente, configuration optimale "
+            "ou recommandation générale n’est établie."
+        ]
         if comparison is None:
-            lines.append("Local comparison unavailable.")
+            lines.append("Comparaison locale indisponible.")
         else:
-            lines.append(f"Measured scope: {comparison.comparison_type}.")
-        if plan is None:
-            lines.append("Historical limit: preserved original plan contract unavailable.")
-        lines.extend(experiment.plan_contract_limitations)
+            lines.append(f"Périmètre mesuré : {comparison.comparison_type}.")
+        if getattr(experiment, "preserved_plan_objective", None) is None:
+            lines.append("Limite historique : contrat original préservé du plan indisponible.")
+        lines.extend(
+            f"Limite contractuelle : {value}"
+            for value in experiment.plan_contract_limitations
+        )
         return tuple(lines)
 
 

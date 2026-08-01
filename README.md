@@ -73,9 +73,20 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Technical analysis readiness | `--analysis-readiness` | Existing experiment and analysis-family readiness decisions |
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
+| Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 
 These options select different presentations of established deterministic
 objects. They do not introduce a separate acoustic analysis.
+
+Print the concise view of one exact experiment:
+
+```bash
+python main.py --measurements-root measurements --experiment-view exp-007
+```
+
+The view preserves the existing outcome and causal status verbatim. Missing
+historical contract information is displayed as unavailable and is never
+reconstructed.
 
 ### Individual deterministic reports
 
