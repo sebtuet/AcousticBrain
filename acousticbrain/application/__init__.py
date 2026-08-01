@@ -26,6 +26,7 @@ from .evidence_plan_completion import (
     EvidencePlanCompletionWorkflowResult,
 )
 from .evidence_plan_preparation import (
+    EvidencePlanPreparationDeclarationService,
     EvidencePlanPreparationResolver,
     evidence_acquisition_plan_fingerprint,
 )

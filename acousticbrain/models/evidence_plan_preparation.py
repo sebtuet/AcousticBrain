@@ -14,6 +14,14 @@ class EvidencePlanPreparationResolutionStatus(Enum):
     PLAN_EXACTLY_RESOLVED = "PLAN_EXACTLY_RESOLVED"
 
 
+class EvidencePlanPreparationDeclarationStatus(Enum):
+    PREPARATION_DECLARED = "PREPARATION_DECLARED"
+
+
+class EvidencePlanAllPrerequisitesStatus(Enum):
+    ALL_PREREQUISITES_USER_CONFIRMED = "ALL_PREREQUISITES_USER_CONFIRMED"
+
+
 @dataclass(frozen=True)
 class EvidencePlanPrerequisiteDeclaration:
     code: str
@@ -125,3 +133,31 @@ class EvidencePlanPreparationResolution:
             EvidencePlanPreparationResolutionStatus.PLAN_EXACTLY_RESOLVED
         ):
             raise ValueError("Evidence-plan preparation resolution status is invalid.")
+
+
+@dataclass(frozen=True)
+class EvidencePlanPreparationDeclaration:
+    resolution: EvidencePlanPreparationResolution
+    declaration_status: EvidencePlanPreparationDeclarationStatus
+    all_prerequisites_status: EvidencePlanAllPrerequisitesStatus | None
+
+    def __post_init__(self):
+        if not isinstance(self.resolution, EvidencePlanPreparationResolution):
+            raise TypeError("Evidence-plan preparation resolution is required.")
+        if self.declaration_status is not (
+            EvidencePlanPreparationDeclarationStatus.PREPARATION_DECLARED
+        ):
+            raise ValueError("Evidence-plan preparation declaration status is invalid.")
+        all_confirmed = all(
+            value.status is EvidencePlanPrerequisiteStatus.CONFIRMED
+            for value in self.resolution.confirmation_input.prerequisites
+        )
+        expected = (
+            EvidencePlanAllPrerequisitesStatus.ALL_PREREQUISITES_USER_CONFIRMED
+            if all_confirmed
+            else None
+        )
+        if self.all_prerequisites_status is not expected:
+            raise ValueError(
+                "Evidence-plan preparation all-prerequisites decision is invalid."
+            )
