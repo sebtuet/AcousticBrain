@@ -66,6 +66,7 @@ from .exploratory_presenter import (
     PresentedExploratoryAnalysis,
     PresentedExploratoryResult,
 )
+from .experiment_user_view_presenter import PresentedExperimentUserView
 
 
 @dataclass
@@ -147,6 +148,8 @@ class Report:
 
     exploratory_analysis: PresentedExploratoryAnalysis | None = None
     exploratory_result: PresentedExploratoryResult | None = None
+
+    experiment_user_view: PresentedExperimentUserView | None = None
 
     surface_materials: PresentedSurfaceMaterialAnalysis | None = None
 

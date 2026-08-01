@@ -37,6 +37,11 @@ class PresentedDiscoveredExperiment:
     missing_plan_contract_fields: tuple[str, ...] = ()
     unverifiable_plan_contract_fields: tuple[str, ...] = ()
     plan_contract_limitations: tuple[str, ...] = ()
+    preserved_plan_contract_mode: str | None = None
+    preserved_plan_objective: str | None = None
+    preserved_plan_controlled_variables: tuple[str, ...] = ()
+    preserved_plan_expected_observations: tuple[str, ...] = ()
+    preserved_plan_limitations: tuple[str, ...] = ()
     plan_result_evaluation_status: str = "PLAN_RESULT_NOT_APPLICABLE"
     criterion_evaluations: tuple[PresentedCriterionEvaluation, ...] = ()
     compatible_criteria: tuple[str, ...] = ()
@@ -101,6 +106,10 @@ class ExperimentDiscoveryPresenter:
             item,
             resolved_plan,
         )
+        preserved_contract = item.evidence_acquisition_plan_contract
+        preserved_plan = (
+            preserved_contract.source_plan if preserved_contract is not None else None
+        )
         criterion_evaluations = tuple(
             PresentedCriterionEvaluation(
                 criterion_id=value.criterion_id,
@@ -133,6 +142,21 @@ class ExperimentDiscoveryPresenter:
                 contract_coverage.unverifiable_requirements
             ),
             plan_contract_limitations=contract_coverage.limitations,
+            preserved_plan_contract_mode=(
+                preserved_contract.mode.value if preserved_contract is not None else None
+            ),
+            preserved_plan_objective=(
+                preserved_plan.objective if preserved_plan is not None else None
+            ),
+            preserved_plan_controlled_variables=(
+                preserved_plan.controlled_variables if preserved_plan is not None else ()
+            ),
+            preserved_plan_expected_observations=(
+                preserved_plan.expected_observations if preserved_plan is not None else ()
+            ),
+            preserved_plan_limitations=(
+                preserved_plan.limitations if preserved_plan is not None else ()
+            ),
             plan_result_evaluation_status=result_evaluation.status.value,
             criterion_evaluations=criterion_evaluations,
             compatible_criteria=tuple(
