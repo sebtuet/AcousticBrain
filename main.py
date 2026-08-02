@@ -19,6 +19,7 @@ from acousticbrain.application import (
     EvidencePlanPreparationWorkflowService,
     EvidencePlanPreparationPreviewService,
     GuidedEvidencePlanPreparationDraftService,
+    ChannelIsolationGuidedExecutionService,
     ExploratoryExperimentDeclarationService,
 )
 from acousticbrain.report import (
@@ -213,6 +214,18 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="preview declaration decisions without recording them",
+    )
+    parser.add_argument(
+        "--channel-isolation-journey",
+        default=None,
+        metavar="PLAN_ID",
+        help="show the read-only guided checklist for one CHANNEL_ISOLATION plan",
+    )
+    parser.add_argument(
+        "--channel-isolation-preparation",
+        default=None,
+        metavar="CONFIRMATION_ID",
+        help="exact preparation confirmation for the channel-isolation journey",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -591,6 +604,67 @@ def preview_evidence_plan_preparation(
     return result
 
 
+def show_channel_isolation_journey(
+    measurements_root, plan_id, confirmation_id, registry_path, *, brain=None,
+    service=None, registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("CHANNEL_ISOLATION journey requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("CHANNEL_ISOLATION journey analysis contracts are unavailable.")
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    journey = (service or ChannelIsolationGuidedExecutionService()).build(
+        plan_id, confirmation_id, plans=synthesis.plans,
+        registry=repository.load(registry_path),
+    )
+    checklist = journey.checklist
+    preparation = journey.preparation_record.confirmation_input
+    print(f"CHANNEL ISOLATION JOURNEY — {plan_id}")
+    print()
+    print("Provenance")
+    print(f"Préparation : {confirmation_id}")
+    print(f"Empreinte du plan : {preparation.plan_contract_fingerprint}")
+    print()
+    print("Qualification de préparation")
+    print(journey.preparation_status)
+    for item in preparation.prerequisites:
+        print(f"{item.code} : {item.status.value}")
+    print()
+    print("Checklist d’acquisition")
+    print("Canaux à acquérir : " + ", ".join(checklist.required_acquired_channels))
+    print("Canaux à répéter : " + ", ".join(checklist.required_repeated_channels))
+    print("Variables modifiées : " + ", ".join(checklist.independent_variables))
+    print("Variables contrôlées : " + ", ".join(checklist.controlled_variables))
+    print("Mesures : " + ", ".join(checklist.measurements))
+    print("Observations attendues : " + ", ".join(checklist.expected_observations))
+    for index, instruction in enumerate(checklist.instructions, start=1):
+        print(f"Étape {index} : {instruction}")
+    print("Critères de réussite : " + ", ".join(checklist.success_criteria))
+    print("Critères d’échec : " + ", ".join(checklist.failure_criteria))
+    print("Limites : " + ", ".join(checklist.limitations))
+    print()
+    print("Action utilisateur")
+    if journey.user_action_state == "REVIEW_PREPARATION_DECLARATION":
+        print("Revoir les prérequis non confirmés ; aucune déclaration d’expérience n’est disponible.")
+    else:
+        print("Déclarer séparément l’expérience depuis ce plan exact avant toute acquisition.")
+    print()
+    print("Frontière scientifique")
+    print("Cette checklist ne vérifie aucune condition physique et n’exécute aucune mesure.")
+    print("Aucune expérience n’a été déclarée ou exécutée par cette vue.")
+    print("Causality status: NOT_ESTABLISHED")
+    return journey
+
+
 def run(
     measurements_root,
     *,
@@ -771,6 +845,7 @@ def main(
     guided_preparation_draft_service=None,
     guided_preparation_draft_serializer=None,
     evidence_plan_preparation_preview_service=None,
+    channel_isolation_guided_execution_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -847,6 +922,7 @@ def main(
             and arguments.evidence_plan_preparation_view is None
             and arguments.generate_evidence_plan_preparation is None
             and arguments.preview_evidence_plan_preparation is None
+            and arguments.channel_isolation_journey is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
             raise ValueError(
@@ -857,6 +933,13 @@ def main(
             )
         if arguments.preview_evidence_plan_preparation is not None and arguments.evidence_plan_preparation_registry is None:
             raise ValueError("--preview-evidence-plan-preparation requires --evidence-plan-preparation-registry.")
+        if arguments.channel_isolation_journey is not None:
+            if arguments.channel_isolation_preparation is None:
+                raise ValueError("--channel-isolation-journey requires --channel-isolation-preparation.")
+            if arguments.evidence_plan_preparation_registry is None:
+                raise ValueError("--channel-isolation-journey requires --evidence-plan-preparation-registry.")
+        elif arguments.channel_isolation_preparation is not None:
+            raise ValueError("--channel-isolation-preparation requires --channel-isolation-journey.")
         if (
             arguments.evidence_plan_preparation_output is not None
             and arguments.generate_evidence_plan_preparation is None
@@ -1166,6 +1249,17 @@ def main(
                 service=evidence_plan_preparation_preview_service,
                 registry_repository=evidence_plan_preparation_registry_repository,
                 input_path=arguments.preview_evidence_plan_preparation,
+            )
+            return 0
+        if arguments.channel_isolation_journey is not None:
+            show_channel_isolation_journey(
+                measurements_root,
+                arguments.channel_isolation_journey,
+                arguments.channel_isolation_preparation,
+                arguments.evidence_plan_preparation_registry,
+                brain=brain,
+                service=channel_isolation_guided_execution_service,
+                registry_repository=evidence_plan_preparation_registry_repository,
             )
             return 0
         if arguments.generate_evidence_plan_preparation is not None:
