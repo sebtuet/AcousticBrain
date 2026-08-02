@@ -19,6 +19,7 @@ from acousticbrain.application import (
     EvidencePlanPreparationWorkflowService,
     EvidencePlanPreparationPreviewService,
     GuidedEvidencePlanPreparationDraftService,
+    GuidedEvidencePlanPreparationRevisionService,
     ChannelIsolationGuidedExecutionService,
     ExploratoryExperimentDeclarationService,
 )
@@ -53,6 +54,7 @@ from acousticbrain.models import (
     ListeningPositionCampaignInstanceStatus,
     ExploratoryFeasibilityDecision,
     FeasibilityAnswer,
+    EvidencePlanPrerequisiteStatus,
 )
 from acousticbrain.persistence import (
     CampaignReferenceQualificationJsonLoader,
@@ -220,6 +222,20 @@ def create_parser():
         default=None,
         metavar="PLAN_ID",
         help="show the read-only guided checklist for one CHANNEL_ISOLATION plan",
+    )
+    parser.add_argument(
+        "--revise-evidence-plan-preparation",
+        type=Path,
+        default=None,
+        metavar="SOURCE_JSON",
+        help="derive a new preparation draft from explicit prerequisite statuses",
+    )
+    parser.add_argument(
+        "--preparation-status",
+        action="append",
+        default=[],
+        metavar="CODE=STATUS",
+        help="exact prerequisite status assignment (repeat for every code)",
     )
     parser.add_argument(
         "--channel-isolation-preparation",
@@ -674,6 +690,51 @@ def show_channel_isolation_journey(
     return journey
 
 
+def revise_evidence_plan_preparation(
+    measurements_root, source_input, statuses, registry_path, output_path, *,
+    brain=None, service=None, registry_repository=None, serializer=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root, compare_experiments=True,
+        analyze_causal_discrimination=True, synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Guided preparation revision requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Guided preparation revision analysis contracts are unavailable.")
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    draft = (service or GuidedEvidencePlanPreparationRevisionService()).revise(
+        source_input, statuses, plans=synthesis.plans, registry=repository.load(registry_path)
+    )
+    codec = serializer or EvidencePlanPreparationConfirmationJsonLoader()
+    codec.save_new(output_path, draft.confirmation_input)
+    print(f"PREPARATION DRAFT REVISED — {draft.confirmation_input.confirmation_id}")
+    for item in draft.confirmation_input.prerequisites:
+        print(f"{item.code} : {item.status.value}")
+    print(f"Nouveau brouillon : {output_path.resolve()}")
+    print("Le brouillon source et le registre restent inchangés.")
+    print("Aucune préparation enregistrée et aucune expérience exécutée.")
+    return draft
+
+
+def parse_preparation_statuses(values):
+    result = {}
+    for value in values:
+        if not isinstance(value, str) or value.count("=") != 1:
+            raise ValueError("Preparation statuses must use exact CODE=STATUS syntax.")
+        code, raw_status = value.split("=", 1)
+        if not code or code in result:
+            raise ValueError(f"Duplicate or empty preparation status code: {code}.")
+        try:
+            result[code] = EvidencePlanPrerequisiteStatus(raw_status)
+        except ValueError as error:
+            raise ValueError(f"Invalid preparation status for {code}: {raw_status}.") from error
+    return result
+
+
 def run(
     measurements_root,
     *,
@@ -855,6 +916,7 @@ def main(
     guided_preparation_draft_serializer=None,
     evidence_plan_preparation_preview_service=None,
     channel_isolation_guided_execution_service=None,
+    guided_preparation_revision_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -932,6 +994,7 @@ def main(
             and arguments.generate_evidence_plan_preparation is None
             and arguments.preview_evidence_plan_preparation is None
             and arguments.channel_isolation_journey is None
+            and arguments.revise_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
             raise ValueError(
@@ -952,11 +1015,21 @@ def main(
         if (
             arguments.evidence_plan_preparation_output is not None
             and arguments.generate_evidence_plan_preparation is None
+            and arguments.revise_evidence_plan_preparation is None
         ):
             raise ValueError(
                 "--evidence-plan-preparation-output requires "
                 "--generate-evidence-plan-preparation."
             )
+        if arguments.revise_evidence_plan_preparation is not None:
+            if arguments.evidence_plan_preparation_registry is None:
+                raise ValueError("--revise-evidence-plan-preparation requires --evidence-plan-preparation-registry.")
+            if arguments.evidence_plan_preparation_output is None:
+                raise ValueError("--revise-evidence-plan-preparation requires --evidence-plan-preparation-output.")
+            if not arguments.preparation_status:
+                raise ValueError("--revise-evidence-plan-preparation requires --preparation-status.")
+        elif arguments.preparation_status:
+            raise ValueError("--preparation-status requires --revise-evidence-plan-preparation.")
         if arguments.generate_evidence_plan_preparation is not None:
             if arguments.evidence_plan_preparation_registry is None:
                 raise ValueError(
@@ -1258,6 +1331,20 @@ def main(
                 service=evidence_plan_preparation_preview_service,
                 registry_repository=evidence_plan_preparation_registry_repository,
                 input_path=arguments.preview_evidence_plan_preparation,
+            )
+            return 0
+        if arguments.revise_evidence_plan_preparation is not None:
+            loader = evidence_plan_preparation_loader or EvidencePlanPreparationConfirmationJsonLoader()
+            revise_evidence_plan_preparation(
+                measurements_root,
+                loader.load(arguments.revise_evidence_plan_preparation),
+                parse_preparation_statuses(arguments.preparation_status),
+                arguments.evidence_plan_preparation_registry,
+                arguments.evidence_plan_preparation_output,
+                brain=brain,
+                service=guided_preparation_revision_service,
+                registry_repository=evidence_plan_preparation_registry_repository,
+                serializer=guided_preparation_draft_serializer,
             )
             return 0
         if arguments.channel_isolation_journey is not None:
