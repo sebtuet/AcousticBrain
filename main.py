@@ -542,7 +542,7 @@ def generate_evidence_plan_preparation(
 
 def preview_evidence_plan_preparation(
     measurements_root, confirmation_input, registry_path, *, brain=None,
-    service=None, registry_repository=None,
+    service=None, registry_repository=None, input_path=None,
 ):
     analysis = (brain or AcousticBrain()).analyze(
         measurement_root=measurements_root,
@@ -573,6 +573,19 @@ def preview_evidence_plan_preparation(
     print(result.record.declaration_status.value)
     print(result.record.all_prerequisites_status.value if result.record.all_prerequisites_status else "ALL_PREREQUISITES_USER_CONFIRMED : indisponible")
     print(f"État du registre : {result.registry_state}")
+    print()
+    print("Action utilisateur")
+    if result.registry_state == "ALREADY_RECORDED":
+        print("Aucune action : cette déclaration identique est déjà enregistrée.")
+    elif input_path is None:
+        print("Enregistrer séparément ce brouillon avec la commande de confirmation explicite.")
+    else:
+        print("Après vérification, enregistrer explicitement avec :")
+        print(
+            "python main.py --measurements-root "
+            f"{measurements_root} --confirm-evidence-plan-preparation "
+            f"{input_path} --evidence-plan-preparation-registry {registry_path}"
+        )
     print("Aucune préparation enregistrée et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
@@ -1152,6 +1165,7 @@ def main(
                 brain=brain,
                 service=evidence_plan_preparation_preview_service,
                 registry_repository=evidence_plan_preparation_registry_repository,
+                input_path=arguments.preview_evidence_plan_preparation,
             )
             return 0
         if arguments.generate_evidence_plan_preparation is not None:
