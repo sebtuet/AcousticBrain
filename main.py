@@ -17,6 +17,7 @@ from acousticbrain.brain import AcousticBrain
 from acousticbrain.application import (
     EvidencePlanCompletionService,
     EvidencePlanPreparationWorkflowService,
+    EvidencePlanPreparationPreviewService,
     GuidedEvidencePlanPreparationDraftService,
     ExploratoryExperimentDeclarationService,
 )
@@ -205,6 +206,13 @@ def create_parser():
         default=None,
         metavar="PATH",
         help="write the generated preparation draft to a new JSON file",
+    )
+    parser.add_argument(
+        "--preview-evidence-plan-preparation",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="preview declaration decisions without recording them",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -532,6 +540,44 @@ def generate_evidence_plan_preparation(
     return draft
 
 
+def preview_evidence_plan_preparation(
+    measurements_root, confirmation_input, registry_path, *, brain=None,
+    service=None, registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Preparation preview requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Preparation preview analysis contracts are unavailable.")
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    registry = repository.load(registry_path)
+    result = (service or EvidencePlanPreparationPreviewService()).preview(
+        confirmation_input, plans=synthesis.plans, registry=registry
+    )
+    print(f"EVIDENCE PLAN PREPARATION PREVIEW — {confirmation_input.confirmation_id}")
+    print()
+    print("Statuts déclarés")
+    for item in confirmation_input.prerequisites:
+        print(f"{item.code} : {item.status.value}")
+    print()
+    print("Décisions projetées")
+    print(result.record.resolution_status.value)
+    print(result.record.declaration_status.value)
+    print(result.record.all_prerequisites_status.value if result.record.all_prerequisites_status else "ALL_PREREQUISITES_USER_CONFIRMED : indisponible")
+    print(f"État du registre : {result.registry_state}")
+    print("Aucune préparation enregistrée et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
 def run(
     measurements_root,
     *,
@@ -711,6 +757,7 @@ def main(
     evidence_plan_preparation_view_reporter=None,
     guided_preparation_draft_service=None,
     guided_preparation_draft_serializer=None,
+    evidence_plan_preparation_preview_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -786,6 +833,7 @@ def main(
             arguments.confirm_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_view is None
             and arguments.generate_evidence_plan_preparation is None
+            and arguments.preview_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
             raise ValueError(
@@ -794,6 +842,8 @@ def main(
                 "--evidence-plan-preparation-view or "
                 "--generate-evidence-plan-preparation."
             )
+        if arguments.preview_evidence_plan_preparation is not None and arguments.evidence_plan_preparation_registry is None:
+            raise ValueError("--preview-evidence-plan-preparation requires --evidence-plan-preparation-registry.")
         if (
             arguments.evidence_plan_preparation_output is not None
             and arguments.generate_evidence_plan_preparation is None
@@ -1088,6 +1138,20 @@ def main(
                 registry_repository=(
                     evidence_plan_completion_registry_repository
                 ),
+            )
+            return 0
+        if arguments.preview_evidence_plan_preparation is not None:
+            confirmation_input = (
+                evidence_plan_preparation_loader
+                or EvidencePlanPreparationConfirmationJsonLoader()
+            ).load(arguments.preview_evidence_plan_preparation)
+            preview_evidence_plan_preparation(
+                measurements_root,
+                confirmation_input,
+                arguments.evidence_plan_preparation_registry,
+                brain=brain,
+                service=evidence_plan_preparation_preview_service,
+                registry_repository=evidence_plan_preparation_registry_repository,
             )
             return 0
         if arguments.generate_evidence_plan_preparation is not None:
