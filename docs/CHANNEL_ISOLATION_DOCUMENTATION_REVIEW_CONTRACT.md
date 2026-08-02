@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = USER_DECISION_SUPPORT_ONLY
 scientific_authority = NONE
-implementation_status = NOT_IMPLEMENTED
+implementation_status = PARTIALLY_IMPLEMENTED
 ```
 
 ## Purpose
