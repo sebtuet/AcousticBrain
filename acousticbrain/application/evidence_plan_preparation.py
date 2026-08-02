@@ -29,6 +29,40 @@ class EvidencePlanPreparationWorkflowResult:
 
 
 @dataclass(frozen=True)
+class EvidencePlanPreparationPreviewResult:
+    declaration: EvidencePlanPreparationDeclaration
+    record: EvidencePlanPreparationRecord
+    registry_state: str
+
+    def __post_init__(self):
+        if self.registry_state not in ("NOT_RECORDED", "ALREADY_RECORDED"):
+            raise ValueError("Evidence-plan preparation preview state is invalid.")
+
+
+class EvidencePlanPreparationPreviewService:
+    """Projects declaration decisions and registry identity without writing."""
+
+    def __init__(self, resolver=None, declarer=None):
+        self.resolver = resolver or EvidencePlanPreparationResolver()
+        self.declarer = declarer or EvidencePlanPreparationDeclarationService()
+
+    def preview(self, confirmation_input, *, plans, registry):
+        if not isinstance(registry, EvidencePlanPreparationRegistry):
+            raise TypeError("EvidencePlanPreparationRegistry is required.")
+        resolution = self.resolver.resolve(confirmation_input, plans=plans)
+        declaration = self.declarer.declare(resolution)
+        record = EvidencePlanPreparationRecord.from_declaration(declaration)
+        updated = registry.with_record(record)
+        return EvidencePlanPreparationPreviewResult(
+            declaration=declaration,
+            record=record,
+            registry_state=(
+                "ALREADY_RECORDED" if updated is registry else "NOT_RECORDED"
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class GuidedEvidencePlanPreparationDraft:
     plan: EvidenceAcquisitionPlan
     confirmation_input: EvidencePlanPreparationConfirmationInput
