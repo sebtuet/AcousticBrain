@@ -17,6 +17,7 @@ from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,
     ChannelIsolationGuidedExecutionService,
+    ChannelIsolationPrerequisiteGuidance,
 )
 from .experiment_declaration import ExperimentDeclarationService
 from .evidence_acquisition_contract import (

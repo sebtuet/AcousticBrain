@@ -639,6 +639,15 @@ def show_channel_isolation_journey(
     for item in preparation.prerequisites:
         print(f"{item.code} : {item.status.value}")
     print()
+    print("Aide aux prérequis")
+    for guidance in journey.prerequisite_guidance:
+        print(guidance.code)
+        print("Signification : " + guidance.meaning)
+        print("CONFIRMED si : " + guidance.confirmed_when)
+        print("NOT_CONFIRMED si : " + guidance.not_confirmed_when)
+        print("UNKNOWN si : " + guidance.unknown_when)
+        print("Limite : " + guidance.limitation)
+    print()
     print("Checklist d’acquisition")
     print("Canaux à acquérir : " + ", ".join(checklist.required_acquired_channels))
     print("Canaux à répéter : " + ", ".join(checklist.required_repeated_channels))
