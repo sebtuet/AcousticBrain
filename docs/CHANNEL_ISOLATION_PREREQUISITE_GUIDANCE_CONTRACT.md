@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = OPERATIONAL_EXPLANATION_ONLY
 scientific_authority = NONE
-implementation_status = NOT_IMPLEMENTED
+implementation_status = IMPLEMENTED
 ```
 
 ## Purpose

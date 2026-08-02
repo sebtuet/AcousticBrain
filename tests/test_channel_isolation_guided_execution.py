@@ -68,6 +68,20 @@ def test_checklist_is_an_exact_plan_projection_with_declared_channel_coverage():
     assert checklist.required_repeated_channels == ("LEFT", "RIGHT")
 
 
+def test_closed_prerequisite_guidance_never_selects_a_status():
+    result = journey(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+    )
+    assert tuple(value.code for value in result.prerequisite_guidance) == (
+        "documented_microphone_position",
+        "existing_acquisition_settings",
+    )
+    assert "replacer le microphone" in result.prerequisite_guidance[0].confirmed_when
+    assert "Gain" in result.prerequisite_guidance[1].confirmed_when
+    assert all(value.unknown_when for value in result.prerequisite_guidance)
+
+
 @pytest.mark.parametrize(
     ("change", "message"),
     (

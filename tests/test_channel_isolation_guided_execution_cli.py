@@ -30,6 +30,9 @@ def test_cli_renders_complete_read_only_checklist_for_incomplete_preparation(tmp
     assert journey.preparation_status == "PREPARATION_INCOMPLETE"
     assert "Canaux à acquérir : LEFT, RIGHT" in output
     assert "Canaux à répéter : LEFT, RIGHT" in output
+    assert "Aide aux prérequis" in output
+    assert "CONFIRMED si :" in output
+    assert "UNKNOWN si :" in output
     assert "aucune déclaration d’expérience n’est disponible" in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert path.read_bytes() == before

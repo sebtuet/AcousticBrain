@@ -27,12 +27,23 @@ class ChannelIsolationExecutionChecklist:
 
 
 @dataclass(frozen=True)
+class ChannelIsolationPrerequisiteGuidance:
+    code: str
+    meaning: str
+    confirmed_when: str
+    not_confirmed_when: str
+    unknown_when: str
+    limitation: str
+
+
+@dataclass(frozen=True)
 class ChannelIsolationGuidedExecutionJourney:
     plan: EvidenceAcquisitionPlan
     preparation_record: EvidencePlanPreparationRecord
     preparation_status: str
     checklist: ChannelIsolationExecutionChecklist
     user_action_state: str
+    prerequisite_guidance: tuple[ChannelIsolationPrerequisiteGuidance, ...]
 
 
 class ChannelIsolationGuidedExecutionService:
@@ -85,7 +96,39 @@ class ChannelIsolationGuidedExecutionService:
                 "DECLARE_EXPERIMENT_SEPARATELY"
                 if confirmed else "REVIEW_PREPARATION_DECLARATION"
             ),
+            prerequisite_guidance=tuple(
+                self._guidance(code) for code in plan.required_inputs
+            ),
         )
+
+    @staticmethod
+    def _guidance(code):
+        values = {
+            "documented_microphone_position": ChannelIsolationPrerequisiteGuidance(
+                code=code,
+                meaning="Une trace écrite identifie une position et une orientation reproductibles du microphone.",
+                confirmed_when="Un repère géométrique documenté avant acquisition permet à l’opérateur de replacer le microphone.",
+                not_confirmed_when="Aucune trace n’existe, ou le microphone changera de position sans mise à jour.",
+                unknown_when="Vous ne pouvez pas déterminer si la trace existante est suffisamment reproductible.",
+                limitation="AcousticBrain ne vérifie ni la position physique ni sa précision.",
+            ),
+            "existing_acquisition_settings": ChannelIsolationPrerequisiteGuidance(
+                code=code,
+                meaning="Les réglages prévus pour LEFT, RIGHT et les répétitions sont explicitement consignés.",
+                confirmed_when="Gain, fenêtre temporelle et chaîne du signal sont documentés et seront réutilisés.",
+                not_confirmed_when="Les réglages sont absents ou changeront volontairement entre acquisitions.",
+                unknown_when="Vous ne pouvez pas établir si les réglages sont complets ou stables.",
+                limitation="AcousticBrain n’inspecte pas la configuration logicielle ou matérielle.",
+            ),
+        }
+        return values.get(code, ChannelIsolationPrerequisiteGuidance(
+            code=code,
+            meaning="Aucune explication opérationnelle locale n’est définie pour ce code exact.",
+            confirmed_when="Une procédure externe faisant autorité définit explicitement ce prérequis.",
+            not_confirmed_when="La procédure externe établit explicitement que le prérequis n’est pas satisfait.",
+            unknown_when="Conserver UNKNOWN en l’absence d’une procédure faisant autorité.",
+            limitation="AcousticBrain ne devine ni ne normalise ce prérequis.",
+        ))
 
     @staticmethod
     def _one(values, path, expected, prefix):
