@@ -25,6 +25,7 @@ from acousticbrain.application import (
     ChannelIsolationOperationalWorksheetService,
     ChannelIsolationOperationalRecordPreviewService,
     ChannelIsolationDocumentationReviewService,
+    ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
 )
 from acousticbrain.report import (
@@ -284,6 +285,18 @@ def create_parser():
         type=Path,
         default=None,
         metavar="PATH",
+    )
+    parser.add_argument(
+        "--channel-isolation-declaration-readiness",
+        default=None,
+        metavar="PLAN_ID",
+        help="qualify exact inputs for a separate CHANNEL_ISOLATION declaration",
+    )
+    parser.add_argument(
+        "--channel-isolation-reference", default=None, metavar="EXPERIMENT_ID"
+    )
+    parser.add_argument(
+        "--channel-isolation-experiment", default=None, metavar="EXPERIMENT_ID"
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -898,6 +911,60 @@ def review_channel_isolation_documentation(
     return result
 
 
+def show_channel_isolation_declaration_readiness(
+    measurements_root, plan_id, confirmation_id, registry_path,
+    reference_experiment_id, experiment_id, *, brain=None, service=None,
+    registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root, compare_experiments=True,
+        analyze_causal_discrimination=True, synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Declaration readiness requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Declaration readiness analysis contracts are unavailable.")
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    result = (service or ChannelIsolationDeclarationReadinessService()).qualify(
+        measurements_root,
+        plan_id,
+        confirmation_id,
+        reference_experiment_id,
+        experiment_id,
+        plans=synthesis.plans,
+        registry=repository.load(registry_path),
+    )
+    print(f"CHANNEL ISOLATION DECLARATION READINESS — {plan_id}")
+    print()
+    print("Qualification")
+    for status in result.statuses:
+        print(status)
+    print()
+    print("Provenance")
+    print(f"Préparation : {result.confirmation_id}")
+    print(f"Référence : {result.reference_experiment_id}")
+    print(f"Nouvelle expérience : {result.experiment_id}")
+    print()
+    print("Action utilisateur")
+    print("Déclarer séparément le contrat expérimental avec :")
+    print(
+        "python -m acousticbrain.commands.declare_evidence_plan_experiment "
+        f"{measurements_root} --plan-id {result.plan_id} "
+        f"--experiment {result.experiment_id} "
+        f"--reference {result.reference_experiment_id}"
+    )
+    print()
+    print("Frontière scientifique")
+    print("La préparation reste une déclaration utilisateur non vérifiée indépendamment.")
+    print("Aucun dossier, manifeste, mesure ou résultat n’a été créé par cette vue.")
+    print("DECLARATION_READY ne signifie pas EXECUTED.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
 def parse_preparation_statuses(values):
     result = {}
     for value in values:
@@ -1098,6 +1165,7 @@ def main(
     channel_isolation_operational_worksheet_service=None,
     channel_isolation_operational_record_preview_service=None,
     channel_isolation_documentation_review_service=None,
+    channel_isolation_declaration_readiness_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -1175,6 +1243,7 @@ def main(
             and arguments.generate_evidence_plan_preparation is None
             and arguments.preview_evidence_plan_preparation is None
             and arguments.channel_isolation_journey is None
+            and arguments.channel_isolation_declaration_readiness is None
             and arguments.revise_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_registry is not None
         ):
@@ -1191,8 +1260,48 @@ def main(
                 raise ValueError("--channel-isolation-journey requires --channel-isolation-preparation.")
             if arguments.evidence_plan_preparation_registry is None:
                 raise ValueError("--channel-isolation-journey requires --evidence-plan-preparation-registry.")
-        elif arguments.channel_isolation_preparation is not None:
-            raise ValueError("--channel-isolation-preparation requires --channel-isolation-journey.")
+        elif (
+            arguments.channel_isolation_declaration_readiness is None
+            and arguments.channel_isolation_preparation is not None
+        ):
+            raise ValueError(
+                "--channel-isolation-preparation requires a CHANNEL_ISOLATION journey or declaration-readiness mode."
+            )
+        if arguments.channel_isolation_declaration_readiness is not None:
+            required = (
+                ("--channel-isolation-preparation", arguments.channel_isolation_preparation),
+                ("--evidence-plan-preparation-registry", arguments.evidence_plan_preparation_registry),
+                ("--channel-isolation-reference", arguments.channel_isolation_reference),
+                ("--channel-isolation-experiment", arguments.channel_isolation_experiment),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--channel-isolation-declaration-readiness requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            conflicting = (
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--full-assessment", arguments.full_assessment),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--channel-isolation-declaration-readiness cannot be combined "
+                        f"with {option}."
+                    )
+        elif (
+            arguments.channel_isolation_reference is not None
+            or arguments.channel_isolation_experiment is not None
+        ):
+            raise ValueError(
+                "CHANNEL_ISOLATION declaration identifiers require "
+                "--channel-isolation-declaration-readiness."
+            )
         if arguments.generate_channel_isolation_records is not None:
             if arguments.microphone_position_output is None or arguments.acquisition_settings_output is None:
                 raise ValueError("--generate-channel-isolation-records requires both worksheet output paths.")
@@ -1584,6 +1693,19 @@ def main(
                 arguments.evidence_plan_preparation_registry,
                 brain=brain,
                 service=channel_isolation_guided_execution_service,
+                registry_repository=evidence_plan_preparation_registry_repository,
+            )
+            return 0
+        if arguments.channel_isolation_declaration_readiness is not None:
+            show_channel_isolation_declaration_readiness(
+                measurements_root,
+                arguments.channel_isolation_declaration_readiness,
+                arguments.channel_isolation_preparation,
+                arguments.evidence_plan_preparation_registry,
+                arguments.channel_isolation_reference,
+                arguments.channel_isolation_experiment,
+                brain=brain,
+                service=channel_isolation_declaration_readiness_service,
                 registry_repository=evidence_plan_preparation_registry_repository,
             )
             return 0
