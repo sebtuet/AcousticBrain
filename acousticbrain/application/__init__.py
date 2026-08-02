@@ -13,6 +13,11 @@ from .channel_isolation_plan_coverage import (
 from .channel_isolation_plan_result import (
     ChannelIsolationPlanResultEvaluator,
 )
+from .channel_isolation_guided_execution import (
+    ChannelIsolationExecutionChecklist,
+    ChannelIsolationGuidedExecutionJourney,
+    ChannelIsolationGuidedExecutionService,
+)
 from .experiment_declaration import ExperimentDeclarationService
 from .evidence_acquisition_contract import (
     EvidenceAcquisitionPlanContractService,
