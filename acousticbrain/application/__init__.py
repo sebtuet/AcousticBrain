@@ -40,6 +40,7 @@ from .evidence_plan_preparation import (
     EvidencePlanPreparationWorkflowService,
     GuidedEvidencePlanPreparationDraft,
     GuidedEvidencePlanPreparationDraftService,
+    GuidedEvidencePlanPreparationRevisionService,
     evidence_acquisition_plan_fingerprint,
 )
 from .exploratory import (
