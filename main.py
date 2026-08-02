@@ -1,4 +1,5 @@
 import argparse
+import json
 from contextlib import redirect_stdout
 from io import StringIO
 import os
@@ -22,6 +23,7 @@ from acousticbrain.application import (
     GuidedEvidencePlanPreparationRevisionService,
     ChannelIsolationGuidedExecutionService,
     ChannelIsolationOperationalWorksheetService,
+    ChannelIsolationOperationalRecordPreviewService,
     ExploratoryExperimentDeclarationService,
 )
 from acousticbrain.report import (
@@ -257,6 +259,18 @@ def create_parser():
     )
     parser.add_argument(
         "--acquisition-settings-output", type=Path, default=None, metavar="PATH"
+    )
+    parser.add_argument(
+        "--preview-channel-isolation-records",
+        default=None,
+        metavar="PLAN_ID",
+        help="preview two operational worksheet files without writing",
+    )
+    parser.add_argument(
+        "--microphone-position-record", type=Path, default=None, metavar="PATH"
+    )
+    parser.add_argument(
+        "--acquisition-settings-record", type=Path, default=None, metavar="PATH"
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -775,6 +789,48 @@ def generate_channel_isolation_records(
     return result
 
 
+def preview_channel_isolation_records(
+    measurements_root, plan_id, microphone_path, settings_path, *, brain=None,
+    service=None,
+):
+    try:
+        microphone = json.loads(microphone_path.read_text(encoding="utf-8"))
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"Invalid channel-isolation worksheet JSON: {error}") from error
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root, compare_experiments=True,
+        analyze_causal_discrimination=True, synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Worksheet preview requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Worksheet preview analysis contracts are unavailable.")
+    result = (service or ChannelIsolationOperationalRecordPreviewService()).preview(
+        plan_id, microphone, settings, plans=synthesis.plans
+    )
+    print("CHANNEL ISOLATION OPERATIONAL RECORDS PREVIEW")
+    print(result.status)
+    print()
+    print("Champs restant à documenter")
+    if result.missing_fields:
+        print("\n".join(result.missing_fields))
+    else:
+        print("aucun")
+    print()
+    print("Action utilisateur")
+    if result.status == "DOCUMENTATION_INCOMPLETE":
+        print("Renseigner explicitement les champs listés, ou conserver les fiches incomplètes.")
+    else:
+        print("Examiner séparément si ces documents soutiennent une nouvelle déclaration de préparation.")
+    print("Aucun prérequis confirmé et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
 def parse_preparation_statuses(values):
     result = {}
     for value in values:
@@ -973,6 +1029,7 @@ def main(
     channel_isolation_guided_execution_service=None,
     guided_preparation_revision_service=None,
     channel_isolation_operational_worksheet_service=None,
+    channel_isolation_operational_record_preview_service=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -1073,6 +1130,24 @@ def main(
                 raise ValueError("--generate-channel-isolation-records requires both worksheet output paths.")
         elif arguments.microphone_position_output is not None or arguments.acquisition_settings_output is not None:
             raise ValueError("Worksheet output paths require --generate-channel-isolation-records.")
+        if arguments.preview_channel_isolation_records is not None:
+            if arguments.microphone_position_record is None or arguments.acquisition_settings_record is None:
+                raise ValueError("--preview-channel-isolation-records requires both operational record paths.")
+            conflicting = (
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--full-assessment", arguments.full_assessment),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--preview-channel-isolation-records cannot be combined "
+                        f"with {option}."
+                    )
+        elif arguments.microphone_position_record is not None or arguments.acquisition_settings_record is not None:
+            raise ValueError("Operational record paths require --preview-channel-isolation-records.")
         if (
             arguments.evidence_plan_preparation_output is not None
             and arguments.generate_evidence_plan_preparation is None
@@ -1427,6 +1502,16 @@ def main(
                 arguments.acquisition_settings_output,
                 brain=brain,
                 service=channel_isolation_operational_worksheet_service,
+            )
+            return 0
+        if arguments.preview_channel_isolation_records is not None:
+            preview_channel_isolation_records(
+                measurements_root,
+                arguments.preview_channel_isolation_records,
+                arguments.microphone_position_record,
+                arguments.acquisition_settings_record,
+                brain=brain,
+                service=channel_isolation_operational_record_preview_service,
             )
             return 0
         if arguments.generate_evidence_plan_preparation is not None:
