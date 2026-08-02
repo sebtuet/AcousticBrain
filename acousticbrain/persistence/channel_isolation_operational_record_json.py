@@ -32,6 +32,35 @@ class _StrictLoader:
             raise ValueError("Unknown operational record fields: " + ", ".join(unknown))
         return self._model(value)
 
+    @staticmethod
+    def dumps_worksheet(value, *, indent=2):
+        if not isinstance(value, dict):
+            raise TypeError("Channel-isolation worksheet must be an object.")
+        return json.dumps(
+            value,
+            indent=indent,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+
+    @classmethod
+    def save_new_worksheet(cls, path, value):
+        target = Path(path)
+        if target.exists():
+            raise ValueError(
+                f"Channel-isolation worksheet output already exists: {target}"
+            )
+        if not target.parent.exists() or not target.parent.is_dir():
+            raise ValueError(
+                f"Channel-isolation worksheet parent is unavailable: {target.parent}"
+            )
+        serialized = cls.dumps_worksheet(value) + "\n"
+        temporary = target.with_suffix(target.suffix + ".tmp")
+        temporary.write_text(serialized, encoding="utf-8")
+        temporary.replace(target)
+        return target
+
 
 class ChannelIsolationMicrophonePositionRecordJsonLoader(_StrictLoader):
     fields = ("schema_version", "record_id", "plan_id", "plan_contract_fingerprint", "reference_geometry", "position_description", "orientation_description", "documentation_source", "user_note")
