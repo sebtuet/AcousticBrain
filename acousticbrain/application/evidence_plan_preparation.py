@@ -131,6 +131,60 @@ class GuidedEvidencePlanPreparationDraftService:
         )
 
 
+class GuidedEvidencePlanPreparationRevisionService:
+    """Creates a new explicit-status draft without mutating its source."""
+
+    def __init__(self, resolver=None):
+        self.resolver = resolver or EvidencePlanPreparationResolver()
+
+    def revise(self, source_input, statuses, *, plans, registry):
+        if not isinstance(statuses, dict) or any(
+            not isinstance(code, str)
+            or not isinstance(status, EvidencePlanPrerequisiteStatus)
+            for code, status in statuses.items()
+        ):
+            raise TypeError("Guided preparation statuses must be an exact typed map.")
+        if not isinstance(registry, EvidencePlanPreparationRegistry):
+            raise TypeError("EvidencePlanPreparationRegistry is required.")
+        resolution = self.resolver.resolve(source_input, plans=plans)
+        expected = set(resolution.plan.required_inputs)
+        supplied = set(statuses)
+        if expected != supplied:
+            missing = tuple(sorted(expected - supplied))
+            extra = tuple(sorted(supplied - expected))
+            details = []
+            if missing:
+                details.append("missing: " + ", ".join(missing))
+            if extra:
+                details.append("extra: " + ", ".join(extra))
+            raise ValueError("GUIDED_PREPARATION_STATUS_SET_MISMATCH: " + "; ".join(details))
+        fingerprint = source_input.plan_contract_fingerprint
+        prefix = f"preparation-{fingerprint[:12]}-"
+        unavailable = {
+            source_input.confirmation_id,
+            *(value.confirmation_input.confirmation_id for value in registry.records),
+        }
+        ordinal = 1
+        while f"{prefix}{ordinal}" in unavailable:
+            ordinal += 1
+        revised = EvidencePlanPreparationConfirmationInput(
+            schema_version=source_input.schema_version,
+            confirmation_id=f"{prefix}{ordinal}",
+            plan_id=source_input.plan_id,
+            plan_contract_fingerprint=fingerprint,
+            prerequisites=tuple(
+                EvidencePlanPrerequisiteDeclaration(code=code, status=statuses[code])
+                for code in resolution.plan.required_inputs
+            ),
+            declaration_source=source_input.declaration_source,
+            user_note=source_input.user_note,
+        )
+        return GuidedEvidencePlanPreparationDraft(
+            plan=resolution.plan,
+            confirmation_input=revised,
+        )
+
+
 def evidence_acquisition_plan_fingerprint(plan):
     if not isinstance(plan, EvidenceAcquisitionPlan):
         raise TypeError("EvidenceAcquisitionPlan is required.")
