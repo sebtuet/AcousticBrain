@@ -27,6 +27,11 @@ from .channel_isolation_operational_record_preview import (
     ChannelIsolationOperationalRecordPreview,
     ChannelIsolationOperationalRecordPreviewService,
 )
+from .channel_isolation_documentation_review import (
+    ChannelIsolationDocumentationReview,
+    ChannelIsolationDocumentationReviewRow,
+    ChannelIsolationDocumentationReviewService,
+)
 from .experiment_declaration import ExperimentDeclarationService
 from .evidence_acquisition_contract import (
     EvidenceAcquisitionPlanContractService,
