@@ -15,6 +15,10 @@ from .evidence_plan_preparation_registry_json import (
     EvidencePlanPreparationRegistryJsonCodec,
     EvidencePlanPreparationRegistryJsonRepository,
 )
+from .channel_isolation_operational_record_json import (
+    ChannelIsolationAcquisitionSettingsRecordJsonLoader,
+    ChannelIsolationMicrophonePositionRecordJsonLoader,
+)
 from .evidence_plan_completion_registry_json import (
     EvidencePlanCompletionRegistryJsonCodec,
     EvidencePlanCompletionRegistryJsonRepository,

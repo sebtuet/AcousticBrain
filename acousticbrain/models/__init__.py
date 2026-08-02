@@ -88,6 +88,11 @@ from .channel_isolation_plan_coverage import (
     PlanCoverageResult,
     PlanCoverageStatus,
 )
+from .channel_isolation_operational_record import (
+    AcquisitionSettingsReuseDeclaration,
+    ChannelIsolationAcquisitionSettingsRecord,
+    ChannelIsolationMicrophonePositionRecord,
+)
 from .channel_isolation_plan_result import (
     ChannelIsolationCriterionEvaluation,
     ChannelIsolationCriterionOperator,
