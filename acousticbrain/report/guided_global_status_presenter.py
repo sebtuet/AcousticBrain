@@ -3,6 +3,7 @@ from pathlib import Path
 import shlex
 
 from .experiment_user_view_presenter import PresentedExperimentUserView
+from .experiment_discovery_presenter import PresentedDiscoveredExperiment
 
 from acousticbrain.application import (
     ChannelIsolationDeclarationReadiness,
@@ -218,6 +219,66 @@ class GuidedGlobalStatusPresenter:
                 "Générer un nouveau brouillon depuis le plan actuel avec "
                 f"--generate-evidence-plan-preparation {recommended.plan_id}.",
             )
+        declared_candidates = tuple(
+            value for value in experiments
+            if declared_experiment_view is None
+            and getattr(
+                value,
+                "channel_isolation_preparation_confirmation_id",
+                None,
+            ) == confirmation.confirmation_id
+        )
+        if any(
+            not isinstance(value, PresentedDiscoveredExperiment)
+            for value in declared_candidates
+        ):
+            raise TypeError(
+                "Guided global status declared experiment candidates are invalid."
+            )
+        if any(
+            not isinstance(value.experiment_id, str)
+            or not value.experiment_id
+            or value.experiment_id != value.experiment_id.strip()
+            for value in declared_candidates
+        ):
+            raise ValueError(
+                "Guided global status declared experiment candidate id must be "
+                "exact text."
+            )
+        declared_candidates = tuple(sorted(
+            declared_candidates,
+            key=lambda value: value.experiment_id,
+        ))
+        candidate_ids = tuple(value.experiment_id for value in declared_candidates)
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError(
+                "Guided global status declared experiment candidate identity is "
+                "ambiguous."
+            )
+        for candidate in declared_candidates:
+            if candidate.source_evidence_acquisition_plan_id != recommended.plan_id:
+                raise ValueError(
+                    "Guided global status declared experiment candidate targets "
+                    "another plan."
+                )
+            if (
+                candidate.channel_isolation_preparation_plan_fingerprint
+                != confirmation.plan_contract_fingerprint
+                or candidate.channel_isolation_preparation_qualification_status
+                != "ALL_PREREQUISITES_USER_CONFIRMED"
+            ):
+                raise ValueError(
+                    "Guided global status declared experiment candidate preparation "
+                    "provenance is inconsistent."
+                )
+            if candidate.evidence_acquisition_plan_coverage_status not in (
+                "PLAN_COVERAGE_PARTIAL",
+                "PLAN_COVERAGE_COMPLETE",
+            ):
+                raise ValueError(
+                    "Guided global status declared experiment candidate specialized "
+                    "declaration is insufficient."
+                )
         unresolved = tuple(
             value for value in confirmation.prerequisites
             if value.status is not EvidencePlanPrerequisiteStatus.CONFIRMED
@@ -411,6 +472,42 @@ class GuidedGlobalStatusPresenter:
                 blocker_lines,
                 expected_action_state,
                 expected_action,
+            )
+        if declared_candidates:
+            if unresolved:
+                raise ValueError(
+                    "Guided global status declared experiment candidates conflict "
+                    "with an incomplete preparation."
+                )
+            identifiers = ", ".join(candidate_ids)
+            single = len(declared_candidates) == 1
+            return self._result(
+                (
+                    "READY_PLAN_DECLARED_EXPERIMENT_SELECTION_REQUIRED"
+                    if single
+                    else "READY_PLAN_DECLARED_EXPERIMENT_SELECTION_AMBIGUOUS"
+                ),
+                (
+                    *current,
+                    f"Préparation : {confirmation.confirmation_id}.",
+                    "Expériences qualifiées découvertes : "
+                    + str(len(declared_candidates))
+                    + ".",
+                ),
+                (
+                    *validated,
+                    "Préparation exactement résolue et entièrement confirmée.",
+                    "Provenance des expériences qualifiées exactement reliée.",
+                ),
+                (
+                    "Aucune expérience sélectionnée explicitement parmi : "
+                    + identifiers
+                    + ".",
+                ),
+                "SELECT_EXACT_DECLARED_EXPERIMENT",
+                "Relancer cette vue avec --guided-declared-experiment "
+                + (candidate_ids[0] if single else "EXPERIMENT_ID")
+                + ".",
             )
         if unresolved:
             details = ", ".join(

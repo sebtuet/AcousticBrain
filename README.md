@@ -545,6 +545,11 @@ python main.py \
   --guided-declared-experiment exp-XXX
 ```
 
+Without `--guided-declared-experiment`, the same guided view lists any
+experiments carrying the exact selected preparation and asks for an explicit
+identifier. It never selects by recency, lifecycle state, or because only one
+candidate exists.
+
 The view preserves `ACQUISITION_PENDING`, `ACQUISITION_INCOMPLETE` and
 `COMPARISON_UNAVAILABLE` exactly. The last state means only that the declared
 specialized acquisition is complete and no unique local comparison is
