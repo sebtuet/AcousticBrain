@@ -84,6 +84,8 @@ from .evidence_plan_preparation import (
     EvidencePlanPrerequisiteStatus,
 )
 from .sbir_protocol_instance import (
+    SBIRProtocolInstanceCompatibility,
+    SBIRProtocolInstanceCompatibilityDecision,
     SBIRProtocolInstanceInput,
     SBIRProtocolInstanceResolution,
     SBIRProtocolInstanceResolutionDecision,

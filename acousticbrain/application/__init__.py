@@ -77,6 +77,9 @@ from .positioning_proposal_declaration import (
 )
 from .experiment_protocol_declaration import ExperimentProtocolDeclarationService
 from .sbir_protocol_instance_resolution import SBIRProtocolInstanceResolver
+from .sbir_protocol_instance_compatibility import (
+    SBIRProtocolInstanceCompatibilityValidator,
+)
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,
 )

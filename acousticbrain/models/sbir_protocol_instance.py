@@ -5,6 +5,9 @@ from math import isfinite
 from .evidence_acquisition import EvidenceAcquisitionPlan
 from .experiment_discovery import ExperimentDescriptor
 from .geometry_sbir_candidate import GeometrySBIRCandidate
+from .loudspeaker_positioning_experiment import (
+    LoudspeakerPositioningExperimentProposal,
+)
 
 
 class SBIRProtocolInstanceResolutionDecision(Enum):
@@ -16,6 +19,12 @@ class SBIRProtocolInstanceResolutionDecision(Enum):
     GEOMETRY_CANDIDATE_EXACTLY_RESOLVED = (
         "GEOMETRY_CANDIDATE_EXACTLY_RESOLVED"
     )
+
+
+class SBIRProtocolInstanceCompatibilityDecision(Enum):
+    SPEAKER_SURFACE_MATCH = "SPEAKER_SURFACE_MATCH"
+    DISPLACEMENT_SOURCE_MATCH = "DISPLACEMENT_SOURCE_MATCH"
+    PROTOCOL_INSTANCE_COMPATIBLE = "PROTOCOL_INSTANCE_COMPATIBLE"
 
 
 @dataclass(frozen=True)
@@ -180,5 +189,55 @@ class SBIRProtocolInstanceResolution:
         if self.decisions != self.EXPECTED_DECISIONS:
             raise ValueError(
                 "SBIR protocol-instance resolution decisions are incomplete or "
+                "out of order."
+            )
+
+
+@dataclass(frozen=True)
+class SBIRProtocolInstanceCompatibility:
+    resolution: SBIRProtocolInstanceResolution
+    displacement_proposal: LoudspeakerPositioningExperimentProposal
+    decisions: tuple[SBIRProtocolInstanceCompatibilityDecision, ...]
+
+    EXPECTED_DECISIONS = tuple(SBIRProtocolInstanceCompatibilityDecision)
+
+    def __post_init__(self):
+        if not isinstance(self.resolution, SBIRProtocolInstanceResolution):
+            raise TypeError("SBIR protocol-instance compatibility requires resolution.")
+        if not isinstance(
+            self.displacement_proposal,
+            LoudspeakerPositioningExperimentProposal,
+        ):
+            raise TypeError(
+                "SBIR protocol-instance compatibility requires a displacement "
+                "proposal."
+            )
+        value = self.resolution.protocol_instance_input
+        candidate = self.resolution.geometry_candidate
+        proposal = self.displacement_proposal
+        if candidate.speaker_id != value.speaker_id:
+            raise ValueError(
+                "SBIR protocol-instance compatible speaker identity is inconsistent."
+            )
+        if candidate.surface_id != value.surface_id:
+            raise ValueError(
+                "SBIR protocol-instance compatible surface identity is inconsistent."
+            )
+        if proposal.source_geometry_candidate_id != candidate.candidate_id:
+            raise ValueError(
+                "SBIR protocol-instance displacement proposal association is "
+                "inconsistent."
+            )
+        if proposal.source_surface_id != candidate.surface_id:
+            raise ValueError(
+                "SBIR protocol-instance displacement proposal surface is inconsistent."
+            )
+        if proposal.step_distance_m != value.speaker_displacement_m:
+            raise ValueError(
+                "SBIR protocol-instance displacement proposal value is inconsistent."
+            )
+        if self.decisions != self.EXPECTED_DECISIONS:
+            raise ValueError(
+                "SBIR protocol-instance compatibility decisions are incomplete or "
                 "out of order."
             )
