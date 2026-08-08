@@ -148,6 +148,24 @@ The view reuses the plan already recommended by the deterministic report. It
 never ranks plans again, chooses between several preparation declarations,
 changes a prerequisite, declares an experiment or executes a measurement.
 
+For an exactly selected incomplete `CHANNEL_ISOLATION` preparation, include
+both explicit operational worksheets to distinguish missing documentation from
+documentation that is complete but still awaits a separate user declaration:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --guided-status \
+  --guided-preparation-registry state/evidence-plan-preparations.json \
+  --guided-preparation EXACT_CONFIRMATION_ID \
+  --microphone-position-record microphone-position.json \
+  --acquisition-settings-record acquisition-settings.json
+```
+
+The files are never discovered automatically, and their completeness never
+confirms a prerequisite. The extension contract is frozen in
+[`docs/GUIDED_GLOBAL_STATUS_OPERATIONAL_DOCUMENTATION_CONTRACT.md`](docs/GUIDED_GLOBAL_STATUS_OPERATIONAL_DOCUMENTATION_CONTRACT.md).
+
 ### Guided CHANNEL_ISOLATION worksheet revision
 
 Generated operational worksheets now print one neutral question and one

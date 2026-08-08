@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 import main as acousticbrain_main
+from acousticbrain.application import ChannelIsolationOperationalWorksheetService
 from acousticbrain.models import (
     EvidencePlanPreparationRegistry,
     EvidencePlanPrerequisiteStatus,
@@ -61,6 +62,55 @@ def test_cli_without_registry_does_not_attempt_discovery(tmp_path, capsys):
     assert "aucun registre explicite fourni" in capsys.readouterr().out
 
 
+def test_cli_projects_explicit_incomplete_operational_records_without_writing(
+    tmp_path, capsys
+):
+    plan = ready_plan()
+    worksheets = ChannelIsolationOperationalWorksheetService().generate(
+        plan.plan_id, plans=(plan,)
+    )
+    microphone_path = tmp_path / "microphone.json"
+    settings_path = tmp_path / "settings.json"
+    registry_path = tmp_path / "preparations.json"
+    microphone_path.write_text(
+        acousticbrain_main.json.dumps(worksheets.microphone_position),
+        encoding="utf-8",
+    )
+    settings_path.write_text(
+        acousticbrain_main.json.dumps(worksheets.acquisition_settings),
+        encoding="utf-8",
+    )
+    registry_path.write_text("preserve\n", encoding="utf-8")
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+    )
+    repository = Repository(
+        EvidencePlanPreparationRegistry().with_record(confirmation)
+    )
+    before = {
+        path.name: path.read_bytes() for path in tmp_path.iterdir()
+    }
+    result = acousticbrain_main.show_guided_status(
+        tmp_path,
+        registry_path,
+        confirmation.confirmation_input.confirmation_id,
+        brain=Brain(),
+        registry_repository=repository,
+        microphone_position_path=microphone_path,
+        acquisition_settings_path=settings_path,
+    )
+    output = capsys.readouterr().out
+    assert result.workflow_state == (
+        "READY_PLAN_OPERATIONAL_DOCUMENTATION_INCOMPLETE"
+    )
+    assert "microphone_position.reference_geometry" in output
+    assert "documented_microphone_position=UNKNOWN" in output
+    assert {
+        path.name: path.read_bytes() for path in tmp_path.iterdir()
+    } == before
+
+
 def test_main_rejects_guided_registry_without_guided_status(tmp_path, capsys):
     root = tmp_path / "measurements"
     root.mkdir()
@@ -82,6 +132,37 @@ def test_main_requires_registry_for_explicit_guided_preparation(tmp_path, capsys
             "--guided-preparation", "preparation-001",
         ))
     assert "requires --guided-preparation-registry" in capsys.readouterr().err
+
+
+def test_main_requires_exact_preparation_for_guided_operational_records(
+    tmp_path, capsys
+):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(root),
+            "--guided-status",
+            "--microphone-position-record", str(tmp_path / "microphone.json"),
+            "--acquisition-settings-record", str(tmp_path / "settings.json"),
+        ))
+    assert "requires --guided-preparation-registry and --guided-preparation" in (
+        capsys.readouterr().err
+    )
+
+
+def test_main_requires_both_guided_operational_record_paths(tmp_path, capsys):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(root),
+            "--guided-status",
+            "--guided-preparation-registry", str(tmp_path / "registry.json"),
+            "--guided-preparation", "preparation-001",
+            "--microphone-position-record", str(tmp_path / "microphone.json"),
+        ))
+    assert "requires both --microphone-position-record" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(
