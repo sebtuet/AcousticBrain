@@ -9,6 +9,10 @@ from .evidence_acquisition_contract_json import (
 )
 from .evidence_plan_completion_json import EvidencePlanCompletionInputJsonLoader
 from .sbir_protocol_instance_json import SBIRProtocolInstanceInputJsonLoader
+from .sbir_protocol_instance_registry_json import (
+    SBIRProtocolInstanceRegistryJsonCodec,
+    SBIRProtocolInstanceRegistryJsonRepository,
+)
 from .evidence_plan_preparation_json import (
     EvidencePlanPreparationConfirmationJsonLoader,
 )
