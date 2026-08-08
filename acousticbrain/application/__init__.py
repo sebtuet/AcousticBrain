@@ -80,6 +80,10 @@ from .sbir_protocol_instance_resolution import SBIRProtocolInstanceResolver
 from .sbir_protocol_instance_compatibility import (
     SBIRProtocolInstanceCompatibilityValidator,
 )
+from .sbir_protocol_instance_recording import (
+    SBIRProtocolInstanceRecordingResult,
+    SBIRProtocolInstanceRecordingService,
+)
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,
 )

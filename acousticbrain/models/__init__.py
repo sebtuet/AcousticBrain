@@ -87,6 +87,8 @@ from .sbir_protocol_instance import (
     SBIRProtocolInstanceCompatibility,
     SBIRProtocolInstanceCompatibilityDecision,
     SBIRProtocolInstanceInput,
+    SBIRProtocolInstanceRecord,
+    SBIRProtocolInstanceRegistry,
     SBIRProtocolInstanceResolution,
     SBIRProtocolInstanceResolutionDecision,
 )

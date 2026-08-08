@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = STRUCTURED_INPUT_AND_EXISTING_SOURCE_RESOLUTION_ONLY
 scientific_authority = NONE
-implementation_status = NOT_IMPLEMENTED
+implementation_status = IMPLEMENTED_WITHOUT_CLI
 ```
 
 ## Purpose
@@ -112,6 +112,11 @@ mean that:
 Compatibility may unlock a separate declaration preflight only. Manifest
 writing, acquisition, comparison, result evaluation and prescription remain
 outside this contract.
+
+Compatible instances are recorded in a dedicated immutable registry. Recording
+the same contract again is byte-idempotent; divergent content under the same
+`protocol_instance_id` is rejected before any write. This registry is not an
+experiment manifest and does not declare an experiment.
 
 ## Explicitly outside V1
 
