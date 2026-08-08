@@ -12,6 +12,7 @@ from .channel_isolation_guided_execution import (
 class ChannelIsolationDeclarationReadiness:
     plan_id: str
     confirmation_id: str
+    preparation_contract_fingerprint: str
     reference_experiment_id: str
     experiment_id: str
     statuses: tuple[str, ...] = (
@@ -25,6 +26,17 @@ class ChannelIsolationDeclarationReadiness:
     user_action_state: str = "DECLARE_EXPERIMENT_SEPARATELY"
 
     def __post_init__(self):
+        if (
+            not isinstance(self.preparation_contract_fingerprint, str)
+            or len(self.preparation_contract_fingerprint) != 64
+            or any(
+                value not in "0123456789abcdef"
+                for value in self.preparation_contract_fingerprint
+            )
+        ):
+            raise ValueError(
+                "Channel-isolation preparation fingerprint is invalid."
+            )
         if self.statuses[-1] != "DECLARATION_READY":
             raise ValueError("Channel-isolation declaration readiness is invalid.")
         if self.user_action_state != "DECLARE_EXPERIMENT_SEPARATELY":
@@ -71,6 +83,9 @@ class ChannelIsolationDeclarationReadinessService:
             plan_id=journey.plan.plan_id,
             confirmation_id=(
                 journey.preparation_record.confirmation_input.confirmation_id
+            ),
+            preparation_contract_fingerprint=(
+                journey.preparation_record.confirmation_input.plan_contract_fingerprint
             ),
             reference_experiment_id=reference_experiment_id,
             experiment_id=experiment_id,

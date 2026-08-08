@@ -142,6 +142,11 @@ def test_cli_projects_exact_declaration_readiness_without_creating_target(
     assert output.count("Action utilisateur") == 1
     assert "--experiment channel-isolation-001" in output
     assert "--reference baseline" in output
+    assert "--preparation-registry" in output
+    assert (
+        "--preparation " + confirmation.confirmation_input.confirmation_id
+        in output
+    )
     assert not (tmp_path / "channel-isolation-001").exists()
     assert {
         path.name: path.read_bytes() if path.is_file() else None

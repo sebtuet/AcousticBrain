@@ -516,6 +516,23 @@ This extends the existing plan → declaration → comparison pipeline; it does 
 introduce a parallel engine. See
 [`docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md`](docs/EVIDENCE_ACQUISITION_PLAN_CONTRACT_PRESERVATION.md).
 
+For a `CHANNEL_ISOLATION` plan that passed the explicit preparation preflight,
+preserve that preparation and the specialized declared acquisition structure:
+
+```bash
+python -m acousticbrain.commands.declare_evidence_plan_experiment \
+  measurements \
+  --plan-id PLAN_ID \
+  --experiment exp-XXX \
+  --reference baseline \
+  --preparation-registry state/evidence-plan-preparations.json \
+  --preparation CONFIRMATION_ID
+```
+
+The preflight runs before the target directory is created. This declaration
+still performs no acquisition. See
+[`docs/CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md`](docs/CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md).
+
 ## Tests
 
 Run the complete test suite:

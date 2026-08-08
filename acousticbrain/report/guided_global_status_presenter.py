@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+import shlex
 
 from acousticbrain.application import (
     ChannelIsolationDeclarationReadiness,
@@ -37,6 +38,7 @@ class GuidedGlobalStatusPresenter:
         self, report, *, plans, preparation_registry=None,
         preparation_id=None, operational_record_preview=None,
         declaration_readiness=None, measurement_root=None,
+        preparation_registry_path=None,
     ):
         if not isinstance(plans, tuple) or any(
             not isinstance(value, EvidenceAcquisitionPlan) for value in plans
@@ -85,6 +87,11 @@ class GuidedGlobalStatusPresenter:
                 raise TypeError(
                     "Guided global status declaration readiness requires an "
                     "exact measurement root."
+                )
+            if not isinstance(preparation_registry_path, Path):
+                raise TypeError(
+                    "Guided global status declaration readiness requires an "
+                    "exact preparation registry path."
                 )
         plan_report = getattr(report, "evidence_acquisition_plans", None)
         experiments = tuple(getattr(
@@ -259,12 +266,22 @@ class GuidedGlobalStatusPresenter:
                     "preparation."
                 )
             statuses = ", ".join(declaration_readiness.statuses)
-            command = (
-                "python -m acousticbrain.commands.declare_evidence_plan_experiment "
-                f"{measurement_root.resolve()} --plan-id {recommended.plan_id} "
-                f"--experiment {declaration_readiness.experiment_id} "
-                f"--reference {declaration_readiness.reference_experiment_id}"
-            )
+            command = shlex.join((
+                "python",
+                "-m",
+                "acousticbrain.commands.declare_evidence_plan_experiment",
+                str(measurement_root.resolve()),
+                "--plan-id",
+                recommended.plan_id,
+                "--experiment",
+                declaration_readiness.experiment_id,
+                "--reference",
+                declaration_readiness.reference_experiment_id,
+                "--preparation-registry",
+                str(preparation_registry_path.resolve()),
+                "--preparation",
+                confirmation.confirmation_id,
+            ))
             return self._result(
                 "READY_PLAN_DECLARATION_READY",
                 (

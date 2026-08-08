@@ -1192,6 +1192,7 @@ def show_guided_status(
         operational_record_preview=operational_preview,
         declaration_readiness=declaration_readiness,
         measurement_root=measurements_root,
+        preparation_registry_path=preparation_registry_path,
     )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
