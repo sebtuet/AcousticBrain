@@ -3,7 +3,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from acousticbrain.application import evidence_acquisition_plan_fingerprint
+from acousticbrain.application import (
+    ChannelIsolationOperationalRecordPreview,
+    evidence_acquisition_plan_fingerprint,
+)
 from acousticbrain.models import (
     EvidenceAcquisitionPlanSynthesis,
     EvidenceAcquisitionStatus,
@@ -186,6 +189,118 @@ def test_all_confirmed_routes_only_to_existing_readiness_preflight():
         report_for(plan),
         plans=(plan,),
         preparation_registry=registry_with(value),
+    )
+    assert result.workflow_state == "READY_PLAN_PREPARATION_CONFIRMED"
+    assert result.user_action_state == "RUN_DECLARATION_READINESS"
+
+
+def test_incomplete_operational_documentation_lists_exact_missing_fields():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+        EvidencePlanPrerequisiteStatus.NOT_CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    preview = ChannelIsolationOperationalRecordPreview(
+        status="DOCUMENTATION_INCOMPLETE",
+        missing_fields=(
+            "acquisition_settings.gain",
+            "microphone_position.reference_geometry",
+        ),
+        microphone_position=None,
+        acquisition_settings=None,
+        user_action_state="COMPLETE_OPERATIONAL_DOCUMENTATION",
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        operational_record_preview=preview,
+    )
+    assert result.workflow_state == (
+        "READY_PLAN_OPERATIONAL_DOCUMENTATION_INCOMPLETE"
+    )
+    assert result.user_action_state == "REVISE_OPERATIONAL_WORKSHEETS"
+    assert "acquisition_settings.gain" in result.blocker_lines[0]
+    assert "microphone_position.reference_geometry" in result.blocker_lines[0]
+    assert "documented_microphone_position=UNKNOWN" in result.blocker_lines[1]
+    assert "existing_acquisition_settings=NOT_CONFIRMED" in result.blocker_lines[1]
+
+
+def test_complete_documentation_never_confirms_incomplete_preparation():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+        confirmation_id="preparation-001",
+    )
+    preview = ChannelIsolationOperationalRecordPreview(
+        status="DOCUMENTATION_COMPLETE",
+        missing_fields=(),
+        microphone_position=object(),
+        acquisition_settings=object(),
+        user_action_state="REVIEW_PREPARATION_STATUS_SEPARATELY",
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        operational_record_preview=preview,
+    )
+    assert result.workflow_state == (
+        "READY_PLAN_OPERATIONAL_DOCUMENTATION_COMPLETE_PREPARATION_INCOMPLETE"
+    )
+    assert result.user_action_state == "REVIEW_EXACT_PREPARATION"
+    assert "documentation opérationnelle complète" in " ".join(
+        result.validated_step_lines
+    ).lower()
+    assert "UNKNOWN" in result.blocker_lines[0]
+    assert result.causality_status == "NOT_ESTABLISHED"
+
+
+def test_operational_documentation_requires_one_explicit_preparation():
+    plan = ready_plan()
+    preview = ChannelIsolationOperationalRecordPreview(
+        status="DOCUMENTATION_INCOMPLETE",
+        missing_fields=("acquisition_settings.gain",),
+        microphone_position=None,
+        acquisition_settings=None,
+        user_action_state="COMPLETE_OPERATIONAL_DOCUMENTATION",
+    )
+    with pytest.raises(ValueError, match="one exact preparation selection"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(preparation(
+                EvidencePlanPrerequisiteStatus.UNKNOWN,
+                EvidencePlanPrerequisiteStatus.UNKNOWN,
+            )),
+            operational_record_preview=preview,
+        )
+
+
+def test_operational_documentation_never_demotes_confirmed_preparation():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    preview = ChannelIsolationOperationalRecordPreview(
+        status="DOCUMENTATION_INCOMPLETE",
+        missing_fields=("acquisition_settings.gain",),
+        microphone_position=None,
+        acquisition_settings=None,
+        user_action_state="COMPLETE_OPERATIONAL_DOCUMENTATION",
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        operational_record_preview=preview,
     )
     assert result.workflow_state == "READY_PLAN_PREPARATION_CONFIRMED"
     assert result.user_action_state == "RUN_DECLARATION_READINESS"

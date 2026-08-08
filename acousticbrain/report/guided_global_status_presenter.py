@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from acousticbrain.application import (
+    ChannelIsolationOperationalRecordPreview,
     EvidencePlanPreparationResolver,
 )
 from acousticbrain.models import (
@@ -32,7 +33,7 @@ class GuidedGlobalStatusPresenter:
 
     def present(
         self, report, *, plans, preparation_registry=None,
-        preparation_id=None,
+        preparation_id=None, operational_record_preview=None,
     ):
         if not isinstance(plans, tuple) or any(
             not isinstance(value, EvidenceAcquisitionPlan) for value in plans
@@ -52,6 +53,19 @@ class GuidedGlobalStatusPresenter:
             raise ValueError(
                 "Guided global status preparation id requires a registry."
             )
+        if operational_record_preview is not None:
+            if not isinstance(
+                operational_record_preview,
+                ChannelIsolationOperationalRecordPreview,
+            ):
+                raise TypeError(
+                    "Guided global status operational record preview is invalid."
+                )
+            if preparation_registry is None or preparation_id is None:
+                raise ValueError(
+                    "Guided global status operational records require one exact "
+                    "preparation selection."
+                )
         plan_report = getattr(report, "evidence_acquisition_plans", None)
         experiments = tuple(getattr(
             getattr(report, "experiments_discovered", None), "experiments", ()
@@ -170,6 +184,40 @@ class GuidedGlobalStatusPresenter:
             details = ", ".join(
                 f"{value.code}={value.status.value}" for value in unresolved
             )
+            if operational_record_preview is not None:
+                if operational_record_preview.status == "DOCUMENTATION_INCOMPLETE":
+                    missing = ", ".join(operational_record_preview.missing_fields)
+                    return self._result(
+                        "READY_PLAN_OPERATIONAL_DOCUMENTATION_INCOMPLETE",
+                        (*current, f"Préparation : {confirmation.confirmation_id}."),
+                        (*validated, "Préparation exactement résolue."),
+                        (
+                            "Documentation opérationnelle incomplète : " + missing + ".",
+                            "Prérequis non confirmés : " + details + ".",
+                        ),
+                        "REVISE_OPERATIONAL_WORKSHEETS",
+                        "Compléter uniquement les champs documentaires listés avec "
+                        f"--revise-channel-isolation-records {recommended.plan_id}.",
+                    )
+                if operational_record_preview.status == "DOCUMENTATION_COMPLETE":
+                    return self._result(
+                        "READY_PLAN_OPERATIONAL_DOCUMENTATION_COMPLETE_PREPARATION_INCOMPLETE",
+                        (*current, f"Préparation : {confirmation.confirmation_id}."),
+                        (
+                            *validated,
+                            "Préparation exactement résolue.",
+                            "Documentation opérationnelle complète et exactement reliée au plan.",
+                        ),
+                        ("Prérequis non confirmés : " + details + ".",),
+                        "REVIEW_EXACT_PREPARATION",
+                        "Consulter sans modification avec "
+                        "--evidence-plan-preparation-view "
+                        f"{confirmation.confirmation_id}.",
+                    )
+                raise ValueError(
+                    "Guided global status operational documentation status is unknown: "
+                    f"{operational_record_preview.status}."
+                )
             return self._result(
                 "READY_PLAN_PREPARATION_INCOMPLETE",
                 (*current, f"Préparation : {confirmation.confirmation_id}."),

@@ -1105,6 +1105,8 @@ def show_channel_isolation_declaration_readiness(
 def show_guided_status(
     measurements_root, preparation_registry_path=None, preparation_id=None, *, brain=None,
     presenter=None, reporter=None, registry_repository=None,
+    microphone_position_path=None, acquisition_settings_path=None,
+    operational_record_preview_service=None,
 ):
     analysis = (brain or AcousticBrain()).analyze(
         measurement_root=measurements_root,
@@ -1125,11 +1127,43 @@ def show_guided_status(
             registry_repository or EvidencePlanPreparationRegistryJsonRepository()
         )
         registry = repository.load(preparation_registry_path)
+    operational_preview = None
+    if microphone_position_path is not None or acquisition_settings_path is not None:
+        if microphone_position_path is None or acquisition_settings_path is None:
+            raise ValueError(
+                "Guided status operational documentation requires both record paths."
+            )
+        recommended = getattr(report.evidence_acquisition_plans, "recommended_plan", None)
+        if recommended is None:
+            raise ValueError(
+                "Guided status operational documentation requires one recommended plan."
+            )
+        try:
+            microphone = json.loads(
+                microphone_position_path.read_text(encoding="utf-8")
+            )
+            settings = json.loads(
+                acquisition_settings_path.read_text(encoding="utf-8")
+            )
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise ValueError(
+                f"Invalid guided-status operational worksheet JSON: {error}"
+            ) from error
+        operational_preview = (
+            operational_record_preview_service
+            or ChannelIsolationOperationalRecordPreviewService()
+        ).preview(
+            recommended.plan_id,
+            microphone,
+            settings,
+            plans=synthesis.plans,
+        )
     view = (presenter or GuidedGlobalStatusPresenter()).present(
         report,
         plans=synthesis.plans,
         preparation_registry=registry,
         preparation_id=preparation_id,
+        operational_record_preview=operational_preview,
     )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
@@ -1387,6 +1421,23 @@ def main(
                 raise ValueError(
                     "--guided-preparation requires --guided-preparation-registry."
                 )
+        guided_operational_paths = (
+            arguments.microphone_position_record,
+            arguments.acquisition_settings_record,
+        )
+        if arguments.guided_status and any(
+            value is not None for value in guided_operational_paths
+        ):
+            if any(value is None for value in guided_operational_paths):
+                raise ValueError(
+                    "--guided-status operational documentation requires both "
+                    "--microphone-position-record and --acquisition-settings-record."
+                )
+            if arguments.guided_preparation_registry is None or arguments.guided_preparation is None:
+                raise ValueError(
+                    "--guided-status operational documentation requires "
+                    "--guided-preparation-registry and --guided-preparation."
+                )
         if arguments.guided_status:
             conflicting = (
                 ("--listening-position-campaign", arguments.listening_position_campaign is not None),
@@ -1631,6 +1682,7 @@ def main(
             arguments.preview_channel_isolation_records is None
             and arguments.review_channel_isolation_documentation is None
             and arguments.revise_channel_isolation_records is None
+            and not arguments.guided_status
             and (arguments.microphone_position_record is not None or arguments.acquisition_settings_record is not None)
         ):
             raise ValueError("Operational record paths require a channel-isolation preview or review mode.")
@@ -1949,6 +2001,11 @@ def main(
                 presenter=guided_global_status_presenter,
                 reporter=guided_global_status_reporter,
                 registry_repository=evidence_plan_preparation_registry_repository,
+                microphone_position_path=arguments.microphone_position_record,
+                acquisition_settings_path=arguments.acquisition_settings_record,
+                operational_record_preview_service=(
+                    channel_isolation_operational_record_preview_service
+                ),
             )
             return 0
         if arguments.preview_evidence_plan_preparation is not None:
