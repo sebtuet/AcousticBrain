@@ -85,6 +85,7 @@ from .evidence_plan_preparation import (
 )
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,
+    ChannelIsolationPreparationProvenance,
     PlanCoverageResult,
     PlanCoverageStatus,
 )

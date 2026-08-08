@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import shlex
 
+from .experiment_user_view_presenter import PresentedExperimentUserView
+
 from acousticbrain.application import (
     ChannelIsolationDeclarationReadiness,
     ChannelIsolationOperationalRecordPreview,
@@ -39,6 +41,7 @@ class GuidedGlobalStatusPresenter:
         preparation_id=None, operational_record_preview=None,
         declaration_readiness=None, measurement_root=None,
         preparation_registry_path=None,
+        declared_experiment_view=None,
     ):
         if not isinstance(plans, tuple) or any(
             not isinstance(value, EvidenceAcquisitionPlan) for value in plans
@@ -92,6 +95,18 @@ class GuidedGlobalStatusPresenter:
                 raise TypeError(
                     "Guided global status declaration readiness requires an "
                     "exact preparation registry path."
+                )
+        if declared_experiment_view is not None:
+            if not isinstance(
+                declared_experiment_view, PresentedExperimentUserView
+            ):
+                raise TypeError(
+                    "Guided global status declared experiment view is invalid."
+                )
+            if preparation_registry is None or preparation_id is None:
+                raise ValueError(
+                    "Guided global status declared experiment requires one exact "
+                    "preparation selection."
                 )
         plan_report = getattr(report, "evidence_acquisition_plans", None)
         experiments = tuple(getattr(
@@ -207,6 +222,72 @@ class GuidedGlobalStatusPresenter:
             value for value in confirmation.prerequisites
             if value.status is not EvidencePlanPrerequisiteStatus.CONFIRMED
         )
+        if declared_experiment_view is not None:
+            if declared_experiment_view.source_plan_id != recommended.plan_id:
+                raise ValueError(
+                    "Guided global status declared experiment targets another plan."
+                )
+            if (
+                declared_experiment_view.preparation_confirmation_id
+                != confirmation.confirmation_id
+                or declared_experiment_view.preparation_plan_fingerprint
+                != confirmation.plan_contract_fingerprint
+                or declared_experiment_view.preparation_qualification_status
+                != "ALL_PREREQUISITES_USER_CONFIRMED"
+            ):
+                raise ValueError(
+                    "Guided global status declared experiment preparation "
+                    "provenance is inconsistent."
+                )
+            if declared_experiment_view.declared_plan_coverage_status not in (
+                "PLAN_COVERAGE_PARTIAL",
+                "PLAN_COVERAGE_COMPLETE",
+            ):
+                raise ValueError(
+                    "Guided global status declared experiment specialized "
+                    "declaration is insufficient."
+                )
+            if unresolved:
+                raise ValueError(
+                    "Guided global status declared experiment conflicts with an "
+                    "incomplete preparation."
+                )
+            if declared_experiment_view.lifecycle_state not in (
+                "ACQUISITION_PENDING",
+                "ACQUISITION_INCOMPLETE",
+            ):
+                raise ValueError(
+                    "Guided global status declared experiment is outside the "
+                    "acquisition stage."
+                )
+            lifecycle = declared_experiment_view.lifecycle_state
+            workflow = (
+                "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING"
+                if lifecycle == "ACQUISITION_PENDING"
+                else "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE"
+            )
+            return self._result(
+                workflow,
+                (
+                    *current,
+                    f"Préparation : {confirmation.confirmation_id}.",
+                    f"Expérience déclarée : {declared_experiment_view.experiment_id}.",
+                    f"Cycle de vie : {lifecycle}.",
+                ),
+                (
+                    *validated,
+                    "Contrat du plan, préparation et déclaration qualifiée "
+                    "exactement reliés.",
+                ),
+                (
+                    "Acquisition requise : LEFT, RIGHT et répétitions déclarées.",
+                    "Mesures attendues : "
+                    + ", ".join(plan.measurements_to_capture)
+                    + ".",
+                ),
+                "COMPLETE_REQUIRED_ACQUISITION",
+                declared_experiment_view.user_action,
+            )
         if unresolved:
             details = ", ".join(
                 f"{value.code}={value.status.value}" for value in unresolved

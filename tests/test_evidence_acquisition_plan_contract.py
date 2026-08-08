@@ -388,6 +388,29 @@ def test_qualified_channel_isolation_command_preserves_preparation_and_structure
     }
     assert manifest["source_evidence_acquisition_plan_id"] == source.plan_id
     assert not (root / "exp-008" / "measurements").exists()
+    pending_descriptors = ExperimentDiscoveryService().discover(root)
+    from acousticbrain.report import ExperimentUserViewPresenter
+
+    pending_report = SimpleNamespace(
+        experiments_discovered=ExperimentDiscoveryPresenter().present(
+            SimpleNamespace(
+                experiment_descriptors=pending_descriptors,
+                evidence_acquisition_plan_synthesis=SimpleNamespace(
+                    plans=(source,)
+                ),
+            )
+        ),
+        experiment_comparison=SimpleNamespace(local_comparisons=()),
+        evidence_acquisition_plans=presented,
+    )
+    pending_view = ExperimentUserViewPresenter().present(
+        pending_report, "exp-008"
+    )
+    assert pending_view.lifecycle_state == "ACQUISITION_PENDING"
+    assert pending_view.preparation_confirmation_id == (
+        confirmation.confirmation_input.confirmation_id
+    )
+    assert pending_view.declared_plan_coverage_status == "PLAN_COVERAGE_PARTIAL"
     measurements = root / "exp-008" / "measurements"
     measurements.mkdir()
     for channel in ("LEFT", "RIGHT"):
@@ -402,6 +425,12 @@ def test_qualified_channel_isolation_command_preserves_preparation_and_structure
 
     coverage = ChannelIsolationPlanCoverageValidator().validate(
         descriptor, source
+    )
+    assert descriptor.channel_isolation_preparation.confirmation_id == (
+        confirmation.confirmation_input.confirmation_id
+    )
+    assert descriptor.channel_isolation_preparation.plan_contract_fingerprint == (
+        confirmation.confirmation_input.plan_contract_fingerprint
     )
     assert coverage.status is PlanCoverageStatus.COMPLETE
 

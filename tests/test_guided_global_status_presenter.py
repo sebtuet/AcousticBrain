@@ -18,6 +18,7 @@ from acousticbrain.report import (
     EvidenceAcquisitionPlanPresenter,
     GuidedGlobalStatusConsoleReporter,
     GuidedGlobalStatusPresenter,
+    PresentedExperimentUserView,
 )
 from test_evidence_plan_preparation_registry import record
 from test_evidence_plan_preparation_resolution import ready_plan
@@ -368,6 +369,113 @@ def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
             declaration_readiness=readiness,
             measurement_root=tmp_path,
             preparation_registry_path=tmp_path / "preparations.json",
+        )
+
+
+def declared_experiment_view(plan, confirmation_id, fingerprint, lifecycle):
+    return PresentedExperimentUserView(
+        experiment_id="exp-008",
+        lifecycle_state=lifecycle,
+        intent_lines=(plan.objective,),
+        user_action_state="COMPLETE_REQUIRED_ACQUISITION",
+        user_action="Compléter l’acquisition requise déjà déclarée.",
+        observed_result="NOT_AVAILABLE",
+        observed_result_lines=("Aucune comparaison locale unique n’est disponible.",),
+        scientific_boundary_lines=("Comparaison locale indisponible.",),
+        causality_status="NOT_ESTABLISHED",
+        source_plan_id=plan.plan_id,
+        preparation_confirmation_id=confirmation_id,
+        preparation_plan_fingerprint=fingerprint,
+        preparation_qualification_status="ALL_PREREQUISITES_USER_CONFIRMED",
+        declared_plan_coverage_status="PLAN_COVERAGE_PARTIAL",
+    )
+
+
+@pytest.mark.parametrize(
+    ("lifecycle", "workflow"),
+    (
+        (
+            "ACQUISITION_PENDING",
+            "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING",
+        ),
+        (
+            "ACQUISITION_INCOMPLETE",
+            "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE",
+        ),
+    ),
+)
+def test_declared_experiment_projects_exact_acquisition_stage(lifecycle, workflow):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        lifecycle,
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        declared_experiment_view=view,
+    )
+    assert result.workflow_state == workflow
+    assert result.user_action_state == "COMPLETE_REQUIRED_ACQUISITION"
+    assert "LEFT, RIGHT" in result.blocker_lines[0]
+    assert result.causality_status == "NOT_ESTABLISHED"
+
+
+def test_declared_experiment_rejects_divergent_preparation_provenance():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-002",
+        value.confirmation_input.plan_contract_fingerprint,
+        "ACQUISITION_PENDING",
+    )
+    with pytest.raises(ValueError, match="provenance is inconsistent"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_declared_experiment_requires_specialized_declaration_coverage():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = replace(
+        declared_experiment_view(
+            plan,
+            "preparation-001",
+            value.confirmation_input.plan_contract_fingerprint,
+            "ACQUISITION_PENDING",
+        ),
+        declared_plan_coverage_status="PLAN_COVERAGE_INSUFFICIENT_DECLARATION",
+    )
+    with pytest.raises(ValueError, match="specialized declaration is insufficient"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
         )
 
 

@@ -50,6 +50,9 @@ class PresentedDiscoveredExperiment:
     missing_results: tuple[str, ...] = ()
     unused_results: tuple[str, ...] = ()
     plan_result_evaluation_limitations: tuple[str, ...] = ()
+    channel_isolation_preparation_confirmation_id: str | None = None
+    channel_isolation_preparation_plan_fingerprint: str | None = None
+    channel_isolation_preparation_qualification_status: str | None = None
 
 
 @dataclass(frozen=True)
@@ -110,6 +113,7 @@ class ExperimentDiscoveryPresenter:
         preserved_plan = (
             preserved_contract.source_plan if preserved_contract is not None else None
         )
+        preparation = item.channel_isolation_preparation
         criterion_evaluations = tuple(
             PresentedCriterionEvaluation(
                 criterion_id=value.criterion_id,
@@ -177,6 +181,17 @@ class ExperimentDiscoveryPresenter:
             missing_results=result_evaluation.missing_results,
             unused_results=result_evaluation.unused_results,
             plan_result_evaluation_limitations=result_evaluation.limitations,
+            channel_isolation_preparation_confirmation_id=(
+                preparation.confirmation_id if preparation is not None else None
+            ),
+            channel_isolation_preparation_plan_fingerprint=(
+                preparation.plan_contract_fingerprint
+                if preparation is not None else None
+            ),
+            channel_isolation_preparation_qualification_status=(
+                preparation.qualification_status
+                if preparation is not None else None
+            ),
         )
 
     @staticmethod

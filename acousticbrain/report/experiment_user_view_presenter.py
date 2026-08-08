@@ -17,6 +17,10 @@ class PresentedExperimentUserView:
     source_protocol_id: str | None = None
     source_hypothesis_code: str | None = None
     comparison_id: str | None = None
+    preparation_confirmation_id: str | None = None
+    preparation_plan_fingerprint: str | None = None
+    preparation_qualification_status: str | None = None
+    declared_plan_coverage_status: str | None = None
 
 
 class ExperimentUserViewPresenter:
@@ -89,6 +93,26 @@ class ExperimentUserViewPresenter:
                 comparison.source_hypothesis_code if comparison else None
             ),
             comparison_id=(comparison.trace_id if comparison else None),
+            preparation_confirmation_id=getattr(
+                experiment,
+                "channel_isolation_preparation_confirmation_id",
+                None,
+            ),
+            preparation_plan_fingerprint=getattr(
+                experiment,
+                "channel_isolation_preparation_plan_fingerprint",
+                None,
+            ),
+            preparation_qualification_status=getattr(
+                experiment,
+                "channel_isolation_preparation_qualification_status",
+                None,
+            ),
+            declared_plan_coverage_status=getattr(
+                experiment,
+                "evidence_acquisition_plan_coverage_status",
+                None,
+            ),
         )
 
     @staticmethod
