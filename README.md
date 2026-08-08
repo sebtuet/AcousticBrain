@@ -545,8 +545,10 @@ python main.py \
   --guided-declared-experiment exp-XXX
 ```
 
-The view preserves `ACQUISITION_PENDING` and `ACQUISITION_INCOMPLETE` exactly
-and performs no measurement. See
+The view preserves `ACQUISITION_PENDING`, `ACQUISITION_INCOMPLETE` and
+`COMPARISON_UNAVAILABLE` exactly. The last state means only that the declared
+specialized acquisition is complete and no unique local comparison is
+available. The view performs no measurement and creates no comparison. See
 [`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
 
 ## Tests

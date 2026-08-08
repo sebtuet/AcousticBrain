@@ -372,13 +372,24 @@ def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
         )
 
 
-def declared_experiment_view(plan, confirmation_id, fingerprint, lifecycle):
+def declared_experiment_view(
+    plan, confirmation_id, fingerprint, lifecycle, *, coverage_status=None
+):
+    comparison_pending = lifecycle == "COMPARISON_UNAVAILABLE"
     return PresentedExperimentUserView(
         experiment_id="exp-008",
         lifecycle_state=lifecycle,
         intent_lines=(plan.objective,),
-        user_action_state="COMPLETE_REQUIRED_ACQUISITION",
-        user_action="Compléter l’acquisition requise déjà déclarée.",
+        user_action_state=(
+            "RESTORE_COMPARABILITY"
+            if comparison_pending
+            else "COMPLETE_REQUIRED_ACQUISITION"
+        ),
+        user_action=(
+            "Rétablir la comparabilité à partir de la déclaration existante."
+            if comparison_pending
+            else "Compléter l’acquisition requise déjà déclarée."
+        ),
         observed_result="NOT_AVAILABLE",
         observed_result_lines=("Aucune comparaison locale unique n’est disponible.",),
         scientific_boundary_lines=("Comparaison locale indisponible.",),
@@ -387,24 +398,41 @@ def declared_experiment_view(plan, confirmation_id, fingerprint, lifecycle):
         preparation_confirmation_id=confirmation_id,
         preparation_plan_fingerprint=fingerprint,
         preparation_qualification_status="ALL_PREREQUISITES_USER_CONFIRMED",
-        declared_plan_coverage_status="PLAN_COVERAGE_PARTIAL",
+        declared_plan_coverage_status=(
+            coverage_status
+            or (
+                "PLAN_COVERAGE_COMPLETE"
+                if comparison_pending
+                else "PLAN_COVERAGE_PARTIAL"
+            )
+        ),
     )
 
 
 @pytest.mark.parametrize(
-    ("lifecycle", "workflow"),
+    ("lifecycle", "workflow", "action_state"),
     (
         (
             "ACQUISITION_PENDING",
             "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING",
+            "COMPLETE_REQUIRED_ACQUISITION",
         ),
         (
             "ACQUISITION_INCOMPLETE",
             "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE",
+            "COMPLETE_REQUIRED_ACQUISITION",
+        ),
+        (
+            "COMPARISON_UNAVAILABLE",
+            "READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_"
+            "COMPARISON_UNAVAILABLE",
+            "RESTORE_COMPARABILITY",
         ),
     ),
 )
-def test_declared_experiment_projects_exact_acquisition_stage(lifecycle, workflow):
+def test_declared_experiment_projects_exact_stage(
+    lifecycle, workflow, action_state
+):
     plan = ready_plan()
     value = preparation(
         EvidencePlanPrerequisiteStatus.CONFIRMED,
@@ -425,8 +453,15 @@ def test_declared_experiment_projects_exact_acquisition_stage(lifecycle, workflo
         declared_experiment_view=view,
     )
     assert result.workflow_state == workflow
-    assert result.user_action_state == "COMPLETE_REQUIRED_ACQUISITION"
-    assert "LEFT, RIGHT" in result.blocker_lines[0]
+    assert result.user_action_state == action_state
+    if lifecycle == "COMPARISON_UNAVAILABLE":
+        assert any(
+            line.startswith("Acquisition spécialisée complète")
+            for line in result.validated_step_lines
+        )
+        assert "comparaison locale unique indisponible" in result.blocker_lines[0]
+    else:
+        assert "LEFT, RIGHT" in result.blocker_lines[0]
     assert result.causality_status == "NOT_ESTABLISHED"
 
 
@@ -470,6 +505,80 @@ def test_declared_experiment_requires_specialized_declaration_coverage():
         declared_plan_coverage_status="PLAN_COVERAGE_INSUFFICIENT_DECLARATION",
     )
     with pytest.raises(ValueError, match="specialized declaration is insufficient"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_comparison_pending_requires_complete_specialized_coverage():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        "COMPARISON_UNAVAILABLE",
+        coverage_status="PLAN_COVERAGE_PARTIAL",
+    )
+    with pytest.raises(ValueError, match="specialized declaration is insufficient"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_comparison_pending_rejects_an_acquisition_action():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = replace(
+        declared_experiment_view(
+            plan,
+            "preparation-001",
+            value.confirmation_input.plan_contract_fingerprint,
+            "COMPARISON_UNAVAILABLE",
+        ),
+        user_action_state="COMPLETE_REQUIRED_ACQUISITION",
+    )
+    with pytest.raises(ValueError, match="lifecycle action is inconsistent"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_observed_result_stage_remains_outside_guided_projection():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        "RESULT_AVAILABLE",
+        coverage_status="PLAN_COVERAGE_COMPLETE",
+    )
+    with pytest.raises(ValueError, match="outside the guided acquisition"):
         GuidedGlobalStatusPresenter().present(
             report_for(plan),
             plans=(plan,),

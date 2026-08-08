@@ -19,8 +19,9 @@ explicit experiment_id
 + exact selected preparation
 → existing experiment user view lifecycle
 → exact preparation provenance continuity
-→ ACQUISITION_PENDING or ACQUISITION_INCOMPLETE
-→ one acquisition action
+→ ACQUISITION_PENDING, ACQUISITION_INCOMPLETE
+  or COMPARISON_UNAVAILABLE
+→ one existing lifecycle action
 ```
 
 ## Exact resolution
@@ -43,17 +44,23 @@ an insufficient or absent `channel_isolation_declaration` never qualifies.
 ```text
 READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING
 READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE
+READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_COMPARISON_UNAVAILABLE
 ```
 
-Other experiment lifecycle states remain owned by `--experiment-view` and are
-not reinterpreted here.
+`COMPARISON_UNAVAILABLE` is accepted only with
+`PLAN_COVERAGE_COMPLETE`. It records that the specialized declared acquisition
+is complete while no unique comparable local comparison exists. Other
+experiment lifecycle states remain owned by `--experiment-view` and are not
+reinterpreted here.
 
 ## Scientific boundary
 
 The view is read-only. A manifest with no acquired files is
 `ACQUISITION_PENDING`, never `EXECUTED`. A partial file set is
-`ACQUISITION_INCOMPLETE`, never successful. The view writes no file, launches
-no measurement, evaluates no result and establishes no causality.
+`ACQUISITION_INCOMPLETE`, never successful. Complete declared acquisition with
+no unique comparable local comparison is `COMPARISON_UNAVAILABLE`, never an
+observed result. The view writes no file, launches no measurement, creates no
+comparison, evaluates no result and establishes no causality.
 
 ## CLI
 

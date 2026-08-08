@@ -10,7 +10,7 @@ from acousticbrain.models import (
 )
 from test_evidence_plan_preparation_registry import record
 from test_evidence_plan_preparation_resolution import ready_plan
-from test_guided_global_status_presenter import report_for
+from test_guided_global_status_presenter import declared_experiment_view, report_for
 from acousticbrain.report import PresentedExperimentUserView
 
 
@@ -212,6 +212,47 @@ def test_cli_projects_explicit_declared_experiment_without_writing(tmp_path, cap
     assert "Expérience déclarée : exp-008" in output
     assert output.count("Action utilisateur") == 1
     assert experiment_presenter.calls[0][1] == "exp-008"
+    assert registry_path.read_bytes() == before
+
+
+def test_cli_projects_complete_acquisition_waiting_for_comparison_without_writing(
+    tmp_path, capsys
+):
+    registry_path = tmp_path / "preparations.json"
+    registry_path.write_text("preserve\n", encoding="utf-8")
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    repository = Repository(
+        EvidencePlanPreparationRegistry().with_record(confirmation)
+    )
+    plan = ready_plan()
+    view = declared_experiment_view(
+        plan,
+        confirmation.confirmation_input.confirmation_id,
+        confirmation.confirmation_input.plan_contract_fingerprint,
+        "COMPARISON_UNAVAILABLE",
+    )
+    experiment_presenter = DeclaredExperimentPresenter(view)
+    before = registry_path.read_bytes()
+    result = acousticbrain_main.show_guided_status(
+        tmp_path,
+        registry_path,
+        confirmation.confirmation_input.confirmation_id,
+        brain=Brain(),
+        registry_repository=repository,
+        declared_experiment_id="exp-008",
+        declared_experiment_view_presenter=experiment_presenter,
+    )
+    output = capsys.readouterr().out
+    assert result.workflow_state == (
+        "READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_COMPARISON_UNAVAILABLE"
+    )
+    assert "Acquisition spécialisée complète" in output
+    assert "Rétablir la comparabilité" in output
+    assert output.count("Action utilisateur") == 1
+    assert "Causality status: NOT_ESTABLISHED" in output
     assert registry_path.read_bytes() == before
 
 

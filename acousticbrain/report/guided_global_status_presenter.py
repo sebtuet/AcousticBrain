@@ -239,10 +239,13 @@ class GuidedGlobalStatusPresenter:
                     "Guided global status declared experiment preparation "
                     "provenance is inconsistent."
                 )
-            if declared_experiment_view.declared_plan_coverage_status not in (
-                "PLAN_COVERAGE_PARTIAL",
-                "PLAN_COVERAGE_COMPLETE",
-            ):
+            lifecycle = declared_experiment_view.lifecycle_state
+            accepted_coverage = (
+                ("PLAN_COVERAGE_COMPLETE",)
+                if lifecycle == "COMPARISON_UNAVAILABLE"
+                else ("PLAN_COVERAGE_PARTIAL", "PLAN_COVERAGE_COMPLETE")
+            )
+            if declared_experiment_view.declared_plan_coverage_status not in accepted_coverage:
                 raise ValueError(
                     "Guided global status declared experiment specialized "
                     "declaration is insufficient."
@@ -252,19 +255,49 @@ class GuidedGlobalStatusPresenter:
                     "Guided global status declared experiment conflicts with an "
                     "incomplete preparation."
                 )
-            if declared_experiment_view.lifecycle_state not in (
+            if lifecycle not in (
                 "ACQUISITION_PENDING",
                 "ACQUISITION_INCOMPLETE",
+                "COMPARISON_UNAVAILABLE",
             ):
                 raise ValueError(
                     "Guided global status declared experiment is outside the "
-                    "acquisition stage."
+                    "guided acquisition and comparison-pending stages."
                 )
-            lifecycle = declared_experiment_view.lifecycle_state
-            workflow = (
-                "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING"
-                if lifecycle == "ACQUISITION_PENDING"
-                else "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE"
+            expected_action_state = (
+                "RESTORE_COMPARABILITY"
+                if lifecycle == "COMPARISON_UNAVAILABLE"
+                else "COMPLETE_REQUIRED_ACQUISITION"
+            )
+            if declared_experiment_view.user_action_state != expected_action_state:
+                raise ValueError(
+                    "Guided global status declared experiment lifecycle action "
+                    "is inconsistent."
+                )
+            workflow = {
+                "ACQUISITION_PENDING": (
+                    "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING"
+                ),
+                "ACQUISITION_INCOMPLETE": (
+                    "READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE"
+                ),
+                "COMPARISON_UNAVAILABLE": (
+                    "READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_"
+                    "COMPARISON_UNAVAILABLE"
+                ),
+            }[lifecycle]
+            blocker_lines = (
+                (
+                    "Acquisition requise : LEFT, RIGHT et répétitions déclarées.",
+                    "Mesures attendues : "
+                    + ", ".join(plan.measurements_to_capture)
+                    + ".",
+                )
+                if lifecycle in ("ACQUISITION_PENDING", "ACQUISITION_INCOMPLETE")
+                else (
+                    "Acquisition complète selon la déclaration spécialisée ; "
+                    "comparaison locale unique indisponible.",
+                )
             )
             return self._result(
                 workflow,
@@ -278,14 +311,14 @@ class GuidedGlobalStatusPresenter:
                     *validated,
                     "Contrat du plan, préparation et déclaration qualifiée "
                     "exactement reliés.",
+                    *(
+                        ("Acquisition spécialisée complète.",)
+                        if lifecycle == "COMPARISON_UNAVAILABLE"
+                        else ()
+                    ),
                 ),
-                (
-                    "Acquisition requise : LEFT, RIGHT et répétitions déclarées.",
-                    "Mesures attendues : "
-                    + ", ".join(plan.measurements_to_capture)
-                    + ".",
-                ),
-                "COMPLETE_REQUIRED_ACQUISITION",
+                blocker_lines,
+                expected_action_state,
                 declared_experiment_view.user_action,
             )
         if unresolved:
@@ -404,7 +437,8 @@ class GuidedGlobalStatusPresenter:
             user_action=action,
             scientific_boundary_lines=(
                 "Cette vue réutilise des décisions existantes et ne produit aucune nouvelle analyse.",
-                "Aucune préparation n’est vérifiée indépendamment et aucune expérience n’est déclarée ou exécutée.",
+                "Cette vue ne vérifie aucune préparation indépendamment, ne déclare "
+                "et n’exécute aucune expérience.",
             ),
         )
 
