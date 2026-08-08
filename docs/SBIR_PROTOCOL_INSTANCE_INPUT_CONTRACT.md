@@ -49,9 +49,9 @@ Exactly these keys are accepted:
 ```
 
 Unknown and missing fields are rejected. Identifiers are non-empty exact text;
-they are never trimmed, case-normalized, corrected or inferred. The optional
-`user_note` is either `null` or non-empty exact text and carries no scientific
-authority.
+they are never trimmed, case-normalized, corrected or inferred. The required
+`user_note` field is either `null` or non-empty exact text and carries no
+scientific authority.
 
 `speaker_displacement_m` is a finite, non-zero JSON number. Booleans, numeric
 strings, zero, infinities and NaN are invalid.

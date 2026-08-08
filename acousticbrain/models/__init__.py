@@ -83,6 +83,7 @@ from .evidence_plan_preparation import (
     EvidencePlanPrerequisiteDeclaration,
     EvidencePlanPrerequisiteStatus,
 )
+from .sbir_protocol_instance import SBIRProtocolInstanceInput
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,
     ChannelIsolationPreparationProvenance,
