@@ -1,5 +1,21 @@
 from dataclasses import dataclass
+from enum import Enum
 from math import isfinite
+
+from .evidence_acquisition import EvidenceAcquisitionPlan
+from .experiment_discovery import ExperimentDescriptor
+from .geometry_sbir_candidate import GeometrySBIRCandidate
+
+
+class SBIRProtocolInstanceResolutionDecision(Enum):
+    INPUT_SCHEMA_VALID = "INPUT_SCHEMA_VALID"
+    PLAN_EXACTLY_RESOLVED = "PLAN_EXACTLY_RESOLVED"
+    PLAN_FINGERPRINT_MATCHES = "PLAN_FINGERPRINT_MATCHES"
+    PROTOCOL_EXACTLY_RESOLVED = "PROTOCOL_EXACTLY_RESOLVED"
+    EXPERIMENTS_EXACTLY_RESOLVED = "EXPERIMENTS_EXACTLY_RESOLVED"
+    GEOMETRY_CANDIDATE_EXACTLY_RESOLVED = (
+        "GEOMETRY_CANDIDATE_EXACTLY_RESOLVED"
+    )
 
 
 @dataclass(frozen=True)
@@ -110,3 +126,59 @@ class SBIRProtocolInstanceInput:
                     "SBIR protocol-instance user_note must be null or exact "
                     "non-empty text."
                 )
+
+
+@dataclass(frozen=True)
+class SBIRProtocolInstanceResolution:
+    protocol_instance_input: SBIRProtocolInstanceInput
+    source_plan: EvidenceAcquisitionPlan
+    protocol_id: str
+    reference_experiment: ExperimentDescriptor
+    moved_experiment: ExperimentDescriptor
+    geometry_candidate: GeometrySBIRCandidate
+    decisions: tuple[SBIRProtocolInstanceResolutionDecision, ...]
+
+    EXPECTED_DECISIONS = tuple(SBIRProtocolInstanceResolutionDecision)
+
+    def __post_init__(self):
+        value = self.protocol_instance_input
+        if not isinstance(value, SBIRProtocolInstanceInput):
+            raise TypeError("SBIR protocol-instance resolution requires its input.")
+        if not isinstance(self.source_plan, EvidenceAcquisitionPlan):
+            raise TypeError("SBIR protocol-instance resolution requires its plan.")
+        if not isinstance(self.reference_experiment, ExperimentDescriptor):
+            raise TypeError(
+                "SBIR protocol-instance resolution requires its reference experiment."
+            )
+        if not isinstance(self.moved_experiment, ExperimentDescriptor):
+            raise TypeError(
+                "SBIR protocol-instance resolution requires its moved experiment."
+            )
+        if not isinstance(self.geometry_candidate, GeometrySBIRCandidate):
+            raise TypeError(
+                "SBIR protocol-instance resolution requires its geometry candidate."
+            )
+        if self.source_plan.plan_id != value.source_plan_id:
+            raise ValueError("SBIR protocol-instance plan identity is inconsistent.")
+        if self.protocol_id != value.protocol_id:
+            raise ValueError("SBIR protocol-instance protocol identity is inconsistent.")
+        if (
+            self.reference_experiment.experiment_id
+            != value.reference_experiment_id
+        ):
+            raise ValueError(
+                "SBIR protocol-instance reference experiment identity is inconsistent."
+            )
+        if self.moved_experiment.experiment_id != value.moved_experiment_id:
+            raise ValueError(
+                "SBIR protocol-instance moved experiment identity is inconsistent."
+            )
+        if self.geometry_candidate.candidate_id != value.geometry_candidate_id:
+            raise ValueError(
+                "SBIR protocol-instance geometry candidate identity is inconsistent."
+            )
+        if self.decisions != self.EXPECTED_DECISIONS:
+            raise ValueError(
+                "SBIR protocol-instance resolution decisions are incomplete or "
+                "out of order."
+            )
