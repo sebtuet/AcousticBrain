@@ -21,6 +21,7 @@ from acousticbrain.models import (
     SpeakerPosition,
     CausalProtocolStep,
     ChannelIsolationDeclaration,
+    ChannelIsolationPreparationProvenance,
     ChannelIsolationMeasurementResult,
     ChannelIsolationResultDeclaration,
 )
@@ -266,6 +267,9 @@ class ExperimentDiscoveryService:
             ),
             channel_isolation_declaration=(
                 self._channel_isolation_declaration(existing)
+            ),
+            channel_isolation_preparation=(
+                self._channel_isolation_preparation(existing)
             ),
             channel_isolation_result_declaration=(
                 self._channel_isolation_result_declaration(existing)
@@ -701,6 +705,31 @@ class ExperimentDiscoveryService:
                 ),
             )),
         )
+
+    @staticmethod
+    def _channel_isolation_preparation(manifest):
+        value = manifest.get("channel_isolation_preparation")
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise ValueError(
+                "Channel isolation preparation manifest entry must be an object."
+            )
+        expected = {
+            "schema_version",
+            "confirmation_id",
+            "plan_id",
+            "plan_contract_fingerprint",
+            "qualification_status",
+        }
+        if set(value) != expected:
+            missing = ", ".join(sorted(expected - set(value)))
+            unknown = ", ".join(sorted(set(value) - expected))
+            raise ValueError(
+                "Channel isolation preparation manifest fields are invalid; "
+                f"missing: {missing}; unknown: {unknown}."
+            )
+        return ChannelIsolationPreparationProvenance(**value)
 
     @classmethod
     def _string_tuple(cls, value):

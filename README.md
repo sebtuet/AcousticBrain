@@ -533,6 +533,22 @@ The preflight runs before the target directory is created. This declaration
 still performs no acquisition. See
 [`docs/CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md`](docs/CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md).
 
+After that qualified declaration, inspect the acquisition stage without
+inferring execution from the new directory or manifest:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --guided-status \
+  --guided-preparation-registry state/evidence-plan-preparations.json \
+  --guided-preparation CONFIRMATION_ID \
+  --guided-declared-experiment exp-XXX
+```
+
+The view preserves `ACQUISITION_PENDING` and `ACQUISITION_INCOMPLETE` exactly
+and performs no measurement. See
+[`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
+
 ## Tests
 
 Run the complete test suite:

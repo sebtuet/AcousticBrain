@@ -57,6 +57,48 @@ class ChannelIsolationDeclaration:
 
 
 @dataclass(frozen=True)
+class ChannelIsolationPreparationProvenance:
+    schema_version: int
+    confirmation_id: str
+    plan_id: str
+    plan_contract_fingerprint: str
+    qualification_status: str
+
+    def __post_init__(self):
+        if (
+            not isinstance(self.schema_version, int)
+            or isinstance(self.schema_version, bool)
+            or self.schema_version != 1
+        ):
+            raise ValueError(
+                "Unsupported channel-isolation preparation provenance version."
+            )
+        for label, value in (
+            ("confirmation_id", self.confirmation_id),
+            ("plan_id", self.plan_id),
+        ):
+            if not isinstance(value, str) or not value or value != value.strip():
+                raise ValueError(
+                    f"Channel-isolation preparation {label} must be exact text."
+                )
+        if (
+            not isinstance(self.plan_contract_fingerprint, str)
+            or len(self.plan_contract_fingerprint) != 64
+            or any(
+                value not in "0123456789abcdef"
+                for value in self.plan_contract_fingerprint
+            )
+        ):
+            raise ValueError(
+                "Channel-isolation preparation fingerprint is invalid."
+            )
+        if self.qualification_status != "ALL_PREREQUISITES_USER_CONFIRMED":
+            raise ValueError(
+                "Channel-isolation preparation qualification is invalid."
+            )
+
+
+@dataclass(frozen=True)
 class PlanCoverageResult:
     status: PlanCoverageStatus
     covered_requirements: tuple[str, ...] = ()

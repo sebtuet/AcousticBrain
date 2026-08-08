@@ -4,7 +4,10 @@ from enum import Enum
 from .impulse_channel import ImpulseChannel
 from .causal_discrimination import CausalDiscriminationDecision, CausalProtocolStep
 from .experiment_declaration import ExperimentDeclaration
-from .channel_isolation_plan_coverage import ChannelIsolationDeclaration
+from .channel_isolation_plan_coverage import (
+    ChannelIsolationDeclaration,
+    ChannelIsolationPreparationProvenance,
+)
 from .channel_isolation_plan_result import ChannelIsolationResultDeclaration
 from .room_description import RoomDescription
 from .evidence_acquisition_contract import EvidenceAcquisitionPlanContract
@@ -67,6 +70,9 @@ class ExperimentDescriptor:
     )
     source_evidence_acquisition_plan_id: str | None = None
     channel_isolation_declaration: ChannelIsolationDeclaration | None = None
+    channel_isolation_preparation: (
+        ChannelIsolationPreparationProvenance | None
+    ) = None
     channel_isolation_result_declaration: (
         ChannelIsolationResultDeclaration | None
     ) = None
@@ -132,6 +138,24 @@ class ExperimentDescriptor:
         ):
             raise ValueError(
                 "Channel isolation result declaration has an invalid type."
+            )
+        if (
+            self.channel_isolation_preparation is not None
+            and not isinstance(
+                self.channel_isolation_preparation,
+                ChannelIsolationPreparationProvenance,
+            )
+        ):
+            raise ValueError(
+                "Channel isolation preparation provenance has an invalid type."
+            )
+        if (
+            self.channel_isolation_preparation is not None
+            and self.channel_isolation_preparation.plan_id
+            != self.source_evidence_acquisition_plan_id
+        ):
+            raise ValueError(
+                "Channel isolation preparation plan identity is inconsistent."
             )
         if (
             self.room_description is not None

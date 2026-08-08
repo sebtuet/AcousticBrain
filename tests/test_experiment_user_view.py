@@ -184,3 +184,27 @@ def test_presenter_labels_are_consistently_french_while_codes_remain_verbatim():
         f"Limite contractuelle : {source_limit}"
         in presented.scientific_boundary_lines
     )
+
+
+def test_declared_experiment_without_files_is_acquisition_pending_with_provenance():
+    declared = experiment(
+        state="INCOMPLETE",
+        file_count=0,
+        evidence_acquisition_plan_coverage_status="PLAN_COVERAGE_PARTIAL",
+        channel_isolation_preparation_confirmation_id="preparation-001",
+        channel_isolation_preparation_plan_fingerprint="a" * 64,
+        channel_isolation_preparation_qualification_status=(
+            "ALL_PREREQUISITES_USER_CONFIRMED"
+        ),
+    )
+    presented = ExperimentUserViewPresenter().present(
+        report(experiments=(declared,), comparisons=()), "exp-007"
+    )
+    assert presented.lifecycle_state == "ACQUISITION_PENDING"
+    assert presented.user_action_state == "COMPLETE_REQUIRED_ACQUISITION"
+    assert presented.preparation_confirmation_id == "preparation-001"
+    assert presented.preparation_plan_fingerprint == "a" * 64
+    assert presented.preparation_qualification_status == (
+        "ALL_PREREQUISITES_USER_CONFIRMED"
+    )
+    assert presented.declared_plan_coverage_status == "PLAN_COVERAGE_PARTIAL"

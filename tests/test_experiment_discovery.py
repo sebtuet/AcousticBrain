@@ -830,3 +830,39 @@ def test_acoustic_session_auto_open_attaches_without_business_iterations(tmp_pat
         "exp-001",
     ]
     assert not hasattr(session, "iterations")
+
+
+def test_channel_isolation_preparation_provenance_rejects_unknown_fields(tmp_path):
+    directory = tmp_path / "exp-001"
+    directory.mkdir()
+    (directory / "manifest.json").write_text(json.dumps({
+        "channel_isolation_preparation": {
+            "schema_version": 1,
+            "confirmation_id": "preparation-001",
+            "plan_id": "PLAN",
+            "plan_contract_fingerprint": "a" * 64,
+            "qualification_status": "ALL_PREREQUISITES_USER_CONFIRMED",
+            "unexpected": "forbidden",
+        }
+    }), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown: unexpected"):
+        ExperimentDiscoveryService().discover(tmp_path)
+
+
+def test_channel_isolation_preparation_rejects_cross_plan_provenance(tmp_path):
+    directory = tmp_path / "exp-001"
+    directory.mkdir()
+    (directory / "manifest.json").write_text(json.dumps({
+        "source_evidence_acquisition_plan_id": "PLAN_A",
+        "channel_isolation_preparation": {
+            "schema_version": 1,
+            "confirmation_id": "preparation-001",
+            "plan_id": "PLAN_B",
+            "plan_contract_fingerprint": "a" * 64,
+            "qualification_status": "ALL_PREREQUISITES_USER_CONFIRMED",
+        }
+    }), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="plan identity is inconsistent"):
+        ExperimentDiscoveryService().discover(tmp_path)

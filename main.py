@@ -192,6 +192,12 @@ def create_parser():
         help="optional exact preparation selection for --guided-status",
     )
     parser.add_argument(
+        "--guided-declared-experiment",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="project one exact qualified declaration in --guided-status",
+    )
+    parser.add_argument(
         "--complete-evidence-plan",
         type=Path,
         default=None,
@@ -1109,6 +1115,7 @@ def show_guided_status(
     operational_record_preview_service=None,
     reference_experiment_id=None, experiment_id=None,
     declaration_readiness_service=None,
+    declared_experiment_id=None, declared_experiment_view_presenter=None,
 ):
     analysis = (brain or AcousticBrain()).analyze(
         measurement_root=measurements_root,
@@ -1184,6 +1191,11 @@ def show_guided_status(
             plans=synthesis.plans,
             registry=registry,
         )
+    declared_experiment_view = None
+    if declared_experiment_id is not None:
+        declared_experiment_view = (
+            declared_experiment_view_presenter or ExperimentUserViewPresenter()
+        ).present(report, declared_experiment_id)
     view = (presenter or GuidedGlobalStatusPresenter()).present(
         report,
         plans=synthesis.plans,
@@ -1193,6 +1205,7 @@ def show_guided_status(
         declaration_readiness=declaration_readiness,
         measurement_root=measurements_root,
         preparation_registry_path=preparation_registry_path,
+        declared_experiment_view=declared_experiment_view,
     )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
@@ -1449,6 +1462,35 @@ def main(
             if arguments.guided_preparation_registry is None:
                 raise ValueError(
                     "--guided-preparation requires --guided-preparation-registry."
+                )
+        if arguments.guided_declared_experiment is not None:
+            if not arguments.guided_status:
+                raise ValueError(
+                    "--guided-declared-experiment requires --guided-status."
+                )
+            if (
+                arguments.guided_preparation_registry is None
+                or arguments.guided_preparation is None
+            ):
+                raise ValueError(
+                    "--guided-declared-experiment requires "
+                    "--guided-preparation-registry and --guided-preparation."
+                )
+            if (
+                arguments.channel_isolation_reference is not None
+                or arguments.channel_isolation_experiment is not None
+            ):
+                raise ValueError(
+                    "--guided-declared-experiment cannot be combined with "
+                    "declaration-readiness identifiers."
+                )
+            if (
+                arguments.microphone_position_record is not None
+                or arguments.acquisition_settings_record is not None
+            ):
+                raise ValueError(
+                    "--guided-declared-experiment cannot be combined with "
+                    "operational worksheet inputs."
                 )
         guided_operational_paths = (
             arguments.microphone_position_record,
@@ -2060,6 +2102,7 @@ def main(
                 declaration_readiness_service=(
                     channel_isolation_declaration_readiness_service
                 ),
+                declared_experiment_id=arguments.guided_declared_experiment,
             )
             return 0
         if arguments.preview_evidence_plan_preparation is not None:
