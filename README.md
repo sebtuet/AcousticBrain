@@ -567,6 +567,18 @@ Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.
 The frozen structured-input contract for that future instance is documented in
 [`docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md`](docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md).
+Preview exact source resolution and compatibility without recording the
+instance:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --preview-sbir-protocol-instance sbir-protocol-instance.json \
+  --sbir-protocol-instance-registry sbir-protocol-instances.json
+```
+
+The preview never creates or updates the registry and never declares or runs an
+experiment.
 
 ## Tests
 
