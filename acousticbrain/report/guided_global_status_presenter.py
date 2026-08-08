@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from acousticbrain.application import (
+    ChannelIsolationDeclarationReadiness,
     ChannelIsolationOperationalRecordPreview,
     EvidencePlanPreparationResolver,
 )
@@ -34,6 +36,7 @@ class GuidedGlobalStatusPresenter:
     def present(
         self, report, *, plans, preparation_registry=None,
         preparation_id=None, operational_record_preview=None,
+        declaration_readiness=None, measurement_root=None,
     ):
         if not isinstance(plans, tuple) or any(
             not isinstance(value, EvidenceAcquisitionPlan) for value in plans
@@ -65,6 +68,23 @@ class GuidedGlobalStatusPresenter:
                 raise ValueError(
                     "Guided global status operational records require one exact "
                     "preparation selection."
+                )
+        if declaration_readiness is not None:
+            if not isinstance(
+                declaration_readiness, ChannelIsolationDeclarationReadiness
+            ):
+                raise TypeError(
+                    "Guided global status declaration readiness is invalid."
+                )
+            if preparation_registry is None or preparation_id is None:
+                raise ValueError(
+                    "Guided global status declaration readiness requires one "
+                    "exact preparation selection."
+                )
+            if not isinstance(measurement_root, Path):
+                raise TypeError(
+                    "Guided global status declaration readiness requires an "
+                    "exact measurement root."
                 )
         plan_report = getattr(report, "evidence_acquisition_plans", None)
         experiments = tuple(getattr(
@@ -227,6 +247,43 @@ class GuidedGlobalStatusPresenter:
                 "Consulter sans modification avec "
                 "--evidence-plan-preparation-view "
                 f"{confirmation.confirmation_id}.",
+            )
+        if declaration_readiness is not None:
+            if declaration_readiness.plan_id != recommended.plan_id:
+                raise ValueError(
+                    "Guided global status declaration readiness targets another plan."
+                )
+            if declaration_readiness.confirmation_id != confirmation.confirmation_id:
+                raise ValueError(
+                    "Guided global status declaration readiness targets another "
+                    "preparation."
+                )
+            statuses = ", ".join(declaration_readiness.statuses)
+            command = (
+                "python -m acousticbrain.commands.declare_evidence_plan_experiment "
+                f"{measurement_root.resolve()} --plan-id {recommended.plan_id} "
+                f"--experiment {declaration_readiness.experiment_id} "
+                f"--reference {declaration_readiness.reference_experiment_id}"
+            )
+            return self._result(
+                "READY_PLAN_DECLARATION_READY",
+                (
+                    *current,
+                    f"Préparation : {confirmation.confirmation_id}.",
+                    f"Référence : {declaration_readiness.reference_experiment_id}.",
+                    f"Nouvelle expérience : {declaration_readiness.experiment_id}.",
+                ),
+                (
+                    *validated,
+                    "Tous les prérequis ont été déclarés CONFIRMED par l’utilisateur.",
+                    "Préflight de déclaration : " + statuses + ".",
+                ),
+                (
+                    "Aucun blocage contractuel de déclaration ; la création reste "
+                    "une opération explicite séparée.",
+                ),
+                "DECLARE_EXPERIMENT_SEPARATELY",
+                "Déclarer séparément le contrat expérimental avec : " + command,
             )
         return self._result(
             "READY_PLAN_PREPARATION_CONFIRMED",

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from acousticbrain.application import (
+    ChannelIsolationDeclarationReadiness,
     ChannelIsolationOperationalRecordPreview,
     evidence_acquisition_plan_fingerprint,
 )
@@ -304,6 +305,60 @@ def test_operational_documentation_never_demotes_confirmed_preparation():
     )
     assert result.workflow_state == "READY_PLAN_PREPARATION_CONFIRMED"
     assert result.user_action_state == "RUN_DECLARATION_READINESS"
+
+
+def test_exact_declaration_readiness_routes_to_separate_declaration(tmp_path):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    readiness = ChannelIsolationDeclarationReadiness(
+        plan_id=plan.plan_id,
+        confirmation_id="preparation-001",
+        reference_experiment_id="baseline",
+        experiment_id="channel-isolation-001",
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        declaration_readiness=readiness,
+        measurement_root=tmp_path,
+    )
+    assert result.workflow_state == "READY_PLAN_DECLARATION_READY"
+    assert result.user_action_state == "DECLARE_EXPERIMENT_SEPARATELY"
+    assert "DECLARATION_READY" in " ".join(result.validated_step_lines)
+    assert "--experiment channel-isolation-001" in result.user_action
+    assert "--reference baseline" in result.user_action
+    assert str(tmp_path.resolve()) in result.user_action
+    assert result.causality_status == "NOT_ESTABLISHED"
+
+
+def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    readiness = ChannelIsolationDeclarationReadiness(
+        plan_id=plan.plan_id,
+        confirmation_id="preparation-002",
+        reference_experiment_id="baseline",
+        experiment_id="channel-isolation-001",
+    )
+    with pytest.raises(ValueError, match="another preparation"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declaration_readiness=readiness,
+            measurement_root=tmp_path,
+        )
 
 
 def test_console_always_renders_five_blocks_and_one_action(capsys):
