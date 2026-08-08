@@ -184,7 +184,25 @@ def test_sbir_missing_observation_creates_observation_and_geometry_plans():
         EvidenceAcquisitionTestType.GEOMETRY_ACQUISITION,
     )
     assert all(value.status is EvidenceAcquisitionStatus.READY for value in synthesis.plans)
+    observation = synthesis.plans[0]
+    assert observation.plan_id.endswith("ACQUIRE_SUPPORTING_OBSERVATION_V2")
+    assert observation.required_inputs == ()
+    assert "additional_supporting_observation" in (
+        observation.resulting_evidence_targets
+    )
     assert "speaker_boundary_distance_m" in synthesis.plans[1].measurements_to_capture
+
+
+def test_additional_observation_cannot_require_its_own_evidence_target():
+    with pytest.raises(
+        ValueError,
+        match="cannot also be required pre-acquisition inputs",
+    ):
+        valid_plan(
+            test_type=EvidenceAcquisitionTestType.ADDITIONAL_OBSERVATION,
+            required_inputs=("additional_supporting_observation",),
+            resulting_evidence_targets=("additional_supporting_observation",),
+        )
 
 
 def test_sbir_no_match_without_missing_geometry_does_not_request_geometry():

@@ -145,6 +145,14 @@ class EvidenceAcquisitionPlan:
             raise ValueError(
                 "Only CHANNEL_ISOLATION plans may declare evaluation criteria."
             )
+        if (
+            self.test_type is EvidenceAcquisitionTestType.ADDITIONAL_OBSERVATION
+            and set(self.required_inputs) & set(self.resulting_evidence_targets)
+        ):
+            raise ValueError(
+                "Additional-observation evidence targets cannot also be required "
+                "pre-acquisition inputs."
+            )
         language = " ".join((self.objective, *self.instructions, *self.success_criteria)).casefold()
         if any(value in language for value in self._PERMANENT_LANGUAGE):
             raise ValueError("Evidence acquisition cannot prescribe permanent correction.")

@@ -164,7 +164,7 @@ class EvidenceAcquisitionPlanner:
             weight,
             action,
             reasoning_id,
-            "ACQUIRE_SUPPORTING_OBSERVATION",
+            "ACQUIRE_SUPPORTING_OBSERVATION_V2",
             blocking_factor_ids=(factor.factor_id,),
             objective="Acquire an additional observation linked to the existing hypothesis.",
             test_type=EvidenceAcquisitionTestType.ADDITIONAL_OBSERVATION,
@@ -173,7 +173,7 @@ class EvidenceAcquisitionPlanner:
                 "Produce an observation using the deterministic observation layer.",
                 "Compare observed and expected frequencies only after geometry is available.",
             ),
-            required_inputs=("additional_supporting_observation",),
+            required_inputs=(),
             controlled_variables=("gain", "signal_chain", "microphone_position"),
             independent_variables=("measurement_source",),
             measurements_to_capture=("frequency_response", "source_channel_response"),
@@ -183,7 +183,11 @@ class EvidenceAcquisitionPlanner:
             resulting_evidence_targets=("additional_supporting_observation", reasoning_id),
             estimated_effort=EvidenceAcquisitionEffort.MEDIUM,
             status=EvidenceAcquisitionStatus.READY,
-            limitations=("No SBIR conclusion is produced before acquisition and comparison.",),
+            limitations=(
+                "No SBIR conclusion is produced before acquisition and comparison.",
+                "The supporting observation is an evidence target, not a "
+                "pre-acquisition input.",
+            ),
         )
 
     def _geometry(self, weight, action, reasoning_id, factor):
