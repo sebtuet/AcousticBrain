@@ -111,6 +111,44 @@ def test_cli_projects_explicit_incomplete_operational_records_without_writing(
     } == before
 
 
+def test_cli_projects_exact_declaration_readiness_without_creating_target(
+    tmp_path, capsys
+):
+    (tmp_path / "baseline").mkdir()
+    registry_path = tmp_path / "preparations.json"
+    registry_path.write_text("preserve\n", encoding="utf-8")
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    repository = Repository(
+        EvidencePlanPreparationRegistry().with_record(confirmation)
+    )
+    before = {
+        path.name: path.read_bytes() if path.is_file() else None
+        for path in tmp_path.iterdir()
+    }
+    result = acousticbrain_main.show_guided_status(
+        tmp_path,
+        registry_path,
+        confirmation.confirmation_input.confirmation_id,
+        brain=Brain(),
+        registry_repository=repository,
+        reference_experiment_id="baseline",
+        experiment_id="channel-isolation-001",
+    )
+    output = capsys.readouterr().out
+    assert result.workflow_state == "READY_PLAN_DECLARATION_READY"
+    assert output.count("Action utilisateur") == 1
+    assert "--experiment channel-isolation-001" in output
+    assert "--reference baseline" in output
+    assert not (tmp_path / "channel-isolation-001").exists()
+    assert {
+        path.name: path.read_bytes() if path.is_file() else None
+        for path in tmp_path.iterdir()
+    } == before
+
+
 def test_main_rejects_guided_registry_without_guided_status(tmp_path, capsys):
     root = tmp_path / "measurements"
     root.mkdir()
@@ -163,6 +201,37 @@ def test_main_requires_both_guided_operational_record_paths(tmp_path, capsys):
             "--microphone-position-record", str(tmp_path / "microphone.json"),
         ))
     assert "requires both --microphone-position-record" in capsys.readouterr().err
+
+
+def test_main_requires_both_guided_declaration_identifiers(tmp_path, capsys):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(root),
+            "--guided-status",
+            "--guided-preparation-registry", str(tmp_path / "registry.json"),
+            "--guided-preparation", "preparation-001",
+            "--channel-isolation-reference", "baseline",
+        ))
+    assert "requires both --channel-isolation-reference" in (
+        capsys.readouterr().err
+    )
+
+
+def test_main_requires_exact_preparation_for_guided_declaration(tmp_path, capsys):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(root),
+            "--guided-status",
+            "--channel-isolation-reference", "baseline",
+            "--channel-isolation-experiment", "channel-isolation-001",
+        ))
+    assert "requires --guided-preparation-registry and --guided-preparation" in (
+        capsys.readouterr().err
+    )
 
 
 @pytest.mark.parametrize(

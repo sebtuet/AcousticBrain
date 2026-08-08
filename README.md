@@ -166,6 +166,24 @@ The files are never discovered automatically, and their completeness never
 confirms a prerequisite. The extension contract is frozen in
 [`docs/GUIDED_GLOBAL_STATUS_OPERATIONAL_DOCUMENTATION_CONTRACT.md`](docs/GUIDED_GLOBAL_STATUS_OPERATIONAL_DOCUMENTATION_CONTRACT.md).
 
+After an exact preparation is user-confirmed, qualify explicit declaration
+identifiers in the same read-only view:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --guided-status \
+  --guided-preparation-registry state/evidence-plan-preparations.json \
+  --guided-preparation EXACT_CONFIRMATION_ID \
+  --channel-isolation-reference EXISTING_EXPERIMENT_ID \
+  --channel-isolation-experiment NEW_EXPERIMENT_ID
+```
+
+On success, the view prints the existing separate declaration command. It does
+not create the experiment directory or manifest. The extension contract is
+frozen in
+[`docs/GUIDED_GLOBAL_STATUS_DECLARATION_READINESS_CONTRACT.md`](docs/GUIDED_GLOBAL_STATUS_DECLARATION_READINESS_CONTRACT.md).
+
 ### Guided CHANNEL_ISOLATION worksheet revision
 
 Generated operational worksheets now print one neutral question and one

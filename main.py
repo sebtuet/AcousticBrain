@@ -1107,6 +1107,8 @@ def show_guided_status(
     presenter=None, reporter=None, registry_repository=None,
     microphone_position_path=None, acquisition_settings_path=None,
     operational_record_preview_service=None,
+    reference_experiment_id=None, experiment_id=None,
+    declaration_readiness_service=None,
 ):
     analysis = (brain or AcousticBrain()).analyze(
         measurement_root=measurements_root,
@@ -1158,12 +1160,38 @@ def show_guided_status(
             settings,
             plans=synthesis.plans,
         )
+    declaration_readiness = None
+    if reference_experiment_id is not None or experiment_id is not None:
+        if reference_experiment_id is None or experiment_id is None:
+            raise ValueError(
+                "Guided status declaration readiness requires both experiment "
+                "identifiers."
+            )
+        recommended = getattr(report.evidence_acquisition_plans, "recommended_plan", None)
+        if recommended is None:
+            raise ValueError(
+                "Guided status declaration readiness requires one recommended plan."
+            )
+        declaration_readiness = (
+            declaration_readiness_service
+            or ChannelIsolationDeclarationReadinessService()
+        ).qualify(
+            measurements_root,
+            recommended.plan_id,
+            preparation_id,
+            reference_experiment_id,
+            experiment_id,
+            plans=synthesis.plans,
+            registry=registry,
+        )
     view = (presenter or GuidedGlobalStatusPresenter()).present(
         report,
         plans=synthesis.plans,
         preparation_registry=registry,
         preparation_id=preparation_id,
         operational_record_preview=operational_preview,
+        declaration_readiness=declaration_readiness,
+        measurement_root=measurements_root,
     )
     print(f"Measurement root: {measurements_root.resolve()}")
     print()
@@ -1438,6 +1466,23 @@ def main(
                     "--guided-status operational documentation requires "
                     "--guided-preparation-registry and --guided-preparation."
                 )
+        guided_declaration_identifiers = (
+            arguments.channel_isolation_reference,
+            arguments.channel_isolation_experiment,
+        )
+        if arguments.guided_status and any(
+            value is not None for value in guided_declaration_identifiers
+        ):
+            if any(value is None for value in guided_declaration_identifiers):
+                raise ValueError(
+                    "--guided-status declaration readiness requires both "
+                    "--channel-isolation-reference and --channel-isolation-experiment."
+                )
+            if arguments.guided_preparation_registry is None or arguments.guided_preparation is None:
+                raise ValueError(
+                    "--guided-status declaration readiness requires "
+                    "--guided-preparation-registry and --guided-preparation."
+                )
         if arguments.guided_status:
             conflicting = (
                 ("--listening-position-campaign", arguments.listening_position_campaign is not None),
@@ -1566,8 +1611,11 @@ def main(
                         f"with {option}."
                     )
         elif (
-            arguments.channel_isolation_reference is not None
-            or arguments.channel_isolation_experiment is not None
+            not arguments.guided_status
+            and (
+                arguments.channel_isolation_reference is not None
+                or arguments.channel_isolation_experiment is not None
+            )
         ):
             raise ValueError(
                 "CHANNEL_ISOLATION declaration identifiers require "
@@ -2005,6 +2053,11 @@ def main(
                 acquisition_settings_path=arguments.acquisition_settings_record,
                 operational_record_preview_service=(
                     channel_isolation_operational_record_preview_service
+                ),
+                reference_experiment_id=arguments.channel_isolation_reference,
+                experiment_id=arguments.channel_isolation_experiment,
+                declaration_readiness_service=(
+                    channel_isolation_declaration_readiness_service
                 ),
             )
             return 0
