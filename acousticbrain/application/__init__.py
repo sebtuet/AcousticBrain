@@ -32,6 +32,10 @@ from .channel_isolation_documentation_review import (
     ChannelIsolationDocumentationReviewRow,
     ChannelIsolationDocumentationReviewService,
 )
+from .channel_isolation_declaration_readiness import (
+    ChannelIsolationDeclarationReadiness,
+    ChannelIsolationDeclarationReadinessService,
+)
 from .experiment_declaration import ExperimentDeclarationService
 from .evidence_acquisition_contract import (
     EvidenceAcquisitionPlanContractService,
