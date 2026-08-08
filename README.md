@@ -565,6 +565,8 @@ V2 identity so historical contracts are never rewritten. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
 Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.
+The frozen structured-input contract for that future instance is documented in
+[`docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md`](docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md).
 
 ## Tests
 
