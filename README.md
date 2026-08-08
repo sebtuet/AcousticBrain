@@ -548,7 +548,10 @@ python main.py \
 The view preserves `ACQUISITION_PENDING`, `ACQUISITION_INCOMPLETE` and
 `COMPARISON_UNAVAILABLE` exactly. The last state means only that the declared
 specialized acquisition is complete and no unique local comparison is
-available. The view performs no measurement and creates no comparison. See
+available. When a unique comparable local comparison already exists, the same
+view preserves `RESULT_INCONCLUSIVE` or `RESULT_AVAILABLE` and its exact
+observed outcome. The view performs no measurement, creates no comparison and
+derives no verdict. See
 [`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
 
 ## Tests

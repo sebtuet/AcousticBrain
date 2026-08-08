@@ -242,10 +242,17 @@ class GuidedGlobalStatusPresenter:
             lifecycle = declared_experiment_view.lifecycle_state
             accepted_coverage = (
                 ("PLAN_COVERAGE_COMPLETE",)
-                if lifecycle == "COMPARISON_UNAVAILABLE"
+                if lifecycle in (
+                    "COMPARISON_UNAVAILABLE",
+                    "RESULT_INCONCLUSIVE",
+                    "RESULT_AVAILABLE",
+                )
                 else ("PLAN_COVERAGE_PARTIAL", "PLAN_COVERAGE_COMPLETE")
             )
-            if declared_experiment_view.declared_plan_coverage_status not in accepted_coverage:
+            if (
+                declared_experiment_view.declared_plan_coverage_status
+                not in accepted_coverage
+            ):
                 raise ValueError(
                     "Guided global status declared experiment specialized "
                     "declaration is insufficient."
@@ -259,17 +266,71 @@ class GuidedGlobalStatusPresenter:
                 "ACQUISITION_PENDING",
                 "ACQUISITION_INCOMPLETE",
                 "COMPARISON_UNAVAILABLE",
+                "RESULT_INCONCLUSIVE",
+                "RESULT_AVAILABLE",
             ):
                 raise ValueError(
                     "Guided global status declared experiment is outside the "
-                    "guided acquisition and comparison-pending stages."
+                    "guided experiment lifecycle."
                 )
-            expected_action_state = (
-                "RESTORE_COMPARABILITY"
-                if lifecycle == "COMPARISON_UNAVAILABLE"
-                else "COMPLETE_REQUIRED_ACQUISITION"
-            )
-            if declared_experiment_view.user_action_state != expected_action_state:
+            if declared_experiment_view.causality_status != "NOT_ESTABLISHED":
+                raise ValueError(
+                    "Guided global status cannot promote experiment causality."
+                )
+            result_outcomes = {
+                "RESULT_INCONCLUSIVE": ("MIXED", "INCONCLUSIVE"),
+                "RESULT_AVAILABLE": ("IMPROVED", "DEGRADED", "UNCHANGED"),
+            }
+            if lifecycle in result_outcomes:
+                if (
+                    any(
+                        not isinstance(value, str)
+                        or not value
+                        or value != value.strip()
+                        for value in (
+                            declared_experiment_view.comparison_id,
+                            declared_experiment_view.reference_experiment_id,
+                        )
+                    )
+                ):
+                    raise ValueError(
+                        "Guided global status result requires one exact local "
+                        "comparison."
+                    )
+                if (
+                    declared_experiment_view.observed_result
+                    not in result_outcomes[lifecycle]
+                ):
+                    raise ValueError(
+                        "Guided global status result lifecycle and observed "
+                        "outcome are inconsistent."
+                    )
+            expected_action_state, expected_action = {
+                "ACQUISITION_PENDING": (
+                    "COMPLETE_REQUIRED_ACQUISITION",
+                    "Compléter l’acquisition requise déjà déclarée.",
+                ),
+                "ACQUISITION_INCOMPLETE": (
+                    "COMPLETE_REQUIRED_ACQUISITION",
+                    "Compléter l’acquisition requise déjà déclarée.",
+                ),
+                "COMPARISON_UNAVAILABLE": (
+                    "RESTORE_COMPARABILITY",
+                    "Rétablir la comparabilité à partir de la déclaration existante.",
+                ),
+                "RESULT_INCONCLUSIVE": (
+                    "REVIEW_OBSERVED_RESULT",
+                    "Examiner le résultat observé.",
+                ),
+                "RESULT_AVAILABLE": (
+                    "REVIEW_OBSERVED_RESULT",
+                    "Examiner le résultat observé.",
+                ),
+            }[lifecycle]
+            if (
+                declared_experiment_view.user_action_state != expected_action_state
+                or declared_experiment_view.user_action != expected_action
+            ):
                 raise ValueError(
                     "Guided global status declared experiment lifecycle action "
                     "is inconsistent."
@@ -285,20 +346,36 @@ class GuidedGlobalStatusPresenter:
                     "READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_"
                     "COMPARISON_UNAVAILABLE"
                 ),
+                "RESULT_INCONCLUSIVE": (
+                    "READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE"
+                ),
+                "RESULT_AVAILABLE": "READY_PLAN_EXPERIMENT_RESULT_AVAILABLE",
             }[lifecycle]
-            blocker_lines = (
-                (
-                    "Acquisition requise : LEFT, RIGHT et répétitions déclarées.",
-                    "Mesures attendues : "
-                    + ", ".join(plan.measurements_to_capture)
+            if lifecycle in ("RESULT_INCONCLUSIVE", "RESULT_AVAILABLE"):
+                blocker_lines = (
+                    "Résultat observé : "
+                    + declared_experiment_view.observed_result
                     + ".",
+                    "Aucune cause, correction permanente ou configuration "
+                    "optimale n’est établie.",
                 )
-                if lifecycle in ("ACQUISITION_PENDING", "ACQUISITION_INCOMPLETE")
-                else (
-                    "Acquisition complète selon la déclaration spécialisée ; "
-                    "comparaison locale unique indisponible.",
+            else:
+                blocker_lines = (
+                    (
+                        "Acquisition requise : LEFT, RIGHT et répétitions déclarées.",
+                        "Mesures attendues : "
+                        + ", ".join(plan.measurements_to_capture)
+                        + ".",
+                    )
+                    if lifecycle in (
+                        "ACQUISITION_PENDING",
+                        "ACQUISITION_INCOMPLETE",
+                    )
+                    else (
+                        "Acquisition complète selon la déclaration spécialisée ; "
+                        "comparaison locale unique indisponible.",
+                    )
                 )
-            )
             return self._result(
                 workflow,
                 (
@@ -306,20 +383,34 @@ class GuidedGlobalStatusPresenter:
                     f"Préparation : {confirmation.confirmation_id}.",
                     f"Expérience déclarée : {declared_experiment_view.experiment_id}.",
                     f"Cycle de vie : {lifecycle}.",
+                    *(
+                        (
+                            "Comparaison locale : "
+                            + declared_experiment_view.comparison_id
+                            + ".",
+                        )
+                        if lifecycle in result_outcomes
+                        else ()
+                    ),
                 ),
                 (
                     *validated,
                     "Contrat du plan, préparation et déclaration qualifiée "
                     "exactement reliés.",
                     *(
-                        ("Acquisition spécialisée complète.",)
+                        (
+                            "Acquisition spécialisée complète.",
+                            "Comparaison locale unique et comparable disponible.",
+                        )
+                        if lifecycle in result_outcomes
+                        else ("Acquisition spécialisée complète.",)
                         if lifecycle == "COMPARISON_UNAVAILABLE"
                         else ()
                     ),
                 ),
                 blocker_lines,
                 expected_action_state,
-                declared_experiment_view.user_action,
+                expected_action,
             )
         if unresolved:
             details = ", ".join(

@@ -373,27 +373,49 @@ def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
 
 
 def declared_experiment_view(
-    plan, confirmation_id, fingerprint, lifecycle, *, coverage_status=None
+    plan, confirmation_id, fingerprint, lifecycle, *, coverage_status=None,
+    observed_result=None, comparison_id=None, causality_status="NOT_ESTABLISHED",
 ):
     comparison_pending = lifecycle == "COMPARISON_UNAVAILABLE"
+    result_available = lifecycle in ("RESULT_INCONCLUSIVE", "RESULT_AVAILABLE")
+    if observed_result is None:
+        observed_result = (
+            "MIXED"
+            if lifecycle == "RESULT_INCONCLUSIVE"
+            else "IMPROVED"
+            if lifecycle == "RESULT_AVAILABLE"
+            else "NOT_AVAILABLE"
+        )
     return PresentedExperimentUserView(
         experiment_id="exp-008",
         lifecycle_state=lifecycle,
         intent_lines=(plan.objective,),
         user_action_state=(
-            "RESTORE_COMPARABILITY"
+            "REVIEW_OBSERVED_RESULT"
+            if result_available
+            else "RESTORE_COMPARABILITY"
             if comparison_pending
             else "COMPLETE_REQUIRED_ACQUISITION"
         ),
         user_action=(
-            "Rétablir la comparabilité à partir de la déclaration existante."
+            "Examiner le résultat observé."
+            if result_available
+            else "Rétablir la comparabilité à partir de la déclaration existante."
             if comparison_pending
             else "Compléter l’acquisition requise déjà déclarée."
         ),
-        observed_result="NOT_AVAILABLE",
+        observed_result=observed_result,
         observed_result_lines=("Aucune comparaison locale unique n’est disponible.",),
         scientific_boundary_lines=("Comparaison locale indisponible.",),
-        causality_status="NOT_ESTABLISHED",
+        causality_status=causality_status,
+        reference_experiment_id="baseline" if result_available else None,
+        comparison_id=(
+            comparison_id
+            if comparison_id is not None
+            else "comparison-008"
+            if result_available
+            else None
+        ),
         source_plan_id=plan.plan_id,
         preparation_confirmation_id=confirmation_id,
         preparation_plan_fingerprint=fingerprint,
@@ -402,7 +424,7 @@ def declared_experiment_view(
             coverage_status
             or (
                 "PLAN_COVERAGE_COMPLETE"
-                if comparison_pending
+                if comparison_pending or result_available
                 else "PLAN_COVERAGE_PARTIAL"
             )
         ),
@@ -564,7 +586,142 @@ def test_comparison_pending_rejects_an_acquisition_action():
         )
 
 
-def test_observed_result_stage_remains_outside_guided_projection():
+def test_contract_failure_stage_remains_outside_guided_projection():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        "CONTRACT_MISSING",
+        coverage_status="PLAN_COVERAGE_COMPLETE",
+    )
+    with pytest.raises(ValueError, match="outside the guided experiment lifecycle"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+@pytest.mark.parametrize(
+    ("lifecycle", "outcome", "workflow"),
+    (
+        (
+            "RESULT_INCONCLUSIVE",
+            "MIXED",
+            "READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE",
+        ),
+        (
+            "RESULT_INCONCLUSIVE",
+            "INCONCLUSIVE",
+            "READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE",
+        ),
+        (
+            "RESULT_AVAILABLE",
+            "IMPROVED",
+            "READY_PLAN_EXPERIMENT_RESULT_AVAILABLE",
+        ),
+        (
+            "RESULT_AVAILABLE",
+            "DEGRADED",
+            "READY_PLAN_EXPERIMENT_RESULT_AVAILABLE",
+        ),
+        (
+            "RESULT_AVAILABLE",
+            "UNCHANGED",
+            "READY_PLAN_EXPERIMENT_RESULT_AVAILABLE",
+        ),
+    ),
+)
+def test_result_stage_preserves_existing_outcome(lifecycle, outcome, workflow):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        lifecycle,
+        observed_result=outcome,
+    )
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+        declared_experiment_view=view,
+    )
+    assert result.workflow_state == workflow
+    assert result.user_action_state == "REVIEW_OBSERVED_RESULT"
+    assert f"Résultat observé : {outcome}." in result.blocker_lines
+    assert "Comparaison locale : comparison-008." in result.current_state_lines
+    assert result.causality_status == "NOT_ESTABLISHED"
+
+
+@pytest.mark.parametrize("invalid_id", (None, "", " comparison-008"))
+def test_result_stage_requires_exact_comparison_identity(invalid_id):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = replace(
+        declared_experiment_view(
+            plan,
+            "preparation-001",
+            value.confirmation_input.plan_contract_fingerprint,
+            "RESULT_INCONCLUSIVE",
+        ),
+        comparison_id=invalid_id,
+    )
+    with pytest.raises(ValueError, match="one exact local comparison"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_result_stage_rejects_a_rewritten_action():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = replace(
+        declared_experiment_view(
+            plan,
+            "preparation-001",
+            value.confirmation_input.plan_contract_fingerprint,
+            "RESULT_INCONCLUSIVE",
+        ),
+        user_action="Interpréter ce résultat comme une amélioration.",
+    )
+    with pytest.raises(ValueError, match="lifecycle action is inconsistent"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_result_stage_rejects_inconsistent_outcome():
     plan = ready_plan()
     value = preparation(
         EvidencePlanPrerequisiteStatus.CONFIRMED,
@@ -576,9 +733,33 @@ def test_observed_result_stage_remains_outside_guided_projection():
         "preparation-001",
         value.confirmation_input.plan_contract_fingerprint,
         "RESULT_AVAILABLE",
-        coverage_status="PLAN_COVERAGE_COMPLETE",
+        observed_result="MIXED",
     )
-    with pytest.raises(ValueError, match="outside the guided acquisition"):
+    with pytest.raises(ValueError, match="outcome are inconsistent"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+            declared_experiment_view=view,
+        )
+
+
+def test_result_stage_never_promotes_causality():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    view = declared_experiment_view(
+        plan,
+        "preparation-001",
+        value.confirmation_input.plan_contract_fingerprint,
+        "RESULT_AVAILABLE",
+        causality_status="ESTABLISHED",
+    )
+    with pytest.raises(ValueError, match="cannot promote experiment causality"):
         GuidedGlobalStatusPresenter().present(
             report_for(plan),
             plans=(plan,),
