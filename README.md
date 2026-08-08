@@ -76,6 +76,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 | Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
 | Evidence-plan overview | `--evidence-plan-overview` | Every plan and its safe action, without ranking |
+| Guided global status | `--guided-status` | Current workflow state, blocker and exactly one safe next action |
 | Evidence-plan completion | `--complete-evidence-plan INPUT_JSON` | One exact audited derivation from a BLOCKED plan |
 
 These options select different presentations of established deterministic
@@ -117,6 +118,35 @@ python main.py \
 The overview is ordered by stable plan id and does not select or recommend a
 plan. A separate French label identifies the acoustic subject and operation;
 the original contractual objective remains visible and unchanged.
+
+Show the current workflow state without changing it:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --guided-status
+```
+
+To include explicit preparation state, provide its registry rather than
+letting AcousticBrain discover one by convention:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --guided-status \
+  --guided-preparation-registry state/evidence-plan-preparations.json
+```
+
+If several preparations target the recommended plan, the view lists their
+identifiers without selecting one. Resolve one explicitly by adding:
+
+```bash
+--guided-preparation EXACT_CONFIRMATION_ID
+```
+
+The view reuses the plan already recommended by the deterministic report. It
+never ranks plans again, chooses between several preparation declarations,
+changes a prerequisite, declares an experiment or executes a measurement.
 
 ### Individual deterministic reports
 
