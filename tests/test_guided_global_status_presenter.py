@@ -18,19 +18,26 @@ from acousticbrain.report import (
     EvidenceAcquisitionPlanPresenter,
     GuidedGlobalStatusConsoleReporter,
     GuidedGlobalStatusPresenter,
+    PresentedDiscoveredExperiment,
     PresentedExperimentUserView,
 )
 from test_evidence_plan_preparation_registry import record
 from test_evidence_plan_preparation_resolution import ready_plan
 
 
-def report_for(*plans):
+def report_for(*plans, experiments=None):
     context = SimpleNamespace(
         evidence_acquisition_plan_synthesis=EvidenceAcquisitionPlanSynthesis(plans)
     )
     return SimpleNamespace(
         evidence_acquisition_plans=EvidenceAcquisitionPlanPresenter().present(context),
-        experiments_discovered=SimpleNamespace(experiments=(object(), object())),
+        experiments_discovered=SimpleNamespace(
+            experiments=(
+                tuple(experiments)
+                if experiments is not None
+                else (object(), object())
+            )
+        ),
     )
 
 
@@ -52,6 +59,31 @@ def preparation(left, right, *, confirmation_id=None):
             ),
         )
     return value
+
+
+def discovered_experiment(
+    plan, confirmation, *, experiment_id="exp-008", source_plan_id=None,
+    fingerprint=None, qualification="ALL_PREREQUISITES_USER_CONFIRMED",
+    coverage="PLAN_COVERAGE_PARTIAL",
+):
+    return PresentedDiscoveredExperiment(
+        experiment_id=experiment_id,
+        experiment_type="EXPERIMENT",
+        state="INCOMPLETE",
+        file_count=0,
+        timestamp="2026-08-08T00:00:00Z",
+        available_channels=(),
+        source_evidence_acquisition_plan_id=(source_plan_id or plan.plan_id),
+        evidence_acquisition_plan_coverage_status=coverage,
+        channel_isolation_preparation_confirmation_id=(
+            confirmation.confirmation_input.confirmation_id
+        ),
+        channel_isolation_preparation_plan_fingerprint=(
+            fingerprint
+            or confirmation.confirmation_input.plan_contract_fingerprint
+        ),
+        channel_isolation_preparation_qualification_status=qualification,
+    )
 
 
 def test_existing_recommendation_is_reused_when_registry_is_unavailable():
@@ -194,6 +226,159 @@ def test_all_confirmed_routes_only_to_existing_readiness_preflight():
     )
     assert result.workflow_state == "READY_PLAN_PREPARATION_CONFIRMED"
     assert result.user_action_state == "RUN_DECLARATION_READINESS"
+
+
+def test_one_declared_experiment_requires_explicit_selection():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    candidate = discovered_experiment(plan, value)
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan, experiments=(candidate,)),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+    )
+    assert result.workflow_state == (
+        "READY_PLAN_DECLARED_EXPERIMENT_SELECTION_REQUIRED"
+    )
+    assert result.user_action_state == "SELECT_EXACT_DECLARED_EXPERIMENT"
+    assert "exp-008" in result.blocker_lines[0]
+    assert result.user_action.endswith("--guided-declared-experiment exp-008.")
+
+
+def test_multiple_declared_experiments_are_sorted_and_never_selected():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    later = discovered_experiment(plan, value, experiment_id="exp-010")
+    earlier = discovered_experiment(plan, value, experiment_id="exp-008")
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan, experiments=(later, earlier)),
+        plans=(plan,),
+        preparation_registry=registry_with(value),
+        preparation_id="preparation-001",
+    )
+    assert result.workflow_state == (
+        "READY_PLAN_DECLARED_EXPERIMENT_SELECTION_AMBIGUOUS"
+    )
+    assert "exp-008, exp-010" in result.blocker_lines[0]
+    assert result.user_action.endswith("--guided-declared-experiment EXPERIMENT_ID.")
+
+
+def test_another_preparation_candidate_does_not_change_current_navigation():
+    plan = ready_plan()
+    selected = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    other = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-002",
+    )
+    candidate = discovered_experiment(plan, other)
+    result = GuidedGlobalStatusPresenter().present(
+        report_for(plan, experiments=(candidate,)),
+        plans=(plan,),
+        preparation_registry=registry_with(selected),
+        preparation_id="preparation-001",
+    )
+    assert result.workflow_state == "READY_PLAN_PREPARATION_CONFIRMED"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    (
+        ({"source_plan_id": "another-plan"}, "targets another plan"),
+        ({"fingerprint": "different"}, "provenance is inconsistent"),
+        ({"qualification": "PREPARATION_DECLARED"}, "provenance is inconsistent"),
+        (
+            {"coverage": "PLAN_COVERAGE_INSUFFICIENT_DECLARATION"},
+            "specialized declaration is insufficient",
+        ),
+    ),
+)
+def test_declared_experiment_candidate_rejects_incompatible_provenance(
+    overrides, message
+):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    candidate = discovered_experiment(plan, value, **overrides)
+    with pytest.raises(ValueError, match=message):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan, experiments=(candidate,)),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+        )
+
+
+def test_declared_experiment_candidate_conflicts_with_incomplete_preparation():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+        confirmation_id="preparation-001",
+    )
+    candidate = discovered_experiment(plan, value)
+    with pytest.raises(ValueError, match="conflict with an incomplete preparation"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan, experiments=(candidate,)),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+        )
+
+
+def test_duplicate_declared_experiment_candidate_identity_is_rejected():
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    candidate = discovered_experiment(plan, value)
+    with pytest.raises(ValueError, match="candidate identity is ambiguous"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan, experiments=(candidate, candidate)),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+        )
+
+
+@pytest.mark.parametrize("experiment_id", ("", " exp-008"))
+def test_declared_experiment_candidate_id_must_be_exact(experiment_id):
+    plan = ready_plan()
+    value = preparation(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        confirmation_id="preparation-001",
+    )
+    candidate = discovered_experiment(
+        plan,
+        value,
+        experiment_id=experiment_id,
+    )
+    with pytest.raises(ValueError, match="candidate id must be exact text"):
+        GuidedGlobalStatusPresenter().present(
+            report_for(plan, experiments=(candidate,)),
+            plans=(plan,),
+            preparation_registry=registry_with(value),
+            preparation_id="preparation-001",
+        )
 
 
 def test_incomplete_operational_documentation_lists_exact_missing_fields():

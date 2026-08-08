@@ -10,14 +10,21 @@ from acousticbrain.models import (
 )
 from test_evidence_plan_preparation_registry import record
 from test_evidence_plan_preparation_resolution import ready_plan
-from test_guided_global_status_presenter import declared_experiment_view, report_for
+from test_guided_global_status_presenter import (
+    declared_experiment_view,
+    discovered_experiment,
+    report_for,
+)
 from acousticbrain.report import PresentedExperimentUserView
 
 
 class Brain:
+    def __init__(self, experiments=None):
+        self.experiments = experiments
+
     def analyze(self, **arguments):
         plan = ready_plan()
-        return report_for(plan), SimpleNamespace(
+        return report_for(plan, experiments=self.experiments), SimpleNamespace(
             evidence_acquisition_plan_synthesis=SimpleNamespace(plans=(plan,))
         )
 
@@ -212,6 +219,37 @@ def test_cli_projects_explicit_declared_experiment_without_writing(tmp_path, cap
     assert "Expérience déclarée : exp-008" in output
     assert output.count("Action utilisateur") == 1
     assert experiment_presenter.calls[0][1] == "exp-008"
+    assert registry_path.read_bytes() == before
+
+
+def test_cli_lists_declared_experiment_without_selecting_it(tmp_path, capsys):
+    registry_path = tmp_path / "preparations.json"
+    registry_path.write_text("preserve\n", encoding="utf-8")
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    repository = Repository(
+        EvidencePlanPreparationRegistry().with_record(confirmation)
+    )
+    plan = ready_plan()
+    candidate = discovered_experiment(plan, confirmation)
+    before = registry_path.read_bytes()
+    result = acousticbrain_main.show_guided_status(
+        tmp_path,
+        registry_path,
+        confirmation.confirmation_input.confirmation_id,
+        brain=Brain(experiments=(candidate,)),
+        registry_repository=repository,
+    )
+    output = capsys.readouterr().out
+    assert result.workflow_state == (
+        "READY_PLAN_DECLARED_EXPERIMENT_SELECTION_REQUIRED"
+    )
+    assert "Aucune expérience sélectionnée explicitement parmi : exp-008." in output
+    assert "--guided-declared-experiment exp-008" in output
+    assert output.count("Action utilisateur") == 1
+    assert "Causality status: NOT_ESTABLISHED" in output
     assert registry_path.read_bytes() == before
 
 

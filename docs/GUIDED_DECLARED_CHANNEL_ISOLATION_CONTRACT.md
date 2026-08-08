@@ -32,6 +32,13 @@ explicit preparation registry and one exact preparation identifier. It cannot
 be combined with declaration-readiness identifiers or operational worksheet
 inputs.
 
+When no experiment identifier is supplied, the view may enumerate discovered
+experiments carrying the exact selected preparation identifier. It never
+selects one implicitly, including when exactly one candidate exists. Candidate
+identifiers are sorted, duplicate identities are rejected, and plan,
+fingerprint, qualification and specialized declaration coverage must remain
+exactly compatible with the selected preparation.
+
 The existing experiment user-view presenter resolves the experiment exactly
 and remains the sole lifecycle authority. The guided projection additionally
 requires exact equality of source plan id, preparation confirmation id, plan
@@ -48,6 +55,8 @@ READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE
 READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_COMPARISON_UNAVAILABLE
 READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE
 READY_PLAN_EXPERIMENT_RESULT_AVAILABLE
+READY_PLAN_DECLARED_EXPERIMENT_SELECTION_REQUIRED
+READY_PLAN_DECLARED_EXPERIMENT_SELECTION_AMBIGUOUS
 ```
 
 `COMPARISON_UNAVAILABLE` is accepted only with
