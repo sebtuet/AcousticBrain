@@ -563,6 +563,8 @@ derives no verdict. See
 evidence they are intended to acquire. The corrected SBIR plan uses a versioned
 V2 identity so historical contracts are never rewritten. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
+Its user view keeps execution unavailable until an exact SBIR protocol instance
+declares the speaker, surface, geometry candidate, displacement and reference.
 
 ## Tests
 

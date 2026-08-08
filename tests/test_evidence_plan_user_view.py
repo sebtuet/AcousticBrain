@@ -216,6 +216,51 @@ def test_ready_plan_exposes_only_its_declared_preparation_contract():
     )
 
 
+def test_sbir_additional_observation_v2_never_implies_execution_readiness():
+    value = report()
+    original = value.evidence_acquisition_plans.plans[0]
+    sbir = replace(
+        original,
+        plan_id=(
+            "EVIDENCE_ACQUISITION_SBIR_PLACEMENT_INTERACTION_REASONING_"
+            "ACQUIRE_SUPPORTING_OBSERVATION_V2"
+        ),
+        reasoning_id="SBIR_PLACEMENT_INTERACTION_REASONING",
+        status="READY",
+        test_type="ADDITIONAL_OBSERVATION",
+        required_inputs=(),
+        resulting_evidence_targets=(
+            "additional_supporting_observation",
+            "SBIR_PLACEMENT_INTERACTION_REASONING",
+        ),
+    )
+    value.evidence_acquisition_plans = SimpleNamespace(plans=(sbir,))
+
+    view = EvidencePlanUserViewPresenter().present(value, sbir.plan_id)
+
+    assert view.plan_status == "READY"
+    assert view.user_action_state == (
+        "ESTABLISH_COMPATIBLE_SBIR_PROTOCOL_INSTANCE"
+    )
+    assert "Aucune déclaration sûre actuellement" in view.user_action
+    for required in (
+        "enceinte",
+        "surface",
+        "candidat géométrique",
+        "déplacement",
+        "référence expérimentale",
+    ):
+        assert required in view.user_action
+    assert any(
+        "Exécution indisponible" in line for line in view.blocker_lines
+    )
+    assert any(
+        "READY n’établit ni une instance de protocole SBIR" in line
+        for line in view.scientific_boundary_lines
+    )
+    assert view.causality_status == "NOT_ESTABLISHED"
+
+
 def test_blocked_plan_never_exposes_an_execution_checklist():
     view = EvidencePlanUserViewPresenter().present(report(), "SOURCE_PLAN")
     assert view.preparation_lines == (

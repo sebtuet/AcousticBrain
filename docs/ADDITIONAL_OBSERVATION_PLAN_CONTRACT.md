@@ -54,3 +54,23 @@ or establish hypothesis support or causality.
 A future guided execution path must preserve this plan contract and introduce
 its own explicit acquisition and comparison contract before any measurement is
 claimed as evidence.
+
+## User-view execution boundary
+
+The plan may be `READY` while execution remains unavailable. In V2, `READY`
+means only that the non-circular planning contract is complete. It does not
+resolve an instance of `protocol.temporary_move_speaker.v1`.
+
+Until existing structured sources provide all of the following, the user view
+must expose no declaration or execution action:
+
+- one speaker identifier;
+- one surface identifier;
+- one geometry-candidate identifier;
+- one finite, non-zero declared displacement;
+- an exact reference experiment identifier.
+
+The view displays
+`ESTABLISH_COMPATIBLE_SBIR_PROTOCOL_INSTANCE` and delegates this scientific
+work to a structured source or acoustic expert. It never derives these values
+from prose, geometry alone, a plan status, or an acoustic hypothesis.
