@@ -92,6 +92,7 @@ from .sbir_protocol_instance import (
     SBIRProtocolInstanceResolution,
     SBIRProtocolInstanceResolutionDecision,
 )
+from .sbir_room_geometry import SBIRRoomGeometryDeclarationInput
 from .channel_isolation_plan_coverage import (
     ChannelIsolationDeclaration,
     ChannelIsolationPreparationProvenance,

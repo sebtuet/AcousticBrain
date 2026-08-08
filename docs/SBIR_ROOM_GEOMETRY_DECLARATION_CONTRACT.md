@@ -7,7 +7,7 @@ status = FROZEN
 input_authority = ROOM_DESCRIPTION_JSON_V5
 target_authority = EXACT_BASELINE_MANIFEST_ONLY
 scientific_authority = USER_DECLARATION_WITH_EXPLICIT_QUALITY
-implementation_status = NOT_IMPLEMENTED
+implementation_status = INPUT_IMPLEMENTED
 ```
 
 ## Purpose
@@ -32,6 +32,31 @@ SBIR geometry candidates
 This contract reuses `RoomDescription`, `RoomDescriptionJsonCodec`,
 `RoomDescriptionValidator` and `RoomGeometryBuilder`. It does not introduce a
 second room model or accept free-form geometry.
+
+## Canonical declaration input
+
+Exactly these envelope fields are accepted:
+
+```json
+{
+  "schema_version": 1,
+  "declaration_input_id": "sbir-room-geometry-001",
+  "target_experiment_id": "baseline",
+  "declaration_source": "USER_MEASUREMENT",
+  "room_description_document": {
+    "schema_version": 5,
+    "room_description": {}
+  },
+  "user_note": null
+}
+```
+
+`room_description_document` is the complete canonical output of
+`RoomDescriptionJsonCodec`, not a partial geometry object. Missing, unknown or
+duplicate envelope fields are rejected. `user_note` is nullable but its field
+is required. The closed values are `schema_version = 1`,
+`target_experiment_id = baseline` and
+`declaration_source = USER_MEASUREMENT`.
 
 ## Coordinate system
 
