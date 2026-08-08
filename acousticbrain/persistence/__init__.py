@@ -13,6 +13,9 @@ from .sbir_protocol_instance_registry_json import (
     SBIRProtocolInstanceRegistryJsonCodec,
     SBIRProtocolInstanceRegistryJsonRepository,
 )
+from .sbir_room_geometry_json import (
+    SBIRRoomGeometryDeclarationInputJsonLoader,
+)
 from .evidence_plan_preparation_json import (
     EvidencePlanPreparationConfirmationJsonLoader,
 )
