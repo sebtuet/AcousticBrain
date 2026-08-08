@@ -588,6 +588,9 @@ python main.py \
   --sbir-protocol-instance-sources
 ```
 
+The explicit contract for declaring the missing room geometry is frozen in
+[`docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md`](docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md).
+
 ## Tests
 
 Run the complete test suite:
