@@ -25,6 +25,9 @@ class EvidencePlanUserViewPresenter:
     """Read-only explanation of one exact existing evidence plan."""
 
     MISSING_REFERENCE = "compatible_protocol_or_plan_id"
+    SBIR_ADDITIONAL_OBSERVATION_V2_SUFFIX = (
+        "ACQUIRE_SUPPORTING_OBSERVATION_V2"
+    )
     SUBJECT_LABELS = {
         "ASYMMETRIC_SPEAKER_ROOM_INTERACTION_REASONING": (
             "Asymétrie entre les enceintes et la pièce"
@@ -136,6 +139,12 @@ class EvidencePlanUserViewPresenter:
     @classmethod
     def _blocker_lines(cls, plan, factors):
         if plan.status == "READY":
+            if cls._requires_sbir_protocol_instance(plan):
+                return (
+                    "Aucun blocage de complétion : le plan est déjà READY.",
+                    "Exécution indisponible : aucune instance de protocole SBIR "
+                    "compatible et entièrement paramétrée n’est résolue.",
+                )
             return ("Aucun blocage de complétion : le plan est déjà READY.",)
         if not plan.blocking_factor_ids:
             return ("Facteurs bloquants indisponibles.",)
@@ -179,18 +188,28 @@ class EvidencePlanUserViewPresenter:
             values("Limites scientifiques", plan.limitations),
         )
 
-    @staticmethod
-    def _scientific_boundary_lines(plan):
+    @classmethod
+    def _scientific_boundary_lines(cls, plan):
         common = (
             "Le plan source reste immuable.",
             "Aucune compatibilité, causalité, correction permanente ou "
             "configuration optimale n’est déduite.",
         )
         if plan.status == "READY":
-            return (*common,
+            return (
+                *common,
                 "READY signifie seulement que le contrat de préparation est "
                 "complet ; les prérequis ne sont pas vérifiés et l’expérience "
                 "n’est ni déclarée ni exécutée.",
+                *(
+                    (
+                        "READY n’établit ni une instance de protocole SBIR, ni "
+                        "une enceinte, une surface, un candidat géométrique ou "
+                        "un déplacement expérimental.",
+                    )
+                    if cls._requires_sbir_protocol_instance(plan)
+                    else ()
+                ),
             )
         return (*common,
             "Une référence absente doit être établie par une source "
@@ -200,6 +219,14 @@ class EvidencePlanUserViewPresenter:
     @classmethod
     def _user_action(cls, plan, factors, action):
         if plan.status == "READY":
+            if cls._requires_sbir_protocol_instance(plan):
+                return (
+                    "ESTABLISH_COMPATIBLE_SBIR_PROTOCOL_INSTANCE",
+                    "Aucune déclaration sûre actuellement : faire établir une "
+                    "instance compatible du protocole SBIR avec enceinte, "
+                    "surface, candidat géométrique et déplacement explicitement "
+                    "déclarés, ainsi qu’une référence expérimentale exacte.",
+                )
             prerequisites = ", ".join(plan.required_inputs)
             return (
                 "VERIFY_DECLARED_PREREQUISITES",
@@ -237,6 +264,15 @@ class EvidencePlanUserViewPresenter:
         return (
             "NO_SAFE_USER_ACTION",
             "Aucune action sûre actuellement : conserver le plan bloqué.",
+        )
+
+    @classmethod
+    def _requires_sbir_protocol_instance(cls, plan):
+        test_type = getattr(plan.test_type, "value", plan.test_type)
+        return (
+            test_type == "ADDITIONAL_OBSERVATION"
+            and plan.reasoning_id == "SBIR_PLACEMENT_INTERACTION_REASONING"
+            and plan.plan_id.endswith(cls.SBIR_ADDITIONAL_OBSERVATION_V2_SUFFIX)
         )
 
 
