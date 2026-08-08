@@ -256,6 +256,62 @@ def test_cli_projects_complete_acquisition_waiting_for_comparison_without_writin
     assert registry_path.read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    ("lifecycle", "outcome", "workflow"),
+    (
+        (
+            "RESULT_INCONCLUSIVE",
+            "MIXED",
+            "READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE",
+        ),
+        (
+            "RESULT_AVAILABLE",
+            "IMPROVED",
+            "READY_PLAN_EXPERIMENT_RESULT_AVAILABLE",
+        ),
+    ),
+)
+def test_cli_projects_existing_result_without_reinterpreting_or_writing(
+    tmp_path, capsys, lifecycle, outcome, workflow
+):
+    registry_path = tmp_path / "preparations.json"
+    registry_path.write_text("preserve\n", encoding="utf-8")
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    repository = Repository(
+        EvidencePlanPreparationRegistry().with_record(confirmation)
+    )
+    plan = ready_plan()
+    view = declared_experiment_view(
+        plan,
+        confirmation.confirmation_input.confirmation_id,
+        confirmation.confirmation_input.plan_contract_fingerprint,
+        lifecycle,
+        observed_result=outcome,
+    )
+    experiment_presenter = DeclaredExperimentPresenter(view)
+    before = registry_path.read_bytes()
+    result = acousticbrain_main.show_guided_status(
+        tmp_path,
+        registry_path,
+        confirmation.confirmation_input.confirmation_id,
+        brain=Brain(),
+        registry_repository=repository,
+        declared_experiment_id="exp-008",
+        declared_experiment_view_presenter=experiment_presenter,
+    )
+    output = capsys.readouterr().out
+    assert result.workflow_state == workflow
+    assert f"Résultat observé : {outcome}." in output
+    assert "Comparaison locale : comparison-008." in output
+    assert "Examiner le résultat observé." in output
+    assert output.count("Action utilisateur") == 1
+    assert "Causality status: NOT_ESTABLISHED" in output
+    assert registry_path.read_bytes() == before
+
+
 def test_main_rejects_guided_registry_without_guided_status(tmp_path, capsys):
     root = tmp_path / "measurements"
     root.mkdir()

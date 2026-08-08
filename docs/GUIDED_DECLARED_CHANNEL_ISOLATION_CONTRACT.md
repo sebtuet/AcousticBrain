@@ -19,8 +19,9 @@ explicit experiment_id
 + exact selected preparation
 → existing experiment user view lifecycle
 → exact preparation provenance continuity
-→ ACQUISITION_PENDING, ACQUISITION_INCOMPLETE
-  or COMPARISON_UNAVAILABLE
+→ ACQUISITION_PENDING, ACQUISITION_INCOMPLETE,
+  COMPARISON_UNAVAILABLE, RESULT_INCONCLUSIVE
+  or RESULT_AVAILABLE
 → one existing lifecycle action
 ```
 
@@ -45,6 +46,8 @@ an insufficient or absent `channel_isolation_declaration` never qualifies.
 READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_PENDING
 READY_PLAN_EXPERIMENT_DECLARED_ACQUISITION_INCOMPLETE
 READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_COMPARISON_UNAVAILABLE
+READY_PLAN_EXPERIMENT_RESULT_INCONCLUSIVE
+READY_PLAN_EXPERIMENT_RESULT_AVAILABLE
 ```
 
 `COMPARISON_UNAVAILABLE` is accepted only with
@@ -52,6 +55,18 @@ READY_PLAN_EXPERIMENT_ACQUISITION_COMPLETE_COMPARISON_UNAVAILABLE
 is complete while no unique comparable local comparison exists. Other
 experiment lifecycle states remain owned by `--experiment-view` and are not
 reinterpreted here.
+
+Result states additionally require `PLAN_COVERAGE_COMPLETE`, one exact local
+`comparison_id`, one exact reference experiment, and the existing
+`REVIEW_OBSERVED_RESULT` action. Their accepted outcome sets are closed:
+
+```text
+RESULT_INCONCLUSIVE → MIXED or INCONCLUSIVE
+RESULT_AVAILABLE    → IMPROVED, DEGRADED or UNCHANGED
+```
+
+The observed outcome is copied verbatim. The guided presenter never derives,
+groups, softens or promotes it. `MIXED` remains textually visible.
 
 ## Scientific boundary
 
@@ -61,6 +76,10 @@ The view is read-only. A manifest with no acquired files is
 no unique comparable local comparison is `COMPARISON_UNAVAILABLE`, never an
 observed result. The view writes no file, launches no measurement, creates no
 comparison, evaluates no result and establishes no causality.
+
+When an existing unique comparable local comparison is present, the view may
+display its existing result and identifier. This is a read-only projection,
+not a new evaluation. `causality_status` must remain `NOT_ESTABLISHED`.
 
 ## CLI
 
