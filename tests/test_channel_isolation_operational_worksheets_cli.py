@@ -28,6 +28,22 @@ def test_cli_generates_both_explicit_worksheets_without_other_writes(tmp_path, c
     assert "Aucun prérequis confirmé" in capsys.readouterr().out
 
 
+def test_generation_prints_guidance_without_supplying_field_values(tmp_path, capsys):
+    acousticbrain_main.generate_channel_isolation_records(
+        tmp_path,
+        "READY_PLAN",
+        tmp_path / "microphone.json",
+        tmp_path / "settings.json",
+        brain=Brain(),
+    )
+    output = capsys.readouterr().out
+    assert "Aide au remplissage" in output
+    assert "microphone_position.reference_geometry" in output
+    assert "Question : Quel repère géométrique écrit" in output
+    assert "Valeurs autorisées : INTENDED_UNCHANGED, NOT_INTENDED_UNCHANGED" in output
+    assert "Aucune valeur de gain appropriée n’est recommandée" in output
+
+
 def test_prevalidation_prevents_partial_output(tmp_path):
     microphone = tmp_path / "microphone.json"
     settings = tmp_path / "settings.json"

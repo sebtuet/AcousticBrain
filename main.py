@@ -24,6 +24,7 @@ from acousticbrain.application import (
     ChannelIsolationGuidedExecutionService,
     ChannelIsolationOperationalWorksheetService,
     ChannelIsolationOperationalRecordPreviewService,
+    ChannelIsolationOperationalWorksheetRevisionService,
     ChannelIsolationDocumentationReviewService,
     ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
@@ -293,6 +294,19 @@ def create_parser():
     )
     parser.add_argument(
         "--acquisition-settings-record", type=Path, default=None, metavar="PATH"
+    )
+    parser.add_argument(
+        "--revise-channel-isolation-records",
+        default=None,
+        metavar="PLAN_ID",
+        help="fill explicit fields into two new operational worksheets",
+    )
+    parser.add_argument(
+        "--operational-field",
+        action="append",
+        default=[],
+        metavar="PATH=VALUE",
+        help="exact operational worksheet assignment (repeatable)",
     )
     parser.add_argument(
         "--review-channel-isolation-documentation",
@@ -831,6 +845,14 @@ def generate_channel_isolation_records(
     print(f"Fiche microphone : {microphone_path.resolve()}")
     print(f"Fiche réglages : {settings_path.resolve()}")
     print("Remplacer chaque marqueur explicite avant prévisualisation.")
+    print()
+    print("Aide au remplissage")
+    for item in ChannelIsolationOperationalWorksheetRevisionService.GUIDANCE:
+        print(item.path)
+        print("Question : " + item.question)
+        if item.allowed_values:
+            print("Valeurs autorisées : " + ", ".join(item.allowed_values))
+        print("Limite : " + item.limitation)
     print("Aucun prérequis confirmé et aucune expérience exécutée.")
     return result
 
@@ -927,6 +949,101 @@ def review_channel_isolation_documentation(
     print(command)
     print("Valeurs autorisées : CONFIRMED, NOT_CONFIRMED, UNKNOWN.")
     print("Aucun statut choisi, aucun brouillon écrit et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def parse_operational_fields(values):
+    result = {}
+    for value in values:
+        if not isinstance(value, str) or "=" not in value:
+            raise ValueError(
+                "Operational fields must use exact PATH=VALUE syntax."
+            )
+        path, content = value.split("=", 1)
+        if not path or path in result:
+            raise ValueError(f"Duplicate or empty operational field path: {path}.")
+        if not content:
+            raise ValueError(f"Operational field value is empty: {path}.")
+        result[path] = content
+    return result
+
+
+def revise_channel_isolation_records(
+    measurements_root, plan_id, microphone_source, settings_source, assignments,
+    microphone_output, settings_output, *, brain=None, service=None,
+):
+    sources = (microphone_source, settings_source)
+    targets = (microphone_output, settings_output)
+    if len(set((*sources, *targets))) != 4:
+        raise ValueError(
+            "Channel-isolation worksheet source and output paths must all differ."
+        )
+    for target in targets:
+        if target.exists():
+            raise ValueError(
+                f"Channel-isolation worksheet output already exists: {target}"
+            )
+        if not target.parent.exists() or not target.parent.is_dir():
+            raise ValueError(
+                f"Channel-isolation worksheet parent is unavailable: {target.parent}"
+            )
+    try:
+        microphone = json.loads(microphone_source.read_text(encoding="utf-8"))
+        settings = json.loads(settings_source.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"Invalid channel-isolation worksheet JSON: {error}") from error
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Worksheet revision requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Worksheet revision analysis contracts are unavailable.")
+    result = (
+        service or ChannelIsolationOperationalWorksheetRevisionService()
+    ).revise(
+        plan_id,
+        microphone,
+        settings,
+        assignments,
+        plans=synthesis.plans,
+    )
+    ChannelIsolationMicrophonePositionRecordJsonLoader.save_new_worksheet(
+        microphone_output, result.microphone_position
+    )
+    ChannelIsolationAcquisitionSettingsRecordJsonLoader.save_new_worksheet(
+        settings_output, result.acquisition_settings
+    )
+    print(f"CHANNEL ISOLATION WORKSHEETS REVISED — {plan_id}")
+    print(result.documentation_status)
+    print()
+    print("Champs renseignés")
+    print("\n".join(result.changed_fields))
+    print()
+    print("Champs restant à documenter")
+    if result.missing_fields:
+        guidance = {value.path: value for value in result.field_guidance}
+        for path in result.missing_fields:
+            item = guidance[path]
+            print(path)
+            print("Question : " + item.question)
+            if item.allowed_values:
+                print("Valeurs autorisées : " + ", ".join(item.allowed_values))
+            print("Limite : " + item.limitation)
+    else:
+        print("aucun")
+    print()
+    print(f"Nouvelle fiche microphone : {microphone_output.resolve()}")
+    print(f"Nouvelle fiche réglages : {settings_output.resolve()}")
+    print("Les fiches sources restent inchangées.")
+    print("Aucun prérequis confirmé et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
 
@@ -1219,6 +1336,7 @@ def main(
     guided_preparation_revision_service=None,
     channel_isolation_operational_worksheet_service=None,
     channel_isolation_operational_record_preview_service=None,
+    channel_isolation_operational_worksheet_revision_service=None,
     channel_isolation_documentation_review_service=None,
     channel_isolation_declaration_readiness_service=None,
     guided_global_status_presenter=None,
@@ -1407,8 +1525,71 @@ def main(
         if arguments.generate_channel_isolation_records is not None:
             if arguments.microphone_position_output is None or arguments.acquisition_settings_output is None:
                 raise ValueError("--generate-channel-isolation-records requires both worksheet output paths.")
-        elif arguments.microphone_position_output is not None or arguments.acquisition_settings_output is not None:
+        elif (
+            arguments.revise_channel_isolation_records is None
+            and (
+                arguments.microphone_position_output is not None
+                or arguments.acquisition_settings_output is not None
+            )
+        ):
             raise ValueError("Worksheet output paths require --generate-channel-isolation-records.")
+        if arguments.revise_channel_isolation_records is not None:
+            required = (
+                ("--microphone-position-record", arguments.microphone_position_record),
+                ("--acquisition-settings-record", arguments.acquisition_settings_record),
+                ("--microphone-position-output", arguments.microphone_position_output),
+                ("--acquisition-settings-output", arguments.acquisition_settings_output),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--revise-channel-isolation-records requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            if not arguments.operational_field:
+                raise ValueError(
+                    "--revise-channel-isolation-records requires --operational-field."
+                )
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--revise-channel-isolation-records cannot be combined "
+                        f"with {option}."
+                    )
+        elif arguments.operational_field:
+            raise ValueError(
+                "--operational-field requires --revise-channel-isolation-records."
+            )
         if arguments.preview_channel_isolation_records is not None:
             if arguments.microphone_position_record is None or arguments.acquisition_settings_record is None:
                 raise ValueError("--preview-channel-isolation-records requires both operational record paths.")
@@ -1449,6 +1630,7 @@ def main(
         if (
             arguments.preview_channel_isolation_records is None
             and arguments.review_channel_isolation_documentation is None
+            and arguments.revise_channel_isolation_records is None
             and (arguments.microphone_position_record is not None or arguments.acquisition_settings_record is not None)
         ):
             raise ValueError("Operational record paths require a channel-isolation preview or review mode.")
@@ -1830,6 +2012,19 @@ def main(
                 arguments.acquisition_settings_output,
                 brain=brain,
                 service=channel_isolation_operational_worksheet_service,
+            )
+            return 0
+        if arguments.revise_channel_isolation_records is not None:
+            revise_channel_isolation_records(
+                measurements_root,
+                arguments.revise_channel_isolation_records,
+                arguments.microphone_position_record,
+                arguments.acquisition_settings_record,
+                parse_operational_fields(arguments.operational_field),
+                arguments.microphone_position_output,
+                arguments.acquisition_settings_output,
+                brain=brain,
+                service=channel_isolation_operational_worksheet_revision_service,
             )
             return 0
         if arguments.preview_channel_isolation_records is not None:

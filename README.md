@@ -148,6 +148,27 @@ The view reuses the plan already recommended by the deterministic report. It
 never ranks plans again, chooses between several preparation declarations,
 changes a prerequisite, declares an experiment or executes a measurement.
 
+### Guided CHANNEL_ISOLATION worksheet revision
+
+Generated operational worksheets now print one neutral question and one
+limitation for every field. Fill one or more explicit values into two new
+files without editing their JSON structure manually:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --revise-channel-isolation-records EXACT_PLAN_ID \
+  --microphone-position-record microphone-source.json \
+  --acquisition-settings-record settings-source.json \
+  --operational-field 'microphone_position.reference_geometry=EXPLICIT USER TEXT' \
+  --microphone-position-output microphone-revised.json \
+  --acquisition-settings-output settings-revised.json
+```
+
+Unassigned markers remain explicit and the output lists the questions still
+unanswered. The command never overwrites either source, guesses a value,
+confirms a prerequisite, declares an experiment or executes a measurement.
+
 ### Individual deterministic reports
 
 Print acoustic observations:
