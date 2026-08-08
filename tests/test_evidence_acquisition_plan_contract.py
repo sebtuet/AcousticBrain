@@ -322,3 +322,209 @@ def test_unknown_derived_plan_fails_without_creating_experiment_directory(tmp_pa
         ], brain=brain)
 
     assert not (root / "exp-unknown").exists()
+
+
+def test_qualified_channel_isolation_command_preserves_preparation_and_structure(
+    tmp_path,
+):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+    from acousticbrain.models import (
+        EvidencePlanPreparationRegistry,
+        EvidencePlanPrerequisiteStatus,
+    )
+    from acousticbrain.persistence import (
+        EvidencePlanPreparationRegistryJsonRepository,
+        MeasurementRepository,
+    )
+    from test_evidence_plan_preparation_registry import record
+    from test_evidence_plan_preparation_resolution import ready_plan
+    from test_experiment_discovery import rew_measurement
+
+    root = campaign(tmp_path)
+    source = ready_plan()
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    preparation_registry = EvidencePlanPreparationRegistry().with_record(
+        confirmation
+    )
+    registry_path = tmp_path / "preparations.json"
+    EvidencePlanPreparationRegistryJsonRepository().save(
+        registry_path, preparation_registry
+    )
+    presented = EvidenceAcquisitionPlanPresenter().present(SimpleNamespace(
+        evidence_acquisition_plan_synthesis=SimpleNamespace(plans=(source,)),
+    ))
+    brain = SimpleNamespace(analyze=lambda **arguments: SimpleNamespace(
+        evidence_acquisition_plans=presented
+    ))
+
+    command.main([
+        str(root),
+        "--plan-id", source.plan_id,
+        "--experiment", "exp-008",
+        "--reference", "baseline",
+        "--preparation-registry", str(registry_path),
+        "--preparation", confirmation.confirmation_input.confirmation_id,
+    ], brain=brain)
+
+    manifest = MeasurementRepository.load_manifest(root / "exp-008")
+    assert manifest["channel_isolation_declaration"] == {
+        "repeated_channels": ["LEFT", "RIGHT"],
+        "available_inputs": sorted(source.required_inputs),
+        "controlled_variables": sorted(source.controlled_variables),
+        "independent_variables": sorted(source.independent_variables),
+        "measurements": sorted(source.measurements_to_capture),
+    }
+    assert manifest["channel_isolation_preparation"] == {
+        "schema_version": 1,
+        "confirmation_id": confirmation.confirmation_input.confirmation_id,
+        "plan_id": source.plan_id,
+        "plan_contract_fingerprint": (
+            confirmation.confirmation_input.plan_contract_fingerprint
+        ),
+        "qualification_status": "ALL_PREREQUISITES_USER_CONFIRMED",
+    }
+    assert manifest["source_evidence_acquisition_plan_id"] == source.plan_id
+    assert not (root / "exp-008" / "measurements").exists()
+    measurements = root / "exp-008" / "measurements"
+    measurements.mkdir()
+    for channel in ("LEFT", "RIGHT"):
+        (measurements / f"{channel}.txt").write_text(
+            rew_measurement(channel), encoding="utf-8"
+        )
+    descriptor = next(
+        value for value in ExperimentDiscoveryService().discover(root)
+        if value.experiment_id == "exp-008"
+    )
+    from acousticbrain.application import ChannelIsolationPlanCoverageValidator
+
+    coverage = ChannelIsolationPlanCoverageValidator().validate(
+        descriptor, source
+    )
+    assert coverage.status is PlanCoverageStatus.COMPLETE
+
+
+def test_incomplete_qualified_declaration_fails_before_creating_target(tmp_path):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+    from acousticbrain.models import (
+        EvidencePlanPreparationRegistry,
+        EvidencePlanPrerequisiteStatus,
+    )
+    from acousticbrain.persistence import EvidencePlanPreparationRegistryJsonRepository
+    from test_evidence_plan_preparation_registry import record
+    from test_evidence_plan_preparation_resolution import ready_plan
+
+    root = campaign(tmp_path)
+    source = ready_plan()
+    confirmation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.UNKNOWN,
+    )
+    registry_path = tmp_path / "preparations.json"
+    EvidencePlanPreparationRegistryJsonRepository().save(
+        registry_path,
+        EvidencePlanPreparationRegistry().with_record(confirmation),
+    )
+    presented = EvidenceAcquisitionPlanPresenter().present(SimpleNamespace(
+        evidence_acquisition_plan_synthesis=SimpleNamespace(plans=(source,)),
+    ))
+    brain = SimpleNamespace(analyze=lambda **arguments: SimpleNamespace(
+        evidence_acquisition_plans=presented
+    ))
+
+    with pytest.raises(ValueError, match="PREPARATION_INCOMPLETE"):
+        command.main([
+            str(root),
+            "--plan-id", source.plan_id,
+            "--experiment", "exp-blocked",
+            "--reference", "baseline",
+            "--preparation-registry", str(registry_path),
+            "--preparation", confirmation.confirmation_input.confirmation_id,
+        ], brain=brain)
+
+    assert not (root / "exp-blocked").exists()
+
+
+def test_qualified_declaration_requires_both_preparation_arguments(tmp_path):
+    from acousticbrain.commands import declare_evidence_plan_experiment as command
+    from test_evidence_plan_preparation_resolution import ready_plan
+
+    root = campaign(tmp_path)
+    source = ready_plan()
+    presented = EvidenceAcquisitionPlanPresenter().present(SimpleNamespace(
+        evidence_acquisition_plan_synthesis=SimpleNamespace(plans=(source,)),
+    ))
+    brain = SimpleNamespace(analyze=lambda **arguments: SimpleNamespace(
+        evidence_acquisition_plans=presented
+    ))
+
+    with pytest.raises(ValueError, match="requires both"):
+        command.main([
+            str(root),
+            "--plan-id", source.plan_id,
+            "--experiment", "exp-unpaired",
+            "--reference", "baseline",
+            "--preparation", "preparation-001",
+        ], brain=brain)
+
+    assert not (root / "exp-unpaired").exists()
+
+
+def test_qualified_contract_redeclaration_is_idempotent(tmp_path):
+    from acousticbrain.application import ChannelIsolationDeclarationReadiness
+
+    root = campaign(tmp_path)
+    source = plan()
+    readiness = ChannelIsolationDeclarationReadiness(
+        plan_id=source.plan_id,
+        confirmation_id="preparation-001",
+        preparation_contract_fingerprint="a" * 64,
+        reference_experiment_id="baseline",
+        experiment_id="exp-001",
+    )
+    service = EvidenceAcquisitionPlanContractService()
+    arguments = dict(
+        experiment_code="exp-001",
+        reference_experiment_code="baseline",
+        plan=source,
+        channel_isolation_readiness=readiness,
+    )
+    service.declare(root, **arguments)
+    manifest = root / "exp-001" / "manifest.json"
+    first = manifest.read_bytes()
+    service.declare(root, **arguments)
+    assert manifest.read_bytes() == first
+
+
+def test_divergent_qualified_preparation_is_rejected_deterministically(tmp_path):
+    from acousticbrain.application import ChannelIsolationDeclarationReadiness
+
+    root = campaign(tmp_path)
+    source = plan()
+    service = EvidenceAcquisitionPlanContractService()
+    readiness = ChannelIsolationDeclarationReadiness(
+        plan_id=source.plan_id,
+        confirmation_id="preparation-001",
+        preparation_contract_fingerprint="a" * 64,
+        reference_experiment_id="baseline",
+        experiment_id="exp-001",
+    )
+    service.declare(
+        root,
+        experiment_code="exp-001",
+        reference_experiment_code="baseline",
+        plan=source,
+        channel_isolation_readiness=readiness,
+    )
+    divergent = replace(readiness, confirmation_id="preparation-002")
+    with pytest.raises(ValueError) as error:
+        service.declare(
+            root,
+            experiment_code="exp-001",
+            reference_experiment_code="baseline",
+            plan=source,
+            channel_isolation_readiness=divergent,
+        )
+    assert "channel_isolation_preparation.confirmation_id" in str(error.value)

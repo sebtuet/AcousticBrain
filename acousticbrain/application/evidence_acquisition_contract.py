@@ -15,6 +15,9 @@ from acousticbrain.models import (
 from acousticbrain.persistence.measurement_repository import MeasurementRepository
 
 from .experiment_declaration import ExperimentDeclarationService
+from .channel_isolation_declaration_readiness import (
+    ChannelIsolationDeclarationReadiness,
+)
 
 
 class EvidenceAcquisitionPlanContractService:
@@ -31,6 +34,7 @@ class EvidenceAcquisitionPlanContractService:
         mode=ExperimentContractMode.EXPLORATORY,
         declaration_source="EXPLICIT_USER_OPERATION",
         user_note=None,
+        channel_isolation_readiness=None,
     ):
         if not isinstance(plan, EvidenceAcquisitionPlan):
             raise TypeError("EvidenceAcquisitionPlan is required.")
@@ -39,6 +43,33 @@ class EvidenceAcquisitionPlanContractService:
         mode = mode if isinstance(mode, ExperimentContractMode) else ExperimentContractMode(mode)
         if mode is ExperimentContractMode.PRESCRIPTIVE:
             raise ValueError("PRESCRIPTIVE mode requires a future scientific contract.")
+        channel_payload = None
+        preparation_payload = None
+        if channel_isolation_readiness is not None:
+            if not isinstance(
+                channel_isolation_readiness,
+                ChannelIsolationDeclarationReadiness,
+            ):
+                raise TypeError(
+                    "ChannelIsolationDeclarationReadiness is required."
+                )
+            if plan.test_type is not EvidenceAcquisitionTestType.CHANNEL_ISOLATION:
+                raise ValueError(
+                    "Channel-isolation readiness requires a CHANNEL_ISOLATION plan."
+                )
+            if (
+                channel_isolation_readiness.plan_id != plan.plan_id
+                or channel_isolation_readiness.reference_experiment_id
+                != reference_experiment_code
+                or channel_isolation_readiness.experiment_id != experiment_code
+            ):
+                raise ValueError(
+                    "Channel-isolation readiness does not match the declaration."
+                )
+            channel_payload = self._channel_isolation_payload(plan)
+            preparation_payload = self._preparation_payload(
+                channel_isolation_readiness
+            )
         contract = EvidenceAcquisitionPlanContract(
             plan, mode, declaration_source, reference_experiment_code, user_note
         )
@@ -56,6 +87,23 @@ class EvidenceAcquisitionPlanContractService:
                 "Experiment already preserves a different plan contract; "
                 f"incompatible fields: {incompatible}."
             )
+        for field, requested in (
+            ("channel_isolation_declaration", channel_payload),
+            ("channel_isolation_preparation", preparation_payload),
+        ):
+            current = manifest.get(field)
+            if (
+                requested is not None
+                and current is not None
+                and current != requested
+            ):
+                incompatible = ", ".join(
+                    self._incompatible_fields(current, requested, field)
+                )
+                raise ValueError(
+                    "Experiment already preserves a different channel-isolation "
+                    f"contract; incompatible fields: {incompatible}."
+                )
         repeat = plan.test_type is EvidenceAcquisitionTestType.REPEAT_MEASUREMENT
         self.declaration_service.declare(
             measurement_root,
@@ -76,8 +124,33 @@ class EvidenceAcquisitionPlanContractService:
         manifest = self.repository.load_manifest(directory) or {}
         manifest["source_evidence_acquisition_plan_id"] = plan.plan_id
         manifest["evidence_acquisition_plan_contract"] = payload
+        if channel_payload is not None:
+            manifest["channel_isolation_declaration"] = channel_payload
+            manifest["channel_isolation_preparation"] = preparation_payload
         self.repository.save_manifest(directory, manifest)
         return contract
+
+    @staticmethod
+    def _channel_isolation_payload(plan):
+        return {
+            "repeated_channels": ["LEFT", "RIGHT"],
+            "available_inputs": sorted(plan.required_inputs),
+            "controlled_variables": sorted(plan.controlled_variables),
+            "independent_variables": sorted(plan.independent_variables),
+            "measurements": sorted(plan.measurements_to_capture),
+        }
+
+    @staticmethod
+    def _preparation_payload(readiness):
+        return {
+            "schema_version": 1,
+            "confirmation_id": readiness.confirmation_id,
+            "plan_id": readiness.plan_id,
+            "plan_contract_fingerprint": (
+                readiness.preparation_contract_fingerprint
+            ),
+            "qualification_status": "ALL_PREREQUISITES_USER_CONFIRMED",
+        }
 
     @staticmethod
     def _payload(contract):

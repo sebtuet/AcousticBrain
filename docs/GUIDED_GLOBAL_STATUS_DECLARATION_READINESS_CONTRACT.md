@@ -47,7 +47,9 @@ READY_PLAN_DECLARATION_READY
 
 The view preserves every closed preflight status and renders exactly one user
 action: the existing separate experiment-declaration command with the same
-measurement root, plan, reference and target identifiers.
+measurement root, plan, reference, target and qualified preparation identifiers.
+The command uses the qualified declaration extension documented in
+`CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md`.
 
 ## CLI
 

@@ -317,6 +317,9 @@ def test_exact_declaration_readiness_routes_to_separate_declaration(tmp_path):
     readiness = ChannelIsolationDeclarationReadiness(
         plan_id=plan.plan_id,
         confirmation_id="preparation-001",
+        preparation_contract_fingerprint=(
+            evidence_acquisition_plan_fingerprint(plan)
+        ),
         reference_experiment_id="baseline",
         experiment_id="channel-isolation-001",
     )
@@ -327,12 +330,15 @@ def test_exact_declaration_readiness_routes_to_separate_declaration(tmp_path):
         preparation_id="preparation-001",
         declaration_readiness=readiness,
         measurement_root=tmp_path,
+        preparation_registry_path=tmp_path / "preparations.json",
     )
     assert result.workflow_state == "READY_PLAN_DECLARATION_READY"
     assert result.user_action_state == "DECLARE_EXPERIMENT_SEPARATELY"
     assert "DECLARATION_READY" in " ".join(result.validated_step_lines)
     assert "--experiment channel-isolation-001" in result.user_action
     assert "--reference baseline" in result.user_action
+    assert "--preparation-registry" in result.user_action
+    assert "--preparation preparation-001" in result.user_action
     assert str(tmp_path.resolve()) in result.user_action
     assert result.causality_status == "NOT_ESTABLISHED"
 
@@ -347,6 +353,9 @@ def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
     readiness = ChannelIsolationDeclarationReadiness(
         plan_id=plan.plan_id,
         confirmation_id="preparation-002",
+        preparation_contract_fingerprint=(
+            evidence_acquisition_plan_fingerprint(plan)
+        ),
         reference_experiment_id="baseline",
         experiment_id="channel-isolation-001",
     )
@@ -358,6 +367,7 @@ def test_declaration_readiness_must_match_exact_selected_preparation(tmp_path):
             preparation_id="preparation-001",
             declaration_readiness=readiness,
             measurement_root=tmp_path,
+            preparation_registry_path=tmp_path / "preparations.json",
         )
 
 

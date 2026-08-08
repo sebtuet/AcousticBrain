@@ -1,12 +1,17 @@
 import argparse
 from pathlib import Path
 
-from acousticbrain.application import EvidenceAcquisitionPlanContractService
+from acousticbrain.application import (
+    ChannelIsolationDeclarationReadinessService,
+    EvidenceAcquisitionPlanContractService,
+)
 from acousticbrain.brain import AcousticBrain
 from acousticbrain.persistence import (
     EvidenceAcquisitionPlanContractJsonCodec,
     EvidencePlanCompletionRegistryJsonRepository,
+    EvidencePlanPreparationRegistryJsonRepository,
 )
+from acousticbrain.models import EvidenceAcquisitionTestType
 
 
 def parser():
@@ -26,6 +31,8 @@ def parser():
         help="optional derived evidence-plan completion registry JSON",
     )
     value.add_argument("--note")
+    value.add_argument("--preparation-registry", type=Path)
+    value.add_argument("--preparation")
     return value
 
 
@@ -68,6 +75,35 @@ def main(
     if len(matches) != 1 or matches[0][0].status.value != "READY":
         raise ValueError("The requested evidence-acquisition plan is not uniquely READY.")
     source, completion_record = matches[0]
+    preparation_values = (
+        arguments.preparation_registry,
+        arguments.preparation,
+    )
+    if any(value is not None for value in preparation_values) and any(
+        value is None for value in preparation_values
+    ):
+        raise ValueError(
+            "Qualified channel-isolation declaration requires both "
+            "--preparation-registry and --preparation."
+        )
+    readiness = None
+    if arguments.preparation_registry is not None:
+        if source.test_type is not EvidenceAcquisitionTestType.CHANNEL_ISOLATION:
+            raise ValueError(
+                "Preparation-qualified declaration supports CHANNEL_ISOLATION only."
+            )
+        registry = EvidencePlanPreparationRegistryJsonRepository().load(
+            arguments.preparation_registry
+        )
+        readiness = ChannelIsolationDeclarationReadinessService().qualify(
+            root,
+            source.plan_id,
+            arguments.preparation,
+            arguments.reference,
+            arguments.experiment,
+            plans=(source,),
+            registry=registry,
+        )
     directory = root / arguments.experiment
     if directory.exists() and not directory.is_dir():
         raise ValueError(f"Experiment path is not a directory: {arguments.experiment}")
@@ -92,6 +128,7 @@ def main(
         plan=contract.source_plan,
         declaration_source=contract.declaration_source,
         user_note=arguments.note,
+        channel_isolation_readiness=readiness,
     )
     print(
         f"Declared {arguments.experiment} from evidence-acquisition plan "
