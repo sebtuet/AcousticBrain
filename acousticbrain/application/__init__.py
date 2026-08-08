@@ -88,6 +88,14 @@ from .sbir_protocol_instance_preview import (
     SBIRProtocolInstancePreviewResult,
     SBIRProtocolInstancePreviewService,
 )
+from .sbir_protocol_instance_sources import (
+    SBIRDisplacementSource,
+    SBIRExperimentSource,
+    SBIRGeometrySource,
+    SBIRPlanSource,
+    SBIRProtocolInstanceSourceOverview,
+    SBIRProtocolInstanceSourceOverviewService,
+)
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,
 )

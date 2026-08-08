@@ -29,6 +29,7 @@ from acousticbrain.application import (
     ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
+    SBIRProtocolInstanceSourceOverviewService,
 )
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
@@ -260,6 +261,11 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="preview one exact SBIR protocol instance without recording it",
+    )
+    parser.add_argument(
+        "--sbir-protocol-instance-sources",
+        action="store_true",
+        help="list exact SBIR protocol-instance sources without selecting one",
     )
     parser.add_argument(
         "--sbir-protocol-instance-registry",
@@ -805,6 +811,90 @@ def preview_sbir_protocol_instance(
         )
     print("Aucune instance enregistrée et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def show_sbir_protocol_instance_sources(
+    measurements_root,
+    *,
+    brain=None,
+    service=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("SBIR source overview requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    geometry = getattr(context, "geometry_sbir_analysis", None)
+    positioning = getattr(
+        context,
+        "loudspeaker_positioning_experiment_analysis",
+        None,
+    )
+    if synthesis is None or geometry is None or positioning is None:
+        raise ValueError("SBIR protocol-instance sources are unavailable.")
+    proposal = getattr(positioning, "proposal", None)
+    result = (service or SBIRProtocolInstanceSourceOverviewService()).build(
+        plans=synthesis.plans,
+        experiments=tuple(getattr(context, "experiment_descriptors", ())),
+        geometry_candidates=geometry.candidates,
+        proposals=(proposal,) if proposal is not None else (),
+    )
+    print("SBIR PROTOCOL INSTANCE SOURCES")
+    print()
+    print("Contrat fixe")
+    print(f"Protocole : {result.protocol_id}")
+    print()
+    print("Plans sources")
+    if result.plans:
+        for value in result.plans:
+            print(f"{value.plan_id} — {value.status}")
+            print(f"Empreinte : {value.contract_fingerprint}")
+    else:
+        print("Aucun plan source exact disponible.")
+    print()
+    print("Expériences disponibles")
+    if result.experiments:
+        for value in result.experiments:
+            print(
+                f"{value.experiment_id} — {value.experiment_type} — "
+                f"{value.state}"
+            )
+    else:
+        print("Aucune expérience disponible.")
+    print()
+    print("Candidats géométriques")
+    if result.geometry_candidates:
+        for value in result.geometry_candidates:
+            print(
+                f"{value.geometry_candidate_id} — speaker={value.speaker_id} — "
+                f"surface={value.surface_id}"
+            )
+    else:
+        print("Aucun candidat géométrique disponible.")
+    print()
+    print("Propositions de déplacement")
+    if result.displacement_proposals:
+        for value in result.displacement_proposals:
+            print(
+                f"{value.proposal_id} — candidate="
+                f"{value.geometry_candidate_id or 'indisponible'} — surface="
+                f"{value.surface_id or 'indisponible'} — "
+                f"distance={value.displacement_m:g} m"
+            )
+    else:
+        print("Aucune proposition de déplacement disponible.")
+    print()
+    print("Frontière scientifique")
+    print("Aucun objet n’est sélectionné, classé ou recommandé par cette vue.")
+    print(f"Selection status: {result.selection_status}")
+    print(f"Causality status: {result.causality_status}")
     return result
 
 
@@ -1503,6 +1593,7 @@ def main(
     evidence_plan_preparation_preview_service=None,
     sbir_protocol_instance_loader=None,
     sbir_protocol_instance_preview_service=None,
+    sbir_protocol_instance_source_overview_service=None,
     sbir_protocol_instance_registry_repository=None,
     channel_isolation_guided_execution_service=None,
     guided_preparation_revision_service=None,
@@ -1742,6 +1833,31 @@ def main(
                 if enabled:
                     raise ValueError(
                         "--preview-sbir-protocol-instance cannot be combined "
+                        f"with {option}."
+                    )
+        if arguments.sbir_protocol_instance_sources:
+            conflicting = (
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--sbir-protocol-instance-sources cannot be combined "
                         f"with {option}."
                     )
         if (
@@ -2235,6 +2351,13 @@ def main(
                 registry_repository=(
                     sbir_protocol_instance_registry_repository
                 ),
+            )
+            return 0
+        if arguments.sbir_protocol_instance_sources:
+            show_sbir_protocol_instance_sources(
+                measurements_root,
+                brain=brain,
+                service=sbir_protocol_instance_source_overview_service,
             )
             return 0
         if arguments.guided_status:

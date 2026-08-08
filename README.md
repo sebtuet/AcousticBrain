@@ -580,6 +580,14 @@ python main.py \
 The preview never creates or updates the registry and never declares or runs an
 experiment.
 
+List the exact structured sources first, without selecting or recommending one:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --sbir-protocol-instance-sources
+```
+
 ## Tests
 
 Run the complete test suite:
