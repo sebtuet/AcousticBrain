@@ -23,6 +23,11 @@ from .channel_isolation_operational_worksheet import (
     ChannelIsolationOperationalWorksheetService,
     ChannelIsolationOperationalWorksheets,
 )
+from .channel_isolation_operational_worksheet_revision import (
+    ChannelIsolationOperationalFieldGuidance,
+    ChannelIsolationOperationalWorksheetRevision,
+    ChannelIsolationOperationalWorksheetRevisionService,
+)
 from .channel_isolation_operational_record_preview import (
     ChannelIsolationOperationalRecordPreview,
     ChannelIsolationOperationalRecordPreviewService,
