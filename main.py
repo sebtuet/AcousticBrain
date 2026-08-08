@@ -48,6 +48,8 @@ from acousticbrain.report import (
     EvidencePlanUserViewPresenter,
     EvidencePlanOverviewConsoleReporter,
     EvidencePlanOverviewPresenter,
+    GuidedGlobalStatusConsoleReporter,
+    GuidedGlobalStatusPresenter,
     EvidencePlanPreparationUserViewConsoleReporter,
     EvidencePlanPreparationUserViewPresenter,
 )
@@ -169,6 +171,24 @@ def create_parser():
         "--evidence-plan-overview",
         action="store_true",
         help="list every evidence plan and its safe user action",
+    )
+    parser.add_argument(
+        "--guided-status",
+        action="store_true",
+        help="show the current workflow state and exactly one safe next action",
+    )
+    parser.add_argument(
+        "--guided-preparation-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="optional explicit preparation registry for --guided-status",
+    )
+    parser.add_argument(
+        "--guided-preparation",
+        default=None,
+        metavar="CONFIRMATION_ID",
+        help="optional exact preparation selection for --guided-status",
     )
     parser.add_argument(
         "--complete-evidence-plan",
@@ -965,6 +985,41 @@ def show_channel_isolation_declaration_readiness(
     return result
 
 
+def show_guided_status(
+    measurements_root, preparation_registry_path=None, preparation_id=None, *, brain=None,
+    presenter=None, reporter=None, registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Guided status requires an exact analysis context.")
+    report, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    if synthesis is None:
+        raise ValueError("Guided status evidence-plan contracts are unavailable.")
+    registry = None
+    if preparation_registry_path is not None:
+        repository = (
+            registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+        )
+        registry = repository.load(preparation_registry_path)
+    view = (presenter or GuidedGlobalStatusPresenter()).present(
+        report,
+        plans=synthesis.plans,
+        preparation_registry=registry,
+        preparation_id=preparation_id,
+    )
+    print(f"Measurement root: {measurements_root.resolve()}")
+    print()
+    (reporter or GuidedGlobalStatusConsoleReporter()).print(view)
+    return view
+
+
 def parse_preparation_statuses(values):
     result = {}
     for value in values:
@@ -1166,6 +1221,8 @@ def main(
     channel_isolation_operational_record_preview_service=None,
     channel_isolation_documentation_review_service=None,
     channel_isolation_declaration_readiness_service=None,
+    guided_global_status_presenter=None,
+    guided_global_status_reporter=None,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
@@ -1201,6 +1258,51 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.guided_preparation_registry is not None and not arguments.guided_status:
+            raise ValueError(
+                "--guided-preparation-registry requires --guided-status."
+            )
+        if arguments.guided_preparation is not None:
+            if not arguments.guided_status:
+                raise ValueError("--guided-preparation requires --guided-status.")
+            if arguments.guided_preparation_registry is None:
+                raise ValueError(
+                    "--guided-preparation requires --guided-preparation-registry."
+                )
+        if arguments.guided_status:
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+                ("--advisor", arguments.advisor),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        f"--guided-status cannot be combined with {option}."
+                    )
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
         if (
@@ -1654,6 +1756,17 @@ def main(
                 registry_repository=(
                     evidence_plan_completion_registry_repository
                 ),
+            )
+            return 0
+        if arguments.guided_status:
+            show_guided_status(
+                measurements_root,
+                arguments.guided_preparation_registry,
+                arguments.guided_preparation,
+                brain=brain,
+                presenter=guided_global_status_presenter,
+                reporter=guided_global_status_reporter,
+                registry_repository=evidence_plan_preparation_registry_repository,
             )
             return 0
         if arguments.preview_evidence_plan_preparation is not None:

@@ -147,6 +147,11 @@ from .assessment_summary_presenter import (
     PresentedRecommendedExperiment,
 )
 from .assessment_summary_console import AssessmentSummaryConsoleReporter
+from .guided_global_status_presenter import (
+    GuidedGlobalStatusConsoleReporter,
+    GuidedGlobalStatusPresenter,
+    PresentedGuidedGlobalStatus,
+)
 from .room_geometry_presenter import (
     PresentedRoomGeometry,
     RoomGeometryPresenter,
