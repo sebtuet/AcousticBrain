@@ -28,6 +28,7 @@ from acousticbrain.application import (
     ChannelIsolationDocumentationReviewService,
     ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
+    SBIRProtocolInstancePreviewService,
 )
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
@@ -75,6 +76,8 @@ from acousticbrain.persistence import (
     EvidencePlanPreparationRegistryJsonRepository,
     ChannelIsolationMicrophonePositionRecordJsonLoader,
     ChannelIsolationAcquisitionSettingsRecordJsonLoader,
+    SBIRProtocolInstanceInputJsonLoader,
+    SBIRProtocolInstanceRegistryJsonRepository,
 )
 
 
@@ -250,6 +253,20 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="preview declaration decisions without recording them",
+    )
+    parser.add_argument(
+        "--preview-sbir-protocol-instance",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="preview one exact SBIR protocol instance without recording it",
+    )
+    parser.add_argument(
+        "--sbir-protocol-instance-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="dedicated SBIR protocol-instance registry JSON",
     )
     parser.add_argument(
         "--channel-isolation-journey",
@@ -711,6 +728,82 @@ def preview_evidence_plan_preparation(
             f"{input_path} --evidence-plan-preparation-registry {registry_path}"
         )
     print("Aucune préparation enregistrée et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def preview_sbir_protocol_instance(
+    measurements_root,
+    protocol_instance_input,
+    registry_path,
+    *,
+    brain=None,
+    service=None,
+    registry_repository=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("SBIR protocol-instance preview requires an exact context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    geometry = getattr(context, "geometry_sbir_analysis", None)
+    positioning = getattr(
+        context,
+        "loudspeaker_positioning_experiment_analysis",
+        None,
+    )
+    if synthesis is None or geometry is None or positioning is None:
+        raise ValueError("SBIR protocol-instance preview sources are unavailable.")
+    proposal = getattr(positioning, "proposal", None)
+    repository = (
+        registry_repository or SBIRProtocolInstanceRegistryJsonRepository()
+    )
+    registry = repository.load(registry_path)
+    result = (service or SBIRProtocolInstancePreviewService()).preview(
+        protocol_instance_input,
+        plans=synthesis.plans,
+        protocol_ids=(protocol_instance_input.PROTOCOL_ID,),
+        experiments=tuple(getattr(context, "experiment_descriptors", ())),
+        geometry_candidates=geometry.candidates,
+        displacement_proposals=(proposal,) if proposal is not None else (),
+        registry=registry,
+    )
+    record = result.record
+    print(
+        "SBIR PROTOCOL INSTANCE PREVIEW — "
+        + protocol_instance_input.protocol_instance_id
+    )
+    print()
+    print("Provenance résolue")
+    print(f"Plan : {record.source_plan_id}")
+    print(f"Protocole : {record.protocol_id}")
+    print(f"Expérience de référence : {record.reference_experiment_id}")
+    print(f"Expérience déplacée : {record.moved_experiment_id}")
+    print(f"Candidat géométrique : {record.geometry_candidate_id}")
+    print(f"Proposition de déplacement : {record.displacement_proposal_id}")
+    print()
+    print("Décisions projetées")
+    for decision in record.resolution_decisions:
+        print(decision.value)
+    for decision in record.compatibility_decisions:
+        print(decision.value)
+    print(f"État du registre : {result.registry_state}")
+    print()
+    print("Action utilisateur")
+    if result.registry_state == "ALREADY_RECORDED":
+        print("Aucune action : cette instance identique est déjà enregistrée.")
+    else:
+        print(
+            "Aucune écriture depuis cette vue ; la commande d’enregistrement "
+            "explicite n’est pas encore exposée."
+        )
+    print("Aucune instance enregistrée et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
 
@@ -1408,6 +1501,9 @@ def main(
     guided_preparation_draft_service=None,
     guided_preparation_draft_serializer=None,
     evidence_plan_preparation_preview_service=None,
+    sbir_protocol_instance_loader=None,
+    sbir_protocol_instance_preview_service=None,
+    sbir_protocol_instance_registry_repository=None,
     channel_isolation_guided_execution_service=None,
     guided_preparation_revision_service=None,
     channel_isolation_operational_worksheet_service=None,
@@ -1614,6 +1710,48 @@ def main(
             )
         if arguments.preview_evidence_plan_preparation is not None and arguments.evidence_plan_preparation_registry is None:
             raise ValueError("--preview-evidence-plan-preparation requires --evidence-plan-preparation-registry.")
+        if (
+            arguments.preview_sbir_protocol_instance is not None
+            and arguments.sbir_protocol_instance_registry is None
+        ):
+            raise ValueError(
+                "--preview-sbir-protocol-instance requires "
+                "--sbir-protocol-instance-registry."
+            )
+        if arguments.preview_sbir_protocol_instance is not None:
+            conflicting = (
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--preview-sbir-protocol-instance cannot be combined "
+                        f"with {option}."
+                    )
+        if (
+            arguments.preview_sbir_protocol_instance is None
+            and arguments.sbir_protocol_instance_registry is not None
+        ):
+            raise ValueError(
+                "--sbir-protocol-instance-registry requires "
+                "--preview-sbir-protocol-instance."
+            )
         if arguments.channel_isolation_journey is not None:
             if arguments.channel_isolation_preparation is None:
                 raise ValueError("--channel-isolation-journey requires --channel-isolation-preparation.")
@@ -2080,6 +2218,22 @@ def main(
                 service=evidence_plan_completion_service,
                 registry_repository=(
                     evidence_plan_completion_registry_repository
+                ),
+            )
+            return 0
+        if arguments.preview_sbir_protocol_instance is not None:
+            protocol_instance_input = (
+                sbir_protocol_instance_loader
+                or SBIRProtocolInstanceInputJsonLoader()
+            ).load(arguments.preview_sbir_protocol_instance)
+            preview_sbir_protocol_instance(
+                measurements_root,
+                protocol_instance_input,
+                arguments.sbir_protocol_instance_registry,
+                brain=brain,
+                service=sbir_protocol_instance_preview_service,
+                registry_repository=(
+                    sbir_protocol_instance_registry_repository
                 ),
             )
             return 0

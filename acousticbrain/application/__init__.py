@@ -84,6 +84,10 @@ from .sbir_protocol_instance_recording import (
     SBIRProtocolInstanceRecordingResult,
     SBIRProtocolInstanceRecordingService,
 )
+from .sbir_protocol_instance_preview import (
+    SBIRProtocolInstancePreviewResult,
+    SBIRProtocolInstancePreviewService,
+)
 from .reflection_experiment_declaration import (
     ControlledReflectionExperimentDeclarationService,
 )
