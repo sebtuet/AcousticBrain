@@ -559,6 +559,11 @@ observed outcome. The view performs no measurement, creates no comparison and
 derives no verdict. See
 [`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
 
+`ADDITIONAL_OBSERVATION` plans keep pre-acquisition inputs disjoint from the
+evidence they are intended to acquire. The corrected SBIR plan uses a versioned
+V2 identity so historical contracts are never rewritten. See
+[`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
+
 ## Tests
 
 Run the complete test suite:
