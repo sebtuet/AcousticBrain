@@ -1,4 +1,4 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from types import SimpleNamespace
 
 import pytest
@@ -249,6 +249,23 @@ def test_models_and_collections_are_immutable():
         reasoning.title = "changed"
     with pytest.raises(TypeError):
         reasoning.premises[0] = reasoning.premises[0]
+
+
+def test_structured_limitation_code_is_not_misread_as_prescriptive_prose():
+    reasoning = synthesize(modal_observations(), hypothesis()).reasonings[0]
+    updated = replace(
+        reasoning,
+        limitations=("verification.sbir_response_to_speaker_move",),
+    )
+    assert updated.limitations == (
+        "verification.sbir_response_to_speaker_move",
+    )
+
+
+def test_natural_language_limitation_remains_non_prescriptive():
+    reasoning = synthesize(modal_observations(), hypothesis()).reasonings[0]
+    with pytest.raises(ValueError, match="must not prescribe"):
+        replace(reasoning, limitations=("You should move the speaker.",))
 
 
 def test_identical_inputs_and_report_are_byte_for_byte_reproducible(capsys):

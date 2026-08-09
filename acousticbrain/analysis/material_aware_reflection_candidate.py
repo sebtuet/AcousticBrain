@@ -208,7 +208,11 @@ class ReflectionCandidateCompatibilityEngine:
             catalog_entry_id=(
                 material.catalog_entry_id if material is not None else None
             ),
-            overall_compatibility_score=round(overall, 10),
+            overall_compatibility_score=(
+                geometric_score
+                if assessment is MaterialAssessment.UNKNOWN
+                else round(overall, 10)
+            ),
             causality_status=ReflectionCandidateCausalityStatus.NOT_ESTABLISHED,
             eligibility_impact=ReflectionCandidateEligibilityImpact.NONE,
             evidence_links=tuple(evidence),
