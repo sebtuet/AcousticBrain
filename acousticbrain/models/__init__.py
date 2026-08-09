@@ -94,6 +94,7 @@ from .sbir_protocol_instance import (
 )
 from .sbir_room_geometry import (
     SBIRRoomGeometryDeclarationInput,
+    SBIRRoomGeometryPreview,
     SBIRRoomGeometryResolution,
     SBIRRoomGeometryResolutionDecision,
 )

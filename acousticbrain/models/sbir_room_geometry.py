@@ -66,6 +66,8 @@ class SBIRRoomGeometryResolutionDecision(Enum):
     SBIR_GEOMETRY_ENTITY_SET_EXACT = "SBIR_GEOMETRY_ENTITY_SET_EXACT"
     ROOM_GEOMETRY_RELATIONALLY_VALID = "ROOM_GEOMETRY_RELATIONALLY_VALID"
     GEOMETRY_QUALITY_SET_EXACT = "GEOMETRY_QUALITY_SET_EXACT"
+    LEGACY_GEOMETRY_NON_CONFLICTING = "LEGACY_GEOMETRY_NON_CONFLICTING"
+    SBIR_GEOMETRY_DECLARATION_READY = "SBIR_GEOMETRY_DECLARATION_READY"
 
 
 @dataclass(frozen=True)
@@ -75,7 +77,7 @@ class SBIRRoomGeometryResolution:
     room_geometry: RoomGeometry
     decisions: tuple[SBIRRoomGeometryResolutionDecision, ...]
 
-    EXPECTED_DECISIONS = tuple(SBIRRoomGeometryResolutionDecision)
+    EXPECTED_DECISIONS = tuple(SBIRRoomGeometryResolutionDecision)[:5]
 
     def __post_init__(self):
         if not isinstance(
@@ -104,4 +106,27 @@ class SBIRRoomGeometryResolution:
         if self.decisions != self.EXPECTED_DECISIONS:
             raise ValueError(
                 "SBIR room-geometry resolution decisions must be exact and ordered."
+            )
+
+
+@dataclass(frozen=True)
+class SBIRRoomGeometryPreview:
+    resolution: SBIRRoomGeometryResolution
+    legacy_geometry_present: bool
+    decisions: tuple[SBIRRoomGeometryResolutionDecision, ...]
+
+    EXPECTED_DECISIONS = tuple(SBIRRoomGeometryResolutionDecision)
+
+    def __post_init__(self):
+        if not isinstance(self.resolution, SBIRRoomGeometryResolution):
+            raise TypeError(
+                "SBIR room-geometry preview requires an exact resolution."
+            )
+        if not isinstance(self.legacy_geometry_present, bool):
+            raise TypeError(
+                "SBIR room-geometry legacy presence must be explicit."
+            )
+        if self.decisions != self.EXPECTED_DECISIONS:
+            raise ValueError(
+                "SBIR room-geometry preview decisions must be exact and ordered."
             )
