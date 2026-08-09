@@ -79,6 +79,10 @@ from .experiment_protocol_declaration import ExperimentProtocolDeclarationServic
 from .sbir_protocol_instance_resolution import SBIRProtocolInstanceResolver
 from .sbir_room_geometry_resolution import SBIRRoomGeometryResolver
 from .sbir_room_geometry_preview import SBIRRoomGeometryPreviewService
+from .sbir_room_geometry_recording import (
+    SBIRRoomGeometryRecordingResult,
+    SBIRRoomGeometryRecordingService,
+)
 from .sbir_protocol_instance_compatibility import (
     SBIRProtocolInstanceCompatibilityValidator,
 )
