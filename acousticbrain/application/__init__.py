@@ -77,6 +77,7 @@ from .positioning_proposal_declaration import (
 )
 from .experiment_protocol_declaration import ExperimentProtocolDeclarationService
 from .sbir_protocol_instance_resolution import SBIRProtocolInstanceResolver
+from .sbir_room_geometry_resolution import SBIRRoomGeometryResolver
 from .sbir_protocol_instance_compatibility import (
     SBIRProtocolInstanceCompatibilityValidator,
 )

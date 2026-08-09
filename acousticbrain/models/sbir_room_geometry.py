@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+from enum import Enum
 
+from .experiment_discovery import ExperimentDescriptor, ExperimentType
 from .room_description import RoomDescription
+from .room_geometry import RoomGeometry
 
 
 @dataclass(frozen=True)
@@ -55,3 +58,50 @@ class SBIRRoomGeometryDeclarationInput:
                     "SBIR room-geometry user_note must be null or exact non-empty "
                     "text."
                 )
+
+
+class SBIRRoomGeometryResolutionDecision(Enum):
+    ROOM_DESCRIPTION_SCHEMA_VALID = "ROOM_DESCRIPTION_SCHEMA_VALID"
+    BASELINE_EXACTLY_RESOLVED = "BASELINE_EXACTLY_RESOLVED"
+    SBIR_GEOMETRY_ENTITY_SET_EXACT = "SBIR_GEOMETRY_ENTITY_SET_EXACT"
+    ROOM_GEOMETRY_RELATIONALLY_VALID = "ROOM_GEOMETRY_RELATIONALLY_VALID"
+    GEOMETRY_QUALITY_SET_EXACT = "GEOMETRY_QUALITY_SET_EXACT"
+
+
+@dataclass(frozen=True)
+class SBIRRoomGeometryResolution:
+    declaration_input: SBIRRoomGeometryDeclarationInput
+    baseline_experiment: ExperimentDescriptor
+    room_geometry: RoomGeometry
+    decisions: tuple[SBIRRoomGeometryResolutionDecision, ...]
+
+    EXPECTED_DECISIONS = tuple(SBIRRoomGeometryResolutionDecision)
+
+    def __post_init__(self):
+        if not isinstance(
+            self.declaration_input, SBIRRoomGeometryDeclarationInput
+        ):
+            raise TypeError(
+                "SBIR room-geometry resolution requires a declaration input."
+            )
+        if not isinstance(self.baseline_experiment, ExperimentDescriptor):
+            raise TypeError(
+                "SBIR room-geometry resolution requires an experiment descriptor."
+            )
+        if (
+            self.baseline_experiment.experiment_id
+            != self.declaration_input.target_experiment_id
+            or self.baseline_experiment.experiment_type
+            is not ExperimentType.BASELINE
+        ):
+            raise ValueError(
+                "SBIR room-geometry resolution baseline is inconsistent."
+            )
+        if not isinstance(self.room_geometry, RoomGeometry):
+            raise TypeError(
+                "SBIR room-geometry resolution requires built room geometry."
+            )
+        if self.decisions != self.EXPECTED_DECISIONS:
+            raise ValueError(
+                "SBIR room-geometry resolution decisions must be exact and ordered."
+            )
