@@ -31,6 +31,7 @@ from acousticbrain.application import (
     SBIRProtocolInstancePreviewService,
     SBIRProtocolInstanceSourceOverviewService,
     SBIRRoomGeometryPreviewService,
+    SBIRRoomGeometryRecordingService,
     SBIRRoomGeometryResolver,
 )
 from acousticbrain.report import (
@@ -281,6 +282,13 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="preview one canonical baseline room-geometry declaration read-only",
+    )
+    parser.add_argument(
+        "--declare-sbir-room-geometry",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="explicitly record one preview-ready baseline room geometry",
     )
     parser.add_argument(
         "--sbir-protocol-instance-registry",
@@ -920,6 +928,7 @@ def preview_sbir_room_geometry(
     resolver=None,
     service=None,
     repository=None,
+    render=True,
 ):
     repository = repository or MeasurementRepository()
     baseline_directory = Path(measurements_root) / "baseline"
@@ -953,6 +962,8 @@ def preview_sbir_room_geometry(
     result = (service or SBIRRoomGeometryPreviewService(repository)).preview(
         resolution
     )
+    if not render:
+        return result
     print(
         "SBIR ROOM GEOMETRY PREVIEW — "
         + declaration_input.declaration_input_id
@@ -971,10 +982,44 @@ def preview_sbir_room_geometry(
     print()
     print("Action utilisateur")
     print(
-        "Aucune écriture depuis cette vue ; utiliser séparément la commande "
-        "de déclaration explicite lorsqu’elle sera disponible."
+        "Aucune écriture depuis cette vue ; enregistrer séparément avec "
+        "--declare-sbir-room-geometry après vérification."
     )
     print("Aucune géométrie enregistrée et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def declare_sbir_room_geometry(
+    measurements_root,
+    declaration_input,
+    *,
+    resolver=None,
+    preview_service=None,
+    recording_service=None,
+    repository=None,
+):
+    repository = repository or MeasurementRepository()
+    preview = preview_sbir_room_geometry(
+        measurements_root,
+        declaration_input,
+        resolver=resolver,
+        service=preview_service,
+        repository=repository,
+        render=False,
+    )
+    result = (
+        recording_service or SBIRRoomGeometryRecordingService(repository)
+    ).record(preview)
+    print("SBIR ROOM GEOMETRY DECLARATION — " + declaration_input.declaration_input_id)
+    print()
+    print(
+        "État : "
+        + ("RECORDED" if result.persisted else "ALREADY_RECORDED")
+    )
+    print(f"Cible : {result.target_experiment_id}")
+    print(f"Empreinte : {result.room_description_fingerprint}")
+    print("Aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
 
@@ -1679,6 +1724,7 @@ def main(
     sbir_room_geometry_loader=None,
     sbir_room_geometry_resolver=None,
     sbir_room_geometry_preview_service=None,
+    sbir_room_geometry_recording_service=None,
     channel_isolation_guided_execution_service=None,
     guided_preparation_revision_service=None,
     channel_isolation_operational_worksheet_service=None,
@@ -1723,7 +1769,16 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
-        if arguments.preview_sbir_room_geometry is not None:
+        geometry_modes = (
+            arguments.preview_sbir_room_geometry,
+            arguments.declare_sbir_room_geometry,
+        )
+        if all(value is not None for value in geometry_modes):
+            raise ValueError(
+                "--preview-sbir-room-geometry and --declare-sbir-room-geometry "
+                "are mutually exclusive."
+            )
+        if any(value is not None for value in geometry_modes):
             conflicts = (
                 arguments.full_assessment,
                 arguments.full_assessment_output is not None,
@@ -2470,6 +2525,19 @@ def main(
                 declaration_input,
                 resolver=sbir_room_geometry_resolver,
                 service=sbir_room_geometry_preview_service,
+            )
+            return 0
+        if arguments.declare_sbir_room_geometry is not None:
+            declaration_input = (
+                sbir_room_geometry_loader
+                or SBIRRoomGeometryDeclarationInputJsonLoader()
+            ).load(arguments.declare_sbir_room_geometry)
+            declare_sbir_room_geometry(
+                measurements_root,
+                declaration_input,
+                resolver=sbir_room_geometry_resolver,
+                preview_service=sbir_room_geometry_preview_service,
+                recording_service=sbir_room_geometry_recording_service,
             )
             return 0
         if arguments.preview_sbir_protocol_instance is not None:

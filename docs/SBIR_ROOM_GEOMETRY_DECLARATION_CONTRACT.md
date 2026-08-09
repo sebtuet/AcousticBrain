@@ -7,7 +7,7 @@ status = FROZEN
 input_authority = ROOM_DESCRIPTION_JSON_V5
 target_authority = EXACT_BASELINE_MANIFEST_ONLY
 scientific_authority = USER_DECLARATION_WITH_EXPLICIT_QUALITY
-implementation_status = PREVIEW_CLI_AND_RECORDING_API_IMPLEMENTED
+implementation_status = IMPLEMENTED
 ```
 
 ## Purpose
