@@ -30,6 +30,8 @@ from acousticbrain.application import (
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
     SBIRProtocolInstanceSourceOverviewService,
+    SBIRRoomGeometryPreviewService,
+    SBIRRoomGeometryResolver,
 )
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
@@ -65,6 +67,10 @@ from acousticbrain.models import (
     ExploratoryFeasibilityDecision,
     FeasibilityAnswer,
     EvidencePlanPrerequisiteStatus,
+    ExperimentDeclaration,
+    ExperimentDescriptor,
+    ExperimentState,
+    ExperimentType,
 )
 from acousticbrain.persistence import (
     CampaignReferenceQualificationJsonLoader,
@@ -79,6 +85,8 @@ from acousticbrain.persistence import (
     ChannelIsolationAcquisitionSettingsRecordJsonLoader,
     SBIRProtocolInstanceInputJsonLoader,
     SBIRProtocolInstanceRegistryJsonRepository,
+    SBIRRoomGeometryDeclarationInputJsonLoader,
+    MeasurementRepository,
 )
 
 
@@ -266,6 +274,13 @@ def create_parser():
         "--sbir-protocol-instance-sources",
         action="store_true",
         help="list exact SBIR protocol-instance sources without selecting one",
+    )
+    parser.add_argument(
+        "--preview-sbir-room-geometry",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="preview one canonical baseline room-geometry declaration read-only",
     )
     parser.add_argument(
         "--sbir-protocol-instance-registry",
@@ -895,6 +910,72 @@ def show_sbir_protocol_instance_sources(
     print("Aucun objet n’est sélectionné, classé ou recommandé par cette vue.")
     print(f"Selection status: {result.selection_status}")
     print(f"Causality status: {result.causality_status}")
+    return result
+
+
+def preview_sbir_room_geometry(
+    measurements_root,
+    declaration_input,
+    *,
+    resolver=None,
+    service=None,
+    repository=None,
+):
+    repository = repository or MeasurementRepository()
+    baseline_directory = Path(measurements_root) / "baseline"
+    if not baseline_directory.is_dir():
+        raise ValueError("SBIR_ROOM_GEOMETRY_BASELINE_UNKNOWN: baseline.")
+    manifest = repository.load_manifest(baseline_directory)
+    if manifest is None:
+        raise ValueError(
+            "SBIR_ROOM_GEOMETRY_BASELINE_MANIFEST_UNAVAILABLE: baseline."
+        )
+    baseline = ExperimentDescriptor(
+        experiment_id="baseline",
+        directory=str(baseline_directory),
+        experiment_type=ExperimentType.BASELINE,
+        available_files=(),
+        available_channels=(),
+        wav_files=(),
+        txt_files=(),
+        mdat_file=None,
+        manifest_present=True,
+        content_hash=str(manifest.get("content_hash") or "0" * 64),
+        timestamp=str(manifest.get("timestamp") or "UNAVAILABLE"),
+        imported_at=str(manifest.get("imported_at") or "UNAVAILABLE"),
+        state=ExperimentState.INCOMPLETE,
+        experiment_declaration=ExperimentDeclaration.unknown(),
+    )
+    resolution = (resolver or SBIRRoomGeometryResolver()).resolve(
+        declaration_input,
+        experiments=(baseline,),
+    )
+    result = (service or SBIRRoomGeometryPreviewService(repository)).preview(
+        resolution
+    )
+    print(
+        "SBIR ROOM GEOMETRY PREVIEW — "
+        + declaration_input.declaration_input_id
+    )
+    print()
+    print("Cible")
+    print("Expérience : baseline")
+    print(
+        "Géométrie legacy : "
+        + ("présente et identique" if result.legacy_geometry_present else "absente")
+    )
+    print()
+    print("Décisions projetées")
+    for decision in result.decisions:
+        print(decision.value)
+    print()
+    print("Action utilisateur")
+    print(
+        "Aucune écriture depuis cette vue ; utiliser séparément la commande "
+        "de déclaration explicite lorsqu’elle sera disponible."
+    )
+    print("Aucune géométrie enregistrée et aucune expérience exécutée.")
+    print("Causality status: NOT_ESTABLISHED")
     return result
 
 
@@ -1595,6 +1676,9 @@ def main(
     sbir_protocol_instance_preview_service=None,
     sbir_protocol_instance_source_overview_service=None,
     sbir_protocol_instance_registry_repository=None,
+    sbir_room_geometry_loader=None,
+    sbir_room_geometry_resolver=None,
+    sbir_room_geometry_preview_service=None,
     channel_isolation_guided_execution_service=None,
     guided_preparation_revision_service=None,
     channel_isolation_operational_worksheet_service=None,
@@ -1639,6 +1723,45 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.preview_sbir_room_geometry is not None:
+            conflicts = (
+                arguments.full_assessment,
+                arguments.full_assessment_output is not None,
+                arguments.observations,
+                arguments.reasoning,
+                arguments.actions,
+                arguments.weighting,
+                arguments.evidence_acquisition,
+                arguments.analysis_readiness,
+                arguments.assessment_summary,
+                arguments.exploratory,
+                arguments.guided_status,
+                arguments.preview_sbir_protocol_instance is not None,
+                arguments.sbir_protocol_instance_sources,
+                arguments.complete_evidence_plan is not None,
+                arguments.confirm_evidence_plan_preparation is not None,
+                arguments.evidence_plan_preparation_view is not None,
+                arguments.generate_evidence_plan_preparation is not None,
+                arguments.preview_evidence_plan_preparation is not None,
+                arguments.revise_evidence_plan_preparation is not None,
+                arguments.channel_isolation_journey is not None,
+                arguments.generate_channel_isolation_records is not None,
+                arguments.preview_channel_isolation_records is not None,
+                arguments.revise_channel_isolation_records is not None,
+                arguments.review_channel_isolation_documentation is not None,
+                arguments.channel_isolation_declaration_readiness is not None,
+                arguments.experiment_view is not None,
+                arguments.evidence_plan_view is not None,
+                arguments.evidence_plan_overview,
+                arguments.advisor,
+                arguments.listening_position_campaign is not None,
+                arguments.campaign_reference_qualification is not None,
+            )
+            if any(conflicts):
+                raise ValueError(
+                    "--preview-sbir-room-geometry cannot be combined with "
+                    "another report or workflow mode."
+                )
         if arguments.guided_preparation_registry is not None and not arguments.guided_status:
             raise ValueError(
                 "--guided-preparation-registry requires --guided-status."
@@ -2335,6 +2458,18 @@ def main(
                 registry_repository=(
                     evidence_plan_completion_registry_repository
                 ),
+            )
+            return 0
+        if arguments.preview_sbir_room_geometry is not None:
+            declaration_input = (
+                sbir_room_geometry_loader
+                or SBIRRoomGeometryDeclarationInputJsonLoader()
+            ).load(arguments.preview_sbir_room_geometry)
+            preview_sbir_room_geometry(
+                measurements_root,
+                declaration_input,
+                resolver=sbir_room_geometry_resolver,
+                service=sbir_room_geometry_preview_service,
             )
             return 0
         if arguments.preview_sbir_protocol_instance is not None:
