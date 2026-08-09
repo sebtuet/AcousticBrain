@@ -324,6 +324,13 @@ d’enceintes et la position d’écoute sont tous explicitement présents et
 valides. Une géométrie partielle reste absente : aucune coordonnée ni unité
 manquante n’est reconstruite.
 
+Le champ versionné `room_description_contract` est l’autorité canonique
+lorsqu’il est présent. Sa structure, son empreinte et ses décisions sont
+revalidées avant projection. Une géométrie inline legacy identique peut rester
+présente pour compatibilité ; toute divergence entre les deux représentations
+interrompt la découverte. Le contrat fermé visant `baseline` est refusé dans
+un autre manifest.
+
 Lorsqu’une expérience ne possède aucune géométrie locale, la géométrie complète
 de sa référence explicitement déclarée peut être réutilisée seulement si
 `ROOM_CONFIGURATION`, `LOUDSPEAKER_POSITION` et au moins l’une des variables

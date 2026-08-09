@@ -1,7 +1,11 @@
+import hashlib
 import json
 from pathlib import Path
 
-from acousticbrain.models import SBIRRoomGeometryDeclarationInput
+from acousticbrain.models import (
+    SBIRRoomGeometryDeclarationInput,
+    SBIRRoomGeometryResolutionDecision,
+)
 
 from .room_description_json import RoomDescriptionJsonCodec
 
@@ -15,6 +19,13 @@ class SBIRRoomGeometryDeclarationInputJsonLoader:
         "room_description_document",
         "user_note",
     ))
+    CONTRACT_FIELDS = frozenset(
+        (
+            *FIELDS,
+            "room_description_fingerprint",
+            "validation_decisions",
+        )
+    )
 
     def __init__(self, room_codec=None):
         self.room_codec = room_codec or RoomDescriptionJsonCodec()
@@ -103,6 +114,59 @@ class SBIRRoomGeometryDeclarationInputJsonLoader:
             room_description=loaded.description,
             user_note=payload["user_note"],
         )
+
+    def contract_payload(self, value, decisions):
+        if not isinstance(value, SBIRRoomGeometryDeclarationInput):
+            raise TypeError("SBIR room-geometry declaration input is required.")
+        decisions = tuple(decisions)
+        if decisions != tuple(SBIRRoomGeometryResolutionDecision):
+            raise ValueError("SBIR room-geometry contract decisions must be exact.")
+        document = self.room_codec.to_dict(value.room_description)
+        payload = json.loads(self.dumps(value))
+        payload["room_description_fingerprint"] = self._fingerprint(document)
+        payload["validation_decisions"] = [item.value for item in decisions]
+        return payload
+
+    def decode_contract(self, payload):
+        if not isinstance(payload, dict):
+            raise ValueError(
+                "SBIR room-geometry manifest contract must be an object."
+            )
+        fields = frozenset(payload)
+        if fields != self.CONTRACT_FIELDS:
+            missing = ", ".join(sorted(self.CONTRACT_FIELDS - fields)) or "none"
+            unknown = ", ".join(sorted(fields - self.CONTRACT_FIELDS)) or "none"
+            raise ValueError(
+                "SBIR room-geometry manifest contract fields are invalid: "
+                f"missing={missing}; unknown={unknown}."
+            )
+        expected_decisions = [
+            item.value for item in SBIRRoomGeometryResolutionDecision
+        ]
+        if payload["validation_decisions"] != expected_decisions:
+            raise ValueError(
+                "SBIR room-geometry manifest contract decisions are invalid."
+            )
+        value = self.decode({field: payload[field] for field in self.FIELDS})
+        expected_fingerprint = self._fingerprint(
+            payload["room_description_document"]
+        )
+        if payload["room_description_fingerprint"] != expected_fingerprint:
+            raise ValueError(
+                "SBIR room-geometry manifest contract fingerprint is invalid."
+            )
+        return value
+
+    @staticmethod
+    def _fingerprint(document):
+        canonical = json.dumps(
+            document,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        return hashlib.sha256(canonical).hexdigest()
 
     @staticmethod
     def _object_without_duplicate_fields(pairs):
