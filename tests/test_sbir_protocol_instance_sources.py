@@ -1,10 +1,34 @@
+from dataclasses import replace
+
+from acousticbrain.analysis import ExperimentPlanner
 from acousticbrain.application import SBIRProtocolInstanceSourceOverviewService
+from acousticbrain.models import HypothesisCode
+from test_experiment_planner import ACTION_DATA, analysis, candidate, hypothesis
 from test_sbir_protocol_instance_compatibility import proposal
 from test_sbir_protocol_instance_resolution import (
     experiment,
     geometry_candidate,
     source_plan,
 )
+
+
+def planning_candidate(*, uncertainty_percent=23.1665):
+    parameters = dict(
+        ACTION_DATA[HypothesisCode.SBIR_PLACEMENT_INTERACTION][2]
+    )
+    parameters.update({
+        "geometry_candidate_id": (
+            "geometry_sbir.geometry_reflection.LEFT."
+            "LISTENING_POSITION.floor"
+        ),
+        "surface": "floor",
+        "frequency_uncertainty_percent": uncertainty_percent,
+    })
+    result = ExperimentPlanner().plan(analysis(hypothesis(
+        HypothesisCode.SBIR_PLACEMENT_INTERACTION,
+        parameters=parameters,
+    )))
+    return candidate(result, HypothesisCode.SBIR_PLACEMENT_INTERACTION)
 
 
 def test_lists_exact_sources_without_selecting_or_recommending():
@@ -43,6 +67,35 @@ def test_empty_sources_remain_explicit_and_do_not_create_placeholders():
     assert result.experiments == ()
     assert result.geometry_candidates == ()
     assert result.displacement_proposals == ()
+    assert result.displacement_planning_sources == ()
+
+
+def test_preserves_existing_sbir_planning_blockage_without_new_verdict():
+    source = planning_candidate()
+    unrelated = replace(source, source_protocol_id="protocol.unrelated.v1")
+    result = SBIRProtocolInstanceSourceOverviewService().build(
+        plans=(),
+        experiments=(),
+        geometry_candidates=(),
+        proposals=(),
+        planning_candidates=(unrelated, source),
+    )
+
+    assert len(result.displacement_planning_sources) == 1
+    value = result.displacement_planning_sources[0]
+    assert value.candidate_id == (
+        "experiment_candidate.sbir_placement_interaction"
+    )
+    assert value.eligibility_status == "INELIGIBLE"
+    assert value.ineligibility_reason_codes == (
+        "SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH",
+    )
+    assert value.geometry_candidate_id == (
+        "geometry_sbir.geometry_reflection.LEFT."
+        "LISTENING_POSITION.floor"
+    )
+    assert value.surface_id == "floor"
+    assert value.prediction_uncertainty_percent == 23.1665
 
 
 def test_unrelated_plans_are_not_presented_as_the_fixed_source_plan():

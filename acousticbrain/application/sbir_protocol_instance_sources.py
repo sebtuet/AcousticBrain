@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from acousticbrain.models import (
     EvidenceAcquisitionPlan,
+    ExperimentCandidate,
     ExperimentDescriptor,
     GeometrySBIRCandidate,
     LoudspeakerPositioningExperimentProposal,
@@ -41,12 +42,23 @@ class SBIRDisplacementSource:
 
 
 @dataclass(frozen=True)
+class SBIRDisplacementPlanningSource:
+    candidate_id: str
+    eligibility_status: str
+    ineligibility_reason_codes: tuple[str, ...]
+    geometry_candidate_id: str | None
+    surface_id: str | None
+    prediction_uncertainty_percent: float | None
+
+
+@dataclass(frozen=True)
 class SBIRProtocolInstanceSourceOverview:
     protocol_id: str
     plans: tuple[SBIRPlanSource, ...]
     experiments: tuple[SBIRExperimentSource, ...]
     geometry_candidates: tuple[SBIRGeometrySource, ...]
     displacement_proposals: tuple[SBIRDisplacementSource, ...]
+    displacement_planning_sources: tuple[SBIRDisplacementPlanningSource, ...] = ()
     selection_status: str = "NO_SELECTION_PERFORMED"
     causality_status: str = "NOT_ESTABLISHED"
 
@@ -56,6 +68,7 @@ class SBIRProtocolInstanceSourceOverview:
             self.experiments,
             self.geometry_candidates,
             self.displacement_proposals,
+            self.displacement_planning_sources,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise TypeError("SBIR source-overview collections must be tuples.")
@@ -70,7 +83,15 @@ class SBIRProtocolInstanceSourceOverview:
 class SBIRProtocolInstanceSourceOverviewService:
     """Lists exact existing SBIR sources without ranking or selecting them."""
 
-    def build(self, *, plans, experiments, geometry_candidates, proposals):
+    def build(
+        self,
+        *,
+        plans,
+        experiments,
+        geometry_candidates,
+        proposals,
+        planning_candidates=(),
+    ):
         plans = self._typed(plans, EvidenceAcquisitionPlan, "plans")
         experiments = self._typed(
             experiments,
@@ -86,6 +107,11 @@ class SBIRProtocolInstanceSourceOverviewService:
             proposals,
             LoudspeakerPositioningExperimentProposal,
             "displacement proposals",
+        )
+        planning_candidates = self._typed(
+            planning_candidates,
+            ExperimentCandidate,
+            "planning candidates",
         )
         return SBIRProtocolInstanceSourceOverview(
             protocol_id=SBIRProtocolInstanceInput.PROTOCOL_ID,
@@ -138,6 +164,30 @@ class SBIRProtocolInstanceSourceOverviewService:
                     for value in proposals
                 ),
                 key=lambda value: value.proposal_id,
+            )),
+            displacement_planning_sources=tuple(sorted(
+                (
+                    SBIRDisplacementPlanningSource(
+                        candidate_id=value.candidate_id,
+                        eligibility_status=(
+                            "ELIGIBLE" if value.eligible else "INELIGIBLE"
+                        ),
+                        ineligibility_reason_codes=tuple(
+                            item.value for item in value.ineligibility_reasons
+                        ),
+                        geometry_candidate_id=value.parameters.get(
+                            "geometry_candidate_id"
+                        ),
+                        surface_id=value.parameters.get("surface"),
+                        prediction_uncertainty_percent=value.parameters.get(
+                            "frequency_uncertainty_percent"
+                        ),
+                    )
+                    for value in planning_candidates
+                    if value.source_protocol_id
+                    == SBIRProtocolInstanceInput.PROTOCOL_ID
+                ),
+                key=lambda value: value.candidate_id,
             )),
         )
 
