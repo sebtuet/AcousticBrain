@@ -1,9 +1,10 @@
-import hashlib
-import json
 from dataclasses import dataclass
 
 from acousticbrain.models import SBIRRoomGeometryPreview
-from acousticbrain.persistence import MeasurementRepository, RoomDescriptionJsonCodec
+from acousticbrain.persistence import (
+    MeasurementRepository,
+    SBIRRoomGeometryDeclarationInputJsonLoader,
+)
 
 from .sbir_room_geometry_preview import SBIRRoomGeometryPreviewService
 
@@ -18,12 +19,14 @@ class SBIRRoomGeometryRecordingResult:
 class SBIRRoomGeometryRecordingService:
     FIELD = "room_description_contract"
 
-    def __init__(self, repository=None, preview_service=None, room_codec=None):
+    def __init__(self, repository=None, preview_service=None, input_codec=None):
         self.repository = repository or MeasurementRepository()
         self.preview_service = preview_service or SBIRRoomGeometryPreviewService(
             self.repository
         )
-        self.room_codec = room_codec or RoomDescriptionJsonCodec()
+        self.input_codec = (
+            input_codec or SBIRRoomGeometryDeclarationInputJsonLoader()
+        )
 
     def record(self, preview):
         if not isinstance(preview, SBIRRoomGeometryPreview):
@@ -61,24 +64,7 @@ class SBIRRoomGeometryRecordingService:
 
     def _payload(self, preview):
         value = preview.resolution.declaration_input
-        document = self.room_codec.to_dict(value.room_description)
-        canonical = json.dumps(
-            document,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-            allow_nan=False,
-        ).encode("utf-8")
-        return {
-            "schema_version": 1,
-            "declaration_input_id": value.declaration_input_id,
-            "target_experiment_id": value.target_experiment_id,
-            "declaration_source": value.declaration_source,
-            "user_note": value.user_note,
-            "room_description_document": document,
-            "room_description_fingerprint": hashlib.sha256(canonical).hexdigest(),
-            "validation_decisions": [item.value for item in preview.decisions],
-        }
+        return self.input_codec.contract_payload(value, preview.decisions)
 
     @classmethod
     def _differences(cls, existing, requested, prefix=""):

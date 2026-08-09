@@ -28,6 +28,7 @@ from acousticbrain.models import (
 from acousticbrain.persistence import (
     EvidenceAcquisitionPlanContractJsonCodec,
     MeasurementRepository,
+    SBIRRoomGeometryDeclarationInputJsonLoader,
 )
 
 
@@ -332,6 +333,44 @@ class ExperimentDiscoveryService:
 
     @classmethod
     def _room_description(cls, manifest, experiment_id):
+        contract = manifest.get("room_description_contract")
+        legacy = cls._legacy_room_description(manifest, experiment_id)
+        if contract is None:
+            return legacy
+        legacy_keys = (
+            "coordinate_system",
+            "room",
+            "loudspeakers",
+            "listening_position",
+        )
+        if legacy is None and any(key in manifest for key in legacy_keys):
+            raise ValueError(
+                "SBIR room-geometry manifest contract conflicts with incomplete "
+                f"legacy geometry: {experiment_id}."
+            )
+        declared = (
+            SBIRRoomGeometryDeclarationInputJsonLoader()
+            .decode_contract(contract)
+        )
+        if declared.target_experiment_id != experiment_id:
+            raise ValueError(
+                "SBIR room-geometry manifest target is inconsistent: "
+                f"{experiment_id}."
+            )
+        canonical = declared.room_description
+        if (
+            legacy is not None
+            and cls._geometry_values(legacy)
+            != cls._geometry_values(canonical)
+        ):
+            raise ValueError(
+                "SBIR room-geometry manifest contract conflicts with legacy "
+                f"geometry: {experiment_id}."
+            )
+        return canonical
+
+    @classmethod
+    def _legacy_room_description(cls, manifest, experiment_id):
         keys = ("coordinate_system", "room", "loudspeakers", "listening_position")
         values = tuple(manifest.get(key) for key in keys)
         if all(value is None for value in values):
@@ -385,6 +424,14 @@ class ExperimentDiscoveryService:
                     z_m=cls._geometry_number(listening, "z"),
                 ),
             ),
+        )
+
+    @staticmethod
+    def _geometry_values(description):
+        return (
+            description.dimensions,
+            description.speakers,
+            description.listening_positions,
         )
 
     @classmethod
