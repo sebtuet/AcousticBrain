@@ -168,7 +168,11 @@ class DeterministicAcousticReasoning:
                 self.title,
                 *(premise.statement for premise in self.premises),
                 *(step.statement for step in self.inference_steps),
-                *self.limitations,
+                *(
+                    value
+                    for value in self.limitations
+                    if any(character.isspace() for character in value)
+                ),
             )
         ).casefold()
         if any(value in language for value in self._FORBIDDEN_LANGUAGE):

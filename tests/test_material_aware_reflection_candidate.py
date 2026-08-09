@@ -215,6 +215,18 @@ def test_unknown_material_is_exactly_score_neutral():
     assert item.overall_compatibility_score == item.geometric_temporal_score
 
 
+def test_unknown_material_preserves_full_geometric_score_precision():
+    score = 73.1234567890123
+    item_path = path()
+    item = accepted(analyze(
+        materials(None),
+        paths=(item_path,),
+        correlations=(correlation(item_path, score=score),),
+    ))
+    assert item.geometric_temporal_score == score
+    assert item.overall_compatibility_score == score
+
+
 @pytest.mark.parametrize("score", [0.0, 1.0, 50.0, 99.999, 100.0])
 def test_unknown_material_neutrality_holds_for_all_geometric_scores(score):
     item_path = path()
