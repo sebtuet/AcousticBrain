@@ -291,6 +291,11 @@ def create_parser():
         help="explicitly record one preview-ready baseline room geometry",
     )
     parser.add_argument(
+        "--sbir-room-geometry-guide",
+        action="store_true",
+        help="show the exact measurements required for a baseline geometry declaration",
+    )
+    parser.add_argument(
         "--sbir-protocol-instance-registry",
         type=Path,
         default=None,
@@ -1022,6 +1027,63 @@ def declare_sbir_room_geometry(
     print("Aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
+
+
+def show_sbir_room_geometry_guide(measurements_root, *, repository=None, loader=None):
+    repository = repository or MeasurementRepository()
+    loader = loader or SBIRRoomGeometryDeclarationInputJsonLoader()
+    baseline_directory = Path(measurements_root) / "baseline"
+    if not baseline_directory.is_dir():
+        raise ValueError("SBIR_ROOM_GEOMETRY_BASELINE_UNKNOWN: baseline.")
+    manifest = repository.load_manifest(baseline_directory)
+    if manifest is None:
+        raise ValueError(
+            "SBIR_ROOM_GEOMETRY_BASELINE_MANIFEST_UNAVAILABLE: baseline."
+        )
+    contract = manifest.get("room_description_contract")
+    fingerprint = None
+    if contract is not None:
+        loader.decode_contract(contract)
+        fingerprint = contract["room_description_fingerprint"]
+    legacy_present = any(
+        key in manifest
+        for key in ("coordinate_system", "room", "loudspeakers", "listening_position")
+    )
+    print("SBIR ROOM GEOMETRY GUIDE — baseline")
+    print()
+    print("État")
+    print("Contrat canonique : " + ("PRÉSENT" if contract is not None else "ABSENT"))
+    print("Géométrie legacy : " + ("PRÉSENTE" if legacy_present else "ABSENTE"))
+    if fingerprint is not None:
+        print(f"Empreinte : {fingerprint}")
+    print()
+    print("Repère à utiliser")
+    print("Origine : coin avant-gauche au sol ; unité : mètre.")
+    print("x : mur avant vers mur arrière ; y : gauche vers droite ; z : sol vers plafond.")
+    print()
+    print("Mesures à fournir")
+    print("Pièce : longueur, largeur, hauteur.")
+    print("Enceinte LEFT : x, y, z.")
+    print("Enceinte RIGHT : x, y, z.")
+    print("Position d’écoute LISTENING_POSITION : x, y, z.")
+    print()
+    print("Qualité à déclarer")
+    print(
+        "Pour LEFT, RIGHT, LISTENING_POSITION, front_wall, rear_wall, left_wall, "
+        "right_wall, floor et ceiling : précision en mètres, confiance de 0 à 100 "
+        "et provenance explicite."
+    )
+    print("Une valeur absente reste absente ; AcousticBrain ne la reconstruit pas.")
+    print()
+    print("Action utilisateur")
+    if contract is not None:
+        print("Aucune action : une déclaration canonique valide existe déjà.")
+    else:
+        print(
+            "Faire mesurer et documenter ces valeurs, puis préparer le JSON canonique "
+            "avant toute preview."
+        )
+    print("Causality status: NOT_ESTABLISHED")
 
 
 def show_channel_isolation_journey(
@@ -1770,15 +1832,16 @@ def main(
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
         geometry_modes = (
-            arguments.preview_sbir_room_geometry,
-            arguments.declare_sbir_room_geometry,
+            arguments.preview_sbir_room_geometry is not None,
+            arguments.declare_sbir_room_geometry is not None,
+            arguments.sbir_room_geometry_guide,
         )
-        if all(value is not None for value in geometry_modes):
+        if sum(geometry_modes) > 1:
             raise ValueError(
-                "--preview-sbir-room-geometry and --declare-sbir-room-geometry "
-                "are mutually exclusive."
+                "SBIR room-geometry guide, preview and declaration modes are "
+                "mutually exclusive."
             )
-        if any(value is not None for value in geometry_modes):
+        if any(geometry_modes):
             conflicts = (
                 arguments.full_assessment,
                 arguments.full_assessment_output is not None,
@@ -2526,6 +2589,9 @@ def main(
                 resolver=sbir_room_geometry_resolver,
                 service=sbir_room_geometry_preview_service,
             )
+            return 0
+        if arguments.sbir_room_geometry_guide:
+            show_sbir_room_geometry_guide(measurements_root)
             return 0
         if arguments.declare_sbir_room_geometry is not None:
             declaration_input = (

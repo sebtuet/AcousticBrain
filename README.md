@@ -591,6 +591,25 @@ python main.py \
 The explicit contract for declaring the missing room geometry is frozen in
 [`docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md`](docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md).
 
+Show the exact measurements and quality declarations required without
+inventing or recording coordinates:
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --sbir-room-geometry-guide
+```
+
+Once a canonical input JSON has been independently measured and prepared,
+preview it first and record it only with the separate explicit command:
+
+```bash
+python main.py --measurements-root measurements \
+  --preview-sbir-room-geometry room-geometry.json
+python main.py --measurements-root measurements \
+  --declare-sbir-room-geometry room-geometry.json
+```
+
 ## Tests
 
 Run the complete test suite:
