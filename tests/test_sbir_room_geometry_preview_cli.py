@@ -61,3 +61,31 @@ def test_geometry_preview_rejects_combined_report_mode(tmp_path, capsys):
             "--full-assessment",
         ])
     assert "cannot be combined" in capsys.readouterr().err
+
+
+def test_declaration_cli_records_then_is_idempotent(tmp_path, capsys):
+    root, source, manifest = campaign(tmp_path)
+    command = [
+        "--measurements-root", str(root),
+        "--declare-sbir-room-geometry", str(source),
+    ]
+    assert acousticbrain_main.main(command) == 0
+    output = capsys.readouterr().out
+    assert "État : RECORDED" in output
+    recorded = manifest.read_bytes()
+    payload = json.loads(recorded)
+    assert payload["room_description_contract"]["target_experiment_id"] == "baseline"
+    assert acousticbrain_main.main(command) == 0
+    assert "État : ALREADY_RECORDED" in capsys.readouterr().out
+    assert manifest.read_bytes() == recorded
+
+
+def test_preview_and_declaration_modes_are_mutually_exclusive(tmp_path, capsys):
+    root, source, _ = campaign(tmp_path)
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main([
+            "--measurements-root", str(root),
+            "--preview-sbir-room-geometry", str(source),
+            "--declare-sbir-room-geometry", str(source),
+        ])
+    assert "mutually exclusive" in capsys.readouterr().err
