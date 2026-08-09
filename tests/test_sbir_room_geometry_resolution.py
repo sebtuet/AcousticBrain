@@ -102,7 +102,7 @@ def test_resolves_exact_geometry_without_recording_or_legacy_decision():
     assert {item.point_id for item in result.room_geometry.speakers} == {
         "LEFT", "RIGHT"
     }
-    assert result.decisions == tuple(SBIRRoomGeometryResolutionDecision)
+    assert result.decisions == SBIRRoomGeometryResolution.EXPECTED_DECISIONS
     assert not hasattr(result, "legacy_conflict_status")
     assert not hasattr(result, "readiness_status")
     with pytest.raises(FrozenInstanceError):
