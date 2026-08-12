@@ -49,6 +49,8 @@ class SBIRDisplacementPlanningSource:
     geometry_candidate_id: str | None
     surface_id: str | None
     prediction_uncertainty_percent: float | None
+    prediction_uncertainty_limit_percent: float | None = None
+    prediction_uncertainty_excess_percent: float | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +93,7 @@ class SBIRProtocolInstanceSourceOverviewService:
         geometry_candidates,
         proposals,
         planning_candidates=(),
+        prediction_uncertainty_limit_percent=None,
     ):
         plans = self._typed(plans, EvidenceAcquisitionPlan, "plans")
         experiments = self._typed(
@@ -182,6 +185,17 @@ class SBIRProtocolInstanceSourceOverviewService:
                         prediction_uncertainty_percent=value.parameters.get(
                             "frequency_uncertainty_percent"
                         ),
+                        prediction_uncertainty_limit_percent=(
+                            prediction_uncertainty_limit_percent
+                        ),
+                        prediction_uncertainty_excess_percent=(
+                            self._excess(
+                                value.parameters.get(
+                                    "frequency_uncertainty_percent"
+                                ),
+                                prediction_uncertainty_limit_percent,
+                            )
+                        ),
                     )
                     for value in planning_candidates
                     if value.source_protocol_id
@@ -198,3 +212,9 @@ class SBIRProtocolInstanceSourceOverviewService:
         ):
             raise TypeError(f"SBIR source-overview {label} must be a typed tuple.")
         return values
+
+    @staticmethod
+    def _excess(value, limit):
+        if value is None or limit is None:
+            return None
+        return max(0.0, value - limit)

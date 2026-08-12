@@ -79,6 +79,7 @@ def test_preserves_existing_sbir_planning_blockage_without_new_verdict():
         geometry_candidates=(),
         proposals=(),
         planning_candidates=(unrelated, source),
+        prediction_uncertainty_limit_percent=10.0,
     )
 
     assert len(result.displacement_planning_sources) == 1
@@ -96,6 +97,8 @@ def test_preserves_existing_sbir_planning_blockage_without_new_verdict():
     )
     assert value.surface_id == "floor"
     assert value.prediction_uncertainty_percent == 23.1665
+    assert value.prediction_uncertainty_limit_percent == 10.0
+    assert value.prediction_uncertainty_excess_percent == 13.1665
 
 
 def test_unrelated_plans_are_not_presented_as_the_fixed_source_plan():

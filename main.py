@@ -15,6 +15,7 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.analysis import ExperimentPlanner
 from acousticbrain.application import (
     EvidencePlanCompletionService,
     EvidencePlanPreparationWorkflowService,
@@ -889,6 +890,9 @@ def show_sbir_protocol_instance_sources(
         geometry_candidates=geometry.candidates,
         proposals=(proposal,) if proposal is not None else (),
         planning_candidates=planning_candidates,
+        prediction_uncertainty_limit_percent=(
+            ExperimentPlanner.MAXIMUM_SBIR_PREDICTION_UNCERTAINTY_PERCENT
+        ),
     )
     print("SBIR PROTOCOL INSTANCE SOURCES")
     print()
@@ -949,6 +953,22 @@ def show_sbir_protocol_instance_sources(
                 + (
                     f"{value.prediction_uncertainty_percent:.2f} %"
                     if value.prediction_uncertainty_percent is not None
+                    else "indisponible"
+                )
+            )
+            print(
+                "Limite d'éligibilité : "
+                + (
+                    f"{value.prediction_uncertainty_limit_percent:.2f} %"
+                    if value.prediction_uncertainty_limit_percent is not None
+                    else "indisponible"
+                )
+            )
+            print(
+                "Dépassement de limite : "
+                + (
+                    f"{value.prediction_uncertainty_excess_percent:.2f} %"
+                    if value.prediction_uncertainty_excess_percent is not None
                     else "indisponible"
                 )
             )
