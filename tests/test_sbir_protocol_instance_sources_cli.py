@@ -52,6 +52,8 @@ def test_source_overview_prints_all_blocks_without_selection(tmp_path, capsys):
     assert "proposal-sbir-001" in output
     assert "SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH" in output
     assert "23.17 %" in output
+    assert "Limite d'éligibilité : 10.00 %" in output
+    assert "Dépassement de limite : 13.17 %" in output
     assert "NO_SELECTION_PERFORMED" in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert result.selection_status == "NO_SELECTION_PERFORMED"
