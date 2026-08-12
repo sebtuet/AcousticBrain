@@ -9,6 +9,7 @@ from test_sbir_protocol_instance_resolution import (
     geometry_candidate,
     source_plan,
 )
+from test_sbir_protocol_instance_sources import planning_candidate
 
 
 class Brain:
@@ -27,6 +28,12 @@ class Brain:
             loudspeaker_positioning_experiment_analysis=SimpleNamespace(
                 proposal=proposal()
             ),
+            experiment_planning_analysis=SimpleNamespace(
+                plan=SimpleNamespace(
+                    ordered_candidates=(),
+                    ineligible_candidates=(planning_candidate(),),
+                )
+            ),
         )
 
 
@@ -40,8 +47,11 @@ def test_source_overview_prints_all_blocks_without_selection(tmp_path, capsys):
     assert "Expériences disponibles" in output
     assert "Candidats géométriques" in output
     assert "Propositions de déplacement" in output
+    assert "Planification du déplacement SBIR" in output
     assert "geometry-candidate-001" in output
     assert "proposal-sbir-001" in output
+    assert "SBIR_PREDICTION_UNCERTAINTY_TOO_HIGH" in output
+    assert "23.17 %" in output
     assert "NO_SELECTION_PERFORMED" in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert result.selection_status == "NO_SELECTION_PERFORMED"

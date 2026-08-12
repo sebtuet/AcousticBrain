@@ -865,14 +865,30 @@ def show_sbir_protocol_instance_sources(
         "loudspeaker_positioning_experiment_analysis",
         None,
     )
-    if synthesis is None or geometry is None or positioning is None:
+    planning = getattr(context, "experiment_planning_analysis", None)
+    if (
+        synthesis is None
+        or geometry is None
+        or positioning is None
+        or planning is None
+    ):
         raise ValueError("SBIR protocol-instance sources are unavailable.")
     proposal = getattr(positioning, "proposal", None)
+    plan = getattr(planning, "plan", None)
+    planning_candidates = (
+        (
+            *getattr(plan, "ordered_candidates", ()),
+            *getattr(plan, "ineligible_candidates", ()),
+        )
+        if plan is not None
+        else ()
+    )
     result = (service or SBIRProtocolInstanceSourceOverviewService()).build(
         plans=synthesis.plans,
         experiments=tuple(getattr(context, "experiment_descriptors", ())),
         geometry_candidates=geometry.candidates,
         proposals=(proposal,) if proposal is not None else (),
+        planning_candidates=planning_candidates,
     )
     print("SBIR PROTOCOL INSTANCE SOURCES")
     print()
@@ -918,6 +934,34 @@ def show_sbir_protocol_instance_sources(
             )
     else:
         print("Aucune proposition de déplacement disponible.")
+    print()
+    print("Planification du déplacement SBIR")
+    if result.displacement_planning_sources:
+        for value in result.displacement_planning_sources:
+            print(f"{value.candidate_id} — {value.eligibility_status}")
+            print(
+                "Candidat géométrique : "
+                f"{value.geometry_candidate_id or 'indisponible'}"
+            )
+            print(f"Surface : {value.surface_id or 'indisponible'}")
+            print(
+                "Incertitude de prédiction : "
+                + (
+                    f"{value.prediction_uncertainty_percent:.2f} %"
+                    if value.prediction_uncertainty_percent is not None
+                    else "indisponible"
+                )
+            )
+            print(
+                "Motifs de blocage : "
+                + (
+                    ", ".join(value.ineligibility_reason_codes)
+                    if value.ineligibility_reason_codes
+                    else "aucun"
+                )
+            )
+    else:
+        print("Aucun candidat de planification SBIR disponible.")
     print()
     print("Frontière scientifique")
     print("Aucun objet n’est sélectionné, classé ou recommandé par cette vue.")

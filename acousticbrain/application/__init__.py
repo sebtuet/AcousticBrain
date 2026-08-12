@@ -96,6 +96,7 @@ from .sbir_protocol_instance_preview import (
 )
 from .sbir_protocol_instance_sources import (
     SBIRDisplacementSource,
+    SBIRDisplacementPlanningSource,
     SBIRExperimentSource,
     SBIRGeometrySource,
     SBIRPlanSource,
