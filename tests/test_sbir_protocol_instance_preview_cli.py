@@ -36,6 +36,15 @@ class Brain:
         )
 
 
+class BrainWithoutProposal(Brain):
+    def analyze(self, **arguments):
+        _, context = super().analyze(**arguments)
+        context.loudspeaker_positioning_experiment_analysis = SimpleNamespace(
+            proposal=None
+        )
+        return object(), context
+
+
 def test_preview_cli_is_read_only_and_prints_all_decisions(tmp_path, capsys):
     registry_path = tmp_path / "registry.json"
     repository = SBIRProtocolInstanceRegistryJsonRepository()
@@ -82,6 +91,83 @@ def test_main_preview_loads_exact_input_and_does_not_create_registry(
     assert not registry_path.exists()
 
 
+def test_record_cli_writes_only_the_dedicated_registry(tmp_path, capsys):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text(
+        SBIRProtocolInstanceInputJsonLoader().dumps(
+            protocol_input(source_plan())
+        ),
+        encoding="utf-8",
+    )
+    registry_path = tmp_path / "sbir-registry.json"
+
+    assert acousticbrain_main.main((
+        "--measurements-root", str(tmp_path),
+        "--record-sbir-protocol-instance", str(input_path),
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=Brain()) == 0
+
+    output = capsys.readouterr().out
+    assert "SBIR PROTOCOL INSTANCE RECORDED" in output
+    assert "PROTOCOL_INSTANCE_COMPATIBLE" in output
+    assert "État du registre : RECORDED" in output
+    assert "Aucune expérience n’a été déclarée ou exécutée." in output
+    assert "Causality status: NOT_ESTABLISHED" in output
+    assert tuple(sorted(item.name for item in tmp_path.iterdir())) == (
+        "sbir-input.json",
+        "sbir-registry.json",
+    )
+    registry = SBIRProtocolInstanceRegistryJsonRepository().load(registry_path)
+    assert len(registry.records) == 1
+
+
+def test_record_cli_is_idempotent_for_identical_input(tmp_path, capsys):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text(
+        SBIRProtocolInstanceInputJsonLoader().dumps(
+            protocol_input(source_plan())
+        ),
+        encoding="utf-8",
+    )
+    registry_path = tmp_path / "sbir-registry.json"
+
+    assert acousticbrain_main.main((
+        "--measurements-root", str(tmp_path),
+        "--record-sbir-protocol-instance", str(input_path),
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=Brain()) == 0
+    first = registry_path.read_bytes()
+    assert acousticbrain_main.main((
+        "--measurements-root", str(tmp_path),
+        "--record-sbir-protocol-instance", str(input_path),
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=Brain()) == 0
+
+    output = capsys.readouterr().out
+    assert "État du registre : ALREADY_RECORDED" in output
+    assert registry_path.read_bytes() == first
+
+
+def test_record_cli_requires_existing_displacement_proposal(tmp_path):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text(
+        SBIRProtocolInstanceInputJsonLoader().dumps(
+            protocol_input(source_plan())
+        ),
+        encoding="utf-8",
+    )
+    registry_path = tmp_path / "sbir-registry.json"
+
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--record-sbir-protocol-instance", str(input_path),
+            "--sbir-protocol-instance-registry", str(registry_path),
+        ), brain=BrainWithoutProposal())
+
+    assert not registry_path.exists()
+
+
 def test_preview_parser_requires_explicit_registry(tmp_path, capsys):
     input_path = tmp_path / "sbir-input.json"
     input_path.write_text("{}", encoding="utf-8")
@@ -89,6 +175,19 @@ def test_preview_parser_requires_explicit_registry(tmp_path, capsys):
         acousticbrain_main.main((
             "--measurements-root", str(tmp_path),
             "--preview-sbir-protocol-instance", str(input_path),
+        ), brain=Brain())
+    assert "requires --sbir-protocol-instance-registry" in (
+        capsys.readouterr().err
+    )
+
+
+def test_record_parser_requires_explicit_registry(tmp_path, capsys):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--record-sbir-protocol-instance", str(input_path),
         ), brain=Brain())
     assert "requires --sbir-protocol-instance-registry" in (
         capsys.readouterr().err
@@ -109,5 +208,20 @@ def test_preview_cannot_be_combined_with_an_existing_output_mode(
             "--full-assessment",
         ), brain=Brain())
     assert "cannot be combined with --full-assessment" in (
+        capsys.readouterr().err
+    )
+
+
+def test_record_cannot_be_combined_with_preview(tmp_path, capsys):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--preview-sbir-protocol-instance", str(input_path),
+            "--record-sbir-protocol-instance", str(input_path),
+            "--sbir-protocol-instance-registry", str(tmp_path / "registry.json"),
+        ), brain=Brain())
+    assert "cannot be combined with --record-sbir-protocol-instance" in (
         capsys.readouterr().err
     )
