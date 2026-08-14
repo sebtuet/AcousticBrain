@@ -6,6 +6,7 @@ import pytest
 
 import main as acousticbrain_main
 from acousticbrain.advisor import (
+    AdvisorConfigurationError,
     AdvisorContextBuilder,
     AdvisorProviderResponseError,
     AdvisorProviderUnavailableError,
@@ -252,6 +253,39 @@ def test_mock_failure_and_timeout_remain_typed_provider_errors():
         advise(MockAdvisorMode.FAILURE)
     with pytest.raises(AdvisorTimeoutError):
         advise(MockAdvisorMode.TIMEOUT)
+
+
+def test_provider_specific_timeout_defaults_preserve_openai_and_extend_ollama(monkeypatch):
+    for name in (
+        "ADVISOR_TIMEOUT_SECONDS",
+        "OLLAMA_ADVISOR_TIMEOUT_SECONDS",
+        "OPENAI_ADVISOR_TIMEOUT_SECONDS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    assert acousticbrain_main.create_advisor_provider("ollama").timeout_seconds == 120.0
+    assert acousticbrain_main.create_advisor_provider("openai").timeout_seconds == 30.0
+
+
+def test_provider_specific_timeout_accepts_integer_and_float_values(monkeypatch):
+    monkeypatch.setenv("OLLAMA_ADVISOR_TIMEOUT_SECONDS", "90")
+    monkeypatch.setenv("OPENAI_ADVISOR_TIMEOUT_SECONDS", "45.5")
+    assert acousticbrain_main.create_advisor_provider("ollama").timeout_seconds == 90.0
+    assert acousticbrain_main.create_advisor_provider("openai").timeout_seconds == 45.5
+
+
+def test_legacy_generic_timeout_remains_a_fallback(monkeypatch):
+    monkeypatch.delenv("OLLAMA_ADVISOR_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.delenv("OPENAI_ADVISOR_TIMEOUT_SECONDS", raising=False)
+    monkeypatch.setenv("ADVISOR_TIMEOUT_SECONDS", "75")
+    assert acousticbrain_main.create_advisor_provider("ollama").timeout_seconds == 75.0
+    assert acousticbrain_main.create_advisor_provider("openai").timeout_seconds == 75.0
+
+
+@pytest.mark.parametrize("value", ("invalid", "0", "-1"))
+def test_invalid_provider_specific_timeout_is_a_clear_configuration_error(monkeypatch, value):
+    monkeypatch.setenv("OLLAMA_ADVISOR_TIMEOUT_SECONDS", value)
+    with pytest.raises(AdvisorConfigurationError, match="OLLAMA_ADVISOR_TIMEOUT_SECONDS"):
+        acousticbrain_main.create_advisor_provider("ollama")
 
 
 def test_question_outside_empty_context_returns_grounded_unavailable_answer():

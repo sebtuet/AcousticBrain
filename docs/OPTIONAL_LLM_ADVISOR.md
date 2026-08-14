@@ -76,6 +76,24 @@ Malformed provider JSON and provider failures remain explicit typed errors.
 Real-provider prose is not byte-for-byte deterministic; the mock, context,
 validation and safety response are deterministic.
 
+### Provider timeouts
+
+Local structured generation time depends on the model, hardware, assessment
+context size and output schema. Ollama therefore defaults to 120 seconds and can
+be configured explicitly:
+
+```bash
+export OLLAMA_ADVISOR_ENDPOINT=http://localhost:11434
+export OLLAMA_ADVISOR_MODEL=qwen3:8b
+export OLLAMA_ADVISOR_TIMEOUT_SECONDS=120
+```
+
+OpenAI retains its 30-second default and supports
+`OPENAI_ADVISOR_TIMEOUT_SECONDS`. Values may be integer or floating-point
+seconds and must be positive. The historical `ADVISOR_TIMEOUT_SECONDS` remains a
+fallback when no provider-specific timeout is set; a provider-specific value
+takes precedence. Provider timeouts continue to raise `AdvisorTimeoutError`.
+
 ## CLI
 
 ```bash

@@ -601,6 +601,15 @@ or use external acoustic knowledge to complete missing facts. Questions outside
 the supplied assessment receive a bounded not-established answer. See
 [`docs/OPTIONAL_LLM_ADVISOR.md`](docs/OPTIONAL_LLM_ADVISOR.md).
 
+For a local Ollama model, configure an explicit generation timeout appropriate
+to the model and hardware:
+
+```bash
+export OLLAMA_ADVISOR_ENDPOINT=http://localhost:11434
+export OLLAMA_ADVISOR_MODEL=qwen3:8b
+export OLLAMA_ADVISOR_TIMEOUT_SECONDS=120
+```
+
 Ollama is not required to install, import or run AcousticBrain's deterministic
 engine. The V1 Ollama Advisor uses its explicitly configured HTTP endpoint and
 does not require the Python `ollama` package. The legacy `AcousticAssistant`

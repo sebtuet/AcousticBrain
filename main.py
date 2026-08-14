@@ -3543,19 +3543,15 @@ def resolve_advisor_language(configured, question):
 
 
 def create_advisor_provider(provider_id):
-    try:
-        timeout = float(os.environ.get("ADVISOR_TIMEOUT_SECONDS", "30"))
-    except ValueError as error:
-        raise AdvisorConfigurationError(
-            "ADVISOR_TIMEOUT_SECONDS must be numeric."
-        ) from error
     if provider_id == "mock":
         return MockAdvisorProvider()
     if provider_id == "ollama":
         return OllamaAdvisorProvider(
             endpoint=os.environ.get("OLLAMA_ADVISOR_ENDPOINT"),
             model_id=os.environ.get("OLLAMA_ADVISOR_MODEL"),
-            timeout_seconds=timeout,
+            timeout_seconds=_advisor_timeout(
+                "OLLAMA_ADVISOR_TIMEOUT_SECONDS", default=120.0
+            ),
         )
     if provider_id == "openai":
         return OpenAIAdvisorProvider(
@@ -3564,9 +3560,31 @@ def create_advisor_provider(provider_id):
                 "OPENAI_ADVISOR_ENDPOINT", "https://api.openai.com/v1/responses"
             ),
             model_id=os.environ.get("OPENAI_ADVISOR_MODEL"),
-            timeout_seconds=timeout,
+            timeout_seconds=_advisor_timeout(
+                "OPENAI_ADVISOR_TIMEOUT_SECONDS", default=30.0
+            ),
         )
     raise ValueError(f"Unknown advisor provider: {provider_id}")
+
+
+def _advisor_timeout(variable_name, *, default):
+    configured_name = (
+        variable_name
+        if variable_name in os.environ
+        else "ADVISOR_TIMEOUT_SECONDS"
+        if "ADVISOR_TIMEOUT_SECONDS" in os.environ
+        else None
+    )
+    raw = os.environ[configured_name] if configured_name is not None else str(default)
+    try:
+        value = float(raw)
+    except ValueError as error:
+        name = configured_name or variable_name
+        raise AdvisorConfigurationError(f"{name} must be numeric.") from error
+    if value <= 0:
+        name = configured_name or variable_name
+        raise AdvisorConfigurationError(f"{name} must be positive.")
+    return value
 
 
 if __name__ == "__main__":
