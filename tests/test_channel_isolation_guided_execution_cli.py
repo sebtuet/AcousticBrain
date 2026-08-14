@@ -38,6 +38,44 @@ def test_cli_renders_complete_read_only_checklist_for_incomplete_preparation(tmp
     assert path.read_bytes() == before
 
 
+def test_cli_routes_confirmed_preparation_to_public_declaration_preflight(
+    tmp_path, capsys
+):
+    preparation = record(
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+        EvidencePlanPrerequisiteStatus.CONFIRMED,
+    )
+    path = tmp_path / "registry.json"
+    repository = EvidencePlanPreparationRegistryJsonRepository()
+    repository.save(path, EvidencePlanPreparationRegistry().with_record(preparation))
+    before = path.read_bytes()
+
+    journey = acousticbrain_main.show_channel_isolation_journey(
+        tmp_path,
+        "READY_PLAN",
+        preparation.confirmation_input.confirmation_id,
+        path,
+        brain=Brain(),
+        registry_repository=repository,
+    )
+
+    output = capsys.readouterr().out
+    assert journey.preparation_status == "PREPARATION_USER_CONFIRMED"
+    assert "--channel-isolation-declaration-readiness READY_PLAN" in output
+    assert (
+        "--channel-isolation-preparation "
+        + preparation.confirmation_input.confirmation_id
+        in output
+    )
+    assert f"--evidence-plan-preparation-registry {path}" in output
+    assert "préflight de déclaration" in output
+    assert "déclaration reste ensuite une action explicite séparée" in output
+    assert "--channel-isolation-reference" not in output
+    assert "--channel-isolation-experiment" not in output
+    assert "Aucune expérience n’a été déclarée ou exécutée" in output
+    assert path.read_bytes() == before
+
+
 def test_cli_requires_explicit_preparation_and_registry(tmp_path, capsys):
     root = tmp_path / "measurements"
     root.mkdir()

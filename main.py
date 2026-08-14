@@ -1384,7 +1384,17 @@ def show_channel_isolation_journey(
     if journey.user_action_state == "REVIEW_PREPARATION_DECLARATION":
         print("Revoir les prérequis non confirmés ; aucune déclaration d’expérience n’est disponible.")
     else:
-        print("Déclarer séparément l’expérience depuis ce plan exact avant toute acquisition.")
+        print(
+            "Lancer d’abord le préflight de déclaration, en fournissant vous-même "
+            "une référence existante et un nouvel identifiant d’expérience ; la "
+            "déclaration reste ensuite une action explicite séparée :"
+        )
+        print(
+            "python main.py --measurements-root "
+            f"{measurements_root} --channel-isolation-declaration-readiness "
+            f"{plan_id} --channel-isolation-preparation {confirmation_id} "
+            f"--evidence-plan-preparation-registry {registry_path}"
+        )
     print()
     print("Frontière scientifique")
     print("Cette checklist ne vérifie aucune condition physique et n’exécute aucune mesure.")
