@@ -99,6 +99,39 @@ The CLI exposes the existing deterministic workflow at several levels:
 These options select different presentations of established deterministic
 objects. They do not introduce a separate acoustic analysis.
 
+### User-facing terminology
+
+Some output values are stable contract terms rather than claims about physical
+execution or scientific causality:
+
+- In
+  `EVIDENCE_ACQUISITION_SBIR_PLACEMENT_INTERACTION_REASONING_ACQUIRE_SUPPORTING_OBSERVATION_V2`,
+  `_V2` identifies version 2 of the internal additional-observation planning
+  contract. It does not mean AcousticBrain V2, a V2 product feature, or an SBIR
+  V2 protocol. The identifier is persisted in plan snapshots, manifests,
+  preparation records and SBIR registries, so it must not be renamed or
+  normalized.
+- For an `EvidenceAcquisitionPlan`, `READY` means that the planning contract
+  contains the information required for its current planning state. It does
+  not by itself mean that an experiment is executable, a protocol is resolved,
+  experimental prerequisites are satisfied, an experiment is declared or
+  executed, acquisition has occurred, or causality is established. Execution
+  preconditions are evaluated separately. In the SBIR `ADDITIONAL_OBSERVATION`
+  plan, acquiring the next observation can be planned without complete SBIR
+  geometry; comparing observed and expected frequencies requires that
+  geometry.
+- `SUPPORTED` means that the available observations support an existing
+  hypothesis under the applicable deterministic rules. It does not mean that
+  an acoustic cause is established, that the hypothesis is causally confirmed,
+  that a correction is validated, or that an intervention is automatically
+  recommended.
+
+The scientific chain remains `observation → evidence → hypothesis →
+verification`, never `observation → cause`. See
+[`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md),
+[`docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md`](docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md),
+and [`docs/EXPERIMENT_PLANNING_CONTRACT.md`](docs/EXPERIMENT_PLANNING_CONTRACT.md).
+
 Print the concise view of one exact experiment:
 
 ```bash
@@ -617,9 +650,10 @@ not declare or execute an experiment.
 
 ## Preserve an evidence-acquisition plan contract
 
-A `READY` evidence-acquisition plan can be declared as an experiment without
-losing its objective, variables, prerequisites, expected observations,
-criteria, limitations or provenance:
+A `READY` evidence-acquisition plan that passes its separate declaration
+preflight can be declared as an experiment without losing its objective,
+variables, prerequisites, expected observations, criteria, limitations or
+provenance:
 
 ```bash
 python main.py \
@@ -690,8 +724,9 @@ derives no verdict. See
 [`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
 
 `ADDITIONAL_OBSERVATION` plans keep pre-acquisition inputs disjoint from the
-evidence they are intended to acquire. The corrected SBIR plan uses a versioned
-V2 identity so historical contracts are never rewritten. See
+evidence they are intended to acquire. The corrected SBIR plan uses version 2
+of its internal planning-contract identity so historical contracts are never
+rewritten; this does not designate AcousticBrain V2 or an SBIR V2 protocol. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
 Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.

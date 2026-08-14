@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1
+
+Documentation-only clarification of the public terminology `_V2`, `READY`,
+and `SUPPORTED`. No runtime, CLI, planning, eligibility, scientific rule,
+persisted identifier, schema, protocol, manifest, registry, or contract
+fingerprint changes in this release. See the user-facing terminology section
+in [`README.md`](README.md).
+
 ## 1.0.0
 
 AcousticBrain V1 provides a deterministic, contract-driven workflow for
