@@ -121,7 +121,7 @@ When scientific compatibility is not established, this view says that no safe
 user action is available. It never asks the user to attest compatibility.
 For a `READY` plan, the same view displays the complete declared preparation
 checklist and asks only for prerequisite verification before declaration.
-The future structured confirmation boundary is frozen in
+The implemented structured confirmation boundary is frozen in
 [`docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md`](docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md).
 
 List every plan before choosing one to inspect:
@@ -544,7 +544,7 @@ rules. CLI reporters and the optional Advisor do not add, replace or bypass
 those rules. Scientific conclusions, contradictions, limitations and missing
 evidence remain under the authority of the deterministic core.
 
-The frozen product contract for the future deterministic `EXPLORATORY` mode is
+The frozen product contract for the deterministic V1 `EXPLORATORY` mode is
 documented in
 [`docs/EXPLORATORY_V1_CONTRACT.md`](docs/EXPLORATORY_V1_CONTRACT.md).
 It defines bounded reversible tests, explicit user feasibility decisions and
