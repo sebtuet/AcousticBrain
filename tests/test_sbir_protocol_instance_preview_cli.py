@@ -3,12 +3,13 @@ from types import SimpleNamespace
 import pytest
 
 import main as acousticbrain_main
-from acousticbrain.models import SBIRProtocolInstanceRegistry
+from acousticbrain.models import SBIRProtocolInstanceRecord, SBIRProtocolInstanceRegistry
 from acousticbrain.persistence import (
     SBIRProtocolInstanceInputJsonLoader,
     SBIRProtocolInstanceRegistryJsonRepository,
 )
 from test_sbir_protocol_instance_compatibility import proposal
+from test_sbir_protocol_instance_compatibility import validate
 from test_sbir_protocol_instance_resolution import (
     experiment,
     geometry_candidate,
@@ -43,6 +44,11 @@ class BrainWithoutProposal(Brain):
             proposal=None
         )
         return object(), context
+
+
+class ExplodingBrain:
+    def analyze(self, **arguments):
+        raise AssertionError("A read-only SBIR registry view must not analyze a corpus.")
 
 
 def test_preview_cli_is_read_only_and_prints_all_decisions(tmp_path, capsys):
@@ -132,6 +138,99 @@ def test_main_preview_of_recorded_instance_requires_no_recording_action(
     assert "Aucune action : cette instance identique est déjà enregistrée." in output
     assert "--record-sbir-protocol-instance" not in output
     assert "Causality status: NOT_ESTABLISHED" in output
+
+
+def test_sbir_protocol_instance_view_reads_snapshot_without_analyzing_or_writing(
+    tmp_path,
+    capsys,
+):
+    registry_path = tmp_path / "sbir-registry.json"
+    registry = SBIRProtocolInstanceRegistry().with_record(
+        SBIRProtocolInstanceRecord.from_compatibility(validate())
+    )
+    repository = SBIRProtocolInstanceRegistryJsonRepository()
+    repository.save(registry_path, registry)
+    before = registry_path.read_bytes()
+    historical_manifest = tmp_path / "historical-manifest.json"
+    historical_manifest.write_text("unchanged", encoding="utf-8")
+    measurements_root = tmp_path / "changed-measurement-corpus"
+    measurements_root.mkdir()
+
+    assert acousticbrain_main.main((
+        "--measurements-root", str(measurements_root),
+        "--sbir-protocol-instance-view", "sbir-protocol-instance-001",
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=ExplodingBrain()) == 0
+
+    output = capsys.readouterr().out
+    assert "SBIR PROTOCOL INSTANCE VIEW — sbir-protocol-instance-001" in output
+    assert "Empreinte du plan :" in output
+    assert "PROTOCOL_INSTANCE_COMPATIBLE" in output
+    assert "Déclaration : NOT_DECLARED" in output
+    assert "Exécution : NOT_EXECUTED" in output
+    assert "Causality status: NOT_ESTABLISHED" in output
+    assert "recalcule aucune compatibilité" in output
+    assert "recommandation acoustique n’est établie" in output
+    assert registry_path.read_bytes() == before
+    assert historical_manifest.read_text(encoding="utf-8") == "unchanged"
+
+
+def test_sbir_protocol_instance_view_is_stable_and_rejects_unknown_or_empty_registry(
+    tmp_path,
+    capsys,
+):
+    registry_path = tmp_path / "sbir-registry.json"
+    repository = SBIRProtocolInstanceRegistryJsonRepository()
+    repository.save(
+        registry_path,
+        SBIRProtocolInstanceRegistry().with_record(
+            SBIRProtocolInstanceRecord.from_compatibility(validate())
+        ),
+    )
+    arguments = (
+        "--measurements-root", str(tmp_path),
+        "--sbir-protocol-instance-view", "sbir-protocol-instance-001",
+        "--sbir-protocol-instance-registry", str(registry_path),
+    )
+
+    assert acousticbrain_main.main(arguments, brain=ExplodingBrain()) == 0
+    first = capsys.readouterr().out
+    assert acousticbrain_main.main(arguments, brain=ExplodingBrain()) == 0
+    assert capsys.readouterr().out == first
+
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--sbir-protocol-instance-view", "unknown-instance",
+            "--sbir-protocol-instance-registry", str(registry_path),
+        ), brain=ExplodingBrain())
+    assert "SBIR_PROTOCOL_INSTANCE_UNKNOWN: unknown-instance." in (
+        capsys.readouterr().err
+    )
+
+    empty_path = tmp_path / "empty-registry.json"
+    repository.save(empty_path, SBIRProtocolInstanceRegistry())
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--sbir-protocol-instance-view", "sbir-protocol-instance-001",
+            "--sbir-protocol-instance-registry", str(empty_path),
+        ), brain=ExplodingBrain())
+    assert "SBIR_PROTOCOL_INSTANCE_REGISTRY_EMPTY." in capsys.readouterr().err
+
+
+def test_sbir_protocol_instance_view_parser_requires_explicit_registry(
+    tmp_path,
+    capsys,
+):
+    with pytest.raises(SystemExit):
+        acousticbrain_main.main((
+            "--measurements-root", str(tmp_path),
+            "--sbir-protocol-instance-view", "sbir-protocol-instance-001",
+        ), brain=ExplodingBrain())
+    assert "requires --sbir-protocol-instance-registry" in (
+        capsys.readouterr().err
+    )
 
 
 def test_record_cli_writes_only_the_dedicated_registry(tmp_path, capsys):

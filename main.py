@@ -30,6 +30,7 @@ from acousticbrain.application import (
     ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
+    SBIRProtocolInstanceViewService,
     SBIRProtocolInstanceSourceOverviewService,
     SBIRProtocolInstanceCompatibilityValidator,
     SBIRProtocolInstanceRecordingService,
@@ -62,6 +63,8 @@ from acousticbrain.report import (
     GuidedGlobalStatusPresenter,
     EvidencePlanPreparationUserViewConsoleReporter,
     EvidencePlanPreparationUserViewPresenter,
+    SBIRProtocolInstanceViewConsoleReporter,
+    SBIRProtocolInstanceViewPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -281,6 +284,12 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="explicitly record one compatible SBIR protocol instance",
+    )
+    parser.add_argument(
+        "--sbir-protocol-instance-view",
+        default=None,
+        metavar="INSTANCE_ID",
+        help="read one exact recorded SBIR protocol instance without re-analysis",
     )
     parser.add_argument(
         "--sbir-protocol-instance-sources",
@@ -940,6 +949,27 @@ def record_sbir_protocol_instance(
     print("Aucune causalité, correction permanente ou préférence n’est établie.")
     print("Causality status: NOT_ESTABLISHED")
     return result
+
+
+def show_sbir_protocol_instance_view(
+    protocol_instance_id,
+    registry_path,
+    *,
+    registry_repository=None,
+    service=None,
+    presenter=None,
+    reporter=None,
+):
+    registry = (
+        registry_repository or SBIRProtocolInstanceRegistryJsonRepository()
+    ).load(registry_path)
+    view = (service or SBIRProtocolInstanceViewService()).view(
+        protocol_instance_id,
+        registry=registry,
+    )
+    presented = (presenter or SBIRProtocolInstanceViewPresenter()).present(view)
+    (reporter or SBIRProtocolInstanceViewConsoleReporter()).print(presented)
+    return presented
 
 
 def show_sbir_protocol_instance_sources(
@@ -1944,6 +1974,9 @@ def main(
     evidence_plan_preparation_preview_service=None,
     sbir_protocol_instance_loader=None,
     sbir_protocol_instance_preview_service=None,
+    sbir_protocol_instance_view_service=None,
+    sbir_protocol_instance_view_presenter=None,
+    sbir_protocol_instance_view_reporter=None,
     sbir_protocol_instance_resolver=None,
     sbir_protocol_instance_compatibility_validator=None,
     sbir_protocol_instance_recording_service=None,
@@ -2022,6 +2055,7 @@ def main(
                 arguments.guided_status,
                 arguments.preview_sbir_protocol_instance is not None,
                 arguments.record_sbir_protocol_instance is not None,
+                arguments.sbir_protocol_instance_view is not None,
                 arguments.sbir_protocol_instance_sources,
                 arguments.complete_evidence_plan is not None,
                 arguments.confirm_evidence_plan_preparation is not None,
@@ -2213,16 +2247,18 @@ def main(
             (
                 arguments.preview_sbir_protocol_instance is not None
                 or arguments.record_sbir_protocol_instance is not None
+                or arguments.sbir_protocol_instance_view is not None
             )
             and arguments.sbir_protocol_instance_registry is None
         ):
             raise ValueError(
-                "SBIR protocol-instance preview or recording requires "
+                "SBIR protocol-instance preview, recording or view requires "
                 "--sbir-protocol-instance-registry."
             )
         if arguments.preview_sbir_protocol_instance is not None:
             conflicting = (
                 ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
                 ("--guided-status", arguments.guided_status),
                 ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
                 ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
@@ -2251,6 +2287,7 @@ def main(
             conflicting = (
                 ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
                 ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
                 ("--guided-status", arguments.guided_status),
                 ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
                 ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
@@ -2279,6 +2316,7 @@ def main(
             conflicting = (
                 ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
                 ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
                 ("--guided-status", arguments.guided_status),
                 ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
                 ("--observations", arguments.observations),
@@ -2304,13 +2342,44 @@ def main(
         if (
             arguments.preview_sbir_protocol_instance is None
             and arguments.record_sbir_protocol_instance is None
+            and arguments.sbir_protocol_instance_view is None
             and arguments.sbir_protocol_instance_registry is not None
         ):
             raise ValueError(
                 "--sbir-protocol-instance-registry requires "
                 "--preview-sbir-protocol-instance or "
-                "--record-sbir-protocol-instance."
+                "--record-sbir-protocol-instance or "
+                "--sbir-protocol-instance-view."
             )
+        if arguments.sbir_protocol_instance_view is not None:
+            conflicting = (
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--sbir-protocol-instance-view cannot be combined "
+                        f"with {option}."
+                    )
         if arguments.channel_isolation_journey is not None:
             if arguments.channel_isolation_preparation is None:
                 raise ValueError("--channel-isolation-journey requires --channel-isolation-preparation.")
@@ -2806,6 +2875,16 @@ def main(
                 resolver=sbir_room_geometry_resolver,
                 preview_service=sbir_room_geometry_preview_service,
                 recording_service=sbir_room_geometry_recording_service,
+            )
+            return 0
+        if arguments.sbir_protocol_instance_view is not None:
+            show_sbir_protocol_instance_view(
+                arguments.sbir_protocol_instance_view,
+                arguments.sbir_protocol_instance_registry,
+                registry_repository=sbir_protocol_instance_registry_repository,
+                service=sbir_protocol_instance_view_service,
+                presenter=sbir_protocol_instance_view_presenter,
+                reporter=sbir_protocol_instance_view_reporter,
             )
             return 0
         if arguments.preview_sbir_protocol_instance is not None:

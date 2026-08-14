@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = STRUCTURED_INPUT_AND_EXISTING_SOURCE_RESOLUTION_ONLY
 scientific_authority = NONE
-implementation_status = IMPLEMENTED_WITH_EXPLICIT_PREVIEW_AND_RECORDING_CLI
+implementation_status = IMPLEMENTED_WITH_EXPLICIT_PREVIEW_RECORDING_AND_VIEW_CLI
 ```
 
 ## Purpose
@@ -35,7 +35,11 @@ input in read-only mode. It never writes the registry.
 compatibility validation, then explicitly records the compatible instance in
 the dedicated registry passed through `--sbir-protocol-instance-registry`.
 
-Neither mode declares an experiment, creates measurements, modifies a
+`--sbir-protocol-instance-view INSTANCE_ID` reads one exact persisted record
+from that registry. It does not read or reinterpret the current measurement
+corpus and never writes the registry.
+
+None of these modes declares an experiment, creates measurements, modifies a
 manifest, executes acquisition, establishes causality or recommends a speaker
 displacement. Recording is an explicit registry action, not scientific
 validation or execution.
