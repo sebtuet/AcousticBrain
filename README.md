@@ -20,7 +20,15 @@ scientific boundary without adding analysis or recommendation logic.
 
 ## Quick start
 
-Create and activate a virtual environment, then install the project
+AcousticBrain requires Python 3.10 or newer. Verify the interpreter before
+creating the environment:
+
+```bash
+python3 --version
+```
+
+Continue only if it reports Python 3.10 or later. Then create and activate an
+environment with that compatible interpreter, and install the project
 dependencies:
 
 ```bash

@@ -1,3 +1,7 @@
+from runtime_requirement import enforce_supported_python
+
+enforce_supported_python()
+
 import argparse
 import json
 from contextlib import redirect_stdout
