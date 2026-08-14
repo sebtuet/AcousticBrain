@@ -373,6 +373,28 @@ python main.py \
 The same final campaign state can be viewed concisely with
 `--assessment-summary` or in detail with `--full-assessment`.
 
+## Accept an eligible positioning proposal
+
+When the deterministic report exposes a currently eligible loudspeaker
+positioning proposal, the user may explicitly accept its exact identifier and
+declare the intended experiment through the public CLI:
+
+```bash
+python main.py \
+  --measurements-root /path/to/my-campaign \
+  --accept-positioning-proposal EXACT_PROPOSAL_ID \
+  --positioning-experiment-id exp-007 \
+  --positioning-reference exp-006 \
+  --positioning-declaration-note "Accepted reversible positioning test."
+```
+
+The command recalculates eligibility and rejects an unknown or stale proposal.
+On success it creates only the existing controlled-experiment declaration for
+the explicitly supplied experiment and reference. Accepting the proposal does
+not move a loudspeaker, run an acquisition or experiment, interpret a result,
+or establish causality. The physical change and measurements remain separate
+user actions.
+
 ## Explicit campaign declarations
 
 To provide an explicit, versioned multi-position campaign instance:

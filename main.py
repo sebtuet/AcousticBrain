@@ -20,6 +20,7 @@ from acousticbrain.advisor import (
 )
 from acousticbrain.brain import AcousticBrain
 from acousticbrain.commands import (
+    accept_positioning_proposal as positioning_proposal_acceptance_command,
     declare_evidence_plan_experiment as evidence_plan_declaration_command,
 )
 from acousticbrain.analysis import ExperimentPlanner
@@ -243,6 +244,30 @@ def create_parser():
         default=None,
         metavar="EXPERIMENT_ID",
         help="explicitly declare one exact READY evidence plan",
+    )
+    parser.add_argument(
+        "--accept-positioning-proposal",
+        default=None,
+        metavar="PROPOSAL_ID",
+        help="accept one exact currently eligible positioning proposal",
+    )
+    parser.add_argument(
+        "--positioning-experiment-id",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="new experiment id for --accept-positioning-proposal",
+    )
+    parser.add_argument(
+        "--positioning-reference",
+        default=None,
+        metavar="REFERENCE_EXPERIMENT_ID",
+        help="explicit reference experiment for --accept-positioning-proposal",
+    )
+    parser.add_argument(
+        "--positioning-declaration-note",
+        default=None,
+        metavar="TEXT",
+        help="optional declaration note for --accept-positioning-proposal",
     )
     parser.add_argument(
         "--evidence-plan-id",
@@ -2069,6 +2094,17 @@ def main(
             arguments.evidence_plan_declaration_preparation_registry,
             arguments.evidence_plan_declaration_preparation,
         )
+        positioning_arguments = (
+            arguments.accept_positioning_proposal,
+            arguments.positioning_experiment_id,
+            arguments.positioning_reference,
+            arguments.positioning_declaration_note,
+        )
+        if any(value is not None for value in positioning_arguments):
+            parser.error(
+                "--record-exploratory-feasibility cannot be combined with "
+                "positioning-proposal acceptance options."
+            )
         if any(value is not None for value in declaration_arguments):
             parser.error(
                 "--record-exploratory-feasibility cannot be combined with "
@@ -2100,6 +2136,117 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        positioning_specific_values = (
+            arguments.positioning_experiment_id,
+            arguments.positioning_reference,
+            arguments.positioning_declaration_note,
+        )
+        if arguments.accept_positioning_proposal is None:
+            if any(value is not None for value in positioning_specific_values):
+                raise ValueError(
+                    "Positioning-proposal acceptance options require "
+                    "--accept-positioning-proposal."
+                )
+        else:
+            required = (
+                ("--positioning-experiment-id", arguments.positioning_experiment_id),
+                ("--positioning-reference", arguments.positioning_reference),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--accept-positioning-proposal requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--full-assessment-output", arguments.full_assessment_output is not None),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--guided-status", arguments.guided_status),
+                ("--guided-preparation-registry", arguments.guided_preparation_registry is not None),
+                ("--guided-preparation", arguments.guided_preparation is not None),
+                ("--guided-declared-experiment", arguments.guided_declared_experiment is not None),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--evidence-plan-completion-registry", arguments.evidence_plan_completion_registry is not None),
+                ("--declare-evidence-plan-experiment", arguments.declare_evidence_plan_experiment is not None),
+                ("--evidence-plan-id", arguments.evidence_plan_id is not None),
+                ("--evidence-plan-reference", arguments.evidence_plan_reference is not None),
+                ("--evidence-plan-declaration-note", arguments.evidence_plan_declaration_note is not None),
+                ("--evidence-plan-declaration-preparation-registry", arguments.evidence_plan_declaration_preparation_registry is not None),
+                ("--evidence-plan-declaration-preparation", arguments.evidence_plan_declaration_preparation is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-registry", arguments.evidence_plan_preparation_registry is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-output", arguments.evidence_plan_preparation_output is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--preparation-status", bool(arguments.preparation_status)),
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-registry", arguments.sbir_protocol_instance_registry is not None),
+                ("--preview-sbir-room-geometry", arguments.preview_sbir_room_geometry is not None),
+                ("--declare-sbir-room-geometry", arguments.declare_sbir_room_geometry is not None),
+                ("--sbir-room-geometry-guide", arguments.sbir_room_geometry_guide),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--channel-isolation-preparation", arguments.channel_isolation_preparation is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--microphone-position-output", arguments.microphone_position_output is not None),
+                ("--acquisition-settings-output", arguments.acquisition_settings_output is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--microphone-position-record", arguments.microphone_position_record is not None),
+                ("--acquisition-settings-record", arguments.acquisition_settings_record is not None),
+                ("--revise-channel-isolation-records", arguments.revise_channel_isolation_records is not None),
+                ("--operational-field", bool(arguments.operational_field)),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--channel-isolation-source-preparation", arguments.channel_isolation_source_preparation is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+                ("--channel-isolation-reference", arguments.channel_isolation_reference is not None),
+                ("--channel-isolation-experiment", arguments.channel_isolation_experiment is not None),
+                ("--exploratory-proposal", bool(arguments.exploratory_proposal)),
+                ("--exploratory-decisions", arguments.exploratory_decisions is not None),
+                ("--record-exploratory-feasibility", arguments.record_exploratory_feasibility is not None),
+                ("--exploratory-proposal-id", arguments.exploratory_proposal_id is not None),
+                ("--exploratory-reference-scope-id", arguments.exploratory_reference_scope_id is not None),
+                ("--exploratory-note", arguments.exploratory_note is not None),
+                ("--declare-exploratory-experiment", arguments.declare_exploratory_experiment is not None),
+                ("--advisor", arguments.advisor),
+                ("--question", arguments.question is not None),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--accept-positioning-proposal cannot be combined with "
+                        f"{option}."
+                    )
+            acceptance_argv = (
+                str(measurements_root),
+                "--proposal-id", arguments.accept_positioning_proposal,
+                "--experiment", arguments.positioning_experiment_id,
+                "--reference", arguments.positioning_reference,
+            )
+            if arguments.positioning_declaration_note is not None:
+                acceptance_argv += (
+                    "--note",
+                    arguments.positioning_declaration_note,
+                )
+            positioning_proposal_acceptance_command.main(acceptance_argv)
+            return 0
         geometry_modes = (
             arguments.preview_sbir_room_geometry is not None,
             arguments.declare_sbir_room_geometry is not None,
