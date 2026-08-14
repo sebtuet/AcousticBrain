@@ -39,11 +39,11 @@ specialized coverage and result validators retain that authority.
 Declare a currently `READY` plan with:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  /path/to/measurements \
-  --plan-id PLAN_ID \
-  --experiment exp-XXX \
-  --reference baseline
+python main.py \
+  --measurements-root /path/to/measurements \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference baseline
 ```
 
 The command analyzes the campaign read-only to resolve the plan, then performs

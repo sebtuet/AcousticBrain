@@ -70,9 +70,9 @@ deterministically before any partial ready result is rendered.
 
 ## Single user action
 
-On success, the view displays exactly one action: invoke the existing
-`acousticbrain.commands.declare_evidence_plan_experiment` command with the
-same exact plan, experiment and reference identifiers.
+On success, the view displays exactly one action: invoke the public `main.py`
+declaration adapter with the same exact plan, experiment, reference,
+preparation registry and preparation identifiers.
 
 The preflight never invokes that command. Declaration remains a separate
 explicit operation because it creates a directory and writes a manifest.

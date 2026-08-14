@@ -19,6 +19,9 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.commands import (
+    declare_evidence_plan_experiment as evidence_plan_declaration_command,
+)
 from acousticbrain.analysis import ExperimentPlanner
 from acousticbrain.application import (
     EvidencePlanCompletionService,
@@ -233,7 +236,44 @@ def create_parser():
         type=Path,
         default=None,
         metavar="PATH",
-        help="dedicated completion registry JSON (required for completion)",
+        help="dedicated completion registry JSON",
+    )
+    parser.add_argument(
+        "--declare-evidence-plan-experiment",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="explicitly declare one exact READY evidence plan",
+    )
+    parser.add_argument(
+        "--evidence-plan-id",
+        default=None,
+        metavar="PLAN_ID",
+        help="exact READY evidence plan for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-reference",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="exact reference experiment for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-note",
+        default=None,
+        metavar="TEXT",
+        help="optional user note for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-preparation-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="explicit preparation registry for a qualified declaration",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-preparation",
+        default=None,
+        metavar="CONFIRMATION_ID",
+        help="exact preparation confirmation for a qualified declaration",
     )
     parser.add_argument(
         "--confirm-evidence-plan-preparation",
@@ -1662,10 +1702,13 @@ def show_channel_isolation_declaration_readiness(
     print("Action utilisateur")
     print("Déclarer séparément le contrat expérimental avec :")
     print(
-        "python -m acousticbrain.commands.declare_evidence_plan_experiment "
-        f"{measurements_root} --plan-id {result.plan_id} "
-        f"--experiment {result.experiment_id} "
-        f"--reference {result.reference_experiment_id}"
+        "python main.py --measurements-root "
+        f"{measurements_root} --declare-evidence-plan-experiment "
+        f"{result.experiment_id} --evidence-plan-id {result.plan_id} "
+        f"--evidence-plan-reference {result.reference_experiment_id} "
+        "--evidence-plan-declaration-preparation-registry "
+        f"{registry_path} --evidence-plan-declaration-preparation "
+        f"{result.confirmation_id}"
     )
     print()
     print("Frontière scientifique")
@@ -2008,6 +2051,19 @@ def main(
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
     if arguments.record_exploratory_feasibility is not None:
+        declaration_arguments = (
+            arguments.declare_evidence_plan_experiment,
+            arguments.evidence_plan_id,
+            arguments.evidence_plan_reference,
+            arguments.evidence_plan_declaration_note,
+            arguments.evidence_plan_declaration_preparation_registry,
+            arguments.evidence_plan_declaration_preparation,
+        )
+        if any(value is not None for value in declaration_arguments):
+            parser.error(
+                "--record-exploratory-feasibility cannot be combined with "
+                "evidence-plan declaration options."
+            )
         required = {
             "--exploratory-decisions": arguments.exploratory_decisions,
             "--exploratory-proposal-id": arguments.exploratory_proposal_id,
@@ -2195,13 +2251,118 @@ def main(
                     )
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
+        declaration_preparation_values = (
+            arguments.evidence_plan_declaration_preparation_registry,
+            arguments.evidence_plan_declaration_preparation,
+        )
+        declaration_only_values = (
+            arguments.evidence_plan_id,
+            arguments.evidence_plan_reference,
+            arguments.evidence_plan_declaration_note,
+            *declaration_preparation_values,
+        )
+        if arguments.declare_evidence_plan_experiment is None:
+            if any(value is not None for value in declaration_only_values):
+                raise ValueError(
+                    "Evidence-plan declaration options require "
+                    "--declare-evidence-plan-experiment."
+                )
+        else:
+            required = (
+                ("--evidence-plan-id", arguments.evidence_plan_id),
+                ("--evidence-plan-reference", arguments.evidence_plan_reference),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--declare-evidence-plan-experiment requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            if any(value is not None for value in declaration_preparation_values) and any(
+                value is None for value in declaration_preparation_values
+            ):
+                raise ValueError(
+                    "Qualified evidence-plan declaration requires both "
+                    "--evidence-plan-declaration-preparation-registry and "
+                    "--evidence-plan-declaration-preparation."
+                )
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--full-assessment-output", arguments.full_assessment_output is not None),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--exploratory-proposal", bool(arguments.exploratory_proposal)),
+                ("--exploratory-decisions", arguments.exploratory_decisions is not None),
+                ("--exploratory-proposal-id", arguments.exploratory_proposal_id is not None),
+                ("--exploratory-reference-scope-id", arguments.exploratory_reference_scope_id is not None),
+                ("--exploratory-note", arguments.exploratory_note is not None),
+                ("--declare-exploratory-experiment", arguments.declare_exploratory_experiment is not None),
+                ("--advisor", arguments.advisor),
+                ("--question", arguments.question is not None),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--guided-status", arguments.guided_status),
+                ("--guided-preparation-registry", arguments.guided_preparation_registry is not None),
+                ("--guided-preparation", arguments.guided_preparation is not None),
+                ("--guided-declared-experiment", arguments.guided_declared_experiment is not None),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-registry", arguments.evidence_plan_preparation_registry is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-output", arguments.evidence_plan_preparation_output is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--preparation-status", bool(arguments.preparation_status)),
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-registry", arguments.sbir_protocol_instance_registry is not None),
+                ("--preview-sbir-room-geometry", arguments.preview_sbir_room_geometry is not None),
+                ("--declare-sbir-room-geometry", arguments.declare_sbir_room_geometry is not None),
+                ("--sbir-room-geometry-guide", arguments.sbir_room_geometry_guide),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--channel-isolation-preparation", arguments.channel_isolation_preparation is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--revise-channel-isolation-records", arguments.revise_channel_isolation_records is not None),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--channel-isolation-source-preparation", arguments.channel_isolation_source_preparation is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+                ("--channel-isolation-reference", arguments.channel_isolation_reference is not None),
+                ("--channel-isolation-experiment", arguments.channel_isolation_experiment is not None),
+                ("--microphone-position-output", arguments.microphone_position_output is not None),
+                ("--acquisition-settings-output", arguments.acquisition_settings_output is not None),
+                ("--microphone-position-record", arguments.microphone_position_record is not None),
+                ("--acquisition-settings-record", arguments.acquisition_settings_record is not None),
+                ("--operational-field", bool(arguments.operational_field)),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--declare-evidence-plan-experiment cannot be combined "
+                        f"with {option}."
+                    )
         if (
             arguments.complete_evidence_plan is None
             and arguments.evidence_plan_completion_registry is not None
+            and arguments.declare_evidence_plan_experiment is None
         ):
             raise ValueError(
                 "--evidence-plan-completion-registry requires "
-                "--complete-evidence-plan."
+                "--complete-evidence-plan or "
+                "--declare-evidence-plan-experiment."
             )
         if arguments.complete_evidence_plan is not None:
             if arguments.evidence_plan_completion_registry is None:
@@ -2229,6 +2390,35 @@ def main(
                     raise ValueError(
                         f"--complete-evidence-plan cannot be combined with {option}."
                     )
+        if arguments.declare_evidence_plan_experiment is not None:
+            declaration_argv = (
+                str(measurements_root),
+                "--plan-id", arguments.evidence_plan_id,
+                "--experiment", arguments.declare_evidence_plan_experiment,
+                "--reference", arguments.evidence_plan_reference,
+            )
+            if arguments.evidence_plan_completion_registry is not None:
+                declaration_argv += (
+                    "--completion-registry",
+                    str(arguments.evidence_plan_completion_registry),
+                )
+            if arguments.evidence_plan_declaration_note is not None:
+                declaration_argv += (
+                    "--note",
+                    arguments.evidence_plan_declaration_note,
+                )
+            if arguments.evidence_plan_declaration_preparation_registry is not None:
+                declaration_argv += (
+                    "--preparation-registry",
+                    str(arguments.evidence_plan_declaration_preparation_registry),
+                    "--preparation",
+                    arguments.evidence_plan_declaration_preparation,
+                )
+            evidence_plan_declaration_command.main(
+                declaration_argv,
+                brain=brain,
+            )
+            return 0
         if (
             arguments.confirm_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_view is None

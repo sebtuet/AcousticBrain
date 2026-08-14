@@ -62,10 +62,10 @@ and causality remain separate decisions. No acquisition is executed.
 ## CLI
 
 ```text
-python -m acousticbrain.commands.declare_evidence_plan_experiment PATH \
-  --plan-id PLAN_ID \
-  --experiment NEW_EXPERIMENT_ID \
-  --reference REFERENCE_EXPERIMENT_ID \
-  --preparation-registry PREPARATION_REGISTRY_PATH \
-  --preparation CONFIRMATION_ID
+python main.py --measurements-root PATH \
+  --declare-evidence-plan-experiment NEW_EXPERIMENT_ID \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference REFERENCE_EXPERIMENT_ID \
+  --evidence-plan-declaration-preparation-registry PREPARATION_REGISTRY_PATH \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
 ```

@@ -500,11 +500,11 @@ losing its objective, variables, prerequisites, expected observations,
 criteria, limitations or provenance:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --plan-id PLAN_ID \
-  --experiment exp-XXX \
-  --reference baseline
+python main.py \
+  --measurements-root measurements \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference baseline
 ```
 
 For a `READY` plan created by evidence-plan completion, provide its dedicated
@@ -512,12 +512,12 @@ registry explicitly; the same declaration service and manifest contract are
 used:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --completion-registry state/evidence-plan-completions.json \
-  --plan-id DERIVED_EVIDENCE_ACQUISITION_ID \
-  --experiment exp-XXX \
-  --reference baseline
+python main.py \
+  --measurements-root measurements \
+  --evidence-plan-completion-registry state/evidence-plan-completions.json \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id DERIVED_EVIDENCE_ACQUISITION_ID \
+  --evidence-plan-reference baseline
 ```
 
 This extends the existing plan → declaration → comparison pipeline; it does not
@@ -528,13 +528,13 @@ For a `CHANNEL_ISOLATION` plan that passed the explicit preparation preflight,
 preserve that preparation and the specialized declared acquisition structure:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --plan-id PLAN_ID \
-  --experiment exp-XXX \
-  --reference baseline \
-  --preparation-registry state/evidence-plan-preparations.json \
-  --preparation CONFIRMATION_ID
+python main.py \
+  --measurements-root measurements \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference baseline \
+  --evidence-plan-declaration-preparation-registry state/evidence-plan-preparations.json \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
 ```
 
 The preflight runs before the target directory is created. This declaration
