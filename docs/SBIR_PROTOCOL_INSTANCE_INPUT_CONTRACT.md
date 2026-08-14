@@ -6,7 +6,7 @@ version = 1
 status = FROZEN
 authority = STRUCTURED_INPUT_AND_EXISTING_SOURCE_RESOLUTION_ONLY
 scientific_authority = NONE
-implementation_status = IMPLEMENTED_WITHOUT_CLI
+implementation_status = IMPLEMENTED_WITH_EXPLICIT_PREVIEW_AND_RECORDING_CLI
 ```
 
 ## Purpose
@@ -23,8 +23,22 @@ exact structured protocol-instance input
 protocol.temporary_move_speaker.v1
 ```
 
-This contract does not declare or execute an experiment. It defines data that
-a future resolver may validate against existing structured sources.
+This contract does not declare or execute an experiment. The CLI resolves and
+validates its data only against existing structured sources.
+
+## CLI modes
+
+`--preview-sbir-protocol-instance INPUT_JSON` resolves and validates one exact
+input in read-only mode. It never writes the registry.
+
+`--record-sbir-protocol-instance INPUT_JSON` repeats the exact resolution and
+compatibility validation, then explicitly records the compatible instance in
+the dedicated registry passed through `--sbir-protocol-instance-registry`.
+
+Neither mode declares an experiment, creates measurements, modifies a
+manifest, executes acquisition, establishes causality or recommends a speaker
+displacement. Recording is an explicit registry action, not scientific
+validation or execution.
 
 ## Canonical JSON
 
@@ -69,7 +83,7 @@ The reference and moved experiment identifiers must differ.
 
 ## Resolution order
 
-A future resolver must apply this order and stop at the first failed stage:
+The resolver must apply this order and stop at the first failed stage:
 
 1. `INPUT_SCHEMA_VALID` — strict JSON shape and primitive types;
 2. `PLAN_EXACTLY_RESOLVED` — exactly one current V2 plan;

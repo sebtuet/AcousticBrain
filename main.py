@@ -782,6 +782,7 @@ def preview_sbir_protocol_instance(
     protocol_instance_input,
     registry_path,
     *,
+    input_path=None,
     brain=None,
     service=None,
     registry_repository=None,
@@ -844,9 +845,16 @@ def preview_sbir_protocol_instance(
     if result.registry_state == "ALREADY_RECORDED":
         print("Aucune action : cette instance identique est déjà enregistrée.")
     else:
+        print("Après vérification, vous pouvez enregistrer explicitement avec :")
         print(
-            "Aucune écriture depuis cette vue ; la commande d’enregistrement "
-            "explicite n’est pas encore exposée."
+            "python main.py --measurements-root "
+            f"{measurements_root} --record-sbir-protocol-instance "
+            f"{input_path if input_path is not None else '<INPUT_JSON>'} "
+            f"--sbir-protocol-instance-registry {registry_path}"
+        )
+        print(
+            "Cette action consigne uniquement l’instance compatible ; elle ne "
+            "déclare ni n’exécute une expérience."
         )
     print("Aucune instance enregistrée et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
@@ -2809,6 +2817,7 @@ def main(
                 measurements_root,
                 protocol_instance_input,
                 arguments.sbir_protocol_instance_registry,
+                input_path=arguments.preview_sbir_protocol_instance,
                 brain=brain,
                 service=sbir_protocol_instance_preview_service,
                 registry_repository=(

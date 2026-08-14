@@ -63,6 +63,8 @@ def test_preview_cli_is_read_only_and_prints_all_decisions(tmp_path, capsys):
     assert "PLAN_EXACTLY_RESOLVED" in output
     assert "SPEAKER_SURFACE_MATCH" in output
     assert "PROTOCOL_INSTANCE_COMPATIBLE" in output
+    assert "--record-sbir-protocol-instance" in output
+    assert "elle ne déclare ni n’exécute une expérience" in output
     assert "Aucune instance enregistrée" in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert registry_path.read_bytes() == before
@@ -87,8 +89,49 @@ def test_main_preview_loads_exact_input_and_does_not_create_registry(
         "--sbir-protocol-instance-registry", str(registry_path),
     ), brain=Brain()) == 0
 
-    assert "SBIR PROTOCOL INSTANCE PREVIEW" in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "SBIR PROTOCOL INSTANCE PREVIEW" in output
+    assert (
+        "python main.py --measurements-root "
+        f"{tmp_path} --record-sbir-protocol-instance {input_path} "
+        f"--sbir-protocol-instance-registry {registry_path}"
+    ) in output
+    assert "validation scientifique" not in output
+    assert "Causality status: NOT_ESTABLISHED" in output
     assert not registry_path.exists()
+
+
+def test_main_preview_of_recorded_instance_requires_no_recording_action(
+    tmp_path,
+    capsys,
+):
+    input_path = tmp_path / "sbir-input.json"
+    input_path.write_text(
+        SBIRProtocolInstanceInputJsonLoader().dumps(
+            protocol_input(source_plan())
+        ),
+        encoding="utf-8",
+    )
+    registry_path = tmp_path / "sbir-registry.json"
+
+    assert acousticbrain_main.main((
+        "--measurements-root", str(tmp_path),
+        "--record-sbir-protocol-instance", str(input_path),
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=Brain()) == 0
+    capsys.readouterr()
+
+    assert acousticbrain_main.main((
+        "--measurements-root", str(tmp_path),
+        "--preview-sbir-protocol-instance", str(input_path),
+        "--sbir-protocol-instance-registry", str(registry_path),
+    ), brain=Brain()) == 0
+
+    output = capsys.readouterr().out
+    assert "État du registre : ALREADY_RECORDED" in output
+    assert "Aucune action : cette instance identique est déjà enregistrée." in output
+    assert "--record-sbir-protocol-instance" not in output
+    assert "Causality status: NOT_ESTABLISHED" in output
 
 
 def test_record_cli_writes_only_the_dedicated_registry(tmp_path, capsys):
