@@ -67,7 +67,7 @@ def test_user_assessment_real_fixture_is_read_only_and_uses_no_advisor(
 
     output = capsys.readouterr().out
     assert "USER ASSESSMENT" in output
-    assert "Key findings" in output
-    assert "Scientific boundaries" in output
-    assert "Causality status: NOT_ESTABLISHED." in output
+    assert "What the measurements show" in output
+    assert "What AcousticBrain cannot conclude yet" in output
+    assert "This assessment has not established an acoustic cause." in output
     assert before == hashes(BASELINE)

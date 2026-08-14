@@ -18,7 +18,8 @@ calculated V1 `Report`:
 V1 Report
 → CampaignUserAssessmentPresenter
 → immutable presented model
-→ console renderer
+→ HumanReadableAssessmentRenderer
+→ console
 ```
 
 The presenter does not call analysis engines, recalculate observations or
@@ -43,20 +44,48 @@ The projection does not choose a main finding. It defines no global score,
 severity scale, cross-finding importance hierarchy, acoustic diagnosis,
 treatment, placement, expected benefit or causal conclusion.
 
+The next-step projection also copies the existing action objective and the
+selected V1 plan's procedure, controlled variables, variables under test and
+measurements. These fields are copied exactly and receive no new scientific
+interpretation.
+
+## Human-readable rendering
+
+The console uses one closed, testable English vocabulary to translate existing
+semantic states. It does not translate measurements, infer an acoustic cause,
+or generate free-form advice. English is retained because it is the current
+language of this public view and its immediate V1 source text; this contract
+does not introduce a general localization system.
+
+The main rendering is organized as:
+
+1. `Campaign`;
+2. `What the measurements show`;
+3. `What remains uncertain`;
+4. `What you can do now`;
+5. `Recommended next measurement`;
+6. `Before you start`;
+7. `What AcousticBrain cannot conclude yet`;
+8. `Technical references`.
+
+Technical IDs, enum values, contract codes and expert commands are confined to
+the final references section. They remain in the immutable model and detailed
+V1 views. Finding order remains the stable V1 order; the renderer creates no
+severity or importance ranking.
+
 ## Stable semantic states
 
-`SUPPORTED` means that the available observations support an existing
+`SUPPORTED` is rendered as meaning that the available observations support an existing
 hypothesis under the applicable deterministic V1 rules. It does not establish
 the hypothesis as an acoustic cause.
 
-An evidence-plan `READY` value is rendered only as `Planning status: READY`.
-It means that the planning contract contains the information required for its
-current state. It does not mean ready to execute, declared, executed, acquired
-or causally validated.
+An evidence-plan `READY` value is rendered as a defined plan for its current
+planning state, immediately qualified as not meaning ready to execute. It does
+not mean declared, executed, acquired or causally validated.
 
-An action `APPLICABLE` value permits placement only in the section
-`Currently applicable controlled actions`. It does not establish physical
-safety, expected benefit, improvement or execution authorization.
+An action `APPLICABLE` value permits a human statement only that a controlled
+verification is currently available. It does not establish physical safety,
+expected benefit, improvement or execution authorization.
 
 `CONDITIONALLY_APPLICABLE`, every `BLOCKED_BY_*` state and `NOT_SUPPORTED`
 remain outside that section. `ALREADY_TESTED` and `NO_ACTION_REQUIRED` retain
@@ -70,7 +99,8 @@ IDs. Action objects preserve their reasoning, observation and upstream source
 IDs. The next step preserves its plan, evidence-weight, action and reasoning
 IDs.
 
-The default console output intentionally does not print every evidence value.
+The default console output intentionally does not print every evidence value
+and does not use technical identifiers as its primary message.
 The complete audit information remains available through `--full-assessment`,
 `--reasoning`, `--actions` and `--evidence-plan-view PLAN_ID`.
 

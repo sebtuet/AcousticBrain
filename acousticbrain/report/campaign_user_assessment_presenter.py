@@ -33,6 +33,7 @@ class CampaignAssessmentFinding:
 class CampaignAssessmentAction:
     action_id: str
     title: str
+    objective: str
     description: str
     applicability: str
     preconditions: tuple[str, ...]
@@ -51,6 +52,10 @@ class CampaignAssessmentNextStep:
     planning_status: str
     selection_rationale: str
     required_inputs: tuple[str, ...]
+    procedure: tuple[str, ...]
+    controlled_variables: tuple[str, ...]
+    variables_under_test: tuple[str, ...]
+    measurements: tuple[str, ...]
     prerequisite_status: str
     limitations: tuple[str, ...]
     priority: str
@@ -166,6 +171,7 @@ class CampaignUserAssessmentPresenter:
             CampaignAssessmentAction(
                 action_id=item.action_id,
                 title=item.title,
+                objective=item.objective,
                 description=item.description,
                 applicability=item.applicability,
                 preconditions=item.preconditions,
@@ -196,6 +202,10 @@ class CampaignUserAssessmentPresenter:
             planning_status=plan.status,
             selection_rationale=presented.selection_justification or "",
             required_inputs=plan.required_inputs,
+            procedure=plan.instructions,
+            controlled_variables=plan.controlled_variables,
+            variables_under_test=plan.independent_variables,
+            measurements=plan.measurements_to_capture,
             prerequisite_status=plan.prerequisite_status,
             limitations=plan.limitations,
             priority=plan.priority,

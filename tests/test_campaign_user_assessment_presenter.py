@@ -194,6 +194,16 @@ def test_exp_007_projection_preserves_v1_order_states_and_selected_plan():
     assert assessment.recommended_next_step is not None
     assert assessment.recommended_next_step.plan_id == selected_plan().plan_id
     assert assessment.prerequisites == selected_plan().required_inputs
+    assert assessment.recommended_next_step.procedure == selected_plan().instructions
+    assert assessment.recommended_next_step.controlled_variables == (
+        selected_plan().controlled_variables
+    )
+    assert assessment.recommended_next_step.variables_under_test == (
+        selected_plan().independent_variables
+    )
+    assert assessment.recommended_next_step.measurements == (
+        selected_plan().measurements_to_capture
+    )
     assert assessment.recommended_next_step.prerequisite_status == (
         "AVAILABILITY_NOT_VERIFIED"
     )
@@ -283,17 +293,60 @@ def test_console_is_stable_concise_and_preserves_scientific_boundaries(capsys):
     second = capsys.readouterr().out
 
     assert first == second
-    assert "Currently applicable controlled actions" in first
-    assert "Planning status: READY" in first
+    assert "ACOUSTICBRAIN — USER ASSESSMENT" in first
+    assert "What you can do now" in first
+    assert "For: Early reflections" in first
+    assert "Recommended next measurement" in first
+    assert "defined for its current planning state" in first
     assert "Confidence: 75.0 / 100" in first
     assert "Ready to execute" not in first
-    assert "SUPPORTED does not establish causality." in first
-    assert "APPLICABLE does not establish benefit or physical safety." in first
+    assert "SUPPORTED" not in first.split("Technical references")[0]
+    assert "APPLICABLE" not in first.split("Technical references")[0]
     assert "this will improve the room" not in first.casefold()
     assert "support.DOMINANT" not in first
-    assert first.count("Limitation: limitation.ASYMMETRIC") == 1
+    assert "StereoAnalysis" not in first.split("Technical references")[0]
+    assert f"limitation.{CONCLUSIONS[0][0]}" not in first.split(
+        "Technical references"
+    )[0]
     assert (
         "Inspect and prepare this existing plan with --guided-status before "
         "declaration or acquisition."
     ) in first
     assert "--full-assessment, --reasoning, --actions" in first
+
+
+def test_human_renderer_preserves_blocked_analysis_and_no_applicable_action(capsys):
+    report = exp_007_report()
+    report.analysis_readiness = PresentedAnalysisReadinessReport(
+        analyses=(
+            PresentedAnalysisReadiness(
+                "FREQUENCY",
+                "BLOCKED",
+                blocking_issue_codes=("MISSING_REQUIRED_CHANNEL",),
+            ),
+        )
+    )
+    report.deterministic_corrective_actions = (
+        PresentedDeterministicCorrectiveActionReport(
+            actions=(
+                action(
+                    "ACTION_BLOCKED",
+                    "BLOCKED_BY_MISSING_PARAMETERS",
+                    CONCLUSIONS[0][0],
+                ),
+            )
+        )
+    )
+    report.evidence_acquisition_plans = PresentedEvidenceAcquisitionPlanReport(
+        plans=()
+    )
+    report.campaign_user_assessment = CampaignUserAssessmentPresenter().present(report)
+
+    CampaignUserAssessmentConsoleReporter().print(report)
+    output = capsys.readouterr().out
+
+    assert "Frequency response: blocked." in output
+    assert "No controlled action is currently applicable." in output
+    assert "The V1 report has not selected a next measurement plan." in output
+    assert "MISSING_REQUIRED_CHANNEL" not in output.split("Technical references")[0]
+    assert "FREQUENCY blocking codes: MISSING_REQUIRED_CHANNEL" in output

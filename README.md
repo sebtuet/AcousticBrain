@@ -89,7 +89,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Next recommended experiment | `--evidence-acquisition` | One selected READY acquisition plan, or why none can be recommended |
 | Technical analysis readiness | `--analysis-readiness` | Existing experiment and analysis-family readiness decisions |
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
-| User assessment | `--user-assessment` | Concise human-facing projection of established V1 states and the existing next plan |
+| User assessment | `--user-assessment` | Human-readable deterministic explanation of established V1 states and the existing next plan |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 | Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
@@ -446,16 +446,25 @@ python main.py \
   --user-assessment
 ```
 
-`--user-assessment` is the concise human-facing view of the established V1
-report. It preserves every deterministic reasoning state without ranking the
-findings, separates contradictions and unresolved findings, shows only exact
-`APPLICABLE` actions as currently applicable controlled actions, and reuses the
-existing selected evidence plan without selecting again.
+`--user-assessment` is the human-readable view of the established V1 report.
+It explains what the measurements show, what remains uncertain, which
+controlled verification is currently available, what V1 selected as the next
+measurement, and what must be confirmed first. Technical IDs and enum values
+remain available in a short final references section rather than being the
+primary message.
+
+The rendering preserves every deterministic reasoning state without ranking
+the findings, translates action applicability without promoting it to a
+physical recommendation, and reuses the existing selected evidence plan
+without selecting again.
 
 The view keeps `SUPPORTED`, `READY` and `APPLICABLE` within their V1 semantic
 boundaries: none establishes causality, execution readiness, physical safety
 or benefit. Required plan inputs remain explicitly unverified unless the V1
 report establishes otherwise. The command is read-only and uses no LLM.
+The linguistic simplification changes no conclusion, creates no severity or
+importance ranking, establishes no causality, and generates no physical
+correction recommendation.
 
 Use `--full-assessment` for the complete expert/audit rendering, or
 `--reasoning`, `--actions` and `--evidence-plan-view PLAN_ID` for the detailed

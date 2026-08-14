@@ -158,6 +158,7 @@ from .campaign_user_assessment_presenter import (
 )
 from .campaign_user_assessment_console import (
     CampaignUserAssessmentConsoleReporter,
+    HumanReadableAssessmentRenderer,
 )
 from .guided_global_status_presenter import (
     GuidedGlobalStatusConsoleReporter,
