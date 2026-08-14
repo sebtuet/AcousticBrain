@@ -34,7 +34,16 @@ dependencies:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+The runtime requirements contain only the dependencies needed by the
+deterministic V1 engine. To develop AcousticBrain or run its tests, also
+install the separate development requirements:
+
+```bash
+python -m pip install -r requirements-dev.txt
 ```
 
 Analyze the versioned example campaign:
@@ -414,6 +423,13 @@ are explicit provider choices and may use their configured endpoints. Provider
 responses are validated before normal rendering. The Advisor does not create or
 modify scientific knowledge. See
 [`docs/OPTIONAL_LLM_ADVISOR.md`](docs/OPTIONAL_LLM_ADVISOR.md).
+
+Ollama is not required to install, import or run AcousticBrain's deterministic
+engine. The V1 Ollama Advisor uses its explicitly configured HTTP endpoint and
+does not require the Python `ollama` package. The legacy `AcousticAssistant`
+integration loads that package only when an LLM answer is explicitly requested;
+install it separately with `python -m pip install ollama` if that legacy
+integration is needed.
 
 ## Scientific governance
 
