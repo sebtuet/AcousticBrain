@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "qualification_id": "exp-007-listening-position-reference",
+  "experiment_id": "exp-007",
+  "intended_protocol_id": "protocol.verify_modal_bass_persistence.v1",
+  "intended_protocol_version": 1,
+  "intended_campaign_instance_id": "listening-position-campaign-001",
+  "reference_role": "REFERENCE",
+  "configuration_state": {
+    "LOUDSPEAKER_POSITION": "KNOWN",
+    "LOUDSPEAKER_ORIENTATION": "KNOWN",
+    "LOUDSPEAKER_ASSIGNMENT": "KNOWN",
+    "SIGNAL_CHAIN_ASSIGNMENT": "KNOWN",
+    "ROOM_CONFIGURATION": "KNOWN",
+    "MICROPHONE_POSITION": "KNOWN",
+    "MICROPHONE_ORIENTATION": "KNOWN",
+    "MEASUREMENT_LEVEL": "KNOWN",
+    "REW_PARAMETERS": "KNOWN"
+  },
+  "required_measurements": [
+    "LEFT",
+    "RIGHT",
+    "STEREO"
+  ],
+  "declaration_source": "USER_JSON_EXAMPLE",
+  "declaration_version": 1,
+  "notes": "Illustrative values only; this file is never loaded automatically."
+}

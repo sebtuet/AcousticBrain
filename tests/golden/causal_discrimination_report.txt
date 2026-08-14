@@ -1,0 +1,110 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : causal-fixture
+
+EN UNE MINUTE
+
+Situation
+Première mesure disponible : aucune expérience précédente comparable.
+
+Verdict
+Aucune comparaison avec une expérience précédente n’est disponible.
+
+Puis-je conclure ?
+Non.
+Aucune comparaison fiable n’est disponible.
+
+Ce que je fais maintenant
+• Aucune action fiable ne peut être recommandée actuellement.
+
+Pourquoi
+Aucune action suffisamment établie n’est disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : non établi.
+Cause : non établie (NOT_ESTABLISHED).
+
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Aucun objectif expérimental prioritaire n’est actuellement établi.
+
+Verdict
+La dernière expérience ne peut pas être comparée de manière fiable.
+ • Aucune comparaison d’expérience n’est disponible.
+
+Prochaine action
+Aucun déplacement fiable ne peut être recommandé actuellement.
+
+Ce que l’on ne sait pas encore
+ • La dernière comparaison n’est pas établie.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Non établi.
+ • Action : Non établi.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
+PROCHAINE ÉTAPE DE POSITIONNEMENT
+
+Situation actuelle
+Aucun problème prioritaire n’est évaluable avec les données disponibles.
+
+Niveau de certitude
+Non évaluable avec les mesures disponibles
+
+Action proposée
+Aucune expérience de positionnement fiable ne peut être proposée avec les données actuelles.
+
+Données encore nécessaires
+ • Une cible et une variable à modifier déjà déterminées.
+
+Limites
+ • La causalité n’est pas établie.
+ • Une seule variable doit être modifiée.
+ • Une nouvelle mesure est nécessaire.
+ • Le résultat peut être favorable, défavorable ou inconclusif.
+ • Statut scientifique conservé : NOT_ESTABLISHED.
+
+DISCRIMINATION CAUSALE
+
+Protocole : VERIFY_SPEAKER_ROOM_ASYMMETRY
+Statut : ACTIVE
+Résultat discriminant : INCONCLUSIVE
+Étapes terminées :
+ • 0 — STEP_0_BASELINE (baseline)
+   Variables contrôlées : ROOM_CONFIGURATION, MEASUREMENT_LEVEL
+   Variables modifiées : aucune
+   Variables inconnues : aucune
+   Observations : aucune
+ • 1 — STEP_1_LEFT_RIGHT_REMEASUREMENT (exp-001)
+   Variables contrôlées : LOUDSPEAKER_ASSIGNMENT, SIGNAL_CHAIN_ASSIGNMENT, ROOM_SIDE, MICROPHONE_POSITION
+   Variables modifiées : MEASUREMENT_ACQUISITION
+   Variables inconnues : aucune
+   Observations : LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE
+ • 2 — STEP_2_SPEAKER_SWAP (exp-002)
+   Variables contrôlées : ROOM_SIDE, SIGNAL_CHAIN_ASSIGNMENT, MICROPHONE_POSITION
+   Variables modifiées : LOUDSPEAKER_ASSIGNMENT
+   Variables inconnues : aucune
+   Observations : ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Étapes restantes : STEP_3_SIGNAL_CHAIN_SWAP
+Étapes différées : aucune
+Trajectoires compatibles :
+ • ANOMALY_FOLLOWS_LOUDSPEAKER — support 100.0 / 100
+Trajectoires contradictoires :
+ • ANOMALY_REMAINS_WITH_ROOM_SIDE — contre-preuves : ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Discriminations résolues : LOUDSPEAKER_VS_ROOM_SIDE, SIGNAL_CHAIN_VS_ROOM_SIDE
+Discriminations restantes : LOUDSPEAKER_VS_SIGNAL_CHAIN
+Nouvelles ambiguïtés : aucune
+Ambiguïtés perdues : LOUDSPEAKER_VS_ROOM_SIDE, SIGNAL_CHAIN_VS_ROOM_SIDE
+Décisions utilisateur :
+ • aucune
+Prochain protocole recommandé : STEP_3_SIGNAL_CHAIN_SWAP
+Trace : causal-trace:verify_speaker_room_asymmetry
+Observations tracées : LEFT_RIGHT_DIFFERENCE_REPRODUCIBLE, ANOMALY_MOVED_WITH_SWAPPED_LOUDSPEAKER
+Règles appliquées : CAUSAL_REQUIRE_EXPLICIT_STEPS, CAUSAL_REQUIRE_DECLARED_OBSERVATIONS, CAUSAL_REQUIRE_CONTROLLED_SWAP_VARIABLES, CAUSAL_REDUCE_ONLY_OBSERVED_DISCRIMINATIONS, CAUSAL_NEVER_CONFIRM_TRAJECTORY, CAUSAL_DETERMINISTIC_SUPPORT_COVERAGE_V1, CAUSAL_EXCLUDE_USER_DEFERRED_STEPS, SPEAKER_SWAP_ANOMALY_FOLLOWS_LOUDSPEAKER
+Décisions tracées : aucune

@@ -1,0 +1,922 @@
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class PresentedDecisionFirstReport:
+    objective: str
+    verdict: str
+    comparison_context: tuple[str, ...]
+    action_status: str
+    action: str
+    target: str | None
+    direction: str | None
+    amplitude: str | None
+    tested_variable: str | None
+    unchanged_items: tuple[str, ...]
+    required_measurements: tuple[str, ...]
+    action_reasons: tuple[str, ...]
+    unblock_steps: tuple[str, ...]
+    established_facts: tuple[str, ...]
+    active_limits: tuple[str, ...]
+    verdict_confidence: str
+    action_confidence: str
+    causality_status: str
+    source_codes: tuple[str, ...]
+    verdict_lines: tuple[str, ...]
+    comparison_available: bool
+    comparison_comparable: bool
+    comparison_before_experiment_id: str | None
+    comparison_after_experiment_id: str | None
+    comparison_acoustic_outcome: str | None
+    tested_variable_declared: bool
+    protocol_scope_declared: bool
+    tested_conditions_declared: bool
+    source_protocol_id: str | None
+    source_hypothesis_code: str | None
+    measurement_status: str
+    experiment_kind: str
+    reference_experiment_code: str | None
+    modified_variables: tuple[str, ...]
+    controlled_variables: tuple[str, ...]
+    declaration_user_note: str | None
+    configuration_declared_unchanged: bool
+    positioning_proposal_status: str
+    positioning_proposal_id: str | None
+    positioning_expected_observables: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _DecisionAction:
+    objective: str
+    action: str
+    target: str | None
+    direction: str | None
+    amplitude: str | None
+    tested_variable: str | None
+    unchanged_items: tuple[str, ...]
+    required_measurements: tuple[str, ...]
+    source_codes: tuple[str, ...]
+
+
+class DecisionFirstReportPresenter:
+    """Projette la prochaine décision sans enrichir le raisonnement existant."""
+
+    MAXIMUM_FACTS = 3
+    MAXIMUM_LIMITS = 2
+    REQUIRED_MEASUREMENTS = ("L", "R", "L+R")
+    REPEAT_CONFIGURATION_VARIABLES = {
+        "LISTENING_POSITION",
+        "LOUDSPEAKER_POSITION",
+        "MEASUREMENT_LEVEL",
+        "MICROPHONE_POSITION",
+        "REW_MEASUREMENT_PARAMETERS",
+        "ROOM_CONFIGURATION",
+    }
+
+    OBJECTIVE_LABELS = {
+        "DISCRIMINATE_CHANNEL_AND_ROOM_ASYMMETRY": (
+            "Comprendre l’origine de l’asymétrie entre les enceintes."
+        ),
+        "DISCRIMINATE_LOCAL_AND_GLOBAL_BASS_DECAY": (
+            "Vérifier l’influence du placement sur la persistance du grave."
+        ),
+        "DISCRIMINATE_CANDIDATE_EARLY_REFLECTION_SURFACE": (
+            "Comprendre l’origine d’une réflexion précoce dominante."
+        ),
+        "DISCRIMINATE_SBIR_PLACEMENT_INTERACTION": (
+            "Vérifier l’influence du placement des enceintes sur le grave."
+        ),
+    }
+    RECOMMENDATION_OBJECTIVES = {
+        "CHECK_STEREO_PLACEMENT": "Améliorer la symétrie entre les enceintes.",
+        "TEST_SPEAKER_DISTANCE": (
+            "Vérifier l’influence de la distance enceinte-surface sur le grave."
+        ),
+        "MEASURE_MULTIPLE_POSITIONS": (
+            "Vérifier l’influence du point d’écoute sur le grave."
+        ),
+        "CHECK_EARLY_REFLECTION_SYMMETRY": (
+            "Comprendre l’asymétrie des réflexions précoces."
+        ),
+        "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS": (
+            "Comprendre l’origine des réflexions précoces dominantes."
+        ),
+        "VERIFY_DOMINANT_EARLY_REFLECTION": (
+            "Comprendre l’origine d’une réflexion précoce dominante."
+        ),
+    }
+    RECOMMENDATION_ACTIONS = {
+        "CHECK_STEREO_PLACEMENT": "Vérifiez le placement relatif des deux enceintes.",
+        "TEST_SPEAKER_DISTANCE": (
+            "Réalisez le test de distance enceinte-surface déjà recommandé."
+        ),
+        "MEASURE_MULTIPLE_POSITIONS": (
+            "Réalisez les mesures aux positions d’écoute déjà définies."
+        ),
+        "CHECK_EARLY_REFLECTION_SYMMETRY": (
+            "Comparez les conditions de réflexion des canaux gauche et droit."
+        ),
+        "INVESTIGATE_DOMINANT_EARLY_REFLECTIONS": (
+            "Examinez les événements précoces dominants déjà identifiés."
+        ),
+    }
+    VARIABLE_LABELS = {
+        "LOUDSPEAKER_POSITION": "la position d’une enceinte",
+        "LISTENING_POSITION": "la position d’écoute",
+        "MICROPHONE_POSITION": "la position du microphone",
+        "SURFACE_MASKING_STATE": "l’état de masquage de la surface ciblée",
+        "TEMPORARY_MASK_STATE": "l’état de masquage de la surface ciblée",
+        "MEASUREMENT_ACQUISITION": "l’acquisition de mesure",
+        "SIGNAL_CHAIN_ASSIGNMENT": "l’affectation de la chaîne du signal",
+    }
+    CONTROL_LABELS = {
+        "MICROPHONE_POSITION": "la position du microphone",
+        "MEASUREMENT_LEVEL": "le volume de mesure",
+        "REW_MEASUREMENT_PARAMETERS": "les paramètres de mesure REW",
+        "LOUDSPEAKER_ORIENTATION": "l’orientation des enceintes",
+        "LOUDSPEAKER_POSITION": "la position des enceintes",
+        "OTHER_LOUDSPEAKER_POSITIONS": "la position de l’autre enceinte",
+        "LOUDSPEAKER_PAIR_SYMMETRY": (
+            "un déplacement identique et symétrique des deux enceintes"
+        ),
+        "SIGNAL_CHAIN_ASSIGNMENT": "les branchements et canaux",
+        "ROOM_CONFIGURATION": "la configuration de la pièce",
+    }
+
+    def present(self, report):
+        comparison = self._latest_comparison(report)
+        repeat = self._is_repeat(comparison)
+        unchanged_repeat = self._configuration_declared_unchanged(comparison)
+        verdict_lines, verdict_confidence = self._verdict(comparison)
+        verdict = " ".join(verdict_lines)
+        if (
+            comparison is not None
+            and comparison.acoustic_outcome == "MIXED"
+            and not self._is_repeat(comparison)
+        ):
+            verdict = (
+                "La dernière expérience présente des améliorations et des "
+                "dégradations. Aucun verdict global simple n’est possible."
+            )
+        comparison_context = self._comparison_context(comparison)
+        tested_variable_declared = self._tested_variable_declared(comparison)
+        protocol_scope_declared = self._protocol_scope_declared(comparison)
+        undeclared = self._undeclared_change(comparison)
+        protocol_scope_missing = (
+            tested_variable_declared and not protocol_scope_declared
+        )
+        deferred = self._deferred_messages(report)
+
+        action, action_status = self._select_action(report)
+        if repeat:
+            action = None
+            action_status = "REPEAT_CONTROL"
+        action_reasons = self._action_reasons(
+            report,
+            action_status,
+            undeclared,
+            protocol_scope_missing,
+            deferred,
+        )
+        positioning = getattr(report, "loudspeaker_positioning_experiment", None)
+        if (
+            action is not None
+            and positioning is not None
+            and positioning.proposal is not None
+        ):
+            action_reasons = positioning.proposal.rationale
+        unblock_steps = self._unblock_steps(
+            report,
+            action_status,
+            undeclared,
+            deferred,
+        )
+        if repeat:
+            action_reasons = (
+                "La déclaration utilisateur n’indique aucune modification "
+                "volontaire de placement.",
+            )
+            unblock_steps = (
+                "Vérifiez concrètement que le microphone, le volume et les "
+                "paramètres REW correspondent bien à la déclaration.",
+                "Réalisez éventuellement une nouvelle répétition de contrôle.",
+            )
+        facts = self._established_facts(report, comparison)
+        limits = self._active_limits(
+            comparison,
+            undeclared,
+            protocol_scope_missing,
+            deferred,
+        )
+
+        if action is None:
+            objective = (
+                "Évaluer les écarts entre acquisitions déclarées comme répétées."
+                if repeat
+                else "Aucun objectif expérimental prioritaire n’est actuellement établi."
+            )
+            action_text = (
+                "Ne déplacez pas encore les enceintes."
+                if repeat
+                else self._unavailable_action_text(action_status)
+            )
+            target = direction = amplitude = tested_variable = None
+            unchanged_items = self._declared_unchanged_items(
+                comparison.controlled_variables if repeat else ()
+            ) if repeat else ()
+            required_measurements = self.REQUIRED_MEASUREMENTS if repeat else ()
+            source_codes = self._comparison_sources(comparison)
+        else:
+            objective = action.objective
+            action_text = action.action
+            target = action.target
+            direction = action.direction
+            amplitude = action.amplitude
+            tested_variable = action.tested_variable
+            unchanged_items = action.unchanged_items
+            required_measurements = action.required_measurements
+            source_codes = tuple(dict.fromkeys(
+                (*self._comparison_sources(comparison), *action.source_codes)
+            ))
+
+        return PresentedDecisionFirstReport(
+            objective=objective,
+            verdict=verdict,
+            comparison_context=comparison_context,
+            action_status=action_status,
+            action=action_text,
+            target=target,
+            direction=direction,
+            amplitude=amplitude,
+            tested_variable=tested_variable,
+            unchanged_items=unchanged_items,
+            required_measurements=required_measurements,
+            action_reasons=action_reasons,
+            unblock_steps=unblock_steps,
+            established_facts=facts,
+            active_limits=limits,
+            verdict_confidence=verdict_confidence,
+            action_confidence=(
+                (
+                    f"Proposition expérimentale ({positioning.proposal.confidence:.1f} %) "
+                    "— amélioration non garantie"
+                    if action is not None
+                    and positioning is not None
+                    and positioning.proposal is not None
+                    else "Explication possible"
+                )
+                if action is not None else "Non établi"
+            ),
+            causality_status="NOT_ESTABLISHED",
+            source_codes=source_codes,
+            verdict_lines=verdict_lines,
+            comparison_available=comparison is not None,
+            comparison_comparable=(
+                comparison is not None and comparison.eligibility == "COMPARABLE"
+            ),
+            comparison_before_experiment_id=(
+                comparison.before_experiment_id if comparison is not None else None
+            ),
+            comparison_after_experiment_id=(
+                comparison.after_experiment_id if comparison is not None else None
+            ),
+            comparison_acoustic_outcome=(
+                comparison.acoustic_outcome if comparison is not None else None
+            ),
+            tested_variable_declared=tested_variable_declared,
+            protocol_scope_declared=protocol_scope_declared,
+            tested_conditions_declared=(
+                tested_variable_declared and protocol_scope_declared
+            ),
+            source_protocol_id=(
+                comparison.source_protocol_id if comparison is not None else None
+            ),
+            source_hypothesis_code=(
+                comparison.source_hypothesis_code if comparison is not None else None
+            ),
+            measurement_status=self._measurement_status(report),
+            experiment_kind=(
+                comparison.experiment_kind if comparison is not None else "UNKNOWN"
+            ),
+            reference_experiment_code=(
+                comparison.reference_experiment_code
+                if comparison is not None else None
+            ),
+            modified_variables=(
+                comparison.modified_variables if comparison is not None else ()
+            ),
+            controlled_variables=(
+                comparison.controlled_variables if comparison is not None else ()
+            ),
+            declaration_user_note=(
+                comparison.declaration_user_note if comparison is not None else None
+            ),
+            configuration_declared_unchanged=unchanged_repeat,
+            positioning_proposal_status=self._positioning_status(report),
+            positioning_proposal_id=(
+                report.loudspeaker_positioning_experiment.proposal.proposal_id
+                if getattr(report, "loudspeaker_positioning_experiment", None) is not None
+                and report.loudspeaker_positioning_experiment.proposal is not None
+                and not repeat
+                else None
+            ),
+            positioning_expected_observables=(
+                report.loudspeaker_positioning_experiment.proposal.expected_observables
+                if getattr(report, "loudspeaker_positioning_experiment", None) is not None
+                and report.loudspeaker_positioning_experiment.proposal is not None
+                and not repeat
+                else ()
+            ),
+        )
+
+    @staticmethod
+    def _latest_comparison(report):
+        analysis = report.experiment_comparison
+        if analysis is None or not analysis.local_comparisons:
+            return None
+        return analysis.local_comparisons[-1]
+
+    @classmethod
+    def _verdict(cls, comparison):
+        if comparison is None or comparison.eligibility != "COMPARABLE":
+            return (
+                (
+                    "La dernière expérience ne peut pas être comparée de manière fiable.",
+                ),
+                "Non établi",
+            )
+        if cls._is_repeat(comparison):
+            if comparison.acoustic_outcome == "UNCHANGED":
+                return (
+                    ("Aucun changement acoustique significatif n’a été observé.",),
+                    "Établi par les mesures",
+                )
+            if comparison.acoustic_outcome == "INCONCLUSIVE":
+                return (
+                    ("La répétition ne permet pas de conclure sur les écarts mesurés.",),
+                    "Établi par les mesures",
+                )
+            label = (
+                "Certaines mesures diffèrent alors que la déclaration utilisateur "
+                "indique qu’aucune modification volontaire de la configuration "
+                "n’était prévue."
+                if cls._configuration_declared_unchanged(comparison)
+                else "Certaines mesures diffèrent entre les acquisitions répétées."
+            )
+            return (
+                (
+                    label,
+                ),
+                "Établi par les mesures",
+            )
+        labels = {
+            "IMPROVED": (
+                "La dernière expérience montre une amélioration mesurable dans "
+                "le périmètre testé.",
+            ),
+            "DEGRADED": (
+                "La dernière expérience montre une dégradation mesurable dans "
+                "le périmètre testé.",
+            ),
+            "MIXED": (
+                "Certains indicateurs s’améliorent et d’autres se dégradent.",
+                "Aucun verdict global simple n’est possible.",
+            ),
+            "UNCHANGED": (
+                "Aucun changement acoustique significatif n’a été observé.",
+            ),
+            "INCONCLUSIVE": (
+                "Les mesures ne permettent pas de conclure sur la dernière expérience.",
+            ),
+        }
+        status = comparison.acoustic_outcome
+        if status not in labels and comparison.outcome == "INCONCLUSIVE":
+            status = "INCONCLUSIVE"
+        return labels.get(
+            status,
+            (
+                "Les mesures ne permettent pas de conclure sur la dernière expérience.",
+            ),
+        ), "Établi par les mesures"
+
+    @staticmethod
+    def _measurement_status(report):
+        quality = next(
+            (item for item in report.diagnostics if item.title == "Qualité des mesures"),
+            None,
+        )
+        if quality is None:
+            return "UNKNOWN"
+        return {
+            "LOW": "EXPLOITABLE",
+            "MEDIUM": "WITH_RESERVATIONS",
+            "HIGH": "INSUFFICIENT",
+        }.get(quality.severity, "UNKNOWN")
+
+    @staticmethod
+    def _comparison_context(comparison):
+        if comparison is None:
+            return ("Aucune comparaison d’expérience n’est disponible.",)
+        protocol = comparison.source_protocol_id or "non déclaré"
+        values = [
+            (
+                f"Comparaison : {comparison.before_experiment_id} → "
+                f"{comparison.after_experiment_id}."
+            ),
+            f"Protocole : {protocol}.",
+            "Le verdict porte uniquement sur le périmètre mesuré.",
+        ]
+        if DecisionFirstReportPresenter._configuration_declared_unchanged(comparison):
+            values.append(
+                "Selon la déclaration utilisateur, aucune modification volontaire "
+                "de la configuration n’était prévue."
+            )
+        elif DecisionFirstReportPresenter._is_repeat(comparison):
+            values.append(
+                "L’expérience est déclarée par l’utilisateur comme une répétition "
+                "de mesure."
+            )
+        return tuple(values)
+
+    @staticmethod
+    def _undeclared_change(comparison):
+        if comparison is None:
+            return False
+        return not DecisionFirstReportPresenter._tested_variable_declared(comparison)
+
+    @staticmethod
+    def _tested_variable_declared(comparison):
+        if comparison is None or comparison.experiment_kind == "UNKNOWN":
+            return False
+        if comparison.experiment_kind == "CONTROLLED_INTERVENTION":
+            return bool(
+                comparison.reference_experiment_code
+                and comparison.modified_variables
+            )
+        if comparison.experiment_kind == "MEASUREMENT_REPEAT":
+            return (
+                bool(comparison.reference_experiment_code)
+                and comparison.modified_variables == ("MEASUREMENT_ACQUISITION",)
+            )
+        return False
+
+    @staticmethod
+    def _protocol_scope_declared(comparison):
+        return bool(
+            comparison is not None
+            and comparison.source_protocol_id
+            and comparison.source_hypothesis_code
+        )
+
+    @staticmethod
+    def _is_repeat(comparison):
+        return comparison is not None and comparison.experiment_kind == "MEASUREMENT_REPEAT"
+
+    @classmethod
+    def _configuration_declared_unchanged(cls, comparison):
+        return cls._is_repeat(comparison) and (
+            set(comparison.controlled_variables) >= cls.REPEAT_CONFIGURATION_VARIABLES
+            and comparison.modified_variables == ("MEASUREMENT_ACQUISITION",)
+        )
+
+    def _select_action(self, report):
+        positioning = getattr(report, "loudspeaker_positioning_experiment", None)
+        if positioning is not None:
+            if positioning.proposal is not None:
+                return self._positioning_action(positioning.proposal), "AVAILABLE"
+            return None, getattr(
+                positioning.proposal_status, "value", positioning.proposal_status
+            )
+
+        declared = self._declared_actions(report)
+        if len(declared) > 1:
+            return None, "TIED"
+        if declared:
+            return declared[0], "AVAILABLE"
+
+        planning = report.experiment_planning
+        candidate = planning.recommended_candidate if planning is not None else None
+        if candidate is not None and candidate.eligible:
+            return self._candidate_action(candidate), "AVAILABLE"
+
+        recommendations = tuple(
+            item
+            for item in report.recommendations
+            if self._enum_value(item.status) == "ACTIVE"
+        )
+        if recommendations:
+            maximum = max(int(item.priority) for item in recommendations)
+            top = tuple(
+                item for item in recommendations if int(item.priority) == maximum
+            )
+            if len(top) > 1:
+                return None, "TIED"
+            return self._recommendation_action(top[0]), "AVAILABLE"
+
+        return None, "UNAVAILABLE"
+
+    def _positioning_action(self, proposal):
+        target_code = getattr(proposal.target, "value", proposal.target)
+        direction_code = getattr(
+            proposal.movement_direction, "value", proposal.movement_direction
+        )
+        target = {
+            "LEFT_SPEAKER": "l’enceinte gauche",
+            "RIGHT_SPEAKER": "l’enceinte droite",
+            "BOTH_SPEAKERS": "les deux enceintes",
+        }[target_code]
+        movement_target = (
+            "des deux enceintes"
+            if target_code == "BOTH_SPEAKERS"
+            else f"de {target}"
+        )
+        direction = {
+            "FORWARD": "vers l’avant",
+            "BACKWARD": "vers l’arrière",
+            "INWARD": "vers l’intérieur",
+            "OUTWARD": "vers l’extérieur",
+        }[direction_code]
+        amplitude = f"{proposal.step_distance_m * 100:g} cm"
+        return _DecisionAction(
+            objective=(
+                "Tester de manière réversible l’influence d’un déplacement "
+                "d’enceinte déjà orienté par les données structurées."
+            ),
+            action=(
+                f"Testez un déplacement réversible {movement_target} de {amplitude} "
+                f"{direction}."
+            ),
+            target=target,
+            direction=direction,
+            amplitude=amplitude,
+            tested_variable=self.VARIABLE_LABELS[proposal.tested_variable],
+            unchanged_items=self._unchanged_items(proposal.controlled_variables),
+            required_measurements=proposal.required_measurements,
+            source_codes=(proposal.proposal_id, *proposal.source_recommendation_ids),
+        )
+
+    @staticmethod
+    def _positioning_status(report):
+        analysis = getattr(report, "loudspeaker_positioning_experiment", None)
+        return (
+            getattr(analysis.proposal_status, "value", analysis.proposal_status)
+            if analysis is not None else "NOT_EVALUATED"
+        )
+
+    def _declared_actions(self, report):
+        declarations = tuple(
+            item
+            for item in report.controlled_reflection_experiment_declarations
+            if item.status == "PLANNED"
+        )
+        planning = report.controlled_reflection_verification_planning
+        proposals = planning.proposals if planning is not None else ()
+        by_id = {item.proposal_id: item for item in proposals}
+        return tuple(
+            self._reflection_action(by_id[item.proposal_id])
+            for item in declarations
+            if item.proposal_id in by_id
+        )
+
+    def _candidate_action(self, candidate):
+        objective = self.OBJECTIVE_LABELS.get(
+            candidate.objective_code,
+            "Réaliser l’expérience contrôlée déjà planifiée.",
+        )
+        parameters = candidate.parameters
+        changed = candidate.changed_variable_codes
+        target = None
+        direction = self._direction(parameters)
+        amplitude = self._amplitude(parameters)
+
+        if "LOUDSPEAKER_POSITION" in changed:
+            speaker_id = parameters.get("speaker_id")
+            if isinstance(speaker_id, str) and speaker_id.strip():
+                target = self._speaker_label(speaker_id)
+        elif set(changed).intersection({"SURFACE_MASKING_STATE", "TEMPORARY_MASK_STATE"}):
+            surface = parameters.get("surface")
+            if isinstance(surface, str) and surface.strip():
+                target = f"la surface {surface}"
+        elif "LISTENING_POSITION" in changed:
+            target = "la position d’écoute"
+
+        action = (
+            f"Modifiez uniquement {target}."
+            if target is not None
+            else (
+                "Une piste a été identifiée, mais le déplacement exact "
+                "n’est pas encore déterminé."
+            )
+        )
+        return _DecisionAction(
+            objective=objective,
+            action=action,
+            target=target,
+            direction=direction,
+            amplitude=amplitude,
+            tested_variable=self._tested_variable(changed),
+            unchanged_items=self._unchanged_items(candidate.controlled_variable_codes),
+            required_measurements=self.REQUIRED_MEASUREMENTS,
+            source_codes=(candidate.candidate_id, candidate.source_protocol_id),
+        )
+
+    def _reflection_action(self, proposal):
+        target = (
+            f"la région {proposal.target_id}"
+            if proposal.target_kind == "REGION"
+            else f"la surface {proposal.target_id}"
+        )
+        return _DecisionAction(
+            objective="Comprendre l’origine d’une réflexion précoce dominante.",
+            action=f"Testez uniquement le masquage temporaire de {target}.",
+            target=target,
+            direction=None,
+            amplitude=None,
+            tested_variable=self._tested_variable(proposal.changed_variable_codes),
+            unchanged_items=self._unchanged_items(
+                proposal.controlled_variable_codes
+            ),
+            required_measurements=self.REQUIRED_MEASUREMENTS,
+            source_codes=(proposal.proposal_id, proposal.source_candidate_id),
+        )
+
+    def _recommendation_action(self, recommendation):
+        objective = self.RECOMMENDATION_OBJECTIVES.get(
+            recommendation.code,
+            "Examiner la recommandation structurée actuellement prioritaire.",
+        )
+        action = self.RECOMMENDATION_ACTIONS.get(
+            recommendation.code,
+            (
+                "Une piste a été identifiée, mais le déplacement exact "
+                "n’est pas encore déterminé."
+            ),
+        )
+        return _DecisionAction(
+            objective=objective,
+            action=action,
+            target=None,
+            direction=None,
+            amplitude=None,
+            tested_variable=None,
+            unchanged_items=(),
+            required_measurements=(),
+            source_codes=(recommendation.code,),
+        )
+
+    def _action_reasons(
+        self,
+        report,
+        status,
+        undeclared,
+        protocol_scope_missing,
+        deferred,
+    ):
+        if status == "AVAILABLE" and not protocol_scope_missing:
+            return ()
+        reasons = []
+        if undeclared:
+            reasons.append(
+                "La variable testée, ou l’absence de changement volontaire, "
+                "n’a pas été déclarée."
+            )
+        if protocol_scope_missing:
+            reasons.append(
+                "La variable modifiée est déclarée par l’utilisateur, mais aucun "
+                "protocole ni aucune hypothèse scientifique ne sont formellement "
+                "associés à cette expérience."
+            )
+        planning = report.experiment_planning
+        if planning is not None and planning.recommended_candidate is None:
+            reasons.append("Aucune expérience contrôlée n’est actuellement éligible.")
+        if status == "TIED":
+            reasons.append(
+                "Plusieurs actions restent également prioritaires et ne "
+                "peuvent pas être départagées."
+            )
+        positioning_reasons = {
+            "MISSING_DIRECTION": (
+                "Les observations acoustiques sont disponibles, mais aucune règle "
+                "démontrée ne permet de les traduire en une direction de déplacement. "
+                "AcousticBrain s’arrête donc avant d’inventer une relation de cause "
+                "à effet."
+            ),
+            "MISSING_GEOMETRY": (
+                "La géométrie requise pour ce test de positionnement est manquante."
+            ),
+            "AMBIGUOUS": (
+                "Plusieurs expériences de positionnement restent également prioritaires."
+            ),
+            "BLOCKED_BY_USER_DECISION": (
+                "La piste de positionnement est différée par décision utilisateur."
+            ),
+            "NOT_ELIGIBLE": (
+                "Aucune source structurée ne rend un déplacement d’enceinte éligible."
+            ),
+        }
+        if status in positioning_reasons:
+            reasons.append(positioning_reasons[status])
+        reasons.extend(deferred[:1])
+        return tuple(dict.fromkeys(reasons))
+
+    @staticmethod
+    def _unavailable_action_text(status):
+        if status == "TIED":
+            return (
+                "Plusieurs actions restent également prioritaires. AcousticBrain "
+                "ne peut pas en sélectionner une seule sans information supplémentaire."
+            )
+        if status == "MISSING_DIRECTION":
+            return (
+                "Une expérience de positionnement semble pertinente. Cependant, "
+                "AcousticBrain ne peut pas choisir entre un déplacement vers l’avant, "
+                "l’arrière, l’intérieur ou l’extérieur sans formuler une hypothèse "
+                "non démontrée. Aucune direction n’est donc proposée."
+            )
+        if status == "MISSING_GEOMETRY":
+            return "La géométrie disponible ne permet pas de définir ce déplacement."
+        if status == "AMBIGUOUS":
+            return (
+                "Plusieurs expériences de positionnement restent également plausibles. "
+                "AcousticBrain ne peut pas en sélectionner une seule."
+            )
+        if status == "BLOCKED_BY_USER_DECISION":
+            return "L’expérience de positionnement est différée par décision utilisateur."
+        return "Aucun déplacement fiable ne peut être recommandé actuellement."
+
+    def _unblock_steps(self, report, status, undeclared, deferred):
+        if status == "AVAILABLE":
+            return ()
+        steps = []
+        if undeclared:
+            steps.append(
+                "Déclarez si la configuration devait rester inchangée ou quelle "
+                "variable était testée pendant la dernière expérience."
+            )
+        if deferred:
+            steps.append(
+                "Vous pouvez décider de reprendre l’investigation actuellement différée."
+            )
+        planning = report.experiment_planning
+        if (
+            not steps
+            and planning is not None
+            and planning.recommended_candidate is None
+        ):
+            steps.append(
+                "Complétez les prérequis indiqués dans la planification technique."
+            )
+        if not steps and status == "TIED":
+            steps.append(
+                "Fournissez une information permettant de départager les actions existantes."
+            )
+        return tuple(steps)
+
+    def _established_facts(self, report, comparison):
+        values = []
+        if comparison is not None:
+            values.extend(comparison.observation_labels)
+        quality = next(
+            (item for item in report.diagnostics if item.title == "Qualité des mesures"),
+            None,
+        )
+        if quality is not None:
+            values.append(quality.conclusion or quality.message)
+        priority = self._priority(report)
+        if (
+            priority is not None
+            and priority.diagnostic.evidence_level.value != "HYPOTHESIS"
+        ):
+            diagnostic = priority.diagnostic
+            values.extend(
+                diagnostic.observations
+                or [diagnostic.conclusion or diagnostic.message]
+            )
+        return tuple(dict.fromkeys(
+            item for item in values if item
+        ))[: self.MAXIMUM_FACTS]
+
+    def _active_limits(
+        self,
+        comparison,
+        undeclared,
+        protocol_scope_missing,
+        deferred,
+    ):
+        values = []
+        if self._is_repeat(comparison):
+            values.append(
+                "Les écarts observés renseignent sur la répétition déclarée du "
+                "protocole, sans établir leur cause ni la réalité d’une modification "
+                "de placement."
+            )
+        if undeclared:
+            values.append(
+                "AcousticBrain ne sait pas formellement quelle variable était "
+                "testée ni si la configuration devait rester inchangée."
+            )
+        if protocol_scope_missing:
+            values.append(
+                "La variable modifiée est connue par déclaration utilisateur, "
+                "mais son protocole et son hypothèse scientifiques ne sont pas établis."
+            )
+        if comparison is None or comparison.eligibility != "COMPARABLE":
+            values.append("La dernière comparaison n’est pas établie.")
+        elif comparison.acoustic_outcome == "MIXED" and not self._is_repeat(comparison):
+            values.append("La dernière expérience présente des effets contradictoires.")
+        elif comparison.outcome == "INCONCLUSIVE":
+            values.append("Le résultat de la dernière expérience reste inconclusif.")
+        values.extend(deferred[:1])
+        return tuple(dict.fromkeys(values))[: self.MAXIMUM_LIMITS]
+
+    @staticmethod
+    def _deferred_messages(report):
+        causal = report.causal_discrimination
+        decisions = causal.discrimination_decisions if causal is not None else ()
+        messages = []
+        for item in decisions:
+            if item.status == "DEFERRED":
+                messages.append(
+                    "Une investigation utile est actuellement différée par décision utilisateur."
+                )
+        if not messages:
+            for item in report.recommendations:
+                if DecisionFirstReportPresenter._enum_value(item.status) == "DEFERRED":
+                    messages.append(
+                        "Une investigation utile est actuellement différée "
+                        "par décision utilisateur."
+                    )
+                    break
+        return tuple(messages)
+
+    @staticmethod
+    def _priority(report):
+        analysis = report.diagnostic_priority
+        if analysis is None or not analysis.prioritized_diagnostics:
+            return None
+        return analysis.prioritized_diagnostics[0]
+
+    @staticmethod
+    def _comparison_sources(comparison):
+        if comparison is None:
+            return ()
+        return tuple(
+            item
+            for item in (
+                comparison.trace_id,
+                comparison.source_protocol_id,
+                comparison.source_hypothesis_code,
+            )
+            if item
+        )
+
+    @classmethod
+    def _tested_variable(cls, codes):
+        labels = tuple(cls.VARIABLE_LABELS[code] for code in codes if code in cls.VARIABLE_LABELS)
+        return labels[0] if len(labels) == 1 else None
+
+    @classmethod
+    def _unchanged_items(cls, codes):
+        defaults = ("la position du microphone", "le volume de mesure")
+        values = (
+            *defaults,
+            *(cls.CONTROL_LABELS[code] for code in codes if code in cls.CONTROL_LABELS),
+        )
+        return tuple(dict.fromkeys(values))
+
+    @classmethod
+    def _declared_unchanged_items(cls, codes):
+        return tuple(dict.fromkeys(
+            cls.CONTROL_LABELS[code] for code in codes if code in cls.CONTROL_LABELS
+        ))
+
+    @staticmethod
+    def _speaker_label(value):
+        return {
+            "LEFT": "l’enceinte gauche",
+            "RIGHT": "l’enceinte droite",
+            "STEREO": "les deux enceintes",
+        }.get(value.upper(), f"l’enceinte {value}")
+
+    @staticmethod
+    def _direction(parameters):
+        for key in ("movement_direction", "proposed_direction", "direction"):
+            value = parameters.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+
+    @staticmethod
+    def _amplitude(parameters):
+        value = parameters.get("proposed_displacement_m")
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or value <= 0
+        ):
+            return None
+        return f"{value * 100:g} cm"
+
+    @staticmethod
+    def _enum_value(value):
+        return getattr(value, "value", value)

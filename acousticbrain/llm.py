@@ -1,4 +1,5 @@
-from ollama import chat
+class OllamaIntegrationUnavailableError(RuntimeError):
+    """Raised when the explicitly requested legacy Ollama integration is absent."""
 
 
 class LLM:
@@ -7,6 +8,16 @@ class LLM:
         self.model = model
 
     def ask(self, question: str):
+        try:
+            from ollama import chat
+        except ModuleNotFoundError as error:
+            if error.name != "ollama":
+                raise
+            raise OllamaIntegrationUnavailableError(
+                "The optional Ollama integration is not installed. "
+                "AcousticBrain's deterministic runtime does not require it; "
+                "install the 'ollama' package only to use this LLM integration."
+            ) from error
 
         response = chat(
             model=self.model,
@@ -19,4 +30,3 @@ class LLM:
         )
 
         return response.message.content
-        

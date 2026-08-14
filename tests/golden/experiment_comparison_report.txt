@@ -1,0 +1,148 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : comparison-fixture
+
+EN UNE MINUTE
+
+Situation
+Comparaison : baseline → exp-001.
+La variable testée, ou l’absence de changement volontaire, n’a pas été déclarée.
+
+Verdict
+La dernière expérience montre une amélioration mesurable dans le périmètre testé.
+
+Puis-je conclure ?
+Non.
+AcousticBrain ne sait pas formellement ce qui était testé.
+
+Ce que je fais maintenant
+• Aucune action fiable ne peut être recommandée actuellement.
+• Déclarez si la configuration devait rester inchangée ou quelle variable était testée pendant la dernière expérience.
+
+Pourquoi
+La modification testée n’est pas suffisamment documentée.
+
+Confiance
+Mesures : statut non établi.
+Verdict : incertain.
+Cause : non établie (NOT_ESTABLISHED).
+
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Aucun objectif expérimental prioritaire n’est actuellement établi.
+
+Verdict
+La dernière expérience montre une amélioration mesurable dans le périmètre testé.
+ • Comparaison : baseline → exp-001.
+ • Protocole : protocol.repeat-pair.
+ • Le verdict porte uniquement sur le périmètre mesuré.
+
+Prochaine action
+Aucun déplacement fiable ne peut être recommandé actuellement.
+
+Pourquoi
+ • La variable testée, ou l’absence de changement volontaire, n’a pas été déclarée.
+
+À faire avant de poursuivre
+ • Déclarez si la configuration devait rester inchangée ou quelle variable était testée pendant la dernière expérience.
+
+Ce que l’on sait
+ • l’asymétrie spatiale diminue
+
+Ce que l’on ne sait pas encore
+ • AcousticBrain ne sait pas formellement quelle variable était testée ni si la configuration devait rester inchangée.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Établi par les mesures.
+ • Action : Non établi.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
+PROCHAINE ÉTAPE DE POSITIONNEMENT
+
+Situation actuelle
+Aucun problème prioritaire n’est évaluable avec les données disponibles.
+
+Niveau de certitude
+Non évaluable avec les mesures disponibles
+
+Action proposée
+Aucune expérience de positionnement fiable ne peut être proposée avec les données actuelles.
+
+Données encore nécessaires
+ • Une cible et une variable à modifier déjà déterminées.
+
+Limites
+ • La causalité n’est pas établie.
+ • Une seule variable doit être modifiée.
+ • Une nouvelle mesure est nécessaire.
+ • Le résultat peut être favorable, défavorable ou inconclusif.
+ • Statut scientifique conservé : NOT_ESTABLISHED.
+
+ÉVOLUTION DES EXPÉRIENCES
+
+Chronologie : baseline → exp-001
+
+Comparaisons locales
+
+Expérience exp-001
+Avant : baseline
+Après : exp-001
+Comparabilité : COMPARABLE
+Protocole : protocol.repeat-pair
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Évolution acoustique : IMPROVED
+Évolution de l’hypothèse : STRONGER
+Résultat expérimental : un effet local est soutenu
+Faits améliorés : global.domain.spatial.score
+Faits dégradés : aucun
+Faits modifiés sans direction : aucun
+Faits inchangés pertinents : global.domain.sbir.score
+Faits indisponibles : aucun
+Observations :
+ • l’asymétrie spatiale diminue.
+Limites :
+ • la mesure ne distingue pas encore l’enceinte du côté de la pièce.
+Confiance : 82.0%
+Trace : trace:local:baseline:exp-001
+Hash avant : baseline-hash
+Hash après : experiment-hash
+Faits avant : global.domain.spatial.score
+Faits après : global.domain.spatial.score
+Deltas : global.domain.spatial.score
+Faits expérimentaux : SPATIAL_ASYMMETRY_DECREASED
+Discriminations ouvertes : LOUDSPEAKER_VS_ROOM_SIDE
+
+Synthèse cumulative depuis la baseline
+
+Comparaison cumulative depuis baseline — exp-001
+Avant : baseline
+Après : exp-001
+Comparabilité : COMPARABLE
+Protocole : protocol.repeat-pair
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Évolution acoustique : IMPROVED
+Évolution de l’hypothèse : STRONGER
+Résultat expérimental : un effet local est soutenu
+Faits améliorés : global.domain.spatial.score
+Faits dégradés : aucun
+Faits modifiés sans direction : aucun
+Faits inchangés pertinents : global.domain.sbir.score
+Faits indisponibles : aucun
+Observations :
+ • l’asymétrie spatiale diminue.
+Limites :
+ • la mesure ne distingue pas encore l’enceinte du côté de la pièce.
+Confiance : 82.0%
+Trace : trace:cumulative:baseline:exp-001
+Hash avant : baseline-hash
+Hash après : experiment-hash
+Faits avant : global.domain.spatial.score
+Faits après : global.domain.spatial.score
+Deltas : global.domain.spatial.score
+Faits expérimentaux : SPATIAL_ASYMMETRY_DECREASED
+Discriminations ouvertes : LOUDSPEAKER_VS_ROOM_SIDE

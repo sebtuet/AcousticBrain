@@ -1,165 +1,432 @@
-from acousticbrain.analysis import AnalysisContext
+from .pipeline import BrainPipeline
 
-from acousticbrain.analyzers import (
-    PeakDetector,
-    DipDetector,
+from acousticbrain.application import (
+    AcousticSession,
+    AutomaticExperimentComparisonService,
+    CausalDiscriminationService,
+    ExperimentCampaignSynthesisService,
+    DeterministicExploratoryService,
+    ExploratoryResultService,
 )
-
-from acousticbrain.classifiers import (
-    FrequencyBandClassifier,
+from acousticbrain.report import (
+    ExperimentComparisonPresenter,
+    CausalDiscriminationPresenter,
+    ExperimentDiscoveryPresenter,
+    ExperimentCampaignPresenter,
+    LongitudinalExperimentalLearningPresenter,
+    AcousticHypothesisExperimentGenerationPresenter,
+    ListeningPositionCampaignPlanPresenter,
+    ListeningPositionCampaignInstancePresenter,
+    CampaignReferenceQualificationPresenter,
+    AcousticObservationPresenter,
+    DeterministicAcousticReasoningPresenter,
+    DeterministicCorrectiveActionPresenter,
+    DeterministicEvidenceWeightingPresenter,
+    EvidenceAcquisitionPlanPresenter,
+    AssessmentSummaryPresenter,
+    ExperimentPlanningPresenter,
+    TraceabilityPresenter,
+    Report,
+    ExploratoryAnalysisPresenter,
+    ExploratoryResultPresenter,
 )
-
-from acousticbrain.diagnostics import (
-    BassDiagnostic,
-    RoomModeDiagnostic,
-    DipDiagnostic,
+from .stages.longitudinal_experimental_learning import (
+    LongitudinalExperimentalLearningStage,
 )
-
-from acousticbrain.physics import (
-    RoomAcoustics,
-    ModesCalculator,
-    ModeMatcher,
+from .stages.acoustic_hypothesis_experiment_generation import (
+    AcousticHypothesisExperimentGenerationStage,
 )
-
-from acousticbrain.project import Measurements
-
-from acousticbrain.report import Report
+from .stages.listening_position_campaign_plan import (
+    ListeningPositionCampaignPlanStage,
+)
+from .stages.campaign_reference_qualification import (
+    CampaignReferenceQualificationStage,
+)
+from .stages.acoustic_observation import AcousticObservationStage
+from .stages.deterministic_acoustic_reasoning import (
+    DeterministicAcousticReasoningStage,
+)
+from .stages.deterministic_corrective_action import (
+    DeterministicCorrectiveActionStage,
+)
+from .stages.evidence_weighting import DeterministicEvidenceWeightingStage
+from .stages.evidence_acquisition import EvidenceAcquisitionPlanningStage
+from .stages.experiment_planning import ExperimentPlanningStage
+from .stages.traceability import TraceabilityStage
+from acousticbrain.models import ListeningPositionCampaignInstanceStatus
 
 
 class AcousticBrain:
 
     def __init__(self):
 
-        self.diagnostics = [
+        self.pipeline = BrainPipeline()
 
-            BassDiagnostic(),
+    def analyze(
+        self,
+        project=None,
+        *,
+        session_context=None,
+        plan_experiments=False,
+        measurement_root=None,
+        compare_experiments=False,
+        detailed_comparison_traceability=False,
+        analyze_causal_discrimination=False,
+        listening_position_sampling_protocol=None,
+        listening_position_campaign_instance_analysis=None,
+        campaign_reference_qualification_declaration_analysis=None,
+        synthesize_observations=False,
+        synthesize_reasoning=False,
+        synthesize_actions=False,
+        synthesize_weighting=False,
+        synthesize_evidence_acquisition=False,
+        movement_direction_declarations=(),
+        exploratory_proposal_inputs=(),
+        exploratory_feasibility_decisions=None,
+        analyze_exploratory=False,
+        return_context=False,
+    ):
 
-            RoomModeDiagnostic(),
+        synthesize_weighting = synthesize_weighting or synthesize_evidence_acquisition
+        synthesize_actions = synthesize_actions or synthesize_weighting
+        synthesize_reasoning = synthesize_reasoning or synthesize_actions
+        synthesize_observations = synthesize_observations or synthesize_reasoning
 
-            DipDiagnostic(),
-
-        ]
-
-    def analyze(self, project):
-
-        #
-        # Mesure principale
-        #
-
-        measurement = project.get_measurement(
-            Measurements.STEREO
-        )
-
-        if measurement is None:
-
-            raise ValueError(
-                "Aucune mesure stéréo n'a été trouvée."
+        if (
+            listening_position_campaign_instance_analysis is not None
+            and listening_position_campaign_instance_analysis.status
+            is ListeningPositionCampaignInstanceStatus.VALID
+        ):
+            instance_protocol = (
+                listening_position_campaign_instance_analysis.instance
+                .to_sampling_protocol()
             )
-
-        #
-        # Contexte
-        #
-
-        context = AnalysisContext(
-            measurement=measurement
-        )
-
-        context.project = project
-
-        #
-        # Salle
-        #
-
-        room = project.room
-
-        context.room_properties = (
-
-            RoomAcoustics().calculate(
-                room
-            )
-
-        )
-
-        #
-        # Analyse SPL
-        #
-
-        context.peaks = (
-
-            PeakDetector().detect(
-                measurement
-            )
-
-        )
-
-        context.dips = (
-
-            DipDetector().detect(
-                measurement
-            )
-
-        )
-
-        context.bands = (
-
-            FrequencyBandClassifier().classify(
-                context.peaks
-            )
-
-        )
-
-        #
-        # Modes propres
-        #
-
-        context.room_modes = (
-
-            ModesCalculator().axial_modes(
-                room
-            )
-
-        )
-
-        context.mode_matches = (
-
-            ModeMatcher().match(
-
-                context.peaks,
-
-                context.room_modes,
-
-            )
-
-        )
-
-        #
-        # Rapport
-        #
-
-        report = Report(
-
-            project_name=project.name
-
-        )
-
-        report.room_properties = (
-
-            context.room_properties
-
-        )
-
-        #
-        # Diagnostics
-        #
-
-        for diagnostic in self.diagnostics:
-
-            report.add(
-
-                diagnostic.analyze(
-                    context
+            if (
+                listening_position_sampling_protocol is not None
+                and listening_position_sampling_protocol != instance_protocol
+            ):
+                raise ValueError(
+                    "Campaign instance and sampling protocol are incompatible."
                 )
+            listening_position_sampling_protocol = instance_protocol
 
+        experiment_descriptors = ()
+        if measurement_root is not None:
+            if project is not None or (session_context is not None and not compare_experiments):
+                raise ValueError(
+                    "measurement_root cannot be combined with project or session_context."
+                )
+            acoustic_session = AcousticSession.auto_open(measurement_root)
+            project = acoustic_session.current_project
+            experiment_descriptors = acoustic_session.descriptors
+            plan_experiments = True
+            if compare_experiments:
+                return self._analyze_experiments(
+                    acoustic_session,
+                    plan_experiments=plan_experiments,
+                    detailed_traceability=detailed_comparison_traceability,
+                    optimization_session=(
+                        session_context.session if session_context is not None else None
+                    ),
+                    analyze_causal_discrimination=analyze_causal_discrimination,
+                    listening_position_sampling_protocol=(
+                        listening_position_sampling_protocol
+                    ),
+                    listening_position_campaign_instance_analysis=(
+                        listening_position_campaign_instance_analysis
+                    ),
+                    campaign_reference_qualification_declaration_analysis=(
+                        campaign_reference_qualification_declaration_analysis
+                    ),
+                    synthesize_observations=synthesize_observations,
+                    synthesize_reasoning=synthesize_reasoning,
+                    synthesize_actions=synthesize_actions,
+                    synthesize_weighting=synthesize_weighting,
+                    synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+                    movement_direction_declarations=movement_direction_declarations,
+                    exploratory_proposal_inputs=exploratory_proposal_inputs,
+                    exploratory_feasibility_decisions=exploratory_feasibility_decisions,
+                    analyze_exploratory=analyze_exploratory,
+                    return_context=return_context,
+                )
+            if project is None:
+                report = Report(project_name=str(measurement_root))
+                context = type(
+                    "DiscoveryContext",
+                    (),
+                    {"experiment_descriptors": experiment_descriptors},
+                )()
+                report.experiments_discovered = (
+                    ExperimentDiscoveryPresenter().present(context)
+                )
+                return (report, context) if return_context else report
+        if project is None:
+            raise ValueError("A project or measurement_root is required.")
+        if compare_experiments:
+            raise ValueError("compare_experiments requires measurement_root.")
+        if analyze_causal_discrimination:
+            raise ValueError(
+                "analyze_causal_discrimination requires measurement_root and "
+                "compare_experiments=True."
             )
 
-        return report
+        return self.pipeline.run(
+            project,
+            session_context=session_context,
+            plan_experiments=plan_experiments,
+            experiment_descriptors=experiment_descriptors,
+            listening_position_sampling_protocol=(
+                listening_position_sampling_protocol
+            ),
+            listening_position_campaign_instance_analysis=(
+                listening_position_campaign_instance_analysis
+            ),
+            campaign_reference_qualification_declaration_analysis=(
+                campaign_reference_qualification_declaration_analysis
+            ),
+            synthesize_observations=synthesize_observations,
+            synthesize_reasoning=synthesize_reasoning,
+            synthesize_actions=synthesize_actions,
+            synthesize_weighting=synthesize_weighting,
+            synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+            movement_direction_declarations=movement_direction_declarations,
+            return_context=return_context,
+        )
+
+    def _analyze_experiments(
+        self,
+        acoustic_session,
+        *,
+        plan_experiments,
+        detailed_traceability,
+        optimization_session,
+        analyze_causal_discrimination,
+        listening_position_sampling_protocol,
+        listening_position_campaign_instance_analysis,
+        campaign_reference_qualification_declaration_analysis,
+        synthesize_observations,
+        synthesize_reasoning,
+        synthesize_actions,
+        synthesize_weighting,
+        synthesize_evidence_acquisition,
+        movement_direction_declarations,
+        exploratory_proposal_inputs,
+        exploratory_feasibility_decisions,
+        analyze_exploratory,
+        return_context,
+    ):
+        contexts = {}
+        current_report = None
+        current_context = None
+        ready = [item for item in acoustic_session.experiments if item.project is not None]
+        current = ready[-1] if ready else None
+        for imported in ready:
+            report, context = self.pipeline.run(
+                imported.project,
+                plan_experiments=False,
+                experiment_descriptors=acoustic_session.descriptors,
+                listening_position_sampling_protocol=(
+                    listening_position_sampling_protocol
+                ),
+                listening_position_campaign_instance_analysis=(
+                    listening_position_campaign_instance_analysis
+                ),
+                campaign_reference_qualification_declaration_analysis=(
+                    campaign_reference_qualification_declaration_analysis
+                ),
+                synthesize_observations=synthesize_observations,
+                synthesize_reasoning=synthesize_reasoning,
+                synthesize_actions=synthesize_actions,
+                synthesize_weighting=synthesize_weighting,
+                synthesize_evidence_acquisition=synthesize_evidence_acquisition,
+                movement_direction_declarations=movement_direction_declarations,
+                return_context=True,
+            )
+            contexts[imported.descriptor.experiment_id] = context
+            if imported is current:
+                current_report, current_context = report, context
+        comparison = AutomaticExperimentComparisonService().analyze(
+            acoustic_session,
+            contexts,
+            optimization_session=optimization_session,
+            detailed_traceability=detailed_traceability,
+        )
+        if current_context is None:
+            current_context = type(
+                "ExperimentComparisonContext",
+                (),
+                {
+                    "experiment_descriptors": acoustic_session.descriptors,
+                    "experiment_comparison_analysis": comparison,
+                    "listening_position_sampling_protocol": (
+                        listening_position_sampling_protocol
+                    ),
+                    "listening_position_campaign_instance_analysis": (
+                        listening_position_campaign_instance_analysis
+                    ),
+                    "campaign_reference_qualification_declaration_analysis": (
+                        campaign_reference_qualification_declaration_analysis
+                    ),
+                    "movement_direction_declarations": tuple(
+                        movement_direction_declarations
+                    ),
+                },
+            )()
+            current_report = Report(project_name=acoustic_session.measurement_root)
+            current_report.experiments_discovered = (
+                ExperimentDiscoveryPresenter().present(current_context)
+            )
+        else:
+            current_context.experiment_comparison_analysis = comparison
+        campaign_analyses = ExperimentCampaignSynthesisService().analyze(
+            acoustic_session.descriptors,
+            comparison,
+            detailed_traceability=detailed_traceability,
+        )
+        current_context.experiment_campaign_analyses = campaign_analyses
+        causal_analysis = None
+        if analyze_causal_discrimination:
+            causal_analysis = CausalDiscriminationService().analyze(
+                acoustic_session.descriptors,
+                comparison,
+                detailed_traceability=detailed_traceability,
+            )
+            current_context.causal_discrimination_analysis = causal_analysis
+        LongitudinalExperimentalLearningStage().run(current_context)
+        if plan_experiments and current is not None:
+            learning_analysis = (
+                current_context.longitudinal_experimental_learning_analysis
+            )
+            current_report, current_context = self.pipeline.run(
+                current.project,
+                plan_experiments=True,
+                experiment_descriptors=acoustic_session.descriptors,
+                listening_position_sampling_protocol=(
+                    listening_position_sampling_protocol
+                ),
+                listening_position_campaign_instance_analysis=(
+                    listening_position_campaign_instance_analysis
+                ),
+                campaign_reference_qualification_declaration_analysis=(
+                    campaign_reference_qualification_declaration_analysis
+                ),
+                synthesize_observations=synthesize_observations,
+                synthesize_reasoning=synthesize_reasoning,
+                synthesize_actions=synthesize_actions,
+                synthesize_weighting=synthesize_weighting,
+                longitudinal_experimental_learning_analysis=learning_analysis,
+                movement_direction_declarations=movement_direction_declarations,
+                return_context=True,
+            )
+            current_context.experiment_comparison_analysis = comparison
+            current_context.experiment_campaign_analyses = campaign_analyses
+            current_context.causal_discrimination_analysis = causal_analysis
+        AcousticHypothesisExperimentGenerationStage().run(current_context)
+        if analyze_exploratory:
+            current_context.exploratory_analysis = (
+                DeterministicExploratoryService().analyze(
+                    current_context.acoustic_hypothesis_experiment_generation_analysis,
+                    exploratory_proposal_inputs,
+                    exploratory_feasibility_decisions,
+                    reference_content_hashes={
+                        item.experiment_id: item.content_hash
+                        for item in acoustic_session.descriptors
+                    },
+                )
+            )
+            exploratory_protocol_ids = tuple(dict.fromkeys(
+                item.source_protocol_id
+                for item in comparison.sequence.local_comparisons
+                if item.source_protocol_id
+                and item.source_protocol_id.startswith("exploratory.v1.")
+            ))
+            current_context.exploratory_result = (
+                ExploratoryResultService().project(
+                    exploratory_protocol_ids[-1], comparison
+                )
+                if exploratory_protocol_ids
+                else ExploratoryResultService().project_historical_first_slice(
+                    comparison
+                )
+            )
+        CampaignReferenceQualificationStage().run(current_context)
+        ListeningPositionCampaignPlanStage().run(current_context)
+        if synthesize_observations:
+            AcousticObservationStage().run(current_context)
+        if synthesize_reasoning:
+            DeterministicAcousticReasoningStage().run(current_context)
+        if synthesize_actions:
+            DeterministicCorrectiveActionStage().run(current_context)
+        if synthesize_weighting:
+            DeterministicEvidenceWeightingStage().run(current_context)
+        if synthesize_evidence_acquisition:
+            EvidenceAcquisitionPlanningStage().run(current_context)
+        if plan_experiments and current is not None:
+            ExperimentPlanningStage().run(
+                current_context,
+                session=optimization_session,
+            )
+            current_report.experiment_planning = (
+                ExperimentPlanningPresenter().present(current_context)
+            )
+            TraceabilityStage().run(current_context)
+            current_report.traceability_analysis = (
+                TraceabilityPresenter().present(current_context)
+            )
+        current_report.acoustic_hypothesis_experiment_generation = (
+            AcousticHypothesisExperimentGenerationPresenter().present(current_context)
+        )
+        if analyze_exploratory:
+            current_report.exploratory_analysis = (
+                ExploratoryAnalysisPresenter().present(current_context)
+            )
+            current_report.exploratory_result = ExploratoryResultPresenter().present(
+                current_context.exploratory_result
+            )
+        current_report.listening_position_campaign_plan = (
+            ListeningPositionCampaignPlanPresenter().present(current_context)
+        )
+        current_report.listening_position_campaign_instance = (
+            ListeningPositionCampaignInstancePresenter().present(current_context)
+        )
+        current_report.campaign_reference_qualification = (
+            CampaignReferenceQualificationPresenter().present(current_context)
+        )
+        current_report.acoustic_observations = AcousticObservationPresenter().present(
+            current_context
+        )
+        current_report.deterministic_acoustic_reasoning = (
+            DeterministicAcousticReasoningPresenter().present(current_context)
+        )
+        current_report.deterministic_corrective_actions = (
+            DeterministicCorrectiveActionPresenter().present(current_context)
+        )
+        current_report.deterministic_evidence_weighting = (
+            DeterministicEvidenceWeightingPresenter().present(current_context)
+        )
+        current_report.evidence_acquisition_plans = (
+            EvidenceAcquisitionPlanPresenter().present(current_context)
+        )
+        current_report.experiment_comparison = (
+            ExperimentComparisonPresenter().present(current_context)
+        )
+        current_report.experiment_campaigns = (
+            ExperimentCampaignPresenter().present(current_context)
+        )
+        current_report.causal_discrimination = (
+            CausalDiscriminationPresenter().present(current_context)
+        )
+        current_report.longitudinal_experimental_learning = (
+            LongitudinalExperimentalLearningPresenter().present(current_context)
+        )
+        current_report.experiments_discovered = (
+            ExperimentDiscoveryPresenter().present(current_context)
+        )
+        current_report.assessment_summary = AssessmentSummaryPresenter().present(
+            current_report
+        )
+        return (
+            (current_report, current_context)
+            if return_context
+            else current_report
+        )

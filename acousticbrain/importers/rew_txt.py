@@ -55,10 +55,22 @@ class REWTxtImporter:
                 except ValueError:
                     continue
 
+        if (
+            not frequency
+            or not spl
+            or not phase
+            or len({len(frequency), len(spl), len(phase)}) != 1
+        ):
+            raise ValueError(
+                f"Invalid REW frequency export '{filename}': the export does not "
+                "contain the expected frequency, SPL, and phase data with matching "
+                "non-empty lengths. Check that phase inclusion is enabled in the "
+                "REW text export."
+            )
+
         return Measurement(
             name=measurement_name,
             frequency=frequency,
             spl=spl,
             phase=phase,
         )
-        

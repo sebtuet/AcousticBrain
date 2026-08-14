@@ -1,0 +1,101 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : Studio
+
+EN UNE MINUTE
+
+Situation
+Première mesure disponible : aucune expérience précédente comparable.
+
+Verdict
+Aucune comparaison avec une expérience précédente n’est disponible.
+
+Puis-je conclure ?
+Non.
+Aucune comparaison fiable n’est disponible.
+
+Ce que je fais maintenant
+• Une piste a été identifiée, mais le déplacement exact n’est pas encore déterminé.
+• Conservez la position du microphone et le volume de mesure inchangés.
+• Reprenez L, R, L+R.
+
+Pourquoi
+Une action structurée est déjà disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : non établi.
+Cause : non établie (NOT_ESTABLISHED).
+
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Comprendre l’origine de l’asymétrie entre les enceintes.
+
+Verdict
+La dernière expérience ne peut pas être comparée de manière fiable.
+ • Aucune comparaison d’expérience n’est disponible.
+
+Prochaine action
+Une piste a été identifiée, mais le déplacement exact n’est pas encore déterminé.
+
+À maintenir inchangé
+ • la position du microphone
+ • le volume de mesure
+
+Mesure suivante
+ • Réalisez une nouvelle expérience REW : L, R, L+R.
+ • Conservez la position du microphone et le volume.
+ • Ne modifiez aucune autre variable.
+ • Enregistrez précisément l’unique modification réalisée.
+
+Ce que l’on ne sait pas encore
+ • La dernière comparaison n’est pas établie.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Non établi.
+ • Action : Explication possible.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
+PROCHAINE ÉTAPE DE POSITIONNEMENT
+
+Situation actuelle
+Aucun problème prioritaire n’est évaluable avec les données disponibles.
+
+Niveau de certitude
+Non évaluable avec les mesures disponibles
+
+Action proposée
+Aucune expérience de positionnement fiable ne peut être proposée avec les données actuelles.
+
+Données encore nécessaires
+ • Une cible et une variable à modifier déjà déterminées.
+
+Limites
+ • La causalité n’est pas établie.
+ • Une seule variable doit être modifiée.
+ • Une nouvelle mesure est nécessaire.
+ • Le résultat peut être favorable, défavorable ou inconclusif.
+ • Statut scientifique conservé : NOT_ESTABLISHED.
+
+
+EXPÉRIENCE PRINCIPALE
+
+Statut : READY
+Code : experiment_candidate.asymmetric_speaker_room_interaction
+Protocole : protocol.verify_speaker_room_asymmetry.v1
+Hypothèse : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+Valeur informative : 26.33 / 100
+Difficulté : EASY
+Réversibilité : HIGH
+Durée estimée : 15 min
+Coût : LOW
+Objectif : DISCRIMINATE_CHANNEL_AND_ROOM_ASYMMETRY
+Faits à mesurer : stereo.symmetry_score, spatial.pair_analysis, etc.channel_specific_event_difference, verification.asymmetry_persists_by_channel, verification.asymmetry_disappears_after_control
+Raison principale du choix : RESOLVES_MISSING_FACTS
+Prérequis : aucun
+Alternatives classées :

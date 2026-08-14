@@ -1,0 +1,50 @@
+from dataclasses import dataclass, field
+
+from acousticbrain.models import (
+    RecommendationParameter,
+    RecommendationPriority,
+    RecommendationStatus,
+)
+
+
+@dataclass(frozen=True)
+class PresentedRecommendation:
+    """Projection structurée d'une recommandation pour les consommateurs."""
+
+    code: str
+    action: str
+    target: str
+    priority: RecommendationPriority
+    confidence: float
+    source_analyses: tuple[str, ...]
+    parameters: dict[str, RecommendationParameter] = field(default_factory=dict)
+    hypothesis_codes: tuple[str, ...] = ()
+    verification_action: bool = False
+    status: RecommendationStatus = RecommendationStatus.ACTIVE
+    status_reason: str | None = None
+
+
+class RecommendationPresenter:
+    """Projette le résultat existant sans l'interpréter ni le recalculer."""
+
+    def present(self, context) -> list[PresentedRecommendation]:
+        analysis = context.recommendation_analysis
+        if analysis is None:
+            return []
+
+        return [
+            PresentedRecommendation(
+                code=recommendation.code,
+                action=recommendation.action,
+                target=recommendation.target,
+                priority=recommendation.priority,
+                confidence=recommendation.confidence,
+                source_analyses=recommendation.source_analyses,
+                parameters=dict(recommendation.parameters),
+                hypothesis_codes=recommendation.hypothesis_codes,
+                verification_action=recommendation.verification_action,
+                status=recommendation.status,
+                status_reason=recommendation.status_reason,
+            )
+            for recommendation in analysis.recommendations
+        ]

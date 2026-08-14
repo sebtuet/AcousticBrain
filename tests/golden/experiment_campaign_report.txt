@@ -1,0 +1,99 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : campaign-fixture
+
+EN UNE MINUTE
+
+Situation
+Première mesure disponible : aucune expérience précédente comparable.
+
+Verdict
+Aucune comparaison avec une expérience précédente n’est disponible.
+
+Puis-je conclure ?
+Non.
+Aucune comparaison fiable n’est disponible.
+
+Ce que je fais maintenant
+• Aucune action fiable ne peut être recommandée actuellement.
+
+Pourquoi
+Aucune action suffisamment établie n’est disponible.
+
+Confiance
+Mesures : statut non établi.
+Verdict : non établi.
+Cause : non établie (NOT_ESTABLISHED).
+
+DÉCISION ACOUSTIQUE
+
+Objectif actuel
+Aucun objectif expérimental prioritaire n’est actuellement établi.
+
+Verdict
+La dernière expérience ne peut pas être comparée de manière fiable.
+ • Aucune comparaison d’expérience n’est disponible.
+
+Prochaine action
+Aucun déplacement fiable ne peut être recommandé actuellement.
+
+Ce que l’on ne sait pas encore
+ • La dernière comparaison n’est pas établie.
+ • L’origine causale exacte n’est pas établie.
+
+Statut de confiance
+ • Verdict : Non établi.
+ • Action : Non établi.
+ • Causalité : Non établi (NOT_ESTABLISHED).
+
+PROCHAINE ÉTAPE DE POSITIONNEMENT
+
+Situation actuelle
+Aucun problème prioritaire n’est évaluable avec les données disponibles.
+
+Niveau de certitude
+Non évaluable avec les mesures disponibles
+
+Action proposée
+Aucune expérience de positionnement fiable ne peut être proposée avec les données actuelles.
+
+Données encore nécessaires
+ • Une cible et une variable à modifier déjà déterminées.
+
+Limites
+ • La causalité n’est pas établie.
+ • Une seule variable doit être modifiée.
+ • Une nouvelle mesure est nécessaire.
+ • Le résultat peut être favorable, défavorable ou inconclusif.
+ • Statut scientifique conservé : NOT_ESTABLISHED.
+
+CAMPAGNES EXPÉRIMENTALES
+
+Campagne : VERIFY_MODAL_BASS_PERSISTENCE
+Protocole : protocol.verify_modal_bass_persistence.v1
+Hypothèse : MODAL_BASS_PERSISTENCE
+Objectif : déterminer si la persistance du grave dépend du point d’écoute
+Statut : PARTIALLY_RESOLVED
+Mesures :
+ ✓ exp-003 — REFERENCE (0.00 m) — READY
+ ✓ exp-004 — BACKWARD (-0.30 m) — READY
+ ✓ exp-005 — FORWARD (+0.30 m) — READY
+Résultats par position :
+ • BACKWARD (-0.30 m, exp-004) — évolution acoustique UNCHANGED
+   Décroissance maximale : 0.790 → 0.790 s
+   - la décroissance reste stable dans les bandes ciblées
+ • FORWARD (+0.30 m, exp-005) — évolution acoustique IMPROVED
+   Décroissance maximale : 0.790 → 0.636 s
+   - la décroissance diminue dans les bandes ciblées
+   - la décroissance grave varie selon la position d’écoute
+   - un effet local de position est soutenu
+Conclusion actuelle :
+ ✓ la décroissance grave varie selon la position d’écoute
+ ✓ un effet local de position est soutenu
+ ✗ la composante modale globale reste non discriminée
+Diminution maximale observée : 0.790 → 0.636 s (19.5 %, exp-005)
+Discriminations restantes : effet local de position vs composante modale globale
+Prochaine discrimination nécessaire : variation contrôlée de la position de la source, microphone fixe

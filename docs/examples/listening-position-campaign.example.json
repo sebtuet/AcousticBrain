@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "instance_id": "listening-position-campaign-example",
+  "protocol_id": "protocol.verify_modal_bass_persistence.v1",
+  "protocol_version": 1,
+  "reference_experiment_id": "exp-007",
+  "comparability_rule": "LISTENING_POSITION_ORDERED_REFERENCE_BRANCH",
+  "controlled_variables": [
+    "LOUDSPEAKER_POSITION",
+    "LOUDSPEAKER_ASSIGNMENT",
+    "SIGNAL_CHAIN_ASSIGNMENT",
+    "ROOM_CONFIGURATION",
+    "MICROPHONE_ORIENTATION",
+    "MEASUREMENT_LEVEL",
+    "REW_PARAMETERS"
+  ],
+  "required_measurements": [
+    "LEFT",
+    "RIGHT",
+    "STEREO"
+  ],
+  "declaration_source": "USER_JSON_EXAMPLE",
+  "declaration_version": 1,
+  "notes": "Illustrative editable values only; this file is never loaded automatically.",
+  "positions": [
+    {
+      "position_code": "REFERENCE",
+      "position_role": "REFERENCE",
+      "order_index": 1,
+      "longitudinal_offset_m": 0.0,
+      "lateral_offset_m": null,
+      "vertical_offset_m": null,
+      "parent_position_code": null,
+      "reference_position_code": "REFERENCE",
+      "reference_experiment_id": "exp-007",
+      "modified_variables": [],
+      "controlled_variables": [
+        "LOUDSPEAKER_POSITION",
+        "LOUDSPEAKER_ASSIGNMENT",
+        "SIGNAL_CHAIN_ASSIGNMENT",
+        "ROOM_CONFIGURATION",
+        "MICROPHONE_ORIENTATION",
+        "MEASUREMENT_LEVEL",
+        "REW_PARAMETERS"
+      ],
+      "required_measurements": ["LEFT", "RIGHT", "STEREO"]
+    },
+    {
+      "position_code": "FORWARD",
+      "position_role": "FORWARD",
+      "order_index": 2,
+      "longitudinal_offset_m": 0.10,
+      "lateral_offset_m": null,
+      "vertical_offset_m": null,
+      "parent_position_code": "REFERENCE",
+      "reference_position_code": "REFERENCE",
+      "reference_experiment_id": "exp-007",
+      "modified_variables": ["LISTENING_POSITION"],
+      "controlled_variables": [
+        "LOUDSPEAKER_POSITION",
+        "LOUDSPEAKER_ASSIGNMENT",
+        "SIGNAL_CHAIN_ASSIGNMENT",
+        "ROOM_CONFIGURATION",
+        "MICROPHONE_ORIENTATION",
+        "MEASUREMENT_LEVEL",
+        "REW_PARAMETERS"
+      ],
+      "required_measurements": ["LEFT", "RIGHT", "STEREO"]
+    },
+    {
+      "position_code": "BACKWARD",
+      "position_role": "BACKWARD",
+      "order_index": 3,
+      "longitudinal_offset_m": -0.10,
+      "lateral_offset_m": null,
+      "vertical_offset_m": null,
+      "parent_position_code": "REFERENCE",
+      "reference_position_code": "REFERENCE",
+      "reference_experiment_id": "exp-007",
+      "modified_variables": ["LISTENING_POSITION"],
+      "controlled_variables": [
+        "LOUDSPEAKER_POSITION",
+        "LOUDSPEAKER_ASSIGNMENT",
+        "SIGNAL_CHAIN_ASSIGNMENT",
+        "ROOM_CONFIGURATION",
+        "MICROPHONE_ORIENTATION",
+        "MEASUREMENT_LEVEL",
+        "REW_PARAMETERS"
+      ],
+      "required_measurements": ["LEFT", "RIGHT", "STEREO"]
+    }
+  ]
+}

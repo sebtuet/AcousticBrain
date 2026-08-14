@@ -1,0 +1,803 @@
+
+============================================================
+ACOUSTICBRAIN REPORT
+============================================================
+
+Projet : measurements
+
+Salle
+Volume : 83.66 m³
+Surface : 32.18 m²
+Schroeder : 119.8 Hz
+
+Géométrie
+Source : LEGACY_ROOM
+Modèle : RECTANGULAR
+Version : 1
+Dimensions : 5.84 × 5.51 × 2.60 m
+Complétude : 60 %
+Complétude des features : indisponible
+Informations disponibles : 0/0 orientations, 0 matériaux, 0/0 revêtements placés, 0/0 meubles placés, 0/0 traitements placés
+Compatibilité des sources : SINGLE_SOURCE
+
+
+Recommandations structurées
+
+ • CHECK_STEREO_PLACEMENT
+   Action : check_placement
+   Cible : stereo_speakers
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : StereoAnalysis
+   Paramètres :
+    - symmetry_score : 10.859575118098183
+    - maximum_balance_db : 3.119795597484284
+
+ • TEST_SPEAKER_DISTANCE
+   Action : test_distance
+   Cible : floor
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : SBIRAnalysis
+   Paramètres :
+    - current_distance_m : 1.05
+    - measured_frequency_hz : 75.497475
+
+ • MEASURE_MULTIPLE_POSITIONS
+   Action : measure
+   Cible : listening_area
+   Priorité : HIGH
+   Confiance : 75.0%
+   Provenance : ModalDensityAnalysis
+   Paramètres :
+    - sparse_band_count : 1
+    - dense_band_count : 0
+
+ • INVESTIGATE_RT60_CHANNEL_DIFFERENCES
+   Action : investigate
+   Cible : rt60_channel_differences
+   Priorité : HIGH
+   Confiance : 76.99799690584875%
+   Provenance : RT60Analysis
+   Paramètres :
+    - reliable_band_count : 3
+    - maximum_difference_s : 0.39779267619356373
+
+ • VERIFY_TIME_ALIGNMENT
+   Action : verify_alignment
+   Cible : speaker_pair
+   Priorité : MEDIUM
+   Confiance : 66.9611156343777%
+   Provenance : SpatialAnalysis
+   Paramètres :
+    - broadband_time_difference_ms : 0.24999999999986144
+
+ • INVESTIGATE_DOMINANT_EARLY_REFLECTIONS
+   Action : investigate
+   Cible : dominant_early_reflections
+   Priorité : HIGH
+   Confiance : 72.09830883131441%
+   Provenance : ETCAnalysis, ETCReflectionCorrelationAnalysis
+   Paramètres :
+    - important_unmatched_event_count : 40
+    - maximum_relative_level_db : -8.317272596377485
+
+ • INVESTIGATE_DRR_CHANNEL_DIFFERENCES
+   Action : investigate
+   Cible : drr_channel_differences
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : DirectReverberantAnalysis
+   Paramètres :
+    - significant_band_count : 8
+    - maximum_difference_db : 19.588749412457744
+
+ • IMPROVE_DIRECT_SOUND_DOMINANCE
+   Action : improve_dominance
+   Cible : direct_sound
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : DirectReverberantAnalysis, DirectReverberantCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 2
+
+ • APPLY_EARLY_REFLECTION_TREATMENT
+   Action : apply_treatment
+   Cible : dominant_early_reflections
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 1
+
+ • INVESTIGATE_LONG_BASS_DECAY
+   Action : investigate
+   Cible : bass_decay_bands
+   Priorité : HIGH
+   Confiance : 68.76092420757861%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - supporting_correlation_count : 1
+    - maximum_decay_time_s : 3.437316781130287
+
+ • CHECK_MODAL_EXCITATION
+   Action : check
+   Cible : modal_excitation
+   Priorité : HIGH
+   Confiance : 68.76092420757861%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - matched_mode_count : 3
+
+ • COMPARE_BASS_DECAY_CHANNELS
+   Action : compare
+   Cible : bass_decay_channels
+   Priorité : MEDIUM
+   Confiance : 52.374489853810466%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Paramètres :
+    - significant_band_count : 4
+    - maximum_difference_s : 3.37351347785648
+
+ • VERIFY_SPEAKER_ROOM_ASYMMETRY
+   Action : compare
+   Cible : left_right_measurements_and_placement
+   Priorité : HIGH
+   Confiance : 62.751026047867704%
+   Provenance : StereoAnalysis, SpatialCorrelationAnalysis, DirectReverberantAnalysis, BassDecayAnalysis
+   Hypothèses : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 81.56767617134894
+    - verification_action : True
+
+ • VERIFY_MODAL_BASS_PERSISTENCE
+   Action : measure
+   Cible : bass_decay_at_multiple_positions
+   Priorité : HIGH
+   Confiance : 72.92030806919287%
+   Provenance : BassDecayAnalysis, BassDecayCorrelationAnalysis
+   Hypothèses : MODAL_BASS_PERSISTENCE
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : MODAL_BASS_PERSISTENCE
+    - hypothesis_status : SUPPORTED
+    - support_score : 93.75
+    - verification_action : True
+
+ • VERIFY_DOMINANT_EARLY_REFLECTION
+   Action : temporary_mask
+   Cible : candidate_early_reflection_surface
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis
+   Hypothèses : DOMINANT_EARLY_REFLECTION_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - hypothesis_code : DOMINANT_EARLY_REFLECTION_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 100.0
+    - verification_action : True
+
+ • VERIFY_SBIR_PLACEMENT
+   Action : temporary_move
+   Cible : speaker_distance_to_candidate_surface
+   Priorité : HIGH
+   Confiance : 81.96496325809022%
+   Provenance : SBIRAnalysis, ETCReflectionCorrelationAnalysis
+   Hypothèses : SBIR_PLACEMENT_INTERACTION
+   Nature : vérification
+   Paramètres :
+    - surface : FLOOR
+    - measured_frequency_hz : 75.497475
+    - current_distance_m : 1.05
+    - hypothesis_code : SBIR_PLACEMENT_INTERACTION
+    - hypothesis_status : SUPPORTED
+    - support_score : 96.22294387755102
+    - verification_action : True
+
+Synthèse acoustique globale
+
+Score : 34.5 / 100
+Confiance : 82.0%
+Domaines prioritaires : SBIR, STEREO, BASS_DECAY, ETC, MODAL_DENSITY, DIRECT_REVERBERANT, CLARITY, SPATIAL
+Analyses sources : StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis
+
+ • Domaine STEREO
+   Score acoustique : 10.9 / 100
+   Confiance : indisponible
+   Provenance : StereoAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+   Références d'action : CHECK_STEREO_PLACEMENT
+ • Domaine SBIR
+   Score acoustique : 7.6 / 100
+   Confiance : 92.4%
+   Provenance : SBIRAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+   Références d'action : TEST_SPEAKER_DISTANCE
+ • Domaine MODAL_DENSITY
+   Score acoustique : 32.7 / 100
+   Confiance : 75.0%
+   Provenance : ModalDensityAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+   Références d'action : MEASURE_MULTIPLE_POSITIONS
+ • Domaine RT60
+   Score acoustique : 89.9 / 100
+   Confiance : 93.6%
+   Provenance : RT60Analysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine ETC
+   Score acoustique : 31.4 / 100
+   Confiance : 89.4%
+   Provenance : ETCAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine CLARITY
+   Score acoustique : 40.0 / 100
+   Confiance : 67.2%
+   Provenance : ClarityAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine SPATIAL
+   Score acoustique : 40.0 / 100
+   Confiance : 67.0%
+   Provenance : SpatialAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine DIRECT_REVERBERANT
+   Score acoustique : 33.4 / 100
+   Confiance : 94.9%
+   Provenance : DirectReverberantAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine BASS_DECAY
+   Score acoustique : 24.5 / 100
+   Confiance : 68.8%
+   Provenance : BassDecayAnalysis
+   Nature : ACOUSTIC
+   Contribution au score acoustique : oui
+ • Domaine MEASUREMENT_QUALITY
+   Score technique de disponibilité : 100.0 / 100
+   Confiance : 100.0%
+   Provenance : MeasurementQualityAnalysis
+   Nature : MEASUREMENT_QUALITY
+   Contribution au score acoustique : non
+
+ • Corrélation STEREO_SBIR_PLACEMENT_INTERACTION
+   Domaines : STEREO, SBIR
+   Score : 7.6 / 100
+   Provenances : StereoAnalysis, SBIRAnalysis
+ • Corrélation ETC_SPATIAL_ASYMMETRY
+   Domaines : ETC, SPATIAL
+   Score : 31.4 / 100
+   Provenances : ETCAnalysis, SpatialAnalysis, SpatialCorrelationAnalysis
+ • Corrélation RT60_CLARITY_DECAY_INTERACTION
+   Domaines : RT60, CLARITY
+   Score : 40.0 / 100
+   Provenances : RT60Analysis, ClarityAnalysis, ClarityCorrelationAnalysis
+ • Corrélation ETC_CLARITY_EARLY_ENERGY_INTERACTION
+   Domaines : ETC, CLARITY
+   Score : 31.4 / 100
+   Provenances : ETCAnalysis, ClarityAnalysis, ClarityCorrelationAnalysis
+ • Corrélation SPATIAL_STEREO_ALIGNMENT
+   Domaines : SPATIAL, STEREO
+   Score : 10.9 / 100
+   Provenances : SpatialAnalysis, StereoAnalysis, SpatialCorrelationAnalysis
+ • Corrélation BASS_DECAY_MODAL_INTERACTION
+   Domaines : BASS_DECAY, MODAL_DENSITY
+   Score : 24.5 / 100
+   Provenances : BassDecayAnalysis, ModalDensityAnalysis, BassDecayCorrelationAnalysis
+ • Corrélation LOW_DRR_DECAY_INTERACTION
+   Domaines : DIRECT_REVERBERANT, RT60
+   Score : 33.4 / 100
+   Provenances : DirectReverberantAnalysis, RT60Analysis, DirectReverberantCorrelationAnalysis
+ • Corrélation DRR_EARLY_REFLECTION_INTERACTION
+   Domaines : DIRECT_REVERBERANT, ETC
+   Score : 31.4 / 100
+   Provenances : DirectReverberantAnalysis, ETCAnalysis, DirectReverberantCorrelationAnalysis
+ • Corrélation DRR_SPATIAL_ASYMMETRY
+   Domaines : DIRECT_REVERBERANT, SPATIAL
+   Score : 33.4 / 100
+   Provenances : DirectReverberantAnalysis, SpatialAnalysis, DirectReverberantCorrelationAnalysis
+
+Traçabilité
+
+Analyses sources : GlobalAnalysis, RecommendationAnalysis, StereoAnalysis, SBIRAnalysis, ModalDensityAnalysis, RT60Analysis, ETCAnalysis, ClarityAnalysis, SpatialAnalysis, DirectReverberantAnalysis, BassDecayAnalysis, MeasurementQualityAnalysis, ETCReflectionCorrelationAnalysis, DirectReverberantCorrelationAnalysis, BassDecayCorrelationAnalysis, SpatialCorrelationAnalysis, ClarityCorrelationAnalysis, MeasurementReadinessAnalysis, RoomGeometry, AcousticReasoningAnalysis, ConfidenceAnalysis
+Preuves disponibles : 125
+Liens explicatifs : 34
+
+------------------------------------------------------------
+Réponse dans le grave
+
+Pic dominant à 63.5 Hz (prominence 29.8 dB)
+
+Gravité : HIGH
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Confiance : 95%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Mode propre de la pièce
+ • Position d'écoute
+ • Interaction enceinte / mur
+
+Recommandations
+ • Mesurer chaque enceinte séparément
+ • Vérifier la position d'écoute
+
+------------------------------------------------------------
+Rapport direct / réverbéré
+
+Observations
+ • Canaux D/R disponibles : 3.
+ • Bandes communes exploitables : 24.
+ • D/R large bande agrégé : +1.38 dB.
+ • Canal LEFT : D/R +1.47 dB, confiance 94 %.
+ • Canal RIGHT : D/R +0.60 dB, confiance 93 %.
+ • Canal STEREO : D/R +2.07 dB, confiance 97 %.
+ • Écarts G-D D/R significatifs : 8.
+ • Écart D/R G-D à 50 Hz : +5.85 dB.
+ • Écart D/R G-D à 63 Hz : +19.59 dB.
+ • Écart D/R G-D à 100 Hz : -4.52 dB.
+ • Écart D/R G-D à 125 Hz : +8.65 dB.
+ • Écart D/R G-D à 160 Hz : -7.90 dB.
+ • Écart D/R G-D à 250 Hz : +9.42 dB.
+ • Écart D/R G-D à 1250 Hz : +6.45 dB.
+ • Écart D/R G-D à 4000 Hz : +3.51 dB.
+ • Corrélations D/R structurées : 4.
+ • Corrélation LOW_DRR_HIGH_RT60 : score 100, confiance 82 %.
+ • Corrélation LOW_DRR_DOMINANT_EARLY_REFLECTIONS : score 100, confiance 91 %.
+ • Corrélation DRR_SPATIAL_CHANNEL_ASYMMETRY : score 81, confiance 67 %.
+ • Corrélation FAVORABLE_DRR_HIGH_CLARITY : score 60, confiance 100 %.
+
+Conclusion
+
+Le rapport D/R large bande est favorable, mais plusieurs bandes présentent de fortes asymétries intercanales et des interactions défavorables avec la décroissance et les réflexions précoces.
+
+Gravité : HIGH
+Famille : DIRECT_REVERBERANT
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 38 / 100
+Confiance : 95%
+Niveau de preuve : CALCULATED
+
+Causes
+ • LOW_DRR_HIGH_RT60
+ • LOW_DRR_DOMINANT_EARLY_REFLECTIONS
+ • DRR_SPATIAL_CHANNEL_ASYMMETRY
+
+Recommandations
+ • Examiner les interactions D/R locales avant toute modification.
+
+------------------------------------------------------------
+Réverbération RT60
+
+Observations
+ • Canaux analysés : 3.
+ • Bandes de tiers d'octave communes : 24.
+ • RT60 large bande agrégé : 0.348 s.
+ • Étendue intercanal large bande : 0.346 à 0.352 s.
+ • Homogénéité intercanal : 66 %.
+ • Écarts G-D fiables significatifs : 3.
+ • Écart G-D fiable à 63 Hz : -0.398 s (confiance 77 %, méthodes T30/T30).
+ • Écart G-D fiable à 200 Hz : +0.214 s (confiance 98 %, méthodes T30/T30).
+ • Écart G-D fiable à 315 Hz : -0.374 s (confiance 86 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 100 Hz : +1.396 s (confiance 62 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 125 Hz : +3.224 s (confiance 37 %, méthodes T30/T30).
+ • Écart G-D non retenu, confiance insuffisante à 250 Hz : +3.168 s (confiance 55 %, méthodes T30/T30).
+
+Conclusion
+
+La moyenne est maîtrisée, mais plusieurs bandes présentent des écarts intercanaux importants et fiables.
+
+Gravité : HIGH
+Famille : RT60
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 40 / 100
+Confiance : 94%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Décroissances différentes selon les canaux
+ • Écarts RT60 fiables dans certaines bandes
+
+Recommandations
+ • Comparer le placement et les surfaces réfléchissantes des deux canaux.
+ • Examiner séparément les bandes présentant des écarts G-D fiables.
+
+------------------------------------------------------------
+Réflexions précoces
+
+Observations
+ • 4 surfaces réfléchissantes ont été évaluées.
+ • Un creux à 75.5 Hz (prominence 16.7 dB) correspond au sol.
+ • Distance estimée : 1.05 m.
+ • Délai de réflexion estimé : 6.1 ms.
+
+Conclusion
+
+Le creux observé vers 75 Hz est compatible avec une réflexion sur le sol situé à environ 1.05 m de l'enceinte.
+
+Gravité : HIGH
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 8 / 100
+Confiance : 92%
+Niveau de preuve : CONFIRMED
+
+Causes
+ • Réflexion précoce compatible avec le sol
+ • Distance réduite entre l'enceinte et une paroi
+
+Recommandations
+ • Vérifier la distance entre l'enceinte et la paroi identifiée
+ • Tester un déplacement progressif de l'enceinte
+ • Confirmer la correspondance avec une mesure dédiée
+
+------------------------------------------------------------
+Modes propres
+
+Mode tangentiel Longueur / Hauteur (indices (2, 0, 1)) à 88.49 Hz
+
+Gravité : HIGH
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Confiance : 91%
+Niveau de preuve : CONFIRMED
+
+Causes
+ • Correspondance avec le calcul théorique
+
+Recommandations
+ • Vérifier le placement du point d'écoute
+ • Ne pas corriger immédiatement avec un EQ
+
+------------------------------------------------------------
+Réflexions temporelles précoces
+
+Observations
+ • Canaux ETC disponibles : 3.
+ • Événements G-D communs : 65 ; spécifiques gauche : 10 ; spécifiques droite : 8.
+ • Réflexions dominantes avant 20 ms : 51.
+ • Dominante STEREO à 4.42 ms : -8.1 dB, trajet supplémentaire 1.51 m, confiance 100 %.
+ • Dominante LEFT à 2.77 ms : -8.3 dB, trajet supplémentaire 0.95 m, confiance 100 %.
+ • Dominante LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
+ • Dominante RIGHT à 6.31 ms : -9.4 dB, trajet supplémentaire 2.17 m, confiance 100 %.
+ • Dominante STEREO à 2.79 ms : -9.5 dB, trajet supplémentaire 0.96 m, confiance 100 %.
+ • Corrélations ETC-SBIR fiables : 16.
+ • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.33 ms, théorique 4.78 ms, erreur 0.45 ms, confiance 87 %.
+ • Surface candidate FRONT_WALL sur LEFT : délai mesuré 4.83 ms, théorique 4.78 ms, erreur 0.05 ms, confiance 95 %.
+ • Surface candidate FLOOR sur LEFT : délai mesuré 5.60 ms, théorique 6.12 ms, erreur 0.52 ms, confiance 86 %.
+ • Surface candidate FLOOR sur LEFT : délai mesuré 6.40 ms, théorique 6.12 ms, erreur 0.27 ms, confiance 91 %.
+ • Surface candidate CEILING sur LEFT : délai mesuré 8.94 ms, théorique 9.04 ms, erreur 0.10 ms, confiance 92 %.
+ • Événements importants non expliqués : 40.
+ • Non expliqué LEFT à 2.77 ms : -8.3 dB, trajet supplémentaire 0.95 m, confiance 100 %.
+ • Non expliqué LEFT à 2.06 ms : -9.1 dB, trajet supplémentaire 0.71 m, confiance 100 %.
+ • Non expliqué STEREO à 2.79 ms : -9.5 dB, trajet supplémentaire 0.96 m, confiance 100 %.
+ • Non expliqué STEREO à 14.58 ms : -10.2 dB, trajet supplémentaire 5.00 m, confiance 100 %.
+ • Non expliqué STEREO à 2.19 ms : -11.6 dB, trajet supplémentaire 0.75 m, confiance 100 %.
+
+Conclusion
+
+Des réflexions précoces dominantes restent sans explication structurée.
+
+Gravité : HIGH
+Famille : ETC
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 26 / 100
+Confiance : 91%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Événements temporels spécifiques à un canal
+ • Réflexion compatible avec la surface CEILING
+ • Réflexion compatible avec la surface FLOOR
+ • Réflexion compatible avec la surface FRONT_WALL
+ • Réflexions dominantes sans corrélation ETC-SBIR fiable
+
+Recommandations
+ • Comparer les conditions temporelles des canaux gauche et droit.
+ • Examiner les événements dominants non corrélés avant toute correction.
+
+------------------------------------------------------------
+Clarté et définition
+
+Observations
+ • Canaux de clarté disponibles : 3.
+ • Bandes de tiers d'octave communes : 24.
+ • Canal gauche : C50 12.9 dB, C80 18.4 dB, D50 95.1 %, Ts 0.015 s, confiance 94 %.
+ • Canal droit : C50 11.8 dB, C80 17.4 dB, D50 93.8 %, Ts 0.016 s, confiance 94 %.
+ • Canal L+R : C50 12.2 dB, C80 17.4 dB, D50 94.3 %, Ts 0.017 s, confiance 97 %.
+ • Écarts G-D disponibles : C50 24, C80 24, D50 24, Ts 24.
+ • Corrélations temporelles structurées : 3.
+ • Corrélation LOW_CLARITY_HIGH_RT60 sur 1 bande(s) : score 70, confiance 91 %.
+ • Corrélation LOW_CLARITY_DENSE_EARLY_REFLECTIONS sur 1 bande(s) : score 100, confiance 91 %.
+ • Corrélation HIGH_CENTER_TIME_LATE_DECAY sur 1 bande(s) : score 60, confiance 91 %.
+
+Conclusion
+
+Des corrélations temporelles structurées affectent les indicateurs de clarté.
+
+Gravité : HIGH
+Famille : CLARITY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 40 / 100
+Confiance : 91%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Clarté faible associée à une décroissance RT60 longue
+ • Clarté faible associée à des réflexions précoces denses
+ • Temps central élevé associé à une énergie tardive persistante
+
+Recommandations
+ • Examiner les bandes où clarté et décroissance tardive sont corrélées.
+ • Examiner les réflexions précoces fortes dans les bandes concernées.
+
+------------------------------------------------------------
+Creux importants
+
+Creux principal à 367.0 Hz (prominence 17.7 dB)
+
+Gravité : HIGH
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Confiance : 90%
+Niveau de preuve : OBSERVED
+
+Recommandations
+ • Identifier l'origine du creux
+ • Comparer les mesures gauche / droite
+ • Mesurer le subwoofer séparément
+
+------------------------------------------------------------
+Raisonnement acoustique déterministe
+
+Observations
+ • ASYMMETRIC_SPEAKER_ROOM_INTERACTION : SUPPORTED, support 82/100, confiance 63 %, preuves 5, contre-preuves 1, faits manquants 1.
+ • MODAL_BASS_PERSISTENCE : SUPPORTED, support 94/100, confiance 73 %, preuves 2, contre-preuves 0, faits manquants 0.
+ • DOMINANT_EARLY_REFLECTION_INTERACTION : SUPPORTED, support 100/100, confiance 91 %, preuves 2, contre-preuves 0, faits manquants 0.
+ • SBIR_PLACEMENT_INTERACTION : SUPPORTED, support 96/100, confiance 94 %, preuves 2, contre-preuves 0, faits manquants 0.
+
+Conclusion
+
+Des hypothèses acoustiques sont soutenues par des chaînes de preuves structurées.
+
+Gravité : HIGH
+Confiance : 80%
+Niveau de preuve : CALCULATED
+
+Causes
+ • ASYMMETRIC_SPEAKER_ROOM_INTERACTION
+ • MODAL_BASS_PERSISTENCE
+ • DOMINANT_EARLY_REFLECTION_INTERACTION
+ • SBIR_PLACEMENT_INTERACTION
+
+Recommandations
+ • VERIFY_SPEAKER_ROOM_ASYMMETRY — left_right_measurements_and_placement.
+ • VERIFY_MODAL_BASS_PERSISTENCE — bass_decay_at_multiple_positions.
+ • VERIFY_DOMINANT_EARLY_REFLECTION — candidate_early_reflection_surface.
+ • VERIFY_SBIR_PLACEMENT — speaker_distance_to_candidate_surface.
+
+------------------------------------------------------------
+Densité modale
+
+Observations
+ • 28 modes sont présents sous la fréquence de Schroeder.
+ • Répartition : 8 axiaux, 14 tangentiels, 6 obliques.
+ • Espacement modal moyen : 3.3 Hz (de 0.0 à 15.9 Hz).
+ • Cette analyse couvre les trois familles modales.
+ • Entre 20 et 50 Hz, 3 modes forment une zone clairsemée, espacement moyen 6.7 Hz.
+
+Conclusion
+
+La distribution modale présente des zones modales clairsemées.
+
+Gravité : HIGH
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 33 / 100
+Confiance : 75%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Dimensions de la pièce
+ • Répartition des modes propres sous la fréquence de Schroeder
+
+Recommandations
+ • Interpréter les pics et creux dans les zones modales identifiées
+ • Mesurer plusieurs positions d'écoute dans le grave
+ • Vérifier la répartition des anomalies par famille modale
+
+------------------------------------------------------------
+Décroissance dans le grave
+
+Observations
+ • Canaux Bass Decay disponibles : 3.
+ • Bandes communes exploitables : 9.
+ • Couverture Bass Decay : 82 %.
+ • Temps de décroissance maximal : 3.437 s.
+ • Écarts G-D Bass Decay significatifs : 4.
+ • Corrélations Bass Decay structurées : 2.
+ • Bande 31.5 Hz : 3.437 s, confiance 68 %.
+ • Bande 40.0 Hz : 1.820 s, confiance 86 %.
+ • Bande 50.0 Hz : 0.582 s, confiance 94 %.
+ • Bande 63.0 Hz : 0.701 s, confiance 92 %.
+ • Bande 80.0 Hz : 0.505 s, confiance 83 %.
+ • Bande 100.0 Hz : 0.549 s, confiance 89 %.
+ • Bande 125.0 Hz : 0.430 s, confiance 86 %.
+ • Bande 160.0 Hz : 0.332 s, confiance 83 %.
+ • Bande 200.0 Hz : 0.432 s, confiance 83 %.
+ • Corrélation SLOW_DECAY_MODAL_INTERACTION : score 88, confiance 75 %.
+ • Corrélation ASYMMETRIC_BASS_DECAY : score 100, confiance 52 %.
+
+Conclusion
+
+La décroissance basse fréquence présente des persistances structurées et des asymétries intercanales.
+
+Gravité : HIGH
+Famille : BASS_DECAY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 25 / 100
+Confiance : 69%
+Niveau de preuve : CALCULATED
+
+Causes
+ • SLOW_DECAY_MODAL_INTERACTION
+ • ASYMMETRIC_BASS_DECAY
+
+Recommandations
+ • Examiner les bandes de décroissance longue avant toute correction.
+ • Vérifier l'excitation modale aux fréquences concernées.
+ • Comparer les décroissances des canaux gauche et droit.
+
+------------------------------------------------------------
+Analyse spatiale de paire
+
+Observations
+ • Protocole : paire d'enceintes mesurée au même point.
+ • Symétrie de niveau : ASYMMETRIC.
+ • Alignement temporel relatif : OFFSET.
+ • Cohérence de paire : WEAK.
+ • Stabilité technique du centre : UNSTABLE.
+ • Différence de niveau large bande : +1.88 dB.
+ • Différence temporelle large bande : +0.250 ms.
+ • Corrélation croisée large bande : 0.424.
+ • Bandes les plus asymétriques : 315 Hz, 800 Hz, 125 Hz, 160 Hz, 200 Hz.
+ • Corrélations spatiales structurées : 2.
+ • Corrélation SPATIAL_LEVEL_STEREO_IMBALANCE : score 81, confiance 67 %.
+ • Corrélation SPATIAL_COHERENCE_CLARITY_ASYMMETRY : score 100, confiance 67 %.
+
+Conclusion
+
+La paire présente des asymétries techniques de niveau, de temps ou de cohérence.
+
+Gravité : HIGH
+Famille : SPATIAL
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 40 / 100
+Confiance : 67%
+Niveau de preuve : CALCULATED
+
+Causes
+ • SPATIAL_LEVEL_STEREO_IMBALANCE
+ • SPATIAL_COHERENCE_CLARITY_ASYMMETRY
+
+Recommandations
+ • Examiner les bandes et analyses sources des corrélations spatiales.
+
+------------------------------------------------------------
+Symétrie stéréo
+
+Observations
+ • Pics : 3 communs, 14 spécifiques à gauche, 18 spécifiques à droite.
+ • Modes axiaux : 0 communs, 2 spécifiques à gauche, 2 spécifiques à droite.
+ • Écart G-D grave : +3.1 dB.
+ • Écart G-D médium : -0.5 dB.
+ • Écart G-D aigu : +1.3 dB.
+
+Conclusion
+
+Asymétrie modérée principalement localisée dans le grave (+3.1 dB).
+
+Gravité : MEDIUM
+Famille : FREQUENCY
+Readiness : AVAILABLE
+Validité : Validité technique établie
+Score : 70 / 100
+Confiance : 90%
+Niveau de preuve : OBSERVED
+
+Causes
+ • Placement asymétrique des enceintes
+ • Influence de la pièce sur un seul canal
+ • Différence de position ou de câblage d'une enceinte
+
+Recommandations
+ • Comparer les mesures gauche et droite
+ • Vérifier le positionnement des enceintes
+ • Contrôler la symétrie de la zone d'écoute
+
+------------------------------------------------------------
+Confiance de l'analyse
+
+Observations
+ • Preuves disponibles : 10 ; indisponibles : 1.
+ • Couverture des preuves : 91 %.
+ • Accord des confiances locales : 67 %.
+ • modal_density : 75/100 — Confiance locale disponible : 75.0/100.
+ • sbir : 92/100 — Confiance locale disponible : 92.4/100.
+ • stereo : 0/100 — Confiance locale indisponible.
+ • rt60 : 94/100 — Confiance locale disponible : 93.6/100.
+ • etc : 91/100 — Confiance locale disponible : 91.1/100.
+ • clarity : 67/100 — Confiance locale disponible : 67.2/100.
+ • spatial : 67/100 — Confiance locale disponible : 67.0/100.
+ • direct_reverberant : 95/100 — Confiance locale disponible : 94.9/100.
+ • bass_decay : 69/100 — Confiance locale disponible : 68.8/100.
+ • measurement_quality : 100/100 — Confiance locale disponible : 100.0/100.
+ • measurement_readiness : 100/100 — Confiance locale disponible : 100.0/100.
+ • coverage : 91/100 — 10/11 analyses fournissent une confiance locale.
+ • agreement : 67/100 — Dispersion des confiances locales : 33.0 point(s).
+ • Readiness des mesures : toutes les familles disponibles.
+
+Conclusion
+
+Les analyses sont exploitables, avec certaines limites de couverture ou d'accord.
+
+Gravité : MEDIUM
+Confiance interne agrégée : 82 / 100
+Confiance : 82%
+Niveau de preuve : CALCULATED
+
+Causes
+ • Certaines analyses ou confiances locales sont indisponibles
+ • Les confiances locales présentent une dispersion
+
+Recommandations
+ • Compléter les analyses ou mesures indisponibles.
+ • Examiner les analyses dont la confiance locale est faible.
+
+------------------------------------------------------------
+Qualité des mesures
+
+Observations
+ • Issues techniques structurées : 0.
+ • Familles bloquées : 0.
+ • Familles disponibles avec réserves : 0.
+ • FREQUENCY : AVAILABLE, confiance 100 %.
+ • RT60 : AVAILABLE, confiance 100 %.
+ • ETC : AVAILABLE, confiance 100 %.
+ • CLARITY : AVAILABLE, confiance 100 %.
+ • SPATIAL : AVAILABLE, confiance 100 %.
+ • DIRECT_REVERBERANT : AVAILABLE, confiance 100 %.
+ • BASS_DECAY : AVAILABLE, confiance 100 %.
+
+Conclusion
+
+Les mesures sont techniquement exploitables pour les familles évaluées.
+
+Gravité : LOW
+Confiance : 100%
+Niveau de preuve : CALCULATED
+
+Recommandations
+ • Conserver les conditions de mesure actuelles.
+

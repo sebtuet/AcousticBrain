@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "exploratory_proposal_input": {
+    "candidate_id": "generated.left_first_reflection_temporary_absorption.reflection",
+    "reference_experiment_id": "baseline",
+    "reference_content_fingerprint": "REPLACE_WITH_EXACT_REFERENCE_CONTENT_HASH",
+    "reference_configuration": {
+      "listening_position": "REPLACE_WITH_EXACT_DECLARED_VALUE",
+      "loudspeaker_positions": "REPLACE_WITH_EXACT_DECLARED_VALUE",
+      "microphone_position": "REPLACE_WITH_EXACT_DECLARED_VALUE",
+      "room_configuration": "REPLACE_WITH_EXACT_DECLARED_VALUE"
+    },
+    "action_parameters": {
+      "target": "LEFT_FIRST_REFLECTION_AREA",
+      "treatment": "REPLACE_WITH_EXPLICIT_USER_DECLARATION"
+    },
+    "return_action": "REMOVE_TREATMENT_AND_RESTORE_EXACT_REFERENCE_CONFIGURATION",
+    "feasibility_question": "Can you perform this exact temporary intervention without changing any controlled variable, then remove it and restore the exact reference configuration?",
+    "limitations": [
+      "CAUSALITY_NOT_ESTABLISHED",
+      "NO_PERMANENT_CHANGE_AUTHORIZED",
+      "NO_UNIVERSAL_OPTIMUM_CLAIMED"
+    ],
+    "field_provenance": {
+      "target": "GENERATED_ACOUSTIC_EXPERIMENT",
+      "treatment": "EXPLICIT_USER_DECLARATION"
+    }
+  }
+}
