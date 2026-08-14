@@ -22,7 +22,7 @@ exact confirmed preparation
 + explicit absent target experiment_id
 → existing declaration-readiness service
 → READY_PLAN_DECLARATION_READY
-→ separate declaration command
+→ separate public `main.py` declaration command
 ```
 
 ## Inputs and resolution
@@ -46,10 +46,19 @@ READY_PLAN_DECLARATION_READY
 ```
 
 The view preserves every closed preflight status and renders exactly one user
-action: the existing separate experiment-declaration command with the same
-measurement root, plan, reference, target and qualified preparation identifiers.
-The command uses the qualified declaration extension documented in
+action: the public `main.py` declaration adapter with the same measurement
+root, plan, reference, target and qualified preparation identifiers. The
+command uses the qualified declaration extension documented in
 `CHANNEL_ISOLATION_QUALIFIED_DECLARATION_CONTRACT.md`.
+
+```text
+python main.py --measurements-root PATH \
+  --declare-evidence-plan-experiment NEW_EXPERIMENT_ID \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference REFERENCE_EXPERIMENT_ID \
+  --evidence-plan-declaration-preparation-registry REGISTRY_PATH \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
+```
 
 ## CLI
 

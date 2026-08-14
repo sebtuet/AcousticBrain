@@ -33,7 +33,7 @@ def confirmed_registry():
     ))
 
 
-def test_cli_renders_only_the_separate_existing_declaration_command(tmp_path, capsys):
+def test_cli_renders_only_the_separate_public_declaration_command(tmp_path, capsys):
     (tmp_path / "baseline").mkdir()
     registry = confirmed_registry()
     confirmation_id = registry.records[0].confirmation_input.confirmation_id
@@ -51,7 +51,10 @@ def test_cli_renders_only_the_separate_existing_declaration_command(tmp_path, ca
     output = capsys.readouterr().out
     assert result.statuses[-1] == "DECLARATION_READY"
     assert output.count("Action utilisateur") == 1
-    assert "python -m acousticbrain.commands.declare_evidence_plan_experiment" in output
+    assert "python main.py --measurements-root" in output
+    assert "--declare-evidence-plan-experiment channel-isolation-001" in output
+    assert "--evidence-plan-declaration-preparation-registry" in output
+    assert "--evidence-plan-declaration-preparation" in output
     assert "DECLARATION_READY ne signifie pas EXECUTED" in output
     assert tuple(path.name for path in tmp_path.iterdir()) == before
     assert not (tmp_path / "channel-isolation-001").exists()

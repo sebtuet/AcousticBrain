@@ -204,6 +204,8 @@ chemin demandé.
 Une commande applicative permet de sélectionner séparément le dossier de
 mesures et le fichier de description :
 
+> Expert/internal contract adapter — not part of the PUBLIC_V1 CLI.
+
 ```bash
 python -m acousticbrain.commands.load_room_description \
   --measurements measurements \

@@ -64,6 +64,7 @@ READY_PLAN_PREPARATION_AMBIGUOUS
 READY_PLAN_PREPARATION_STALE
 READY_PLAN_PREPARATION_INCOMPLETE
 READY_PLAN_PREPARATION_CONFIRMED
+READY_PLAN_DECLARATION_READY
 ```
 
 These are product-navigation states, not scientific conclusions. A confirmed
@@ -93,6 +94,11 @@ Actions route the user only to an existing workflow:
 - regenerate a draft after an incompatible historical record;
 - inspect and revise the exact preparation when it is incomplete;
 - run the existing declaration-readiness preflight when it is confirmed.
+
+When that preflight is supplied and succeeds, `READY_PLAN_DECLARATION_READY`
+routes to the public `main.py` declaration adapter with the exact qualified
+plan, reference, experiment, preparation and registry values. It remains a
+separate explicit mutation.
 
 The view never invokes those operations and never recommends changing a user
 answer merely to unlock a later step.

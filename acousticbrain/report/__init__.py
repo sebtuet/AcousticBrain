@@ -208,6 +208,11 @@ from .evidence_plan_preparation_user_view_presenter import (
     EvidencePlanPreparationUserViewPresenter,
     PresentedEvidencePlanPreparationUserView,
 )
+from .sbir_protocol_instance_view_presenter import (
+    PresentedSBIRProtocolInstanceView,
+    SBIRProtocolInstanceViewConsoleReporter,
+    SBIRProtocolInstanceViewPresenter,
+)
 from .experiment_campaign_presenter import (
     ExperimentCampaignPresenter,
     PresentedCampaignBranchResult,

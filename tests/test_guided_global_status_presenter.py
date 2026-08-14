@@ -521,10 +521,13 @@ def test_exact_declaration_readiness_routes_to_separate_declaration(tmp_path):
     assert result.workflow_state == "READY_PLAN_DECLARATION_READY"
     assert result.user_action_state == "DECLARE_EXPERIMENT_SEPARATELY"
     assert "DECLARATION_READY" in " ".join(result.validated_step_lines)
-    assert "--experiment channel-isolation-001" in result.user_action
-    assert "--reference baseline" in result.user_action
-    assert "--preparation-registry" in result.user_action
-    assert "--preparation preparation-001" in result.user_action
+    assert "python main.py --measurements-root" in result.user_action
+    assert "python -m acousticbrain.commands" not in result.user_action
+    assert "--declare-evidence-plan-experiment channel-isolation-001" in result.user_action
+    assert "--evidence-plan-id READY_PLAN" in result.user_action
+    assert "--evidence-plan-reference baseline" in result.user_action
+    assert "--evidence-plan-declaration-preparation-registry" in result.user_action
+    assert "--evidence-plan-declaration-preparation preparation-001" in result.user_action
     assert str(tmp_path.resolve()) in result.user_action
     assert result.causality_status == "NOT_ESTABLISHED"
 

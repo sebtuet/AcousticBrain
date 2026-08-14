@@ -94,6 +94,10 @@ from .sbir_protocol_instance_preview import (
     SBIRProtocolInstancePreviewResult,
     SBIRProtocolInstancePreviewService,
 )
+from .sbir_protocol_instance_view import (
+    SBIRProtocolInstanceView,
+    SBIRProtocolInstanceViewService,
+)
 from .sbir_protocol_instance_sources import (
     SBIRDisplacementSource,
     SBIRDisplacementPlanningSource,

@@ -152,23 +152,32 @@ directement `proposal_id` avec tous les champs PR-043; le manifeste PR-043
 conserve l'association dans la provenance de chaque champ, sans migration de
 schéma. Elle ne crée ni résultat, ni score, ni causalité.
 
-## Acceptation CLI explicite
+## Acceptation CLI publique explicite
 
-La commande suivante est la seule écriture ajoutée par PR-044 :
+`main.py` expose l'adaptateur public stable de la seule écriture ajoutée par
+PR-044 :
 
 ```bash
-python -m acousticbrain.commands.accept_positioning_proposal \
-  measurements \
-  --proposal-id loudspeaker_positioning_proposal.v1.example \
-  --experiment exp-007 \
-  --reference exp-006 \
-  --note "Pas expérimental réversible accepté par l'utilisateur."
+python main.py \
+  --measurements-root measurements \
+  --accept-positioning-proposal loudspeaker_positioning_proposal.v1.example \
+  --positioning-experiment-id exp-007 \
+  --positioning-reference exp-006 \
+  --positioning-declaration-note \
+    "Pas expérimental réversible accepté par l'utilisateur."
 ```
 
-La commande revalide que le `proposal_id` est actuellement éligible avant de
-créer le dossier cible et son `manifest.json`. Elle ne modifie aucun fichier de
-mesure. Sans invocation explicite, l'analyse et le rapport restent strictement
-en lecture/projection et n'acceptent aucune proposition.
+`main.py` valide uniquement la présence et l'exclusivité des arguments publics,
+puis délègue directement à l'adaptateur existant
+`acousticbrain.commands.accept_positioning_proposal`. Celui-ci revalide que le
+`proposal_id` est actuellement éligible avant de créer le dossier cible et son
+`manifest.json`. Il ne modifie aucun fichier de mesure. Sans invocation
+explicite, l'analyse et le rapport restent strictement en lecture/projection et
+n'acceptent aucune proposition.
+
+Cette acceptation crée une déclaration d'intention contrôlée. Elle ne déplace
+pas réellement une enceinte, n'exécute ni acquisition ni expérience, ne crée
+aucun résultat et n'établit aucune causalité.
 
 ## Cas réel `exp-006`
 

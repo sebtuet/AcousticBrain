@@ -570,18 +570,18 @@ class GuidedGlobalStatusPresenter:
             statuses = ", ".join(declaration_readiness.statuses)
             command = shlex.join((
                 "python",
-                "-m",
-                "acousticbrain.commands.declare_evidence_plan_experiment",
+                "main.py",
+                "--measurements-root",
                 str(measurement_root.resolve()),
-                "--plan-id",
-                recommended.plan_id,
-                "--experiment",
+                "--declare-evidence-plan-experiment",
                 declaration_readiness.experiment_id,
-                "--reference",
+                "--evidence-plan-id",
+                recommended.plan_id,
+                "--evidence-plan-reference",
                 declaration_readiness.reference_experiment_id,
-                "--preparation-registry",
+                "--evidence-plan-declaration-preparation-registry",
                 str(preparation_registry_path.resolve()),
-                "--preparation",
+                "--evidence-plan-declaration-preparation",
                 confirmation.confirmation_id,
             ))
             return self._result(

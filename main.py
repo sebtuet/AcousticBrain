@@ -1,3 +1,7 @@
+from runtime_requirement import enforce_supported_python
+
+enforce_supported_python()
+
 import argparse
 import json
 from contextlib import redirect_stdout
@@ -15,6 +19,10 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.commands import (
+    accept_positioning_proposal as positioning_proposal_acceptance_command,
+    declare_evidence_plan_experiment as evidence_plan_declaration_command,
+)
 from acousticbrain.analysis import ExperimentPlanner
 from acousticbrain.application import (
     EvidencePlanCompletionService,
@@ -30,7 +38,11 @@ from acousticbrain.application import (
     ChannelIsolationDeclarationReadinessService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
+    SBIRProtocolInstanceViewService,
     SBIRProtocolInstanceSourceOverviewService,
+    SBIRProtocolInstanceCompatibilityValidator,
+    SBIRProtocolInstanceRecordingService,
+    SBIRProtocolInstanceResolver,
     SBIRRoomGeometryPreviewService,
     SBIRRoomGeometryRecordingService,
     SBIRRoomGeometryResolver,
@@ -59,6 +71,8 @@ from acousticbrain.report import (
     GuidedGlobalStatusPresenter,
     EvidencePlanPreparationUserViewConsoleReporter,
     EvidencePlanPreparationUserViewPresenter,
+    SBIRProtocolInstanceViewConsoleReporter,
+    SBIRProtocolInstanceViewPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -223,7 +237,68 @@ def create_parser():
         type=Path,
         default=None,
         metavar="PATH",
-        help="dedicated completion registry JSON (required for completion)",
+        help="dedicated completion registry JSON",
+    )
+    parser.add_argument(
+        "--declare-evidence-plan-experiment",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="explicitly declare one exact READY evidence plan",
+    )
+    parser.add_argument(
+        "--accept-positioning-proposal",
+        default=None,
+        metavar="PROPOSAL_ID",
+        help="accept one exact currently eligible positioning proposal",
+    )
+    parser.add_argument(
+        "--positioning-experiment-id",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="new experiment id for --accept-positioning-proposal",
+    )
+    parser.add_argument(
+        "--positioning-reference",
+        default=None,
+        metavar="REFERENCE_EXPERIMENT_ID",
+        help="explicit reference experiment for --accept-positioning-proposal",
+    )
+    parser.add_argument(
+        "--positioning-declaration-note",
+        default=None,
+        metavar="TEXT",
+        help="optional declaration note for --accept-positioning-proposal",
+    )
+    parser.add_argument(
+        "--evidence-plan-id",
+        default=None,
+        metavar="PLAN_ID",
+        help="exact READY evidence plan for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-reference",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="exact reference experiment for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-note",
+        default=None,
+        metavar="TEXT",
+        help="optional user note for --declare-evidence-plan-experiment",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-preparation-registry",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="explicit preparation registry for a qualified declaration",
+    )
+    parser.add_argument(
+        "--evidence-plan-declaration-preparation",
+        default=None,
+        metavar="CONFIRMATION_ID",
+        help="exact preparation confirmation for a qualified declaration",
     )
     parser.add_argument(
         "--confirm-evidence-plan-preparation",
@@ -271,6 +346,19 @@ def create_parser():
         default=None,
         metavar="INPUT_JSON",
         help="preview one exact SBIR protocol instance without recording it",
+    )
+    parser.add_argument(
+        "--record-sbir-protocol-instance",
+        type=Path,
+        default=None,
+        metavar="INPUT_JSON",
+        help="explicitly record one compatible SBIR protocol instance",
+    )
+    parser.add_argument(
+        "--sbir-protocol-instance-view",
+        default=None,
+        metavar="INSTANCE_ID",
+        help="read one exact recorded SBIR protocol instance without re-analysis",
     )
     parser.add_argument(
         "--sbir-protocol-instance-sources",
@@ -772,6 +860,7 @@ def preview_sbir_protocol_instance(
     protocol_instance_input,
     registry_path,
     *,
+    input_path=None,
     brain=None,
     service=None,
     registry_repository=None,
@@ -834,13 +923,122 @@ def preview_sbir_protocol_instance(
     if result.registry_state == "ALREADY_RECORDED":
         print("Aucune action : cette instance identique est déjà enregistrée.")
     else:
+        print("Après vérification, vous pouvez enregistrer explicitement avec :")
         print(
-            "Aucune écriture depuis cette vue ; la commande d’enregistrement "
-            "explicite n’est pas encore exposée."
+            "python main.py --measurements-root "
+            f"{measurements_root} --record-sbir-protocol-instance "
+            f"{input_path if input_path is not None else '<INPUT_JSON>'} "
+            f"--sbir-protocol-instance-registry {registry_path}"
+        )
+        print(
+            "Cette action consigne uniquement l’instance compatible ; elle ne "
+            "déclare ni n’exécute une expérience."
         )
     print("Aucune instance enregistrée et aucune expérience exécutée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
+
+
+def record_sbir_protocol_instance(
+    measurements_root,
+    protocol_instance_input,
+    registry_path,
+    *,
+    brain=None,
+    resolver=None,
+    validator=None,
+    recording_service=None,
+):
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("SBIR protocol-instance recording requires an exact context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    geometry = getattr(context, "geometry_sbir_analysis", None)
+    positioning = getattr(
+        context,
+        "loudspeaker_positioning_experiment_analysis",
+        None,
+    )
+    if synthesis is None or geometry is None or positioning is None:
+        raise ValueError("SBIR protocol-instance recording sources are unavailable.")
+    proposal = getattr(positioning, "proposal", None)
+    resolution = (resolver or SBIRProtocolInstanceResolver()).resolve(
+        protocol_instance_input,
+        plans=synthesis.plans,
+        protocol_ids=(protocol_instance_input.PROTOCOL_ID,),
+        experiments=tuple(getattr(context, "experiment_descriptors", ())),
+        geometry_candidates=geometry.candidates,
+    )
+    compatibility = (
+        validator or SBIRProtocolInstanceCompatibilityValidator()
+    ).validate(
+        resolution,
+        displacement_proposals=(proposal,) if proposal is not None else (),
+    )
+    result = (
+        recording_service or SBIRProtocolInstanceRecordingService()
+    ).record(
+        compatibility,
+        registry_path=registry_path,
+    )
+    record = result.record
+    print(
+        "SBIR PROTOCOL INSTANCE RECORDED — "
+        + protocol_instance_input.protocol_instance_id
+    )
+    print()
+    print("Provenance résolue")
+    print(f"Plan : {record.source_plan_id}")
+    print(f"Protocole : {record.protocol_id}")
+    print(f"Expérience de référence : {record.reference_experiment_id}")
+    print(f"Expérience déplacée : {record.moved_experiment_id}")
+    print(f"Candidat géométrique : {record.geometry_candidate_id}")
+    print(f"Proposition de déplacement : {record.displacement_proposal_id}")
+    print()
+    print("Décisions enregistrées")
+    for decision in record.resolution_decisions:
+        print(decision.value)
+    for decision in record.compatibility_decisions:
+        print(decision.value)
+    print(
+        "État du registre : "
+        + ("RECORDED" if result.persisted else "ALREADY_RECORDED")
+    )
+    print(f"Registre : {result.registry_path}")
+    print()
+    print("Frontière scientifique")
+    print("Aucune expérience n’a été déclarée ou exécutée.")
+    print("Aucune causalité, correction permanente ou préférence n’est établie.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def show_sbir_protocol_instance_view(
+    protocol_instance_id,
+    registry_path,
+    *,
+    registry_repository=None,
+    service=None,
+    presenter=None,
+    reporter=None,
+):
+    registry = (
+        registry_repository or SBIRProtocolInstanceRegistryJsonRepository()
+    ).load(registry_path)
+    view = (service or SBIRProtocolInstanceViewService()).view(
+        protocol_instance_id,
+        registry=registry,
+    )
+    presented = (presenter or SBIRProtocolInstanceViewPresenter()).present(view)
+    (reporter or SBIRProtocolInstanceViewConsoleReporter()).print(presented)
+    return presented
 
 
 def show_sbir_protocol_instance_sources(
@@ -1211,7 +1409,17 @@ def show_channel_isolation_journey(
     if journey.user_action_state == "REVIEW_PREPARATION_DECLARATION":
         print("Revoir les prérequis non confirmés ; aucune déclaration d’expérience n’est disponible.")
     else:
-        print("Déclarer séparément l’expérience depuis ce plan exact avant toute acquisition.")
+        print(
+            "Lancer d’abord le préflight de déclaration, en fournissant vous-même "
+            "une référence existante et un nouvel identifiant d’expérience ; la "
+            "déclaration reste ensuite une action explicite séparée :"
+        )
+        print(
+            "python main.py --measurements-root "
+            f"{measurements_root} --channel-isolation-declaration-readiness "
+            f"{plan_id} --channel-isolation-preparation {confirmation_id} "
+            f"--evidence-plan-preparation-registry {registry_path}"
+        )
     print()
     print("Frontière scientifique")
     print("Cette checklist ne vérifie aucune condition physique et n’exécute aucune mesure.")
@@ -1529,10 +1737,13 @@ def show_channel_isolation_declaration_readiness(
     print("Action utilisateur")
     print("Déclarer séparément le contrat expérimental avec :")
     print(
-        "python -m acousticbrain.commands.declare_evidence_plan_experiment "
-        f"{measurements_root} --plan-id {result.plan_id} "
-        f"--experiment {result.experiment_id} "
-        f"--reference {result.reference_experiment_id}"
+        "python main.py --measurements-root "
+        f"{measurements_root} --declare-evidence-plan-experiment "
+        f"{result.experiment_id} --evidence-plan-id {result.plan_id} "
+        f"--evidence-plan-reference {result.reference_experiment_id} "
+        "--evidence-plan-declaration-preparation-registry "
+        f"{registry_path} --evidence-plan-declaration-preparation "
+        f"{result.confirmation_id}"
     )
     print()
     print("Frontière scientifique")
@@ -1845,6 +2056,12 @@ def main(
     evidence_plan_preparation_preview_service=None,
     sbir_protocol_instance_loader=None,
     sbir_protocol_instance_preview_service=None,
+    sbir_protocol_instance_view_service=None,
+    sbir_protocol_instance_view_presenter=None,
+    sbir_protocol_instance_view_reporter=None,
+    sbir_protocol_instance_resolver=None,
+    sbir_protocol_instance_compatibility_validator=None,
+    sbir_protocol_instance_recording_service=None,
     sbir_protocol_instance_source_overview_service=None,
     sbir_protocol_instance_registry_repository=None,
     sbir_room_geometry_loader=None,
@@ -1869,6 +2086,30 @@ def main(
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
     if arguments.record_exploratory_feasibility is not None:
+        declaration_arguments = (
+            arguments.declare_evidence_plan_experiment,
+            arguments.evidence_plan_id,
+            arguments.evidence_plan_reference,
+            arguments.evidence_plan_declaration_note,
+            arguments.evidence_plan_declaration_preparation_registry,
+            arguments.evidence_plan_declaration_preparation,
+        )
+        positioning_arguments = (
+            arguments.accept_positioning_proposal,
+            arguments.positioning_experiment_id,
+            arguments.positioning_reference,
+            arguments.positioning_declaration_note,
+        )
+        if any(value is not None for value in positioning_arguments):
+            parser.error(
+                "--record-exploratory-feasibility cannot be combined with "
+                "positioning-proposal acceptance options."
+            )
+        if any(value is not None for value in declaration_arguments):
+            parser.error(
+                "--record-exploratory-feasibility cannot be combined with "
+                "evidence-plan declaration options."
+            )
         required = {
             "--exploratory-decisions": arguments.exploratory_decisions,
             "--exploratory-proposal-id": arguments.exploratory_proposal_id,
@@ -1895,6 +2136,117 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        positioning_specific_values = (
+            arguments.positioning_experiment_id,
+            arguments.positioning_reference,
+            arguments.positioning_declaration_note,
+        )
+        if arguments.accept_positioning_proposal is None:
+            if any(value is not None for value in positioning_specific_values):
+                raise ValueError(
+                    "Positioning-proposal acceptance options require "
+                    "--accept-positioning-proposal."
+                )
+        else:
+            required = (
+                ("--positioning-experiment-id", arguments.positioning_experiment_id),
+                ("--positioning-reference", arguments.positioning_reference),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--accept-positioning-proposal requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--full-assessment-output", arguments.full_assessment_output is not None),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--guided-status", arguments.guided_status),
+                ("--guided-preparation-registry", arguments.guided_preparation_registry is not None),
+                ("--guided-preparation", arguments.guided_preparation is not None),
+                ("--guided-declared-experiment", arguments.guided_declared_experiment is not None),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--evidence-plan-completion-registry", arguments.evidence_plan_completion_registry is not None),
+                ("--declare-evidence-plan-experiment", arguments.declare_evidence_plan_experiment is not None),
+                ("--evidence-plan-id", arguments.evidence_plan_id is not None),
+                ("--evidence-plan-reference", arguments.evidence_plan_reference is not None),
+                ("--evidence-plan-declaration-note", arguments.evidence_plan_declaration_note is not None),
+                ("--evidence-plan-declaration-preparation-registry", arguments.evidence_plan_declaration_preparation_registry is not None),
+                ("--evidence-plan-declaration-preparation", arguments.evidence_plan_declaration_preparation is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-registry", arguments.evidence_plan_preparation_registry is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-output", arguments.evidence_plan_preparation_output is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--preparation-status", bool(arguments.preparation_status)),
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-registry", arguments.sbir_protocol_instance_registry is not None),
+                ("--preview-sbir-room-geometry", arguments.preview_sbir_room_geometry is not None),
+                ("--declare-sbir-room-geometry", arguments.declare_sbir_room_geometry is not None),
+                ("--sbir-room-geometry-guide", arguments.sbir_room_geometry_guide),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--channel-isolation-preparation", arguments.channel_isolation_preparation is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--microphone-position-output", arguments.microphone_position_output is not None),
+                ("--acquisition-settings-output", arguments.acquisition_settings_output is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--microphone-position-record", arguments.microphone_position_record is not None),
+                ("--acquisition-settings-record", arguments.acquisition_settings_record is not None),
+                ("--revise-channel-isolation-records", arguments.revise_channel_isolation_records is not None),
+                ("--operational-field", bool(arguments.operational_field)),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--channel-isolation-source-preparation", arguments.channel_isolation_source_preparation is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+                ("--channel-isolation-reference", arguments.channel_isolation_reference is not None),
+                ("--channel-isolation-experiment", arguments.channel_isolation_experiment is not None),
+                ("--exploratory-proposal", bool(arguments.exploratory_proposal)),
+                ("--exploratory-decisions", arguments.exploratory_decisions is not None),
+                ("--record-exploratory-feasibility", arguments.record_exploratory_feasibility is not None),
+                ("--exploratory-proposal-id", arguments.exploratory_proposal_id is not None),
+                ("--exploratory-reference-scope-id", arguments.exploratory_reference_scope_id is not None),
+                ("--exploratory-note", arguments.exploratory_note is not None),
+                ("--declare-exploratory-experiment", arguments.declare_exploratory_experiment is not None),
+                ("--advisor", arguments.advisor),
+                ("--question", arguments.question is not None),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--accept-positioning-proposal cannot be combined with "
+                        f"{option}."
+                    )
+            acceptance_argv = (
+                str(measurements_root),
+                "--proposal-id", arguments.accept_positioning_proposal,
+                "--experiment", arguments.positioning_experiment_id,
+                "--reference", arguments.positioning_reference,
+            )
+            if arguments.positioning_declaration_note is not None:
+                acceptance_argv += (
+                    "--note",
+                    arguments.positioning_declaration_note,
+                )
+            positioning_proposal_acceptance_command.main(acceptance_argv)
+            return 0
         geometry_modes = (
             arguments.preview_sbir_room_geometry is not None,
             arguments.declare_sbir_room_geometry is not None,
@@ -1919,6 +2271,8 @@ def main(
                 arguments.exploratory,
                 arguments.guided_status,
                 arguments.preview_sbir_protocol_instance is not None,
+                arguments.record_sbir_protocol_instance is not None,
+                arguments.sbir_protocol_instance_view is not None,
                 arguments.sbir_protocol_instance_sources,
                 arguments.complete_evidence_plan is not None,
                 arguments.confirm_evidence_plan_preparation is not None,
@@ -2054,13 +2408,118 @@ def main(
                     )
         if arguments.question is not None and not arguments.advisor:
             raise ValueError("--question requires --advisor.")
+        declaration_preparation_values = (
+            arguments.evidence_plan_declaration_preparation_registry,
+            arguments.evidence_plan_declaration_preparation,
+        )
+        declaration_only_values = (
+            arguments.evidence_plan_id,
+            arguments.evidence_plan_reference,
+            arguments.evidence_plan_declaration_note,
+            *declaration_preparation_values,
+        )
+        if arguments.declare_evidence_plan_experiment is None:
+            if any(value is not None for value in declaration_only_values):
+                raise ValueError(
+                    "Evidence-plan declaration options require "
+                    "--declare-evidence-plan-experiment."
+                )
+        else:
+            required = (
+                ("--evidence-plan-id", arguments.evidence_plan_id),
+                ("--evidence-plan-reference", arguments.evidence_plan_reference),
+            )
+            missing = tuple(option for option, value in required if value is None)
+            if missing:
+                raise ValueError(
+                    "--declare-evidence-plan-experiment requires "
+                    + ", ".join(missing)
+                    + "."
+                )
+            if any(value is not None for value in declaration_preparation_values) and any(
+                value is None for value in declaration_preparation_values
+            ):
+                raise ValueError(
+                    "Qualified evidence-plan declaration requires both "
+                    "--evidence-plan-declaration-preparation-registry and "
+                    "--evidence-plan-declaration-preparation."
+                )
+            conflicting = (
+                ("--listening-position-campaign", arguments.listening_position_campaign is not None),
+                ("--campaign-reference-qualification", arguments.campaign_reference_qualification is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--full-assessment-output", arguments.full_assessment_output is not None),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--exploratory-proposal", bool(arguments.exploratory_proposal)),
+                ("--exploratory-decisions", arguments.exploratory_decisions is not None),
+                ("--exploratory-proposal-id", arguments.exploratory_proposal_id is not None),
+                ("--exploratory-reference-scope-id", arguments.exploratory_reference_scope_id is not None),
+                ("--exploratory-note", arguments.exploratory_note is not None),
+                ("--declare-exploratory-experiment", arguments.declare_exploratory_experiment is not None),
+                ("--advisor", arguments.advisor),
+                ("--question", arguments.question is not None),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+                ("--guided-status", arguments.guided_status),
+                ("--guided-preparation-registry", arguments.guided_preparation_registry is not None),
+                ("--guided-preparation", arguments.guided_preparation is not None),
+                ("--guided-declared-experiment", arguments.guided_declared_experiment is not None),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-registry", arguments.evidence_plan_preparation_registry is not None),
+                ("--evidence-plan-preparation-view", arguments.evidence_plan_preparation_view is not None),
+                ("--generate-evidence-plan-preparation", arguments.generate_evidence_plan_preparation is not None),
+                ("--evidence-plan-preparation-output", arguments.evidence_plan_preparation_output is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--revise-evidence-plan-preparation", arguments.revise_evidence_plan_preparation is not None),
+                ("--preparation-status", bool(arguments.preparation_status)),
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-registry", arguments.sbir_protocol_instance_registry is not None),
+                ("--preview-sbir-room-geometry", arguments.preview_sbir_room_geometry is not None),
+                ("--declare-sbir-room-geometry", arguments.declare_sbir_room_geometry is not None),
+                ("--sbir-room-geometry-guide", arguments.sbir_room_geometry_guide),
+                ("--channel-isolation-journey", arguments.channel_isolation_journey is not None),
+                ("--channel-isolation-preparation", arguments.channel_isolation_preparation is not None),
+                ("--generate-channel-isolation-records", arguments.generate_channel_isolation_records is not None),
+                ("--preview-channel-isolation-records", arguments.preview_channel_isolation_records is not None),
+                ("--revise-channel-isolation-records", arguments.revise_channel_isolation_records is not None),
+                ("--review-channel-isolation-documentation", arguments.review_channel_isolation_documentation is not None),
+                ("--channel-isolation-source-preparation", arguments.channel_isolation_source_preparation is not None),
+                ("--channel-isolation-declaration-readiness", arguments.channel_isolation_declaration_readiness is not None),
+                ("--channel-isolation-reference", arguments.channel_isolation_reference is not None),
+                ("--channel-isolation-experiment", arguments.channel_isolation_experiment is not None),
+                ("--microphone-position-output", arguments.microphone_position_output is not None),
+                ("--acquisition-settings-output", arguments.acquisition_settings_output is not None),
+                ("--microphone-position-record", arguments.microphone_position_record is not None),
+                ("--acquisition-settings-record", arguments.acquisition_settings_record is not None),
+                ("--operational-field", bool(arguments.operational_field)),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--declare-evidence-plan-experiment cannot be combined "
+                        f"with {option}."
+                    )
         if (
             arguments.complete_evidence_plan is None
             and arguments.evidence_plan_completion_registry is not None
+            and arguments.declare_evidence_plan_experiment is None
         ):
             raise ValueError(
                 "--evidence-plan-completion-registry requires "
-                "--complete-evidence-plan."
+                "--complete-evidence-plan or "
+                "--declare-evidence-plan-experiment."
             )
         if arguments.complete_evidence_plan is not None:
             if arguments.evidence_plan_completion_registry is None:
@@ -2088,6 +2547,35 @@ def main(
                     raise ValueError(
                         f"--complete-evidence-plan cannot be combined with {option}."
                     )
+        if arguments.declare_evidence_plan_experiment is not None:
+            declaration_argv = (
+                str(measurements_root),
+                "--plan-id", arguments.evidence_plan_id,
+                "--experiment", arguments.declare_evidence_plan_experiment,
+                "--reference", arguments.evidence_plan_reference,
+            )
+            if arguments.evidence_plan_completion_registry is not None:
+                declaration_argv += (
+                    "--completion-registry",
+                    str(arguments.evidence_plan_completion_registry),
+                )
+            if arguments.evidence_plan_declaration_note is not None:
+                declaration_argv += (
+                    "--note",
+                    arguments.evidence_plan_declaration_note,
+                )
+            if arguments.evidence_plan_declaration_preparation_registry is not None:
+                declaration_argv += (
+                    "--preparation-registry",
+                    str(arguments.evidence_plan_declaration_preparation_registry),
+                    "--preparation",
+                    arguments.evidence_plan_declaration_preparation,
+                )
+            evidence_plan_declaration_command.main(
+                declaration_argv,
+                brain=brain,
+            )
+            return 0
         if (
             arguments.confirm_evidence_plan_preparation is None
             and arguments.evidence_plan_preparation_view is None
@@ -2107,15 +2595,21 @@ def main(
         if arguments.preview_evidence_plan_preparation is not None and arguments.evidence_plan_preparation_registry is None:
             raise ValueError("--preview-evidence-plan-preparation requires --evidence-plan-preparation-registry.")
         if (
-            arguments.preview_sbir_protocol_instance is not None
+            (
+                arguments.preview_sbir_protocol_instance is not None
+                or arguments.record_sbir_protocol_instance is not None
+                or arguments.sbir_protocol_instance_view is not None
+            )
             and arguments.sbir_protocol_instance_registry is None
         ):
             raise ValueError(
-                "--preview-sbir-protocol-instance requires "
+                "SBIR protocol-instance preview, recording or view requires "
                 "--sbir-protocol-instance-registry."
             )
         if arguments.preview_sbir_protocol_instance is not None:
             conflicting = (
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
                 ("--guided-status", arguments.guided_status),
                 ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
                 ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
@@ -2140,9 +2634,40 @@ def main(
                         "--preview-sbir-protocol-instance cannot be combined "
                         f"with {option}."
                     )
+        if arguments.record_sbir_protocol_instance is not None:
+            conflicting = (
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--record-sbir-protocol-instance cannot be combined "
+                        f"with {option}."
+                    )
         if arguments.sbir_protocol_instance_sources:
             conflicting = (
                 ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-view", arguments.sbir_protocol_instance_view is not None),
                 ("--guided-status", arguments.guided_status),
                 ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
                 ("--observations", arguments.observations),
@@ -2167,12 +2692,45 @@ def main(
                     )
         if (
             arguments.preview_sbir_protocol_instance is None
+            and arguments.record_sbir_protocol_instance is None
+            and arguments.sbir_protocol_instance_view is None
             and arguments.sbir_protocol_instance_registry is not None
         ):
             raise ValueError(
                 "--sbir-protocol-instance-registry requires "
-                "--preview-sbir-protocol-instance."
+                "--preview-sbir-protocol-instance or "
+                "--record-sbir-protocol-instance or "
+                "--sbir-protocol-instance-view."
             )
+        if arguments.sbir_protocol_instance_view is not None:
+            conflicting = (
+                ("--preview-sbir-protocol-instance", arguments.preview_sbir_protocol_instance is not None),
+                ("--record-sbir-protocol-instance", arguments.record_sbir_protocol_instance is not None),
+                ("--sbir-protocol-instance-sources", arguments.sbir_protocol_instance_sources),
+                ("--guided-status", arguments.guided_status),
+                ("--complete-evidence-plan", arguments.complete_evidence_plan is not None),
+                ("--confirm-evidence-plan-preparation", arguments.confirm_evidence_plan_preparation is not None),
+                ("--preview-evidence-plan-preparation", arguments.preview_evidence_plan_preparation is not None),
+                ("--observations", arguments.observations),
+                ("--reasoning", arguments.reasoning),
+                ("--actions", arguments.actions),
+                ("--weighting", arguments.weighting),
+                ("--evidence-acquisition", arguments.evidence_acquisition),
+                ("--full-assessment", arguments.full_assessment),
+                ("--analysis-readiness", arguments.analysis_readiness),
+                ("--assessment-summary", arguments.assessment_summary),
+                ("--exploratory", arguments.exploratory),
+                ("--advisor", arguments.advisor),
+                ("--experiment-view", arguments.experiment_view is not None),
+                ("--evidence-plan-view", arguments.evidence_plan_view is not None),
+                ("--evidence-plan-overview", arguments.evidence_plan_overview),
+            )
+            for option, enabled in conflicting:
+                if enabled:
+                    raise ValueError(
+                        "--sbir-protocol-instance-view cannot be combined "
+                        f"with {option}."
+                    )
         if arguments.channel_isolation_journey is not None:
             if arguments.channel_isolation_preparation is None:
                 raise ValueError("--channel-isolation-journey requires --channel-isolation-preparation.")
@@ -2670,6 +3228,16 @@ def main(
                 recording_service=sbir_room_geometry_recording_service,
             )
             return 0
+        if arguments.sbir_protocol_instance_view is not None:
+            show_sbir_protocol_instance_view(
+                arguments.sbir_protocol_instance_view,
+                arguments.sbir_protocol_instance_registry,
+                registry_repository=sbir_protocol_instance_registry_repository,
+                service=sbir_protocol_instance_view_service,
+                presenter=sbir_protocol_instance_view_presenter,
+                reporter=sbir_protocol_instance_view_reporter,
+            )
+            return 0
         if arguments.preview_sbir_protocol_instance is not None:
             protocol_instance_input = (
                 sbir_protocol_instance_loader
@@ -2679,11 +3247,27 @@ def main(
                 measurements_root,
                 protocol_instance_input,
                 arguments.sbir_protocol_instance_registry,
+                input_path=arguments.preview_sbir_protocol_instance,
                 brain=brain,
                 service=sbir_protocol_instance_preview_service,
                 registry_repository=(
                     sbir_protocol_instance_registry_repository
                 ),
+            )
+            return 0
+        if arguments.record_sbir_protocol_instance is not None:
+            protocol_instance_input = (
+                sbir_protocol_instance_loader
+                or SBIRProtocolInstanceInputJsonLoader()
+            ).load(arguments.record_sbir_protocol_instance)
+            record_sbir_protocol_instance(
+                measurements_root,
+                protocol_instance_input,
+                arguments.sbir_protocol_instance_registry,
+                brain=brain,
+                resolver=sbir_protocol_instance_resolver,
+                validator=sbir_protocol_instance_compatibility_validator,
+                recording_service=sbir_protocol_instance_recording_service,
             )
             return 0
         if arguments.sbir_protocol_instance_sources:

@@ -20,13 +20,30 @@ scientific boundary without adding analysis or recommendation logic.
 
 ## Quick start
 
-Create and activate a virtual environment, then install the project
+AcousticBrain requires Python 3.10 or newer. Verify the interpreter before
+creating the environment:
+
+```bash
+python3 --version
+```
+
+Continue only if it reports Python 3.10 or later. Then create and activate an
+environment with that compatible interpreter, and install the project
 dependencies:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+The runtime requirements contain only the dependencies needed by the
+deterministic V1 engine. To develop AcousticBrain or run its tests, also
+install the separate development requirements:
+
+```bash
+python -m pip install -r requirements-dev.txt
 ```
 
 Analyze the versioned example campaign:
@@ -104,7 +121,7 @@ When scientific compatibility is not established, this view says that no safe
 user action is available. It never asks the user to attest compatibility.
 For a `READY` plan, the same view displays the complete declared preparation
 checklist and asks only for prerequisite verification before declaration.
-The future structured confirmation boundary is frozen in
+The implemented structured confirmation boundary is frozen in
 [`docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md`](docs/EVIDENCE_PLAN_PREPARATION_CONFIRMATION_CONTRACT.md).
 
 List every plan before choosing one to inspect:
@@ -126,6 +143,90 @@ python main.py \
   --measurements-root measurements \
   --guided-status
 ```
+
+### Complete guided preparation and declaration path
+
+Use `--guided-status` first, then choose one exact `PLAN_ID` displayed by that
+read-only view. Choose an explicit preparation registry path and generate the
+preparation draft in a new output file:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --generate-evidence-plan-preparation PLAN_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON \
+  --evidence-plan-preparation-output PREPARATION_DRAFT_JSON
+```
+
+The draft contains the deterministic `CONFIRMATION_ID` to retain; do not invent
+or substitute one. After supplying the required preparation decisions in the
+structured input file, preview it without writing, then confirm it explicitly
+in the same chosen registry:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --preview-evidence-plan-preparation PREPARATION_INPUT_JSON \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --confirm-evidence-plan-preparation PREPARATION_INPUT_JSON \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --evidence-plan-preparation-view CONFIRMATION_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+```
+
+For a `CHANNEL_ISOLATION` plan, generate the two operational worksheets into
+explicitly chosen new files. Complete them from observed information, then
+review those exact files against the source preparation draft:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --generate-channel-isolation-records PLAN_ID \
+  --microphone-position-output MICROPHONE_RECORD_JSON \
+  --acquisition-settings-output ACQUISITION_SETTINGS_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --review-channel-isolation-documentation PLAN_ID \
+  --microphone-position-record MICROPHONE_RECORD_JSON \
+  --acquisition-settings-record ACQUISITION_SETTINGS_JSON \
+  --channel-isolation-source-preparation PREPARATION_DRAFT_JSON
+```
+
+Before declaration, choose one existing `REFERENCE_EXPERIMENT_ID` and one new
+`NEW_EXPERIMENT_ID`. Check readiness with the exact plan, confirmation,
+registry, reference, and new identifier; then reuse those same values for the
+separate explicit declaration:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --channel-isolation-declaration-readiness PLAN_ID \
+  --channel-isolation-preparation CONFIRMATION_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON \
+  --channel-isolation-reference REFERENCE_EXPERIMENT_ID \
+  --channel-isolation-experiment NEW_EXPERIMENT_ID
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --declare-evidence-plan-experiment NEW_EXPERIMENT_ID \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference REFERENCE_EXPERIMENT_ID \
+  --evidence-plan-declaration-preparation-registry PREPARATION_REGISTRY_JSON \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
+```
+
+Generation does not choose a plan, confirmation does not choose a reference,
+and readiness does not create an experiment. Draft and worksheet generation,
+confirmation, and declaration are separate explicit writes to their named
+targets. The final declaration creates only the experiment declaration; it does
+not execute the experiment or acquire measurements.
 
 To include explicit preparation state, provide its registry rather than
 letting AcousticBrain discover one by convention:
@@ -356,6 +457,28 @@ python main.py \
 The same final campaign state can be viewed concisely with
 `--assessment-summary` or in detail with `--full-assessment`.
 
+## Accept an eligible positioning proposal
+
+When the deterministic report exposes a currently eligible loudspeaker
+positioning proposal, the user may explicitly accept its exact identifier and
+declare the intended experiment through the public CLI:
+
+```bash
+python main.py \
+  --measurements-root /path/to/my-campaign \
+  --accept-positioning-proposal EXACT_PROPOSAL_ID \
+  --positioning-experiment-id exp-007 \
+  --positioning-reference exp-006 \
+  --positioning-declaration-note "Accepted reversible positioning test."
+```
+
+The command recalculates eligibility and rejects an unknown or stale proposal.
+On success it creates only the existing controlled-experiment declaration for
+the explicitly supplied experiment and reference. Accepting the proposal does
+not move a loudspeaker, run an acquisition or experiment, interpret a result,
+or establish causality. The physical change and measurements remain separate
+user actions.
+
 ## Explicit campaign declarations
 
 To provide an explicit, versioned multi-position campaign instance:
@@ -407,6 +530,13 @@ responses are validated before normal rendering. The Advisor does not create or
 modify scientific knowledge. See
 [`docs/OPTIONAL_LLM_ADVISOR.md`](docs/OPTIONAL_LLM_ADVISOR.md).
 
+Ollama is not required to install, import or run AcousticBrain's deterministic
+engine. The V1 Ollama Advisor uses its explicitly configured HTTP endpoint and
+does not require the Python `ollama` package. The legacy `AcousticAssistant`
+integration loads that package only when an LLM answer is explicitly requested;
+install it separately with `python -m pip install ollama` if that legacy
+integration is needed.
+
 ## Scientific governance
 
 The documented outputs expose results produced by existing deterministic
@@ -414,7 +544,7 @@ rules. CLI reporters and the optional Advisor do not add, replace or bypass
 those rules. Scientific conclusions, contradictions, limitations and missing
 evidence remain under the authority of the deterministic core.
 
-The frozen product contract for the future deterministic `EXPLORATORY` mode is
+The frozen product contract for the deterministic V1 `EXPLORATORY` mode is
 documented in
 [`docs/EXPLORATORY_V1_CONTRACT.md`](docs/EXPLORATORY_V1_CONTRACT.md).
 It defines bounded reversible tests, explicit user feasibility decisions and
@@ -492,11 +622,11 @@ losing its objective, variables, prerequisites, expected observations,
 criteria, limitations or provenance:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --plan-id PLAN_ID \
-  --experiment exp-XXX \
-  --reference baseline
+python main.py \
+  --measurements-root measurements \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference baseline
 ```
 
 For a `READY` plan created by evidence-plan completion, provide its dedicated
@@ -504,12 +634,12 @@ registry explicitly; the same declaration service and manifest contract are
 used:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --completion-registry state/evidence-plan-completions.json \
-  --plan-id DERIVED_EVIDENCE_ACQUISITION_ID \
-  --experiment exp-XXX \
-  --reference baseline
+python main.py \
+  --measurements-root measurements \
+  --evidence-plan-completion-registry state/evidence-plan-completions.json \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id DERIVED_EVIDENCE_ACQUISITION_ID \
+  --evidence-plan-reference baseline
 ```
 
 This extends the existing plan → declaration → comparison pipeline; it does not
@@ -520,13 +650,13 @@ For a `CHANNEL_ISOLATION` plan that passed the explicit preparation preflight,
 preserve that preparation and the specialized declared acquisition structure:
 
 ```bash
-python -m acousticbrain.commands.declare_evidence_plan_experiment \
-  measurements \
-  --plan-id PLAN_ID \
-  --experiment exp-XXX \
-  --reference baseline \
-  --preparation-registry state/evidence-plan-preparations.json \
-  --preparation CONFIRMATION_ID
+python main.py \
+  --measurements-root measurements \
+  --declare-evidence-plan-experiment exp-XXX \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference baseline \
+  --evidence-plan-declaration-preparation-registry state/evidence-plan-preparations.json \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
 ```
 
 The preflight runs before the target directory is created. This declaration
@@ -565,28 +695,42 @@ V2 identity so historical contracts are never rewritten. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
 Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.
-The frozen structured-input contract for that future instance is documented in
+The frozen structured-input contract for that recorded instance is documented in
 [`docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md`](docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md).
-Preview exact source resolution and compatibility without recording the
-instance:
-
-```bash
-python main.py \
-  --measurements-root measurements \
-  --preview-sbir-protocol-instance sbir-protocol-instance.json \
-  --sbir-protocol-instance-registry sbir-protocol-instances.json
-```
-
-The preview never creates or updates the registry and never declares or runs an
-experiment.
 
 List the exact structured sources first, without selecting or recommending one:
 
 ```bash
 python main.py \
-  --measurements-root measurements \
+  --measurements-root MEASUREMENTS_ROOT \
   --sbir-protocol-instance-sources
 ```
+
+After independently preparing `INPUT_JSON`, preview its exact source resolution
+and compatibility, record it through a separate explicit action, then view the
+persisted snapshot by its exact `INSTANCE_ID`:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --preview-sbir-protocol-instance INPUT_JSON \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --record-sbir-protocol-instance INPUT_JSON \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --sbir-protocol-instance-view INSTANCE_ID \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+```
+
+Preview is read-only. Record persists only the validated protocol-instance
+snapshot: record is not an experiment declaration, experiment execution, or
+causal conclusion. View rereads only that recorded snapshot and does not
+reinterpret the current measurement corpus.
 
 The explicit contract for declaring the missing room geometry is frozen in
 [`docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md`](docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md).

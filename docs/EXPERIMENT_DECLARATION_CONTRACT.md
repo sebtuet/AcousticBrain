@@ -47,7 +47,9 @@ listed; AcousticBrain does not infer controls from the kind alone. Modified and
 controlled variables are disjoint, normalized into deterministic sorted lists,
 and retain field-by-field provenance.
 
-## CLI
+## Expert/internal CLI adapter
+
+> Expert/internal contract adapter — not part of the PUBLIC_V1 CLI.
 
 The real `exp-006` declaration can be written without editing measurement files:
 

@@ -4,6 +4,9 @@ Cette roadmap présente les capacités du moteur plutôt que l'historique des PR
 Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 [SCORING.md](SCORING.md) et [ANALYSIS_CONTRACT.md](ANALYSIS_CONTRACT.md).
 
+Les sections `✅` sont livrées en V1. Les sections `🧭 V2` décrivent des
+extensions futures et ne constituent pas des capacités manquantes de la V1.
+
 ## ✅ Core Platform
 
 - import des mesures SPL REW ;
@@ -91,7 +94,7 @@ Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 Les diagnostics interprètent les connaissances existantes. Ils ne détectent
 pas de nouvelles features et ne recalculent aucune analyse.
 
-## 🚧 Advanced Room Analysis
+## 🧭 V2 — Advanced Room Analysis
 
 - classification physique complète des pics ;
 - flutter echo ;
@@ -114,7 +117,7 @@ pas de nouvelles features et ne recalculent aucune analyse.
 - absence d'invention des paramètres manquants et causalité conservée comme
   non établie.
 
-## 🚧 Remaining Acoustic Metrics
+## 🧭 V2 — Remaining Acoustic Metrics
 
 - IACC ;
 - analyse LEDE ;
@@ -123,26 +126,24 @@ pas de nouvelles features et ne recalculent aucune analyse.
 Ces métriques devront être produites comme des `*Analysis` structurées avant
 toute interprétation ou présentation.
 
-## 🚧 Executable Experiment Completion
+## ✅ Explicit Evidence Plan Completion and Declaration
 
-- relier un `EvidenceAcquisitionPlan` incomplet à une déclaration expérimentale
-  entièrement paramétrée lorsque toutes les données requises sont fournies ;
+- compléter explicitement un `EvidenceAcquisitionPlan` bloqué à partir d'une
+  entrée structurée et auditée lorsque toutes les données requises sont
+  fournies ;
+- préserver le snapshot du plan dérivé et sa provenance dans un registre
+  dédié ;
+- déclarer explicitement un plan `READY` via l'interface publique `main.py` ;
 - conserver le blocage lorsqu'un protocole, une position, une répétition, un
   canal, un réglage ou un critère requis manque ;
 - ne jamais transformer une compatibilité fréquentielle en causalité ni
   inventer une règle scientifique.
 
-Le dépôt sait déjà projeter certains candidats, propositions et plans
-exécutables à partir de déclarations complètes. Cette étape future concerne la
-liaison générique depuis un plan d'acquisition incomplet, pas le remplacement
-des contrats expérimentaux existants.
+La complétion et la déclaration restent deux mutations explicites séparées.
+Elles n'exécutent aucune expérience. La conformité de l'exécution, la validité
+de la comparaison et toute conclusion causale restent des décisions séparées.
 
-La continuité contractuelle d'un plan `READY` vers le manifeste expérimental
-est maintenant disponible : le snapshot complet du plan et sa provenance sont
-préservés sans dupliquer le moteur de planification. La conformité de
-l'exécution et la validité de la comparaison restent des décisions séparées.
-
-## 🚧 Recommendations
+## 🧭 V2 — Recommendation Extensions
 
 - recommandations temporelles ;
 - recommandations de traitement des réflexions ;
@@ -153,17 +154,19 @@ l'exécution et la validité de la comparaison restent des décisions séparées
 Les recommandations sont déduites des connaissances structurées, jamais des
 diagnostics ni de leurs textes.
 
-## 🚧 Explainability Extensions
+## 🧭 V2 — Explainability Extensions
 
 - provenance RT60 et ETC dans `GlobalAnalysis` ;
 - recommandations temporelles dans `TraceabilityAnalysis` ;
 - export JSON complet du graphe de connaissance ;
 - navigation d'une action vers les preuves physiques sources.
 
-## 🚧 AI Layer — Optional
+## ✅ Optional AI Explanation Layer
 
-Un LLM ne réalise jamais une mesure ou un calcul acoustique. Il peut uniquement
-consommer les connaissances déterministes déjà produites pour fournir :
+L'Advisor V1 optionnel et en lecture seule consomme uniquement les
+connaissances déterministes déjà produites. Un LLM ne réalise jamais une mesure
+ou un calcul acoustique. Selon le fournisseur explicitement choisi, il peut
+fournir :
 
 - un rapport en langage naturel ;
 - un résumé exécutif ;

@@ -76,8 +76,9 @@ or acquisition setting is invented. Existing identifiers remain exact.
 ## Single user action
 
 - incomplete preparation: review the unresolved prerequisite declarations;
-- all prerequisites user-confirmed: separately declare an experiment from the
-  exact plan contract;
+- all prerequisites user-confirmed: run the public declaration-readiness
+  preflight for the exact plan and preparation, then separately declare an
+  experiment only if that preflight succeeds;
 - missing declaration authority: no safe execution action.
 
 The view never starts software, creates directories, writes manifests or tells

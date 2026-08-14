@@ -73,6 +73,8 @@ additive. Legacy projects gain no inferred material, profile or provenance.
 
 ## Isolated end-to-end review demo
 
+> Expert/internal contract adapter — not part of the PUBLIC_V1 CLI.
+
 The guided workflow is deliberately separate from the automatic behavior of
 `main.py`. Reviewers can exercise the complete vertical slice with no access to
 local measurement folders and no project-file writes:

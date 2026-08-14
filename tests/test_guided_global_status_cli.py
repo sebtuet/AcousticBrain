@@ -158,11 +158,15 @@ def test_cli_projects_exact_declaration_readiness_without_creating_target(
     output = capsys.readouterr().out
     assert result.workflow_state == "READY_PLAN_DECLARATION_READY"
     assert output.count("Action utilisateur") == 1
-    assert "--experiment channel-isolation-001" in output
-    assert "--reference baseline" in output
-    assert "--preparation-registry" in output
+    assert "python main.py --measurements-root" in output
+    assert "python -m acousticbrain.commands" not in output
+    assert "--declare-evidence-plan-experiment channel-isolation-001" in output
+    assert "--evidence-plan-id READY_PLAN" in output
+    assert "--evidence-plan-reference baseline" in output
+    assert "--evidence-plan-declaration-preparation-registry" in output
     assert (
-        "--preparation " + confirmation.confirmation_input.confirmation_id
+        "--evidence-plan-declaration-preparation "
+        + confirmation.confirmation_input.confirmation_id
         in output
     )
     assert not (tmp_path / "channel-isolation-001").exists()
