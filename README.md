@@ -89,6 +89,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Next recommended experiment | `--evidence-acquisition` | One selected READY acquisition plan, or why none can be recommended |
 | Technical analysis readiness | `--analysis-readiness` | Existing experiment and analysis-family readiness decisions |
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
+| User assessment | `--user-assessment` | Concise human-facing projection of established V1 states and the existing next plan |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 | Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
@@ -436,6 +437,30 @@ shorter user-facing view:
 
 It uses the finalized `Report` produced by the deterministic workflow. It does
 not add a score, scientific conclusion, action or experiment.
+
+### Campaign user assessment
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --user-assessment
+```
+
+`--user-assessment` is the concise human-facing view of the established V1
+report. It preserves every deterministic reasoning state without ranking the
+findings, separates contradictions and unresolved findings, shows only exact
+`APPLICABLE` actions as currently applicable controlled actions, and reuses the
+existing selected evidence plan without selecting again.
+
+The view keeps `SUPPORTED`, `READY` and `APPLICABLE` within their V1 semantic
+boundaries: none establishes causality, execution readiness, physical safety
+or benefit. Required plan inputs remain explicitly unverified unless the V1
+report establishes otherwise. The command is read-only and uses no LLM.
+
+Use `--full-assessment` for the complete expert/audit rendering, or
+`--reasoning`, `--actions` and `--evidence-plan-view PLAN_ID` for the detailed
+source objects. See
+[`docs/CAMPAIGN_USER_ASSESSMENT_CONTRACT.md`](docs/CAMPAIGN_USER_ASSESSMENT_CONTRACT.md).
 
 ### Full assessment
 

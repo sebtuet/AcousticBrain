@@ -62,6 +62,7 @@ from .evidence_weighting_presenter import (
 from .evidence_acquisition_presenter import PresentedEvidenceAcquisitionPlanReport
 from .analysis_readiness_presenter import PresentedAnalysisReadinessReport
 from .assessment_summary_presenter import PresentedAssessmentSummary
+from .campaign_user_assessment_presenter import CampaignUserAssessment
 from .exploratory_presenter import (
     PresentedExploratoryAnalysis,
     PresentedExploratoryResult,
@@ -147,6 +148,8 @@ class Report:
     analysis_readiness: PresentedAnalysisReadinessReport | None = None
 
     assessment_summary: PresentedAssessmentSummary | None = None
+
+    campaign_user_assessment: CampaignUserAssessment | None = None
 
     advisor_response: AdvisorResponse | None = None
 

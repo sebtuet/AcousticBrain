@@ -24,6 +24,7 @@ from acousticbrain.report import (
     DeterministicEvidenceWeightingPresenter,
     EvidenceAcquisitionPlanPresenter,
     AssessmentSummaryPresenter,
+    CampaignUserAssessmentPresenter,
     ExperimentPlanningPresenter,
     TraceabilityPresenter,
     Report,
@@ -424,6 +425,9 @@ class AcousticBrain:
         )
         current_report.assessment_summary = AssessmentSummaryPresenter().present(
             current_report
+        )
+        current_report.campaign_user_assessment = (
+            CampaignUserAssessmentPresenter().present(current_report)
         )
         return (
             (current_report, current_context)

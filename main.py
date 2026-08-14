@@ -59,6 +59,7 @@ from acousticbrain.report import (
     FullAssessmentTextExporter,
     AnalysisReadinessConsoleReporter,
     AssessmentSummaryConsoleReporter,
+    CampaignUserAssessmentConsoleReporter,
     AdvisorConsoleReporter,
     ExploratoryConsoleReporter,
     ExperimentUserViewConsoleReporter,
@@ -178,6 +179,11 @@ def create_parser():
         "--assessment-summary",
         action="store_true",
         help="print a concise summary of existing deterministic report content",
+    )
+    parser.add_argument(
+        "--user-assessment",
+        action="store_true",
+        help="print a concise user-oriented projection of established V1 results",
     )
     parser.add_argument(
         "--exploratory",
@@ -1888,6 +1894,7 @@ def run(
     full_assessment_output=None,
     analysis_readiness=False,
     assessment_summary=False,
+    user_assessment=False,
     exploratory=False,
     experiment_view=None,
     evidence_plan_view=None,
@@ -1916,6 +1923,8 @@ def run(
         if advisor
         else ExploratoryConsoleReporter()
         if exploratory
+        else CampaignUserAssessmentConsoleReporter()
+        if user_assessment
         else AssessmentSummaryConsoleReporter()
         if assessment_summary
         else AnalysisReadinessConsoleReporter()
@@ -1964,6 +1973,7 @@ def run(
         full_assessment,
         analysis_readiness,
         assessment_summary,
+        user_assessment,
         advisor,
         exploratory,
         experiment_view is not None,
@@ -1974,6 +1984,7 @@ def run(
         evidence_acquisition
         or full_assessment
         or assessment_summary
+        or user_assessment
         or standard_report
         or experiment_view is not None
         or evidence_plan_view is not None
@@ -2016,7 +2027,7 @@ def run(
             expected_response_language=advisor_response_language,
         )
     if full_assessment_output is None:
-        if not analysis_readiness and not assessment_summary:
+        if not analysis_readiness and not assessment_summary and not user_assessment:
             print(f"Measurement root: {measurements_root.resolve()}")
             print()
         reporter.print(report)
@@ -2082,6 +2093,20 @@ def main(
 ):
     parser = create_parser()
     arguments = parser.parse_args(argv)
+    if arguments.user_assessment:
+        allowed = {
+            "help",
+            "measurements_root",
+            "listening_position_campaign",
+            "campaign_reference_qualification",
+            "user_assessment",
+        }
+        for action in parser._actions:
+            if action.dest in allowed:
+                continue
+            if getattr(arguments, action.dest, action.default) != action.default:
+                option = action.option_strings[-1] if action.option_strings else action.dest
+                parser.error(f"--user-assessment cannot be combined with {option}.")
     decision_repository = (
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
@@ -3461,6 +3486,7 @@ def main(
             full_assessment_output=full_assessment_output,
             analysis_readiness=arguments.analysis_readiness,
             assessment_summary=arguments.assessment_summary,
+            user_assessment=arguments.user_assessment,
             exploratory=arguments.exploratory,
             experiment_view=arguments.experiment_view,
             evidence_plan_view=arguments.evidence_plan_view,

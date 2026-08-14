@@ -147,6 +147,18 @@ from .assessment_summary_presenter import (
     PresentedRecommendedExperiment,
 )
 from .assessment_summary_console import AssessmentSummaryConsoleReporter
+from .campaign_user_assessment_presenter import (
+    CampaignAssessmentAction,
+    CampaignAssessmentFinding,
+    CampaignAssessmentMeasurementStatus,
+    CampaignAssessmentNextStep,
+    CampaignAssessmentSource,
+    CampaignUserAssessment,
+    CampaignUserAssessmentPresenter,
+)
+from .campaign_user_assessment_console import (
+    CampaignUserAssessmentConsoleReporter,
+)
 from .guided_global_status_presenter import (
     GuidedGlobalStatusConsoleReporter,
     GuidedGlobalStatusPresenter,
