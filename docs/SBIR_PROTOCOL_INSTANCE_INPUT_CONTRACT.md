@@ -106,7 +106,7 @@ establish compatibility.
 
 ## Provenance and immutability
 
-Any future recorded instance must preserve all input fields plus the resolved
+Every recorded instance preserves all input fields plus the resolved
 plan fingerprint and source-object identifiers. The source plan, geometry
 candidate, displacement proposal, experiments and measurement files remain
 immutable.
@@ -147,9 +147,9 @@ experiment manifest and does not declare an experiment.
 - promoting causality;
 - choosing permanent speaker placement.
 
-## Future acceptance criteria
+## Implemented acceptance criteria
 
-Implementation must prove with automated tests:
+The implementation is covered by automated tests proving:
 
 1. strict round-trip serialization;
 2. rejection of every missing or unknown field;

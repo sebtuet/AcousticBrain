@@ -2,6 +2,12 @@
 
 ## Purpose and scope
 
+> Expert/internal contract adapter — not part of the PUBLIC_V1 CLI.
+
+The implementation command is
+`acousticbrain.commands.declare_causal_protocol_step`; this contract does not
+make it a public `main.py` workflow.
+
 `experiment_declaration` and `causal_protocol_step` describe two different user
 declarations.
 

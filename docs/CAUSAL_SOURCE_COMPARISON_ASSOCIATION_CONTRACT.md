@@ -77,7 +77,9 @@ ordered local comparison explicitly associated with this protocol and
 hypothesis. Later associated comparisons do not create or merge a second
 initial source.
 
-## Command
+## Expert/internal command
+
+> Expert/internal contract adapter — not part of the PUBLIC_V1 CLI.
 
 ```bash
 python -m acousticbrain.commands.associate_causal_source_comparison \

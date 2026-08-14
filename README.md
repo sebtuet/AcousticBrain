@@ -144,6 +144,90 @@ python main.py \
   --guided-status
 ```
 
+### Complete guided preparation and declaration path
+
+Use `--guided-status` first, then choose one exact `PLAN_ID` displayed by that
+read-only view. Choose an explicit preparation registry path and generate the
+preparation draft in a new output file:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --generate-evidence-plan-preparation PLAN_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON \
+  --evidence-plan-preparation-output PREPARATION_DRAFT_JSON
+```
+
+The draft contains the deterministic `CONFIRMATION_ID` to retain; do not invent
+or substitute one. After supplying the required preparation decisions in the
+structured input file, preview it without writing, then confirm it explicitly
+in the same chosen registry:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --preview-evidence-plan-preparation PREPARATION_INPUT_JSON \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --confirm-evidence-plan-preparation PREPARATION_INPUT_JSON \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --evidence-plan-preparation-view CONFIRMATION_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON
+```
+
+For a `CHANNEL_ISOLATION` plan, generate the two operational worksheets into
+explicitly chosen new files. Complete them from observed information, then
+review those exact files against the source preparation draft:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --generate-channel-isolation-records PLAN_ID \
+  --microphone-position-output MICROPHONE_RECORD_JSON \
+  --acquisition-settings-output ACQUISITION_SETTINGS_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --review-channel-isolation-documentation PLAN_ID \
+  --microphone-position-record MICROPHONE_RECORD_JSON \
+  --acquisition-settings-record ACQUISITION_SETTINGS_JSON \
+  --channel-isolation-source-preparation PREPARATION_DRAFT_JSON
+```
+
+Before declaration, choose one existing `REFERENCE_EXPERIMENT_ID` and one new
+`NEW_EXPERIMENT_ID`. Check readiness with the exact plan, confirmation,
+registry, reference, and new identifier; then reuse those same values for the
+separate explicit declaration:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --channel-isolation-declaration-readiness PLAN_ID \
+  --channel-isolation-preparation CONFIRMATION_ID \
+  --evidence-plan-preparation-registry PREPARATION_REGISTRY_JSON \
+  --channel-isolation-reference REFERENCE_EXPERIMENT_ID \
+  --channel-isolation-experiment NEW_EXPERIMENT_ID
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --declare-evidence-plan-experiment NEW_EXPERIMENT_ID \
+  --evidence-plan-id PLAN_ID \
+  --evidence-plan-reference REFERENCE_EXPERIMENT_ID \
+  --evidence-plan-declaration-preparation-registry PREPARATION_REGISTRY_JSON \
+  --evidence-plan-declaration-preparation CONFIRMATION_ID
+```
+
+Generation does not choose a plan, confirmation does not choose a reference,
+and readiness does not create an experiment. Draft and worksheet generation,
+confirmation, and declaration are separate explicit writes to their named
+targets. The final declaration creates only the experiment declaration; it does
+not execute the experiment or acquire measurements.
+
 To include explicit preparation state, provide its registry rather than
 letting AcousticBrain discover one by convention:
 
@@ -611,28 +695,42 @@ V2 identity so historical contracts are never rewritten. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
 Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.
-The frozen structured-input contract for that future instance is documented in
+The frozen structured-input contract for that recorded instance is documented in
 [`docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md`](docs/SBIR_PROTOCOL_INSTANCE_INPUT_CONTRACT.md).
-Preview exact source resolution and compatibility without recording the
-instance:
-
-```bash
-python main.py \
-  --measurements-root measurements \
-  --preview-sbir-protocol-instance sbir-protocol-instance.json \
-  --sbir-protocol-instance-registry sbir-protocol-instances.json
-```
-
-The preview never creates or updates the registry and never declares or runs an
-experiment.
 
 List the exact structured sources first, without selecting or recommending one:
 
 ```bash
 python main.py \
-  --measurements-root measurements \
+  --measurements-root MEASUREMENTS_ROOT \
   --sbir-protocol-instance-sources
 ```
+
+After independently preparing `INPUT_JSON`, preview its exact source resolution
+and compatibility, record it through a separate explicit action, then view the
+persisted snapshot by its exact `INSTANCE_ID`:
+
+```bash
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --preview-sbir-protocol-instance INPUT_JSON \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --record-sbir-protocol-instance INPUT_JSON \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+
+python main.py \
+  --measurements-root MEASUREMENTS_ROOT \
+  --sbir-protocol-instance-view INSTANCE_ID \
+  --sbir-protocol-instance-registry REGISTRY_JSON
+```
+
+Preview is read-only. Record persists only the validated protocol-instance
+snapshot: record is not an experiment declaration, experiment execution, or
+causal conclusion. View rereads only that recorded snapshot and does not
+reinterpret the current measurement corpus.
 
 The explicit contract for declaring the missing room geometry is frozen in
 [`docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md`](docs/SBIR_ROOM_GEOMETRY_DECLARATION_CONTRACT.md).
