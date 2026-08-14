@@ -1,144 +1,80 @@
-# Optional LLM Advisor
+# Optional LLM Advisor V2
 
-> The advisor is not a scientific authority.
-> Le conseiller n’est pas une autorité scientifique.
+> The Advisor explains AcousticBrain. It does not become AcousticBrain.
 
-## Boundary
+## Authority boundary
 
 ```text
-Deterministic Scientific Core
-    ├── Observations
-    ├── Reasoning
-    ├── Corrective Actions
-    └── Evidence Weighting
-             │
-             ▼
-      Deterministic Context Builder
-             │
-             ▼
-        Advisor Provider
-             │
-             ▼
-      Response Validator
-             │
-             ▼
-       Read-only Renderer
+V1 deterministic Report
+→ CampaignUserAssessmentPresenter
+→ CampaignUserAssessment
+→ AdvisorAssessmentContext
+→ optional provider
+→ local validation
+→ read-only AdvisorResponse
 ```
 
-The deterministic core remains the only source of scientific truth. The
-optional advisor selects, links, summarizes and reformulates existing objects.
-It cannot create or change evidence, reasoning, actions, weight dimensions,
-contradictions, limitations, blocking factors, geometry, protocols or
-parameters.
+`CampaignUserAssessment` is the Advisor's only scientific source. The provider
+does not receive the full V1 report, raw observations, unprojected reasonings or
+weights, unselected plans, measurements, manifests, registries or campaign
+files. It cannot call an analysis engine, workflow or tool.
 
-Without `--advisor`, no provider is constructed, no provider configuration or
-API key is read, and no network request is attempted. The deterministic engine
-has no provider dependency.
+The Advisor explains and reformulates facts in the current assessment. It does
+not diagnose beyond V1, rank findings, choose a main problem, create severity or
+causality, invent a correction, treatment, placement, EQ or protocol, replace
+the selected plan, declare or execute an experiment, or mutate campaign state.
 
-## Canonical context
+## Bounded context
 
-`AdvisorContextBuilder` starts from the selected Evidence Weight ids (all
-weights by default) and follows their explicit action, reasoning and observation
-references. Unreferenced observations are excluded. Each object is retained as
-canonical, stably ordered JSON with its type, id and references. Blocking
-factors, contradictions and limitations are separately preserved.
-The v2 context also declares the expected response language, the exact
-reasoning and blocking-factor ids that require coverage, READY and BLOCKED plan
-ids, the complete allowed-id set, and deterministic display labels. The
-provider never infers a plan status.
+`AdvisorContextBuilder` produces an immutable, versioned projection containing:
 
-The provider receives a minimal textual JSON projection. It never receives raw
-measurement files, local paths, secrets or API keys. Context construction does
-not access the measurement filesystem or recalculate an analysis.
+- campaign measurement and analysis-readiness states;
+- projected findings and uncertainties;
+- applicable and unavailable actions;
+- the single next step already selected by V1, when present;
+- its prerequisites and availability state;
+- scientific boundaries and exact source identifiers.
 
-## Provider contract
+It does not recalculate or select anything. `READY` means that the planning
+contract is defined for its current state, not that execution is authorized.
+`SUPPORTED` does not establish causality. `APPLICABLE` does not predict benefit
+or physical safety. `AVAILABILITY_NOT_VERIFIED` is not a confirmed prerequisite.
 
-All providers implement `provider_id`, `is_available()` and
-`generate(request, context)`. There is no fallback between providers.
+## Strict-context conversation
 
-### Mock
+The initial V2 policy is `STRICT_CONTEXT_ONLY`. For general acoustic knowledge,
+an absent fact, another campaign, an unestablished cause, treatment or placement,
+the bounded answer is:
 
-`mock` is offline and byte-for-byte stable. Test modes cover compliant output,
-hallucination, unknown references, omitted or contradicted blocks, falsely
-resolved contradictions, invented scores or actions, failure and timeout.
+> AcousticBrain does not currently establish this.
 
-### Ollama
+The question and all assessment strings are untrusted data. Instructions in
+either cannot override the system contract or authorize use of a provider's own
+acoustic knowledge. There is no conversational memory, RAG, web search, agent,
+tool use or command execution.
 
-Ollama is optional and uses the standard-library HTTP client. Configure:
+## Providers and validation
 
-```bash
-export OLLAMA_ADVISOR_ENDPOINT=http://localhost:11434
-export OLLAMA_ADVISOR_MODEL=your-explicit-model
-```
+The existing `mock`, `ollama` and `openai` providers retain the same transport
+interface. Without `--advisor`, no provider is constructed and no provider
+configuration or network is used. Ollama and OpenAI remain optional, explicitly
+configured integrations with typed timeouts and provider errors.
 
-AcousticBrain never starts or installs Ollama. Missing configuration, network
-errors and timeouts are explicit failures.
+Provider output uses the structured Advisor schema. Every published claim must
+cite an allowed source. Local validation checks reference integrity, exact
+structured states, preserved contradictions and limitations, language, and
+semantic overreach. In particular it rejects transformations such as:
 
-The Ollama `/api/generate` request sends the complete canonical JSON Schema in
-`format` and repeats it explicitly in the user prompt for model compatibility.
-It never falls back to the generic `"json"` format. A syntactically valid JSON
-object outside the contract, including a chat-shaped `{role, content}` object,
-is rejected without conversion or repair. Local compatibility was verified
-with Ollama 0.31.2; provider behavior may still vary by model, so the local
-post-response validator remains authoritative and strict.
+- `SUPPORTED` → proven, confirmed or established cause;
+- `READY` → ready to run, ready to execute or executable now;
+- `APPLICABLE` → guaranteed improvement, benefit or safety;
+- `AVAILABILITY_NOT_VERIFIED` → available or confirmed;
+- an invented main problem, best treatment or optimal placement.
 
-### OpenAI
-
-The OpenAI adapter is optional, isolated, and uses the Responses API with a
-strict Structured Outputs JSON schema. Configure:
-
-```bash
-export OPENAI_API_KEY=...
-export OPENAI_ADVISOR_MODEL=your-explicit-model
-```
-
-The endpoint defaults to `https://api.openai.com/v1/responses` and may be
-explicitly overridden with `OPENAI_ADVISOR_ENDPOINT`. The API key is read only
-when the OpenAI advisor is explicitly enabled, is sent only in the
-Authorization header, and is never serialized into context or logged.
-
-`ADVISOR_TIMEOUT_SECONDS` configures either real adapter. No SDK or mandatory
-provider dependency is installed.
-
-## Prompt and structured response
-
-`ADVISOR_SYSTEM_PROMPT_V2` states the non-authoritative boundary, but the prompt
-is not treated as a security control. Provider output must use the strict
-structured schema: answer, cited object ids, claims with supporting ids and
-structured fact assertions, preserved blocks, contradictions and limitations,
-explicit empty collections for proposed actions and introduced scores, exact
-coverage collections for reasoning, blocking factors and both plan classes,
-and the declared response language.
-
-## Post-response validation
-
-The local validator checks:
-
-- every object and claim reference exists in the canonical context;
-- every claim cites provenance and asserts an exact structured fact;
-- asserted evidence, dimensions, applicability, blocks, contradictions and
-  limitations match the canonical objects;
-- no blocked action is asserted applicable;
-- no factor, contradiction or limitation is omitted, denied or invented;
-- no new action, global score, percentage or absent geometry is introduced.
-- structured coverage is complete, unique, correctly ordered and never crosses
-  READY/BLOCKED plan classes;
-- the declared language matches the request and manifest use of another
-  language is rejected by a deliberately conservative check;
-- empty, generic, copied or category-omitting answers are rejected as
-  degenerate.
-
-Validity is multidimensional: scientific fidelity, semantic coverage, response
-language, reference integrity and degeneracy are reported independently. No
-global score, average, probability or confidence number is computed. Overall
-validation is valid only when every required dimension is valid.
-
-Invalid provider text is never rendered as normal advice. A deterministic,
-structured local safety report in the requested language is returned with
-`INVALID`, the violations, all required coverage and the unchanged deterministic
-references. `Response Source` distinguishes `PROVIDER` from
-`LOCAL_SAFETY_RESPONSE`. Provider failures remain typed errors and are never
-converted into scientific conclusions.
+Invalid semantic output is replaced by a deterministic local safety response.
+Malformed provider JSON and provider failures remain explicit typed errors.
+Real-provider prose is not byte-for-byte deterministic; the mock, context,
+validation and safety response are deterministic.
 
 ## CLI
 
@@ -147,7 +83,7 @@ python main.py \
   --measurements-root /path/to/campaign \
   --advisor \
   --advisor-provider mock \
-  --question "Why is this action blocked?" \
+  --question "What should I do next?" \
   --advisor-language en \
   --advisor-audience general \
   --advisor-detail standard
@@ -155,36 +91,8 @@ python main.py \
 
 Providers are `mock`, `ollama` and `openai`. Audience values are `general`,
 `enthusiast`, `acoustician` and `developer`; detail values are `concise`,
-`standard` and `technical`. A question without `--advisor`, or `--advisor`
-without a question, is rejected. Language values are `fr`, `en` and `auto`.
-`auto` uses deterministic markers from the question; an explicit choice always
-wins. No interactive mode is added.
+`standard` and `technical`. Language values are `fr`, `en` and `auto`. A
+question without `--advisor`, or `--advisor` without a question, is rejected.
 
-## Determinism and limitations
-
-Context selection, reference closure, serialization, request ids, validation,
-the safety response, Mock output and rendering are deterministic. Text from a
-real Ollama or OpenAI model is not claimed to be reproducible byte-for-byte.
-
-Semantic validation is intentionally conservative and combines exact
-structured assertions with explicit prohibited overrides. It cannot make free
-text intrinsically trustworthy; provider output remains non-authoritative and
-is always subordinate to the structured deterministic objects displayed by the
-validator.
-
-## Local Ollama compatibility observations
-
-Manual campaign trials on Ollama 0.31.2 remain separate from the automated
-suite. With the six PR-059 plans in context, `qwen3:8b` produced a fully valid
-French response in one run. A separate English run returned the prohibited
-generic metadata sentence and was rejected. `gemma4:12b` produced structurally
-grounded French output but omitted plan identifiers from its prose, then
-returned invalid JSON in the English trial. Both outputs were rejected before
-normal rendering.
-
-These observations are model outputs, not deterministic guarantees: repeated
-generation may differ. AcousticBrain therefore does not relax parsing, repair
-missing coverage, retry automatically, select another model, or fall back to a
-generic JSON mode. The local safety report is the only response rendered after
-a semantic rejection; malformed provider JSON remains an explicit typed
-provider error.
+The detailed deterministic reports remain the expert and audit views. The
+Advisor is only a conversational presentation above their user assessment.

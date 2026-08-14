@@ -25,6 +25,7 @@ from acousticbrain.models import (
     WeightedActionApplicability,
 )
 from acousticbrain.report import (
+    CampaignUserAssessmentPresenter,
     EvidenceAcquisitionPlanConsoleReporter,
     EvidenceAcquisitionPlanPresenter,
     PresentedEvidenceAcquisitionPlan,
@@ -719,8 +720,10 @@ def test_advisor_can_reference_only_existing_plans_without_changing_historical_d
     })
     report = Report(project_name="campaign")
     report.evidence_acquisition_plans = PresentedEvidenceAcquisitionPlanReport((presented,))
+    report.campaign_user_assessment = CampaignUserAssessmentPresenter().present(report)
     context = AdvisorContextBuilder().build(report)
-    assert tuple(value.object_id for value in context.objects) == (plan.plan_id,)
+    assert plan.plan_id in tuple(value.object_id for value in context.objects)
+    assert all(value.object_type != "EVIDENCE_WEIGHT" for value in context.objects)
 
     response = AdvisorService().advise(
         report,
@@ -731,7 +734,7 @@ def test_advisor_can_reference_only_existing_plans_without_changing_historical_d
     )
     assert response.validation_status is AdvisorValidationStatus.VALID
     assert plan.plan_id in response.answer_text
-    assert "ne rendent aucune action corrective bloquée applicable" in response.answer_text
+    assert "n’établit pas son exécutabilité" in response.answer_text
 
 
 def test_mock_advisor_plan_explanations_are_stable_in_french_and_english():
@@ -741,6 +744,7 @@ def test_mock_advisor_plan_explanations_are_stable_in_french_and_english():
     )
     report = Report(project_name="campaign")
     report.evidence_acquisition_plans = EvidenceAcquisitionPlanPresenter().present(context)
+    report.campaign_user_assessment = CampaignUserAssessmentPresenter().present(report)
     service = AdvisorService()
     provider = MockAdvisorProvider()
 
@@ -759,8 +763,8 @@ def test_mock_advisor_plan_explanations_are_stable_in_french_and_english():
         provider=provider,
     )
 
-    assert french.answer_text.startswith("Les prochains plans déterministes")
-    assert english.answer_text.startswith("The next deterministic evidence")
+    assert french.answer_text.startswith("Utilisez le plan V1 existant")
+    assert english.answer_text.startswith("Use the existing V1 recommended plan")
     assert service.advise(
         report,
         question="Quel test faut-il effectuer ensuite ?",

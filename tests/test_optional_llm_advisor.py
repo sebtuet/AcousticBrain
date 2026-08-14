@@ -29,7 +29,14 @@ from acousticbrain.models import (
     AdvisorResponseSource,
     AdvisorValidationStatus,
 )
-from acousticbrain.report import Report
+from acousticbrain.report import (
+    CampaignAssessmentAction,
+    CampaignAssessmentFinding,
+    CampaignAssessmentMeasurementStatus,
+    CampaignAssessmentSource,
+    CampaignUserAssessment,
+    Report,
+)
 
 
 class Item(SimpleNamespace):
@@ -89,6 +96,28 @@ def deterministic_report():
     report.deterministic_acoustic_reasoning = SimpleNamespace(reasonings=(reasoning,))
     report.deterministic_corrective_actions = SimpleNamespace(actions=(action,))
     report.deterministic_evidence_weighting = SimpleNamespace(weights=(weight,))
+    source = CampaignAssessmentSource("REASONING", "REASONING_A")
+    finding = CampaignAssessmentFinding(
+        reasoning_id="REASONING_A", title="Existing reasoning", conclusion="CONTRADICTORY_EVIDENCE",
+        confidence=80.0, observation_ids=("OBSERVATION_A",), supporting_evidence=("evidence.a",),
+        contradicting_evidence=("counter.a",), limitations=("reasoning.limit",),
+        excluded_conclusions=("CAUSALITY_ESTABLISHED",), provenance=(source,),
+    )
+    projected_action = CampaignAssessmentAction(
+        action_id="ACTION_A", title="Existing action", objective="Explain the contradiction.",
+        description="Existing controlled action.", applicability="BLOCKED_BY_MISSING_PARAMETERS",
+        preconditions=(), required_missing_parameters=("compatible_protocol_or_plan_id",),
+        risks=(), constraints=(), limitations=("action.limit",),
+        provenance=(CampaignAssessmentSource("ACTION", "ACTION_A"), source),
+    )
+    report.campaign_user_assessment = CampaignUserAssessment(
+        measurement_status=CampaignAssessmentMeasurementStatus((), ()),
+        key_findings=(finding,), uncertainties_and_contradictions=(finding,),
+        currently_applicable_controlled_actions=(), actions_not_yet_justified=(projected_action,),
+        recommended_next_step=None, prerequisites=(),
+        scientific_boundaries=("Observation does not establish cause.",),
+        provenance=(source,),
+    )
     return report
 
 
@@ -130,31 +159,17 @@ def test_request_context_and_response_are_immutable_and_stable():
         response.answer_text = "changed"
 
 
-def test_context_selection_follows_weight_to_full_upstream_chain():
+def test_context_selection_uses_only_projected_assessment_objects():
     context = AdvisorContextBuilder().build(
-        deterministic_report(), selected_object_ids=("EVIDENCE_WEIGHT_ACTION_A",)
+        deterministic_report(), selected_object_ids=("ACTION_A",)
     )
 
-    assert tuple(value.object_id for value in context.objects) == (
-        "OBSERVATION_A",
-        "REASONING_A",
-        "ACTION_A",
-        "EVIDENCE_WEIGHT_ACTION_A",
-    )
-    assert context.blocking_factors == (
-        "MISSING_PARAMETERS:compatible_protocol_or_plan_id",
-    )
-    assert context.contradictions == ("counter.a",)
-    assert context.limitations == (
-        "observation.limit",
-        "reasoning.limit",
-        "action.limit",
-        "weight.limit",
-    )
+    assert tuple(value.object_id for value in context.objects) == ("ACTION_A",)
+    assert all(value.object_type != "EVIDENCE_WEIGHT" for value in context.objects)
 
 
 def test_context_rejects_unknown_explicit_selection():
-    with pytest.raises(ValueError, match="Unknown advisor object"):
+    with pytest.raises(ValueError, match="Unknown advisor assessment"):
         AdvisorContextBuilder().build(
             deterministic_report(), selected_object_ids=("UNKNOWN",)
         )
@@ -173,10 +188,10 @@ def test_compliant_mock_preserves_block_and_grounding():
     response = advise()
 
     assert response.validation_status is AdvisorValidationStatus.VALID
-    assert "blocking.action_a.missing" in response.answer_text
+    assert "does not currently establish this" in response.answer_text
     assert response.preserved_blocking_factors
-    assert response.preserved_contradictions == ("counter.a",)
-    assert response.referenced_evidence_weight_ids == ("EVIDENCE_WEIGHT_ACTION_A",)
+    assert response.preserved_contradictions == ("REASONING_A",)
+    assert response.referenced_evidence_weight_ids == ()
 
 
 @pytest.mark.parametrize(
@@ -240,8 +255,10 @@ def test_mock_failure_and_timeout_remain_typed_provider_errors():
 
 
 def test_question_outside_empty_context_returns_grounded_unavailable_answer():
+    report = deterministic_report()
+    report.project_name = "empty"
     response = AdvisorService().advise(
-        Report(project_name="empty"),
+        report,
         question="Where should a treatment be placed?",
         audience=AdvisorAudience.GENERAL,
         detail_level=AdvisorDetailLevel.STANDARD,
@@ -249,8 +266,7 @@ def test_question_outside_empty_context_returns_grounded_unavailable_answer():
     )
 
     assert response.validation_status is AdvisorValidationStatus.VALID
-    assert "no deterministic problem" in response.answer_text
-    assert response.referenced_object_ids == ()
+    assert "does not currently establish this" in response.answer_text
 
 
 class RecordingHttpClient:
@@ -274,43 +290,35 @@ class RaisingHttpClient:
 def provider_json():
     return {
         "answer": (
-            "Problem summary: REASONING_A. Preserved blocking factor: "
-            "blocking.action_a.missing. No blocked action is applicable."
+            "AcousticBrain does not currently establish this from the supplied "
+            "assessment context. The existing contradiction and scientific boundary "
+            "remain unchanged."
         ),
         "referenced_object_ids": [
-            "OBSERVATION_A",
+            "CAMPAIGN_MEASUREMENT_STATUS",
             "REASONING_A",
             "ACTION_A",
-            "EVIDENCE_WEIGHT_ACTION_A",
+            "SCIENTIFIC_BOUNDARY:1",
         ],
         "claims": [
             {
                 "text": "Grounded claim.",
-                "supporting_object_ids": ["EVIDENCE_WEIGHT_ACTION_A"],
+                "supporting_object_ids": ["REASONING_A"],
                 "asserted_action_applicability": [["ACTION_A", "BLOCKED"]],
-                "asserted_weight_dimensions": [
-                    ["EVIDENCE_WEIGHT_ACTION_A", "EVIDENCE_STRENGTH", "HIGH"]
-                ],
+                "asserted_weight_dimensions": [],
                 "asserted_evidence": ["evidence.a"],
-                "asserted_blocking_factors": [
-                    "MISSING_PARAMETERS:compatible_protocol_or_plan_id"
-                ],
-                "asserted_contradictions": ["counter.a"],
-                "asserted_limitations": ["weight.limit"],
+                "asserted_blocking_factors": ["REASONING_A"],
+                "asserted_contradictions": ["REASONING_A"],
+                "asserted_limitations": ["Observation does not establish cause."],
             }
         ],
-        "blocking_factors": ["MISSING_PARAMETERS:compatible_protocol_or_plan_id"],
-        "contradictions": ["counter.a"],
-        "limitations": [
-            "observation.limit",
-            "reasoning.limit",
-            "action.limit",
-            "weight.limit",
-        ],
+        "blocking_factors": ["REASONING_A"],
+        "contradictions": ["REASONING_A"],
+        "limitations": ["Observation does not establish cause."],
         "proposed_action_ids": [],
         "introduced_scores": [],
         "covered_reasoning_ids": ["REASONING_A"],
-        "covered_blocking_factor_ids": ["blocking.action_a.missing"],
+        "covered_blocking_factor_ids": ["REASONING_A"],
         "covered_ready_plan_ids": [],
         "covered_blocked_plan_ids": [],
         "response_language": "en",
@@ -554,7 +562,7 @@ class RecordingReporter:
         self.responses.append(report.advisor_response)
 
 
-def test_cli_advisor_mock_composes_weighting_and_renders_valid_response(tmp_path):
+def test_cli_advisor_mock_composes_user_assessment_and_renders_valid_response(tmp_path):
     campaign = tmp_path / "campaign"
     campaign.mkdir()
     brain = RecordingBrain()
@@ -567,7 +575,7 @@ def test_cli_advisor_mock_composes_weighting_and_renders_valid_response(tmp_path
         advisor_provider_instance=MockAdvisorProvider(),
     )
 
-    assert brain.calls[0]["synthesize_weighting"] is True
+    assert brain.calls[0]["synthesize_evidence_acquisition"] is True
     assert reporter.responses[0].validation_status is AdvisorValidationStatus.VALID
 
 

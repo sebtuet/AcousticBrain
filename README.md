@@ -6,8 +6,8 @@ CLI reporters expose those results without changing the underlying scientific
 rules.
 
 The deterministic workflow is separate from the optional LLM Advisor. The
-Advisor can explain validated report objects, but it is disabled by default and
-is not a source of scientific authority.
+Advisor can explain the validated `CampaignUserAssessment`, but it is disabled
+by default and is not a source of scientific authority.
 
 AI-assisted contributions must follow the repository workflow defined in
 [`AGENTS.md`](AGENTS.md).
@@ -581,7 +581,8 @@ is documentation only and is never loaded automatically.
 
 ## Optional LLM Advisor
 
-The Advisor is an optional, read-only consumer of deterministic report objects:
+Advisor V2 is an optional, read-only conversational explanation of the current
+deterministic `CampaignUserAssessment`:
 
 ```bash
 python main.py \
@@ -594,7 +595,10 @@ python main.py \
 The deterministic Mock provider works without network access. Ollama and OpenAI
 are explicit provider choices and may use their configured endpoints. Provider
 responses are validated before normal rendering. The Advisor does not create or
-modify scientific knowledge. See
+modify scientific knowledge. It does not rank findings, establish causality,
+invent a correction, treatment or placement, declare or execute an experiment,
+or use external acoustic knowledge to complete missing facts. Questions outside
+the supplied assessment receive a bounded not-established answer. See
 [`docs/OPTIONAL_LLM_ADVISOR.md`](docs/OPTIONAL_LLM_ADVISOR.md).
 
 Ollama is not required to install, import or run AcousticBrain's deterministic

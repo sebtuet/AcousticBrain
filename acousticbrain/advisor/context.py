@@ -1,75 +1,77 @@
+from dataclasses import asdict
 import hashlib
 import json
 
 from acousticbrain.models import (
-    AdvisorAudience,
     AdvisorContextObject,
-    AdvisorDetailLevel,
-    AdvisorDeterministicContext,
+    AdvisorAssessmentContext,
     AdvisorRequest,
     AdvisorResponseLanguage,
 )
 
 
 class AdvisorContextBuilder:
-    SCHEMA_VERSION = "advisor-context.v2"
-    REQUEST_SCHEMA_VERSION = "advisor-request.v2"
+    """Builds the bounded Advisor context from CampaignUserAssessment only."""
 
-    def build(
-        self,
-        report,
-        *,
-        selected_object_ids=(),
-        expected_response_language=AdvisorResponseLanguage.EN,
-    ):
-        objects = self._all_objects(report)
+    SCHEMA_VERSION = "advisor-assessment-context.v1"
+    REQUEST_SCHEMA_VERSION = "advisor-request.v3"
+
+    def build(self, report, *, selected_object_ids=(), expected_response_language=AdvisorResponseLanguage.EN):
+        assessment = getattr(report, "campaign_user_assessment", None)
+        if assessment is None:
+            raise ValueError("Advisor requires CampaignUserAssessment.")
+        objects = self._assessment_objects(assessment)
         by_id = {value.object_id: value for value in objects}
-        requested = tuple(selected_object_ids) or tuple(
-            value.object_id
-            for value in objects
-            if value.object_type in ("EVIDENCE_WEIGHT", "EVIDENCE_ACQUISITION_PLAN")
-        )
+        requested = tuple(selected_object_ids)
         unknown = tuple(value for value in requested if value not in by_id)
         if unknown:
-            raise ValueError(f"Unknown advisor object ids: {', '.join(unknown)}")
+            raise ValueError(f"Unknown advisor assessment ids: {', '.join(unknown)}")
         if requested:
-            included = set(requested)
-            pending = list(requested)
-            while pending:
-                current = by_id[pending.pop(0)]
-                for reference in current.referenced_object_ids:
-                    if reference in by_id and reference not in included:
-                        included.add(reference)
-                        pending.append(reference)
-            objects = tuple(value for value in objects if value.object_id in included)
-        blocking, contradictions, limitations = self._preserved(objects)
-        requirements = self._requirements(objects)
-        return AdvisorDeterministicContext(
+            objects = tuple(value for value in objects if value.object_id in requested)
+            by_id = {value.object_id: value for value in objects}
+        allowed_sources = tuple(dict.fromkeys(
+            source for value in objects
+            for source in self._data(value).get("source_ids", (value.object_id,))
+        ))
+        findings = tuple(value.object_id for value in objects if value.object_type == "REASONING")
+        uncertainties = tuple(
+            value.object_id for value in objects
+            if value.object_type == "REASONING" and self._data(value).get("uncertain")
+        )
+        next_steps = tuple(
+            value.object_id for value in objects
+            if value.object_type == "EVIDENCE_ACQUISITION_PLAN"
+        )
+        return AdvisorAssessmentContext(
             schema_version=self.SCHEMA_VERSION,
             project_id=str(report.project_name),
             objects=objects,
-            blocking_factors=blocking,
-            contradictions=contradictions,
-            limitations=limitations,
-            expected_response_language=expected_response_language,
-            allowed_object_ids=tuple(value.object_id for value in objects),
-            object_labels=tuple(
-                (value.object_id, self._label(value)) for value in objects
+            blocking_factors=uncertainties,
+            contradictions=tuple(
+                value.object_id for value in objects
+                if value.object_type == "REASONING"
+                and self._data(value).get("conclusion") == "CONTRADICTORY_EVIDENCE"
             ),
-            **requirements,
+            limitations=tuple(assessment.scientific_boundaries),
+            expected_response_language=expected_response_language,
+            required_reasoning_ids=findings,
+            required_blocking_factor_ids=uncertainties,
+            required_ready_plan_ids=tuple(
+                value for value in next_steps
+                if self._data(by_id[value]).get("planning_status") == "READY"
+            ),
+            required_blocked_plan_ids=tuple(
+                value for value in next_steps
+                if self._data(by_id[value]).get("planning_status") == "BLOCKED"
+            ),
+            allowed_object_ids=tuple(value.object_id for value in objects),
+            allowed_source_ids=allowed_sources,
+            object_labels=tuple((value.object_id, self._label(value)) for value in objects),
         )
 
-    def request(
-        self,
-        report,
-        *,
-        question,
-        audience,
-        detail_level,
-        provider_configuration_reference,
-        selected_object_ids=(),
-        expected_response_language=AdvisorResponseLanguage.EN,
-    ):
+    def request(self, report, *, question, audience, detail_level,
+                provider_configuration_reference, selected_object_ids=(),
+                expected_response_language=AdvisorResponseLanguage.EN):
         context = self.build(
             report,
             selected_object_ids=selected_object_ids,
@@ -81,13 +83,11 @@ class AdvisorContextBuilder:
                 "audience": audience.value,
                 "detail": detail_level.value,
                 "project": context.project_id,
-                "objects": [value.object_id for value in context.objects],
+                "objects": list(context.allowed_object_ids),
                 "provider": provider_configuration_reference,
                 "language": expected_response_language.value,
             },
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
+            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         )
         request_id = f"advisor-request.{hashlib.sha256(identity.encode()).hexdigest()[:16]}"
         return AdvisorRequest(
@@ -103,140 +103,94 @@ class AdvisorContextBuilder:
         )
 
     def serialize(self, context):
-        payload = {
-            "schema_version": context.schema_version,
-            "project_id": context.project_id,
-            "objects": [
-                {
-                    "object_id": value.object_id,
-                    "object_type": value.object_type,
-                    "data": json.loads(value.canonical_json),
-                    "referenced_object_ids": list(value.referenced_object_ids),
-                }
-                for value in context.objects
-            ],
-            "blocking_factors": list(context.blocking_factors),
-            "contradictions": list(context.contradictions),
-            "limitations": list(context.limitations),
-            "expected_response_language": context.expected_response_language.value,
-            "required_reasoning_ids": list(context.required_reasoning_ids),
-            "required_blocking_factor_ids": list(context.required_blocking_factor_ids),
-            "required_ready_plan_ids": list(context.required_ready_plan_ids),
-            "required_blocked_plan_ids": list(context.required_blocked_plan_ids),
-            "allowed_object_ids": list(context.allowed_object_ids),
-            "object_labels": [list(value) for value in context.object_labels],
+        groups = {
+            "campaign_status": "CAMPAIGN_STATUS",
+            "findings": "REASONING",
+            "applicable_actions": "ACTION",
+            "unavailable_actions": "ACTION",
+            "scientific_boundaries": "SCIENTIFIC_BOUNDARY",
         }
-        return json.dumps(
-            payload,
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-
-    def _all_objects(self, report):
-        values = []
-        collections = (
-            ("OBSERVATION", report.acoustic_observations, "observations", "observation_id"),
-            ("REASONING", report.deterministic_acoustic_reasoning, "reasonings", "reasoning_id"),
-            ("ACTION", report.deterministic_corrective_actions, "actions", "action_id"),
-            ("EVIDENCE_WEIGHT", report.deterministic_evidence_weighting, "weights", "weight_id"),
-            (
-                "EVIDENCE_ACQUISITION_PLAN",
-                report.evidence_acquisition_plans,
-                "plans",
-                "plan_id",
-            ),
-        )
-        for object_type, container, attribute, identifier in collections:
-            for item in getattr(container, attribute, ()) if container is not None else ():
-                data = item.to_dict()
-                references = self._references(object_type, data)
-                values.append(
-                    AdvisorContextObject(
-                        object_id=getattr(item, identifier),
-                        object_type=object_type,
-                        canonical_json=json.dumps(
-                            data,
-                            ensure_ascii=False,
-                            sort_keys=True,
-                            separators=(",", ":"),
-                        ),
-                        referenced_object_ids=references,
-                    )
+        payload = {"schema_version": context.schema_version}
+        for name, object_type in groups.items():
+            payload[name] = [
+                self._serialized(value) for value in context.objects
+                if value.object_type == object_type and (
+                    name not in ("applicable_actions", "unavailable_actions")
+                    or (self._data(value).get("applicability") == "APPLICABLE")
+                    == (name == "applicable_actions")
                 )
+            ]
+        payload["uncertainties"] = list(context.required_blocking_factor_ids)
+        payload["recommended_next_step"] = next((
+            self._serialized(value) for value in context.objects
+            if value.object_type == "EVIDENCE_ACQUISITION_PLAN"
+        ), None)
+        payload["prerequisites"] = (
+            payload["recommended_next_step"]["data"].get("prerequisites", [])
+            if payload["recommended_next_step"] else []
+        )
+        payload["allowed_source_ids"] = list(context.allowed_source_ids)
+        payload["expected_language"] = context.expected_response_language.value
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+    @classmethod
+    def _assessment_objects(cls, assessment):
+        values = []
+        status = assessment.measurement_status
+        values.append(cls._object("CAMPAIGN_STATUS", "CAMPAIGN_MEASUREMENT_STATUS", {
+            "experiment_states": status.experiment_states,
+            "analysis_readiness": tuple(asdict(value) for value in status.analysis_readiness),
+            "source_ids": tuple(
+                [value[0] for value in status.experiment_states]
+                + [f"ANALYSIS_READINESS:{value.family}" for value in status.analysis_readiness]
+            ) or ("CAMPAIGN_MEASUREMENT_STATUS",),
+        }))
+        uncertain_ids = {value.reasoning_id for value in assessment.uncertainties_and_contradictions}
+        for finding in assessment.key_findings:
+            data = asdict(finding)
+            data["source_ids"] = cls._source_ids(finding.provenance)
+            data["uncertain"] = finding.reasoning_id in uncertain_ids
+            values.append(cls._object("REASONING", finding.reasoning_id, data))
+        for action in assessment.currently_applicable_controlled_actions + assessment.actions_not_yet_justified:
+            data = asdict(action)
+            data["source_ids"] = cls._source_ids(action.provenance)
+            values.append(cls._object("ACTION", action.action_id, data))
+        if assessment.recommended_next_step is not None:
+            step = assessment.recommended_next_step
+            data = asdict(step)
+            data["source_ids"] = cls._source_ids(step.provenance)
+            data["prerequisites"] = assessment.prerequisites
+            values.append(cls._object("EVIDENCE_ACQUISITION_PLAN", step.plan_id, data))
+        for index, boundary in enumerate(assessment.scientific_boundaries, start=1):
+            source_id = f"SCIENTIFIC_BOUNDARY:{index}"
+            values.append(cls._object("SCIENTIFIC_BOUNDARY", source_id, {
+                "statement": boundary, "source_ids": (source_id,),
+            }))
         return tuple(values)
 
     @staticmethod
-    def _references(object_type, data):
-        keys = {
-            "OBSERVATION": (),
-            "REASONING": ("observation_ids",),
-            "ACTION": ("source_reasoning_ids", "source_observation_ids"),
-            "EVIDENCE_WEIGHT": (
-                "action_references",
-                "reasoning_references",
-                "observation_references",
-            ),
-            "EVIDENCE_ACQUISITION_PLAN": (
-                "evidence_weight_id",
-                "corrective_action_id",
-                "reasoning_id",
-            ),
-        }[object_type]
-        references = []
-        for key in keys:
-            value = data.get(key, ())
-            references.extend(value if isinstance(value, (list, tuple)) else (value,))
-        return tuple(dict.fromkeys(references))
+    def _source_ids(provenance):
+        return tuple(dict.fromkeys(value.source_id for value in provenance))
 
     @staticmethod
-    def _preserved(objects):
-        blocking = []
-        contradictions = []
-        limitations = []
-        for value in objects:
-            data = json.loads(value.canonical_json)
-            for factor in data.get("blocking_factors", ()):
-                sources = ",".join(factor.get("source_object_ids", ()))
-                blocking.append(f"{factor['code']}:{sources}")
-            contradictions.extend(
-                data.get("contradictions", data.get("contradicting_evidence", ()))
-            )
-            limitations.extend(data.get("limitations", ()))
-        return tuple(dict.fromkeys(blocking)), tuple(dict.fromkeys(contradictions)), tuple(
-            dict.fromkeys(limitations)
+    def _object(object_type, object_id, data):
+        return AdvisorContextObject(
+            object_id=object_id,
+            object_type=object_type,
+            canonical_json=json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            referenced_object_ids=tuple(data.get("source_ids", ())),
         )
 
     @staticmethod
-    def _requirements(objects):
-        reasoning = []
-        blocking = []
-        ready = []
-        blocked = []
-        for value in objects:
-            data = json.loads(value.canonical_json)
-            if value.object_type == "REASONING":
-                reasoning.append(value.object_id)
-            if value.object_type == "EVIDENCE_WEIGHT":
-                blocking.extend(
-                    item["factor_id"] for item in data.get("blocking_factors", ())
-                )
-            if value.object_type == "EVIDENCE_ACQUISITION_PLAN":
-                status = data.get("status")
-                if status not in ("READY", "BLOCKED"):
-                    raise ValueError(
-                        f"Advisor plan status is invalid: {value.object_id}:{status}"
-                    )
-                target = ready if status == "READY" else blocked
-                target.append(value.object_id)
-        return {
-            "required_reasoning_ids": tuple(dict.fromkeys(reasoning)),
-            "required_blocking_factor_ids": tuple(dict.fromkeys(blocking)),
-            "required_ready_plan_ids": tuple(dict.fromkeys(ready)),
-            "required_blocked_plan_ids": tuple(dict.fromkeys(blocked)),
-        }
+    def _data(value):
+        return json.loads(value.canonical_json)
 
-    @staticmethod
-    def _label(value):
-        data = json.loads(value.canonical_json)
-        return str(data.get("title") or data.get("objective") or value.object_id)
+    @classmethod
+    def _serialized(cls, value):
+        data = cls._data(value)
+        return {"source_id": value.object_id, "source_ids": data.get("source_ids", []), "data": data}
+
+    @classmethod
+    def _label(cls, value):
+        data = cls._data(value)
+        return str(data.get("title") or data.get("objective") or data.get("statement") or value.object_id)

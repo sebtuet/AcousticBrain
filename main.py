@@ -1992,10 +1992,9 @@ def run(
     ):
         arguments["synthesize_evidence_acquisition"] = True
     if advisor:
-        if evidence_acquisition:
-            arguments["synthesize_evidence_acquisition"] = True
-        else:
-            arguments["synthesize_weighting"] = True
+        # Advisor V2 consumes the same CampaignUserAssessment projection as
+        # --user-assessment. V1 remains the sole selector of the recommended plan.
+        arguments["synthesize_evidence_acquisition"] = True
     if campaign_instance_analysis is not None:
         arguments["listening_position_campaign_instance_analysis"] = (
             campaign_instance_analysis
