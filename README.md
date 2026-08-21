@@ -72,6 +72,9 @@ python main.py --measurements-root measurements --start-placement
 
 It asks only for the declared prerequisites of the existing selected plan and
 writes its dedicated preparation registry only after an explicit confirmation.
+For a confirmed channel-isolation plan, it then lets the user select a displayed
+existing measurement, choose a simple new test name, and explicitly confirm the
+existing declaration workflow.
 
 Running `python main.py` without a measurement path uses the same historical
 default directory:

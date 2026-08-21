@@ -46,9 +46,7 @@ def test_start_placement_records_only_after_explicit_confirmation(tmp_path, caps
         "CONFIRMED", "UNKNOWN",
     )
     assert "Préparation enregistrée." in output
-    assert "--channel-isolation-journey READY_PLAN" in output
-    assert "--channel-isolation-preparation" in output
-    assert "\n+  --" not in output
+    assert "aucune expérience ne peut être déclarée" in output
     assert "Aucune mesure ni expérience n’a été créée." in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert brain.calls[0]["return_context"] is True
@@ -67,6 +65,54 @@ def test_start_placement_decline_leaves_campaign_unchanged(tmp_path, capsys):
     assert result == 0
     assert not (root / ".acousticbrain").exists()
     assert "Préparation non enregistrée" in capsys.readouterr().out
+
+
+def test_start_placement_guides_reference_and_test_name_before_declaration(
+    tmp_path, capsys
+):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    (root / "baseline-before-test").mkdir()
+
+    result = acousticbrain_main.main(
+        ("--measurements-root", str(root), "--start-placement"),
+        brain=ContextBrain((ready_plan(),)),
+        placement_input=answers("o", "o", "o", "1", "", "n"),
+    )
+
+    output = capsys.readouterr().out
+    assert result == 0
+    assert "Choisissez la mesure de départ" in output
+    assert "1. baseline-before-test" in output
+    assert "Nouveau test : test-canaux-001" in output
+    assert "Test non déclaré" in output
+    assert not (root / "test-canaux-001").exists()
+    assert not (root / "baseline-before-test" / "manifest.json").exists()
+
+
+def test_start_placement_reuses_one_confirmed_preparation(tmp_path, capsys):
+    root = tmp_path / "measurements"
+    root.mkdir()
+    (root / "baseline").mkdir()
+    registry_path = root / acousticbrain_main.DEFAULT_PLACEMENT_PREPARATION_REGISTRY
+    first = acousticbrain_main.main(
+        ("--measurements-root", str(root), "--start-placement"),
+        brain=ContextBrain((ready_plan(),)),
+        placement_input=answers("o", "o", "o", "1", "", "n"),
+    )
+    before = registry_path.read_bytes()
+
+    second = acousticbrain_main.main(
+        ("--measurements-root", str(root), "--start-placement"),
+        brain=ContextBrain((ready_plan(),)),
+        placement_input=answers("1", "", "n"),
+    )
+
+    output = capsys.readouterr().out
+    assert first == second == 0
+    assert registry_path.read_bytes() == before
+    assert "préparation de ce test est déjà enregistrée et confirmée" in output
+    assert "Test non déclaré" in output
 
 
 def test_start_placement_rejects_invalid_answer_without_writing(tmp_path, capsys):

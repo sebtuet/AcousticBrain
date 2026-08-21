@@ -867,6 +867,28 @@ def start_placement(
         plans=synthesis.plans,
         registry=registry,
     )
+    confirmed = tuple(
+        value for value in registry.records
+        if value.confirmation_input.plan_id == plan.plan_id
+        and value.confirmation_input.plan_contract_fingerprint
+        == draft.confirmation_input.plan_contract_fingerprint
+        and value.all_prerequisites_status is not None
+    )
+    if len(confirmed) == 1 and plan.test_type.value == "CHANNEL_ISOLATION":
+        record = confirmed[0]
+        print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+        print()
+        print("La préparation de ce test est déjà enregistrée et confirmée.")
+        _guide_channel_isolation_declaration(
+            measurements_root,
+            plan,
+            record.confirmation_input.confirmation_id,
+            registry_path,
+            synthesis.plans,
+            registry,
+            input_func=input_func,
+        )
+        return record
 
     print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
     print()
@@ -946,27 +968,98 @@ def start_placement(
     print(f"Registre : {Path(result.registry_path).resolve()}")
     if result.record.all_prerequisites_status is None:
         print("Les prérequis ne sont pas tous confirmés : aucune expérience ne peut être déclarée.")
-    else:
-        print("Les prérequis sont déclarés confirmés ; la déclaration reste une action séparée.")
-    print("Prochaine étape")
-    confirmation_id = result.record.confirmation_input.confirmation_id
+        print("Aucune mesure ni expérience n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return result
     if plan.test_type.value == "CHANNEL_ISOLATION":
-        print(
-            (
-                "python main.py \\\n+  --measurements-root "
-                f"{measurements_root.resolve()} \\\n+  --channel-isolation-journey {plan.plan_id} \\\n+  --channel-isolation-preparation {confirmation_id} \\\n+  --evidence-plan-preparation-registry {registry_path.resolve()}"
-            ).replace(chr(10) + "+", chr(10))
+        _guide_channel_isolation_declaration(
+            measurements_root,
+            plan,
+            result.record.confirmation_input.confirmation_id,
+            registry_path,
+            synthesis.plans,
+            repository.load(registry_path),
+            input_func=input_func,
         )
-    else:
-        print(
-            (
-                "python main.py \\\n+  --measurements-root "
-                f"{measurements_root.resolve()} \\\n+  --guided-status \\\n+  --guided-preparation-registry {registry_path.resolve()} \\\n+  --guided-preparation {confirmation_id}"
-            ).replace(chr(10) + "+", chr(10))
-        )
+        return result
+    print("Les prérequis sont déclarés confirmés ; la déclaration reste une action séparée.")
     print("Aucune mesure ni expérience n’a été créée.")
     print("Causality status: NOT_ESTABLISHED")
     return result
+
+
+def _guide_channel_isolation_declaration(
+    measurements_root,
+    plan,
+    confirmation_id,
+    registry_path,
+    plans,
+    registry,
+    *,
+    input_func,
+):
+    references = tuple(sorted(
+        value.name for value in measurements_root.iterdir()
+        if value.is_dir() and not value.name.startswith(".")
+    ))
+    if not references:
+        raise ValueError("Aucune mesure existante ne peut servir de point de départ.")
+    print()
+    print("Choisissez la mesure de départ")
+    print("Sélectionnez la mesure prise avant ce nouveau test contrôlé :")
+    for index, reference in enumerate(references, start=1):
+        print(f"{index}. {reference}")
+    try:
+        choice = input_func("Numéro de la mesure de départ : ").strip()
+    except EOFError as error:
+        raise ValueError("Un choix de mesure de départ est requis ; aucun test n’a été déclaré.") from error
+    if not choice.isdigit() or not 1 <= int(choice) <= len(references):
+        raise ValueError("Choisissez un numéro de mesure affiché ; aucun test n’a été déclaré.")
+    reference = references[int(choice) - 1]
+
+    ordinal = 1
+    while (measurements_root / f"test-canaux-{ordinal:03d}").exists():
+        ordinal += 1
+    suggested_name = f"test-canaux-{ordinal:03d}"
+    try:
+        experiment_id = input_func(
+            f"Nom du nouveau test [{suggested_name}] : "
+        ).strip() or suggested_name
+    except EOFError as error:
+        raise ValueError("Un nom de nouveau test est requis ; aucun test n’a été déclaré.") from error
+
+    readiness = ChannelIsolationDeclarationReadinessService().qualify(
+        measurements_root,
+        plan.plan_id,
+        confirmation_id,
+        reference,
+        experiment_id,
+        plans=plans,
+        registry=registry,
+    )
+    print()
+    print("Test prêt à être déclaré")
+    print(f"Mesure de départ : {readiness.reference_experiment_id}")
+    print(f"Nouveau test : {readiness.experiment_id}")
+    print("Aucune mesure n’a été effectuée.")
+    try:
+        declare = input_func("Déclarer ce test maintenant ? [o/N] : ").strip().casefold()
+    except EOFError as error:
+        raise ValueError("Une confirmation de déclaration est requise ; aucun test n’a été déclaré.") from error
+    if declare not in ("o", "oui"):
+        print("Test non déclaré. Vous pourrez reprendre ce parcours plus tard.")
+        print("Causality status: NOT_ESTABLISHED")
+        return
+    evidence_plan_declaration_command.main((
+        str(measurements_root),
+        "--plan-id", readiness.plan_id,
+        "--experiment", readiness.experiment_id,
+        "--reference", readiness.reference_experiment_id,
+        "--preparation-registry", str(registry_path),
+        "--preparation", readiness.confirmation_id,
+    ))
+    print("Le test est déclaré, mais aucune mesure n’a encore été effectuée.")
+    print("Causality status: NOT_ESTABLISHED")
 
 
 def preview_evidence_plan_preparation(
