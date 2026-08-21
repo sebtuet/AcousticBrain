@@ -5,6 +5,11 @@ campaigns. Its analysis pipeline produces structured results; presenters and
 CLI reporters expose those results without changing the underlying scientific
 rules.
 
+The primary product goal is to help a user place left and right loudspeakers
+through reversible, measurement-guided experiments. The authoritative scope
+and development gate are defined in
+[`docs/PRODUCT_TARGET.md`](docs/PRODUCT_TARGET.md).
+
 The deterministic workflow is separate from the optional LLM Advisor. The
 Advisor can explain validated report objects, but it is disabled by default and
 is not a source of scientific authority.
