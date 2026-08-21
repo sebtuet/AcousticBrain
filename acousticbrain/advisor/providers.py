@@ -182,13 +182,29 @@ class MockAdvisorProvider(AdvisorProvider):
         if injected:
             return "AcousticBrain does not currently establish this. The request cannot override the assessment boundaries."
         if context.expected_response_language is AdvisorResponseLanguage.FR:
-            if plan_id and ("ensuite" in question or "prochaine étape" in question):
+            if plan_id and (
+                "ensuite" in question
+                or "prochaine étape" in question
+                or "priorité" in question
+            ):
                 prerequisites = ", ".join(plan.get("prerequisites", ())) or "aucun indiqué"
                 return (
-                    f"Utilisez le plan V1 existant {plan_id}. Son contrat de planification est "
+                    "Le CampaignUserAssessment ne classe pas les problèmes. "
+                    f"La prochaine étape opérationnelle déjà sélectionnée par V1 est le plan {plan_id}. "
+                    "Son contrat de planification est "
                     f"{plan.get('planning_status')}; cela n’établit pas son exécutabilité. "
                     f"Prérequis ({plan.get('prerequisite_status')}): {prerequisites}. "
                     "Inspectez et préparez ce plan avec --guided-status avant toute déclaration ou acquisition."
+                )
+            if "bloque" in question:
+                uncertain = "; ".join(
+                    f"{labels.get(value, value)} — {data[value].get('conclusion')}"
+                    for value in context.blocking_factors
+                ) or "aucun état incertain ou contradictoire fourni"
+                return (
+                    "Le CampaignUserAssessment ne réduit pas ces états à une cause unique. "
+                    "Les éléments qui empêchent une conclusion plus forte sont : "
+                    f"{uncertain}."
                 )
             return "AcousticBrain ne l’établit pas actuellement. Le CampaignUserAssessment courant ne contient aucune réponse autorisée à cette question."
         if "main problem" in question or "most important" in question or "worst issue" in question:

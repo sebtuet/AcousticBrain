@@ -117,6 +117,29 @@ def test_exp_007_next_step_preserves_plan_and_unverified_prerequisites():
     assert "does not establish executability" in answer
 
 
+def test_exp_007_french_priority_question_reuses_the_existing_selected_plan():
+    answer = advise("Que dois-je comprendre en priorité ?").answer_text
+
+    assert "ne classe pas les problèmes" in answer
+    assert selected_plan().plan_id in answer
+    assert "READY" in answer
+    assert "AVAILABILITY_NOT_VERIFIED" in answer
+    assert "documented_microphone_position" in answer
+    assert "existing_acquisition_settings" in answer
+    assert "--guided-status" in answer
+    assert "cause établie" not in answer
+
+
+def test_exp_007_french_blocking_question_preserves_existing_states_only():
+    answer = advise("Qu’est-ce qui bloque ?").answer_text
+
+    assert "ne réduit pas ces états à une cause unique" in answer
+    assert "CONTRADICTORY_EVIDENCE" in answer
+    assert "NON_DISCRIMINATED" in answer
+    assert "INSUFFICIENT_EVIDENCE" in answer
+    assert "cause établie" not in answer
+
+
 def test_exp_007_measurement_readiness_is_not_absolute_validity():
     answer = advise(QUESTIONS[6]).answer_text
     assert "FREQUENCY=AVAILABLE" in answer

@@ -53,6 +53,12 @@ either cannot override the system contract or authorize use of a provider's own
 acoustic knowledge. There is no conversational memory, RAG, web search, agent,
 tool use or command execution.
 
+The deterministic `mock` provider can restate the already selected V1 next
+step and the existing uncertain or contradictory states for bounded questions
+such as “What should I do next?”, “Que dois-je comprendre en priorité ?” and
+“Qu’est-ce qui bloque ?”. It never turns that projection into a ranking, a
+cause, an execution authorization or a physical recommendation.
+
 ## Providers and validation
 
 The existing `mock`, `ollama` and `openai` providers retain the same transport
