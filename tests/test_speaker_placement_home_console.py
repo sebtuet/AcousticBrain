@@ -136,6 +136,36 @@ def test_homepage_does_not_mutate_the_existing_report(capsys, tmp_path):
     assert repr(report) == before
 
 
+def test_homepage_preserves_repeated_capture_without_requesting_a_new_test(
+    capsys, tmp_path,
+):
+    repeated = SimpleNamespace(
+        experiment_id="test-canaux-001",
+        state="READY",
+        available_channels=("LEFT", "RIGHT"),
+        source_evidence_acquisition_plan_id="CHANNEL_PLAN",
+        preserved_plan_objective="Acquire repeated evidence.",
+    )
+    report = SimpleNamespace(
+        evidence_acquisition_plans=SimpleNamespace(
+            recommended_plan=_Plan("EVIDENCE_PLAN_EXISTING", "Acquire evidence.")
+        ),
+        loudspeaker_positioning_experiment=None,
+        experiments_discovered=SimpleNamespace(experiments=(repeated,)),
+    )
+
+    SpeakerPlacementHomeConsoleReporter(
+        measurements_root=tmp_path,
+        positioning_presenter=_PositioningPresenter(_positioning()),
+    ).print(report)
+
+    output = capsys.readouterr().out
+    assert "test-canaux-001" in output
+    assert "Aucune nouvelle mesure n’est demandée" in output
+    assert "--start-placement" not in output
+    assert "verdict de comparaison n’est encore produit" in output
+
+
 def test_default_main_cli_uses_the_placement_homepage(capsys, tmp_path):
     campaign = tmp_path / "measurements"
     campaign.mkdir()

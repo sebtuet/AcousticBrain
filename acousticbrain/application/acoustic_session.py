@@ -1,7 +1,14 @@
 from dataclasses import dataclass, replace
 
 from acousticbrain.importers import ExperimentImporter
-from acousticbrain.models import ExperimentDescriptor, ExperimentState, ExperimentType
+from acousticbrain.models import (
+    ExperimentDescriptor,
+    ExperimentFileType,
+    ExperimentState,
+    ExperimentType,
+    EvidenceAcquisitionTestType,
+    ImpulseChannel,
+)
 
 from .experiment_discovery import ExperimentDiscoveryService
 
@@ -35,13 +42,42 @@ class AcousticSession:
                             descriptor.experiment_id
                         ),
                     ))
-                    if descriptor.state is ExperimentState.READY
+                    if (
+                        descriptor.state is ExperimentState.READY
+                        and not cls._has_unrepresented_channel_repetitions(
+                            descriptor
+                        )
+                    )
                     else None
                 ),
             )
             for descriptor in descriptors
         )
         return cls(measurement_root=str(path), experiments=imported)
+
+    @staticmethod
+    def _has_unrepresented_channel_repetitions(descriptor):
+        """Keeps declared repeated acquisitions out of the one-response importer."""
+        contract = descriptor.evidence_acquisition_plan_contract
+        if (
+            descriptor.channel_isolation_declaration is None
+            or contract is None
+            or contract.source_plan.test_type
+            is not EvidenceAcquisitionTestType.CHANNEL_ISOLATION
+        ):
+            return False
+        measurement_channels = [
+            item.channel
+            for item in descriptor.available_files
+            if (
+                item.file_type is ExperimentFileType.TXT_MEASUREMENT
+                and item.channel in {ImpulseChannel.LEFT, ImpulseChannel.RIGHT}
+            )
+        ]
+        return any(measurement_channels.count(channel) > 1 for channel in (
+            ImpulseChannel.LEFT,
+            ImpulseChannel.RIGHT,
+        ))
 
     @classmethod
     def _resolve_geometry(cls, descriptors):

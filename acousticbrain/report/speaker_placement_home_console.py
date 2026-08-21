@@ -41,6 +41,8 @@ class SpeakerPlacementHomeConsoleReporter:
             for fact in positioning.measured_facts:
                 print(f"- {fact}")
 
+        self._print_repeated_capture_notice(report)
+
         if positioning.status == "ACTION_AVAILABLE":
             self._print_available_action(report, positioning)
         else:
@@ -53,6 +55,34 @@ class SpeakerPlacementHomeConsoleReporter:
         print(f"- Causality status: {positioning.causality_status}")
         print("- Cette vue ne déclare ni n’exécute aucune expérience.")
         print("=" * 60)
+
+    @staticmethod
+    def _print_repeated_capture_notice(report):
+        repeated = SpeakerPlacementHomeConsoleReporter._repeated_captures(report)
+        if not repeated:
+            return
+        print()
+        print("Acquisition contrôlée enregistrée")
+        for item in repeated:
+            print(f"- {item.experiment_id} : acquisitions LEFT/RIGHT présentes.")
+        print(
+            "Les répétitions sont conservées sans être réduites à une seule "
+            "réponse par canal. Aucun verdict de comparaison n’est encore produit."
+        )
+
+    @staticmethod
+    def _repeated_captures(report):
+        discovery = getattr(report, "experiments_discovered", None)
+        experiments = getattr(discovery, "experiments", ())
+        return tuple(
+            item for item in experiments
+            if (
+                item.state == "READY"
+                and {"LEFT", "RIGHT"}.issubset(item.available_channels)
+                and item.source_evidence_acquisition_plan_id is not None
+                and item.preserved_plan_objective is not None
+            )
+        )
 
     def _print_available_action(self, report, positioning):
         print()
@@ -87,6 +117,13 @@ class SpeakerPlacementHomeConsoleReporter:
     def _print_blocked_action(self, report, positioning):
         print()
         print("Prochaine étape")
+        if self._repeated_captures(report):
+            print(
+                "Aucune nouvelle mesure n’est demandée. Les répétitions "
+                "enregistrées attendent une comparaison explicite ; cette vue "
+                "ne choisit ni une répétition ni un verdict à votre place."
+            )
+            return
         plan = self._recommended_plan(report)
         if plan is None:
             print(
