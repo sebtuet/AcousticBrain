@@ -163,7 +163,7 @@ def test_homepage_preserves_repeated_capture_without_requesting_a_new_test(
     assert "test-canaux-001" in output
     assert "Aucune nouvelle mesure n’est demandée" in output
     assert "--start-placement" not in output
-    assert "verdict de comparaison n’est encore produit" in output
+    assert "Aucun verdict acoustique de comparaison" in output
 
 
 def test_homepage_renders_descriptive_repeatability_without_a_verdict(capsys, tmp_path):
@@ -187,7 +187,39 @@ def test_homepage_renders_descriptive_repeatability_without_a_verdict(capsys, tm
     assert "Dernier test contrôlé — répétabilité A/B" in output
     assert "0.40 dB" in output
     assert "non comparable" in output
-    assert "aucun seuil de stabilité" in output
+    assert "aucun verdict acoustique ou causalité" in output
+
+
+def test_homepage_renders_versioned_repeatability_evaluation_with_limits(capsys, tmp_path):
+    report = SimpleNamespace(
+        channel_isolation_repeatability_evaluations=(SimpleNamespace(
+            experiment_id="test-canaux-002",
+            contract_id="repeatability_contract.v1",
+            lower_hz=40.0,
+            upper_hz=200.0,
+            threshold_db=3.0,
+            left_maximum_difference_db=0.26,
+            left_maximum_difference_frequency_hz=81.74,
+            right_maximum_difference_db=1.82,
+            right_maximum_difference_frequency_hz=40.28,
+            status=SimpleNamespace(value="REPEATABILITY_ACCEPTABLE_IN_BAND"),
+            causality_status="NOT_ESTABLISHED",
+        ),),
+    )
+
+    SpeakerPlacementHomeConsoleReporter(
+        measurements_root=tmp_path,
+        positioning_presenter=_PositioningPresenter(_positioning()),
+    )._print_repeatability_evaluation(report)
+
+    output = capsys.readouterr().out
+    assert "repeatability_contract.v1" in output
+    assert "40–200 Hz" in output
+    assert "3.00 dB" in output
+    assert "REPEATABILITY_ACCEPTABLE_IN_BAND" in output
+    assert "ne prouve pas la stabilité physique" in output
+    assert "déclaration utilisateur" in output
+    assert "Causality status: NOT_ESTABLISHED" in output
 
 
 def test_default_main_cli_uses_the_placement_homepage(capsys, tmp_path):
@@ -208,3 +240,20 @@ def test_default_main_cli_uses_the_placement_homepage(capsys, tmp_path):
     assert "ACOUSTICBRAIN — PLACEMENT DES ENCEINTES" in output
     assert "ACOUSTICBRAIN REPORT" not in output
     assert "--start-placement" in output
+
+
+def test_repeatability_projection_does_not_change_existing_reasoning(capsys, tmp_path):
+    campaign = tmp_path / "measurements"
+    campaign.mkdir()
+    reasoning = object()
+    report = Report(project_name="fixture")
+    report.deterministic_acoustic_reasoning = reasoning
+    report.evidence_acquisition_plans = SimpleNamespace(recommended_plan=None)
+
+    acousticbrain_main.main(
+        ["--measurements-root", str(campaign)],
+        brain=_Brain(report),
+    )
+
+    capsys.readouterr()
+    assert report.deterministic_acoustic_reasoning is reasoning

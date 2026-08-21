@@ -37,6 +37,19 @@ class ChannelIsolationBaselineDifference:
     left_right_difference_maximum_change_db: float | None
 
 
+@dataclass(frozen=True)
+class ChannelIsolationRepeatabilityBandFacts:
+    """Numerical A/B differences inside an explicitly supplied frequency band."""
+
+    experiment_id: str
+    lower_hz: float
+    upper_hz: float
+    left_maximum_difference_db: float | None
+    left_maximum_difference_frequency_hz: float | None
+    right_maximum_difference_db: float | None
+    right_maximum_difference_frequency_hz: float | None
+
+
 class ChannelIsolationRepeatabilityService:
     """Reads two explicitly labelled REW pairs without deriving a verdict."""
 
@@ -106,6 +119,42 @@ class ChannelIsolationRepeatabilityService:
                     right_a.spl, right_b.spl, right_a.frequency, right_b.frequency,
                     lower_hz=40.0, upper_hz=200.0,
                 )[1],
+            ))
+        return tuple(results)
+
+    def band_facts(self, descriptors, *, lower_hz, upper_hz):
+        """Returns A/B facts only; interpretation belongs to an explicit contract."""
+        results = []
+        for descriptor in descriptors:
+            pairs = self._pairs(descriptor)
+            if pairs is None:
+                continue
+            left_a, right_a = pairs["A"]
+            left_b, right_b = pairs["B"]
+            left_value, left_frequency = self._maximum_detail(
+                left_a.spl,
+                left_b.spl,
+                left_a.frequency,
+                left_b.frequency,
+                lower_hz=lower_hz,
+                upper_hz=upper_hz,
+            )
+            right_value, right_frequency = self._maximum_detail(
+                right_a.spl,
+                right_b.spl,
+                right_a.frequency,
+                right_b.frequency,
+                lower_hz=lower_hz,
+                upper_hz=upper_hz,
+            )
+            results.append(ChannelIsolationRepeatabilityBandFacts(
+                experiment_id=descriptor.experiment_id,
+                lower_hz=lower_hz,
+                upper_hz=upper_hz,
+                left_maximum_difference_db=left_value,
+                left_maximum_difference_frequency_hz=left_frequency,
+                right_maximum_difference_db=right_value,
+                right_maximum_difference_frequency_hz=right_frequency,
             ))
         return tuple(results)
 

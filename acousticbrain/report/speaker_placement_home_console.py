@@ -43,6 +43,7 @@ class SpeakerPlacementHomeConsoleReporter:
 
         self._print_repeated_capture_notice(report)
         self._print_repeatability(report)
+        self._print_repeatability_evaluation(report)
 
         if positioning.status == "ACTION_AVAILABLE":
             self._print_available_action(report, positioning)
@@ -74,7 +75,8 @@ class SpeakerPlacementHomeConsoleReporter:
             print(f"- {item.experiment_id} : acquisitions LEFT/RIGHT présentes.")
         print(
             "Les répétitions sont conservées sans être réduites à une seule "
-            "réponse par canal. Aucun verdict de comparaison n’est encore produit."
+            "réponse par canal. Aucun verdict acoustique de comparaison n’est "
+            "produit."
         )
 
     @staticmethod
@@ -126,8 +128,9 @@ class SpeakerPlacementHomeConsoleReporter:
             getattr(value, "right_40_200_maximum_difference_frequency_hz", None),
         )
         print(
-            "Ces écarts décrivent les exports REW A/B ; aucun seuil de "
-            "stabilité, verdict acoustique ou causalité n’en est déduit."
+            "Ces écarts bruts décrivent les exports REW A/B ; aucun verdict "
+            "acoustique ou causalité n’en est déduit. Une éventuelle évaluation "
+            "numérique contractuelle est affichée séparément."
         )
         baseline_differences = getattr(value, "baseline_differences", ())
         if baseline_differences:
@@ -150,6 +153,41 @@ class SpeakerPlacementHomeConsoleReporter:
                 )
         if len(values) > 1:
             print(f"Historique conservé : {len(values) - 1} test(s) antérieur(s).")
+
+    @staticmethod
+    def _print_repeatability_evaluation(report):
+        values = getattr(report, "channel_isolation_repeatability_evaluations", ())
+        if not values:
+            return
+        value = values[-1]
+        print()
+        print("Évaluation numérique de répétabilité")
+        print(f"- Contrat : {value.contract_id}")
+        print(
+            f"- Bande évaluée : {value.lower_hz:.0f}–{value.upper_hz:.0f} Hz ; "
+            f"seuil : {value.threshold_db:.2f} dB."
+        )
+        SpeakerPlacementHomeConsoleReporter._print_band_difference(
+            "Gauche",
+            value.left_maximum_difference_db,
+            value.left_maximum_difference_frequency_hz,
+        )
+        SpeakerPlacementHomeConsoleReporter._print_band_difference(
+            "Droite",
+            value.right_maximum_difference_db,
+            value.right_maximum_difference_frequency_hz,
+        )
+        print(f"- Verdict : {value.status.value}")
+        print(
+            "Ce verdict décrit uniquement la cohérence numérique A/B dans cette "
+            "bande ; il ne prouve pas la stabilité physique du microphone ou des "
+            "enceintes."
+        )
+        print(
+            "La position inchangée reste une déclaration utilisateur, non "
+            "vérifiée indépendamment."
+        )
+        print(f"- Causality status: {value.causality_status}")
 
     @staticmethod
     def _print_baseline_difference(label, value):
@@ -211,8 +249,9 @@ class SpeakerPlacementHomeConsoleReporter:
         if self._repeated_captures(report):
             print(
                 "Aucune nouvelle mesure n’est demandée. Les répétitions "
-                "enregistrées attendent une comparaison explicite ; cette vue "
-                "ne choisit ni une répétition ni un verdict à votre place."
+                "enregistrées restent disponibles pour une comparaison "
+                "scientifique explicite ; cette vue ne choisit ni une répétition "
+                "ni une conclusion acoustique à votre place."
             )
             return
         plan = self._recommended_plan(report)
