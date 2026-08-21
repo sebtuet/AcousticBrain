@@ -70,4 +70,10 @@ def test_user_assessment_real_fixture_is_read_only_and_uses_no_advisor(
     assert "What the measurements show" in output
     assert "What AcousticBrain cannot conclude yet" in output
     assert "This assessment has not established an acoustic cause." in output
+    assert "Continue safely" in output
+    assert (
+        "python main.py --measurements-root "
+        f"{BASELINE.resolve()} --guided-status"
+    ) in output
+    assert "does not declare or execute an experiment" in output
     assert before == hashes(BASELINE)

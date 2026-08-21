@@ -68,10 +68,17 @@ The main rendering is organized as:
 7. `What AcousticBrain cannot conclude yet`;
 8. `Technical references`.
 
-Technical IDs, enum values, contract codes and expert commands are confined to
-the final references section. They remain in the immutable model and detailed
-V1 views. Finding order remains the stable V1 order; the renderer creates no
-severity or importance ranking.
+When V1 already selected a next measurement plan, the public `main.py` view
+also renders one copyable, read-only continuation command for `--guided-status`
+with the exact measurement-root path supplied by the user. This command does
+not select a plan, infer a prerequisite, declare an experiment or execute one;
+it delegates navigation to the existing guided-status projection.
+
+Technical IDs, enum values and contract codes are confined to the final
+references section. The single copyable `--guided-status` continuation command
+is a public navigation handoff, not an expert command or a new workflow. They
+remain in the immutable model and detailed V1 views. Finding order remains the
+stable V1 order; the renderer creates no severity or importance ranking.
 
 ## Stable semantic states
 

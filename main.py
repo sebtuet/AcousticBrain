@@ -1923,7 +1923,9 @@ def run(
         if advisor
         else ExploratoryConsoleReporter()
         if exploratory
-        else CampaignUserAssessmentConsoleReporter()
+        else CampaignUserAssessmentConsoleReporter(
+            measurements_root=measurements_root.resolve()
+        )
         if user_assessment
         else AssessmentSummaryConsoleReporter()
         if assessment_summary

@@ -7,6 +7,9 @@ class HumanReadableAssessmentRenderer:
 
     TEXT = CampaignUserAssessmentHumanText
 
+    def __init__(self, *, measurements_root=None):
+        self.measurements_root = measurements_root
+
     def print(self, report):
         assessment = getattr(report, "campaign_user_assessment", None)
         if assessment is None:
@@ -128,26 +131,37 @@ class HumanReadableAssessmentRenderer:
                 f"{cls.TEXT.action_applicability(action.applicability)}"
             )
 
-    @classmethod
-    def _next_measurement(cls, assessment):
+    def _next_measurement(self, assessment):
         print("\nRecommended next measurement")
         step = assessment.recommended_next_step
         if step is None:
             print("The V1 report has not selected a next measurement plan.")
             return
         print(step.objective)
-        print(cls.TEXT.plan_status(step.planning_status))
-        print(f"Measurement type: {cls.TEXT.test_type(step.test_type)}.")
-        print(cls.TEXT.prerequisite_status(step.prerequisite_status))
+        print(self.TEXT.plan_status(step.planning_status))
+        print(f"Measurement type: {self.TEXT.test_type(step.test_type)}.")
+        print(self.TEXT.prerequisite_status(step.prerequisite_status))
         if step.procedure:
             print("\nExisting procedure:")
             for index, instruction in enumerate(step.procedure, 1):
                 print(f"{index}. {instruction}")
         if step.limitations:
             print(f"Recorded limitation: {step.limitations[0]}")
+        if self.measurements_root is None:
+            print(
+                "Inspect and prepare this existing plan with --guided-status before "
+                "declaration or acquisition."
+            )
+            return
+        print("\nContinue safely")
+        print("To inspect the current workflow without changing any data, run:")
         print(
-            "Inspect and prepare this existing plan with --guided-status before "
-            "declaration or acquisition."
+            "python main.py --measurements-root "
+            f"{self.measurements_root} --guided-status"
+        )
+        print(
+            "This step does not declare or execute an experiment; it only "
+            "shows the existing next safe action."
         )
 
     @classmethod
