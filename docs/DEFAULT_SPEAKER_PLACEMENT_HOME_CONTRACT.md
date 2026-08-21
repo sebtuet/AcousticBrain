@@ -28,6 +28,11 @@ confirmed, the command lists the existing measurement directories for the user
 to choose a starting measurement and proposes an unused human-readable test
 name. It runs the existing declaration preflight and declares the test only
 after a second explicit confirmation. It never chooses the reference itself.
+Before that confirmation, it displays the four suggested REW measurement names
+(`L … A`, `R … A`, `L … B`, `R … B`) and the destination directories for TXT
+and optional impulse WAV exports. The REW `* Measurement:` value remains the
+source used to identify LEFT or RIGHT; the displayed names do not create files
+or prove that the repeated acquisitions were performed.
 
 The homepage must not calculate or change eligibility, select a direction,
 create a proposal, write a manifest or registry, execute a measurement,

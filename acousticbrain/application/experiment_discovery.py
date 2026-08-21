@@ -14,6 +14,7 @@ from acousticbrain.models import (
     ExperimentType,
     ExperimentDeclaration,
     ExperimentKind,
+    EvidenceAcquisitionTestType,
     ImpulseChannel,
     ListeningPosition,
     RoomDescription,
@@ -80,9 +81,27 @@ class ExperimentDiscoveryService:
             if item.file_type is ExperimentFileType.TXT_MEASUREMENT
             and item.channel is not None
         }
+        evidence_acquisition_plan_contract = (
+            EvidenceAcquisitionPlanContractJsonCodec().loads(
+                existing.get("evidence_acquisition_plan_contract")
+            )
+        )
+        channel_isolation_declaration = self._channel_isolation_declaration(
+            existing
+        )
+        required_channels = (
+            {ImpulseChannel.LEFT, ImpulseChannel.RIGHT}
+            if (
+                channel_isolation_declaration is not None
+                and evidence_acquisition_plan_contract is not None
+                and evidence_acquisition_plan_contract.source_plan.test_type
+                is EvidenceAcquisitionTestType.CHANNEL_ISOLATION
+            )
+            else self.REQUIRED_CHANNELS
+        )
         state = (
             ExperimentState.READY
-            if self.REQUIRED_CHANNELS.issubset(measurement_channels)
+            if required_channels.issubset(measurement_channels)
             else ExperimentState.INCOMPLETE
         )
         timestamp = self._timestamp(directory, inspected, existing)
@@ -262,12 +281,10 @@ class ExperimentDiscoveryService:
                 self._source_evidence_acquisition_plan_id(existing)
             ),
             evidence_acquisition_plan_contract=(
-                EvidenceAcquisitionPlanContractJsonCodec().loads(
-                    existing.get("evidence_acquisition_plan_contract")
-                )
+                evidence_acquisition_plan_contract
             ),
             channel_isolation_declaration=(
-                self._channel_isolation_declaration(existing)
+                channel_isolation_declaration
             ),
             channel_isolation_preparation=(
                 self._channel_isolation_preparation(existing)

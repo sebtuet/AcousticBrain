@@ -48,9 +48,16 @@ ni comparaison métier.
 
 ## État et ordre
 
-Un dossier est `READY` lorsque ses TXT de mesure fournissent LEFT, RIGHT et
-STEREO. Sinon il est `INCOMPLETE`. Les autres exports restent décrits même
-lorsqu’ils ne peuvent pas être affectés à un canal.
+Un dossier historique ou général est `READY` lorsque ses TXT de mesure
+fournissent LEFT, RIGHT et STEREO. Un dossier qui préserve à la fois le contrat
+de plan et la déclaration structurée `CHANNEL_ISOLATION` est `READY` lorsque
+ses TXT fournissent LEFT et RIGHT : son contrat ne requiert pas de mesure
+STEREO. Sinon le dossier est `INCOMPLETE`. Les autres exports restent décrits
+même lorsqu’ils ne peuvent pas être affectés à un canal.
+
+Cet état décrit uniquement la disponibilité technique minimale prévue par le
+contrat déclaré. Il ne prouve pas qu’une répétition a été effectuée, que les
+conditions étaient contrôlées ou qu’un résultat scientifique est établi.
 
 `baseline` est toujours présenté en premier. Les expériences sont ensuite
 ordonnées par le premier horodatage REW détecté, puis par identifiant stable.

@@ -1042,6 +1042,25 @@ def _guide_channel_isolation_declaration(
     print(f"Mesure de départ : {readiness.reference_experiment_id}")
     print(f"Nouveau test : {readiness.experiment_id}")
     print("Aucune mesure n’a été effectuée.")
+    print()
+    print("Mesures REW à créer après la déclaration")
+    print(f"- L {readiness.experiment_id} A : première mesure de l’enceinte gauche")
+    print(f"- R {readiness.experiment_id} A : première mesure de l’enceinte droite")
+    print(f"- L {readiness.experiment_id} B : répétition de la mesure gauche")
+    print(f"- R {readiness.experiment_id} B : répétition de la mesure droite")
+    print(
+        "Dans REW, conservez L ou R dans le nom de chaque mesure : "
+        "AcousticBrain lit le canal depuis « * Measurement: » dans le TXT."
+    )
+    print(
+        "Exportez les quatre TXT dans : "
+        f"{measurements_root / readiness.experiment_id / 'measurements'}"
+    )
+    print(
+        "Vous pouvez aussi exporter les WAV d’impulsion dans : "
+        f"{measurements_root / readiness.experiment_id / 'impulse'}"
+    )
+    print("Aucune mesure stéréo L+R n’est requise par ce test contrôlé.")
     try:
         declare = input_func("Déclarer ce test maintenant ? [o/N] : ").strip().casefold()
     except EOFError as error:

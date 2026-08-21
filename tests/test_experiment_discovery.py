@@ -13,6 +13,7 @@ from acousticbrain.models import ExperimentState, ExperimentType, ImpulseChannel
 from acousticbrain.persistence import MeasurementRepository
 
 from manifest_test_data import future_manifest_extension
+from test_channel_isolation_plan_coverage import plan as channel_isolation_plan
 
 
 def rew_measurement(name, dated="Jul 13, 2026 10:00:00 AM"):
@@ -30,6 +31,16 @@ def complete_experiment(directory, *, filenames=("one", "two", "three")):
     measurement_directory = directory / "measurements"
     measurement_directory.mkdir(parents=True)
     for filename, channel in zip(filenames, ("LEFT", "RIGHT", "STEREO")):
+        (measurement_directory / f"{filename}.txt").write_text(
+            rew_measurement(channel),
+            encoding="utf-8",
+        )
+
+
+def channel_isolation_measurements(directory):
+    measurement_directory = directory / "measurements"
+    measurement_directory.mkdir(parents=True)
+    for filename, channel in (("left", "LEFT"), ("right", "RIGHT")):
         (measurement_directory / f"{filename}.txt").write_text(
             rew_measurement(channel),
             encoding="utf-8",
@@ -199,6 +210,45 @@ def test_historical_experiment_without_channel_isolation_declaration_is_compatib
 
     assert descriptor.channel_isolation_declaration is None
     assert "channel_isolation_declaration" not in persisted
+
+
+def test_declared_channel_isolation_is_ready_with_left_and_right_only(tmp_path):
+    declared = tmp_path / "exp-001"
+    historical = tmp_path / "exp-002"
+    channel_isolation_measurements(declared)
+    channel_isolation_measurements(historical)
+    (declared / "manifest.json").write_text(
+        json.dumps({
+            "source_evidence_acquisition_plan_id": "PLAN",
+            "evidence_acquisition_plan_contract": {
+                "schema_version": 1,
+                "mode": "EXPLORATORY",
+                "declaration_source": "EXPLICIT_USER_OPERATION",
+                "reference_experiment_code": "baseline",
+                "declaration_user_note": None,
+                "plan": channel_isolation_plan().to_dict(),
+            },
+            "channel_isolation_declaration": {
+                "repeated_channels": ["LEFT", "RIGHT"],
+                "available_inputs": [],
+                "controlled_variables": [],
+                "independent_variables": ["active_channel"],
+                "measurements": [
+                    "left_channel_response",
+                    "right_channel_response",
+                    "repeat_response",
+                ],
+            }
+        }),
+        encoding="utf-8",
+    )
+
+    descriptors = ExperimentDiscoveryService().discover(tmp_path)
+
+    assert descriptors[0].state is ExperimentState.READY
+    assert descriptors[1].state is ExperimentState.INCOMPLETE
+    assert json.loads((declared / "manifest.json").read_text())["state"] == "READY"
+    assert json.loads((historical / "manifest.json").read_text())["state"] == "INCOMPLETE"
 
 
 def test_discovery_preserves_exact_channel_isolation_results(tmp_path):

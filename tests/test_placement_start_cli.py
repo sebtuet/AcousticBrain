@@ -85,6 +85,10 @@ def test_start_placement_guides_reference_and_test_name_before_declaration(
     assert "Choisissez la mesure de départ" in output
     assert "1. baseline-before-test" in output
     assert "Nouveau test : test-canaux-001" in output
+    assert "L test-canaux-001 A" in output
+    assert "R test-canaux-001 B" in output
+    assert str(root / "test-canaux-001" / "measurements") in output
+    assert "Aucune mesure stéréo L+R n’est requise" in output
     assert "Test non déclaré" in output
     assert not (root / "test-canaux-001").exists()
     assert not (root / "baseline-before-test" / "manifest.json").exists()
