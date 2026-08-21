@@ -113,6 +113,30 @@ class SpeakerPlacementHomeConsoleReporter:
             "Ces écarts décrivent les exports REW A/B ; aucun seuil de "
             "stabilité, verdict acoustique ou causalité n’en est déduit."
         )
+        for value in values:
+            baseline_differences = getattr(value, "baseline_differences", ())
+            if not baseline_differences:
+                continue
+            print(f"Écart descriptif à la baseline — {value.experiment_id}")
+            for baseline in baseline_differences:
+                print(f"  Répétition {baseline.label}")
+                SpeakerPlacementHomeConsoleReporter._print_baseline_difference(
+                    "Gauche", baseline.left_maximum_difference_db,
+                )
+                SpeakerPlacementHomeConsoleReporter._print_baseline_difference(
+                    "Droite", baseline.right_maximum_difference_db,
+                )
+                SpeakerPlacementHomeConsoleReporter._print_baseline_difference(
+                    "Écart gauche/droite",
+                    baseline.left_right_difference_maximum_change_db,
+                )
+
+    @staticmethod
+    def _print_baseline_difference(label, value):
+        if value is None:
+            print(f"    {label} : non comparable à la baseline.")
+        else:
+            print(f"    {label} : écart maximal à la baseline de {value:.2f} dB")
 
     @staticmethod
     def _print_difference(label, value):
