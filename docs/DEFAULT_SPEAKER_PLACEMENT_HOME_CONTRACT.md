@@ -18,7 +18,10 @@ experiment.
 
 If no single move is available, the homepage may point to the existing
 deterministically selected READY evidence-acquisition plan through
-`--guided-status`. It does not select a new plan or derive a new blocker.
+`--start-placement`. This public command asks for explicit user declarations
+of existing prerequisites and persists them only after an explicit confirmation
+in the dedicated campaign-local preparation registry. It does not select a new
+plan or derive a new blocker.
 
 The homepage must not calculate or change eligibility, select a direction,
 create a proposal, write a manifest or registry, execute a measurement,

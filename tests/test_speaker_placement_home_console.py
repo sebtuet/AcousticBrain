@@ -87,7 +87,7 @@ def test_blocked_homepage_routes_to_existing_guided_status_without_a_move(capsys
     assert "Aucun déplacement unique" in output
     assert "Plan : EVIDENCE_PLAN_EXISTING" in output
     assert "python main.py" in output
-    assert "--guided-status" in output
+    assert "--start-placement" in output
     assert "Direction :" not in output
     assert "Causality status: NOT_ESTABLISHED" in output
     assert presenter.calls == [report]
@@ -153,4 +153,4 @@ def test_default_main_cli_uses_the_placement_homepage(capsys, tmp_path):
     assert result == 0
     assert "ACOUSTICBRAIN — PLACEMENT DES ENCEINTES" in output
     assert "ACOUSTICBRAIN REPORT" not in output
-    assert "--guided-status" in output
+    assert "--start-placement" in output

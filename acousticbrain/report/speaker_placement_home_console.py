@@ -95,16 +95,16 @@ class SpeakerPlacementHomeConsoleReporter:
             )
             return
 
-        print("Ouvrez le parcours guidé du plan de vérification déjà sélectionné :")
+        print("Démarrez la préparation du plan de vérification déjà sélectionné :")
         print(f"Plan : {plan.plan_id}")
         self._print_command(
             "python main.py",
             f"--measurements-root {self.measurements_root.resolve()}",
-            "--guided-status",
+            "--start-placement",
         )
         print(
-            "Cette étape examine le plan existant ; elle ne déclare ni "
-            "n’exécute une expérience."
+            "Cette étape vous demande de déclarer les prérequis connus ; elle "
+            "ne déclare ni n’exécute une expérience."
         )
 
         if positioning.missing_information:

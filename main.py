@@ -66,6 +66,7 @@ from acousticbrain.report import (
     EvidencePlanUserViewPresenter,
     EvidencePlanOverviewConsoleReporter,
     EvidencePlanOverviewPresenter,
+    EvidenceAcquisitionPlanPresenter,
     GuidedGlobalStatusConsoleReporter,
     GuidedGlobalStatusPresenter,
     EvidencePlanPreparationUserViewConsoleReporter,
@@ -82,6 +83,8 @@ from acousticbrain.models import (
     ListeningPositionCampaignInstanceStatus,
     ExploratoryFeasibilityDecision,
     FeasibilityAnswer,
+    EvidencePlanPreparationConfirmationInput,
+    EvidencePlanPrerequisiteDeclaration,
     EvidencePlanPrerequisiteStatus,
     ExperimentDeclaration,
     ExperimentDescriptor,
@@ -107,6 +110,9 @@ from acousticbrain.persistence import (
 
 
 DEFAULT_MEASUREMENTS_ROOT = Path("measurements")
+DEFAULT_PLACEMENT_PREPARATION_REGISTRY = Path(
+    ".acousticbrain/evidence-plan-preparations.json"
+)
 
 
 def create_parser():
@@ -205,6 +211,14 @@ def create_parser():
         "--guided-status",
         action="store_true",
         help="show the current workflow state and exactly one safe next action",
+    )
+    parser.add_argument(
+        "--start-placement",
+        action="store_true",
+        help=(
+            "interactively record user-declared preparation for the existing "
+            "selected placement verification"
+        ),
     )
     parser.add_argument(
         "--guided-preparation-registry",
@@ -802,6 +816,157 @@ def generate_evidence_plan_preparation(
         print("Brouillon non écrit : aucun chemin de sortie demandé.")
     print("Aucune préparation enregistrée et aucune expérience exécutée.")
     return draft
+
+
+def start_placement(
+    measurements_root,
+    *,
+    brain=None,
+    registry_repository=None,
+    preparation_service=None,
+    input_func=input,
+):
+    """Guides one explicit preparation declaration for the selected READY plan."""
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Placement start requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    presented = EvidenceAcquisitionPlanPresenter().present(context)
+    if synthesis is None or presented is None:
+        raise ValueError("Placement start analysis contracts are unavailable.")
+    recommended = presented.recommended_plan
+    if recommended is None:
+        print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+        print()
+        print("Aucune vérification de positionnement READY n’est disponible.")
+        print("Aucune préparation, expérience ou mesure n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return None
+
+    matches = tuple(
+        value for value in synthesis.plans if value.plan_id == recommended.plan_id
+    )
+    if len(matches) != 1:
+        raise ValueError(
+            "Placement start requires one exact selected READY plan: "
+            f"{recommended.plan_id}."
+        )
+    plan = matches[0]
+    registry_path = measurements_root / DEFAULT_PLACEMENT_PREPARATION_REGISTRY
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    registry = repository.load(registry_path)
+    draft = GuidedEvidencePlanPreparationDraftService().generate(
+        plan.plan_id,
+        plans=synthesis.plans,
+        registry=registry,
+    )
+
+    print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+    print()
+    print("Vérification contrôlée sélectionnée")
+    print(EvidencePlanUserViewPresenter._user_label(plan))
+    print(f"Plan : {plan.plan_id}")
+    print()
+    print("Avant toute mesure, répondez uniquement selon ce que vous savez.")
+    statuses = {}
+    for prerequisite in plan.required_inputs:
+        guidance = ChannelIsolationGuidedExecutionService._guidance(prerequisite)
+        print()
+        print(guidance.code)
+        print(guidance.meaning)
+        print("O = confirmé ; N = non confirmé ; I = je ne sais pas.")
+        print("Confirmé si : " + guidance.confirmed_when)
+        print("Non confirmé si : " + guidance.not_confirmed_when)
+        try:
+            answer = input_func("Votre réponse [I] : ").strip().upper()
+        except EOFError as error:
+            raise ValueError(
+                "Placement start requires an interactive response; no state was written."
+            ) from error
+        statuses[prerequisite] = {
+            "O": EvidencePlanPrerequisiteStatus.CONFIRMED,
+            "N": EvidencePlanPrerequisiteStatus.NOT_CONFIRMED,
+            "I": EvidencePlanPrerequisiteStatus.UNKNOWN,
+            "": EvidencePlanPrerequisiteStatus.UNKNOWN,
+        }.get(answer)
+        if statuses[prerequisite] is None:
+            raise ValueError(
+                "Réponse de préparation invalide. Utilisez O, N ou I ; "
+                "aucun état n’a été écrit."
+            )
+
+    confirmation = EvidencePlanPreparationConfirmationInput(
+        schema_version=draft.confirmation_input.schema_version,
+        confirmation_id=draft.confirmation_input.confirmation_id,
+        plan_id=draft.confirmation_input.plan_id,
+        plan_contract_fingerprint=draft.confirmation_input.plan_contract_fingerprint,
+        prerequisites=tuple(
+            EvidencePlanPrerequisiteDeclaration(code=code, status=statuses[code])
+            for code in plan.required_inputs
+        ),
+        declaration_source=draft.confirmation_input.declaration_source,
+    )
+    print()
+    print("Vos déclarations")
+    for item in confirmation.prerequisites:
+        print(f"- {item.code} : {item.status.value}")
+    print(
+        "Ces statuts ne sont pas vérifiés indépendamment et ne déclarent ni "
+        "n’exécutent une expérience."
+    )
+    try:
+        record = input_func(
+            "Enregistrer cette préparation dans le dossier de campagne ? [o/N] : "
+        ).strip().casefold()
+    except EOFError as error:
+        raise ValueError(
+            "Placement start requires an explicit recording choice; no state was written."
+        ) from error
+    if record not in ("o", "oui"):
+        print("Préparation non enregistrée. Aucune mesure ni expérience n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return None
+
+    result = (preparation_service or EvidencePlanPreparationWorkflowService(
+        repository=repository
+    )).record(
+        confirmation,
+        registry_path=registry_path,
+        plans=synthesis.plans,
+    )
+    print()
+    print("Préparation enregistrée.")
+    print(f"Registre : {Path(result.registry_path).resolve()}")
+    if result.record.all_prerequisites_status is None:
+        print("Les prérequis ne sont pas tous confirmés : aucune expérience ne peut être déclarée.")
+    else:
+        print("Les prérequis sont déclarés confirmés ; la déclaration reste une action séparée.")
+    print("Prochaine étape")
+    confirmation_id = result.record.confirmation_input.confirmation_id
+    if plan.test_type.value == "CHANNEL_ISOLATION":
+        print(
+            (
+                "python main.py \\\n+  --measurements-root "
+                f"{measurements_root.resolve()} \\\n+  --channel-isolation-journey {plan.plan_id} \\\n+  --channel-isolation-preparation {confirmation_id} \\\n+  --evidence-plan-preparation-registry {registry_path.resolve()}"
+            ).replace(chr(10) + "+", chr(10))
+        )
+    else:
+        print(
+            (
+                "python main.py \\\n+  --measurements-root "
+                f"{measurements_root.resolve()} \\\n+  --guided-status \\\n+  --guided-preparation-registry {registry_path.resolve()} \\\n+  --guided-preparation {confirmation_id}"
+            ).replace(chr(10) + "+", chr(10))
+        )
+    print("Aucune mesure ni expérience n’a été créée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
 
 
 def preview_evidence_plan_preparation(
@@ -2079,11 +2244,13 @@ def main(
     channel_isolation_declaration_readiness_service=None,
     guided_global_status_presenter=None,
     guided_global_status_reporter=None,
+    placement_input=input,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
     parser = create_parser()
     arguments = parser.parse_args(argv)
+    default_arguments = parser.parse_args(())
     decision_repository = (
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
@@ -2138,6 +2305,25 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.start_placement:
+            ignored = {"measurements_root", "start_placement"}
+            conflicting = tuple(
+                name for name, value in vars(arguments).items()
+                if name not in ignored
+                and value != getattr(default_arguments, name)
+            )
+            if conflicting:
+                option = "--" + conflicting[0].replace("_", "-")
+                raise ValueError(
+                    "--start-placement cannot be combined with " + option + "."
+                )
+            start_placement(
+                measurements_root,
+                brain=brain,
+                registry_repository=evidence_plan_preparation_registry_repository,
+                input_func=placement_input,
+            )
+            return 0
         positioning_specific_values = (
             arguments.positioning_experiment_id,
             arguments.positioning_reference,
