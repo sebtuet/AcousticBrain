@@ -42,6 +42,7 @@ def test_repeatability_reads_two_explicit_rew_pairs_without_a_verdict():
         available_files=files,
         channel_isolation_declaration=object(),
         evidence_acquisition_plan_contract=SimpleNamespace(
+            reference_experiment_code="baseline",
             source_plan=SimpleNamespace(
                 test_type=EvidenceAcquisitionTestType.CHANNEL_ISOLATION,
             )
@@ -53,6 +54,7 @@ def test_repeatability_reads_two_explicit_rew_pairs_without_a_verdict():
     assert len(result) == 1
     value = result[0]
     assert value.experiment_id == "test-canaux-001"
+    assert value.reference_experiment_id == "baseline"
     assert value.left_maximum_difference_db == 2.0
     assert value.right_maximum_difference_db == 1.0
     assert value.left_right_difference_maximum_change_db == 3.0

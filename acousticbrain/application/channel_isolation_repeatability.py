@@ -15,6 +15,7 @@ from acousticbrain.models import (
 @dataclass(frozen=True)
 class ChannelIsolationRepeatability:
     experiment_id: str
+    reference_experiment_id: str | None
     labels: tuple[str, str]
     left_maximum_difference_db: float | None
     right_maximum_difference_db: float | None
@@ -49,6 +50,11 @@ class ChannelIsolationRepeatabilityService:
             left_b, right_b = pairs["B"]
             results.append(ChannelIsolationRepeatability(
                 experiment_id=descriptor.experiment_id,
+                reference_experiment_id=getattr(
+                    descriptor.evidence_acquisition_plan_contract,
+                    "reference_experiment_code",
+                    None,
+                ),
                 labels=self.REQUIRED_LABELS,
                 left_maximum_difference_db=self._maximum_difference(
                     left_a.spl, left_b.spl, left_a.frequency, left_b.frequency,

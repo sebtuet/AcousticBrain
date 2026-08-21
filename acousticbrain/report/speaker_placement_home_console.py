@@ -117,7 +117,11 @@ class SpeakerPlacementHomeConsoleReporter:
             baseline_differences = getattr(value, "baseline_differences", ())
             if not baseline_differences:
                 continue
-            print(f"Écart descriptif à la baseline — {value.experiment_id}")
+            reference = getattr(value, "reference_experiment_id", None)
+            print(
+                "Écart descriptif à la référence "
+                f"{reference or 'indisponible'} — {value.experiment_id}"
+            )
             for baseline in baseline_differences:
                 print(f"  Répétition {baseline.label}")
                 SpeakerPlacementHomeConsoleReporter._print_baseline_difference(
