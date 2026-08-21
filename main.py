@@ -1575,16 +1575,19 @@ def show_channel_isolation_journey(
         print("Revoir les prérequis non confirmés ; aucune déclaration d’expérience n’est disponible.")
     else:
         print(
-            "Lancer d’abord le préflight de déclaration, en fournissant vous-même "
-            "une référence existante et un nouvel identifiant d’expérience ; la "
-            "déclaration reste ensuite une action explicite séparée :"
+            "Choisissez d’abord une expérience de référence existante et un "
+            "nouvel identifiant encore inutilisé. AcousticBrain ne les choisit "
+            "pas à votre place. Lancez ensuite le préflight suivant en "
+            "remplaçant les deux champs entre chevrons :"
         )
-        print(
-            "python main.py --measurements-root "
-            f"{measurements_root} --channel-isolation-declaration-readiness "
-            f"{plan_id} --channel-isolation-preparation {confirmation_id} "
-            f"--evidence-plan-preparation-registry {registry_path}"
-        )
+        continuation = " " + chr(92)
+        print(f"python main.py{continuation}")
+        print(f"  --measurements-root {measurements_root}{continuation}")
+        print(f"  --channel-isolation-declaration-readiness {plan_id}{continuation}")
+        print(f"  --channel-isolation-preparation {confirmation_id}{continuation}")
+        print(f"  --evidence-plan-preparation-registry {registry_path}{continuation}")
+        print("  --channel-isolation-reference <EXPERIENCE_REFERENCE_EXISTANTE>" + continuation)
+        print("  --channel-isolation-experiment <NOUVEL_ID_EXPERIENCE>")
     print()
     print("Frontière scientifique")
     print("Cette checklist ne vérifie aucune condition physique et n’exécute aucune mesure.")
