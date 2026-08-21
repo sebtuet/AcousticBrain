@@ -2278,7 +2278,7 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
-    if standard_report:
+    if standard_report and hasattr(report, "__dict__"):
         report.channel_isolation_repeatability = (
             ChannelIsolationRepeatabilityService().analyze(
                 ExperimentDiscoveryService().discover(measurements_root)
