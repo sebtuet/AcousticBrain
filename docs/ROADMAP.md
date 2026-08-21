@@ -4,6 +4,14 @@ Cette roadmap présente les capacités du moteur plutôt que l'historique des PR
 Toute évolution doit respecter [ARCHITECTURE.md](ARCHITECTURE.md),
 [SCORING.md](SCORING.md) et [ANALYSIS_CONTRACT.md](ANALYSIS_CONTRACT.md).
 
+## Product direction (authoritative)
+
+The product direction is frozen in [`PRODUCT_TARGET.md`](PRODUCT_TARGET.md):
+AcousticBrain's primary user journey is a reversible, measurement-guided
+loudspeaker-placement experiment. Roadmap capabilities are not independent
+product objectives. A capability is worked on only when it removes a concrete
+blocker in that journey or makes its public `main.py` path usable.
+
 Les sections `✅` sont livrées en V1. Les sections `🧭 V2` décrivent des
 extensions futures et ne constituent pas des capacités manquantes de la V1.
 
