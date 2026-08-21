@@ -21,6 +21,12 @@ class ChannelIsolationRepeatability:
     right_maximum_difference_db: float | None
     left_right_difference_maximum_change_db: float | None
     baseline_differences: tuple["ChannelIsolationBaselineDifference", ...] = ()
+    left_maximum_difference_frequency_hz: float | None = None
+    right_maximum_difference_frequency_hz: float | None = None
+    left_40_200_maximum_difference_db: float | None = None
+    left_40_200_maximum_difference_frequency_hz: float | None = None
+    right_40_200_maximum_difference_db: float | None = None
+    right_40_200_maximum_difference_frequency_hz: float | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +84,28 @@ class ChannelIsolationRepeatabilityService:
                         )
                     ),
                 ),
+                left_maximum_difference_frequency_hz=self._maximum_detail(
+                    left_a.spl, left_b.spl, left_a.frequency, left_b.frequency,
+                )[1],
+                right_maximum_difference_frequency_hz=self._maximum_detail(
+                    right_a.spl, right_b.spl, right_a.frequency, right_b.frequency,
+                )[1],
+                left_40_200_maximum_difference_db=self._maximum_detail(
+                    left_a.spl, left_b.spl, left_a.frequency, left_b.frequency,
+                    lower_hz=40.0, upper_hz=200.0,
+                )[0],
+                left_40_200_maximum_difference_frequency_hz=self._maximum_detail(
+                    left_a.spl, left_b.spl, left_a.frequency, left_b.frequency,
+                    lower_hz=40.0, upper_hz=200.0,
+                )[1],
+                right_40_200_maximum_difference_db=self._maximum_detail(
+                    right_a.spl, right_b.spl, right_a.frequency, right_b.frequency,
+                    lower_hz=40.0, upper_hz=200.0,
+                )[0],
+                right_40_200_maximum_difference_frequency_hz=self._maximum_detail(
+                    right_a.spl, right_b.spl, right_a.frequency, right_b.frequency,
+                    lower_hz=40.0, upper_hz=200.0,
+                )[1],
             ))
         return tuple(results)
 
@@ -180,10 +208,25 @@ class ChannelIsolationRepeatabilityService:
 
     @staticmethod
     def _maximum_difference(first, second, first_frequency, second_frequency):
+        return ChannelIsolationRepeatabilityService._maximum_detail(
+            first, second, first_frequency, second_frequency,
+        )[0]
+
+    @staticmethod
+    def _maximum_detail(
+        first, second, first_frequency, second_frequency, *, lower_hz=None,
+        upper_hz=None,
+    ):
         if (
             not first
             or len(first) != len(second)
             or tuple(first_frequency) != tuple(second_frequency)
         ):
-            return None
-        return max(abs(a - b) for a, b in zip(first, second))
+            return (None, None)
+        values = tuple(
+            (abs(a - b), frequency)
+            for a, b, frequency in zip(first, second, first_frequency)
+            if (lower_hz is None or frequency >= lower_hz)
+            and (upper_hz is None or frequency <= upper_hz)
+        )
+        return max(values, default=(None, None), key=lambda item: item[0] or -1)

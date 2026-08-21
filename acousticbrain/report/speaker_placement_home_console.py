@@ -103,11 +103,27 @@ class SpeakerPlacementHomeConsoleReporter:
             SpeakerPlacementHomeConsoleReporter._print_difference(
                 "Gauche", value.left_maximum_difference_db,
             )
+            SpeakerPlacementHomeConsoleReporter._print_frequency(
+                getattr(value, "left_maximum_difference_frequency_hz", None),
+            )
             SpeakerPlacementHomeConsoleReporter._print_difference(
                 "Droite", value.right_maximum_difference_db,
             )
+            SpeakerPlacementHomeConsoleReporter._print_frequency(
+                getattr(value, "right_maximum_difference_frequency_hz", None),
+            )
             SpeakerPlacementHomeConsoleReporter._print_difference(
                 "Écart gauche/droite", value.left_right_difference_maximum_change_db,
+            )
+            SpeakerPlacementHomeConsoleReporter._print_band_difference(
+                "Gauche, 40–200 Hz",
+                getattr(value, "left_40_200_maximum_difference_db", None),
+                getattr(value, "left_40_200_maximum_difference_frequency_hz", None),
+            )
+            SpeakerPlacementHomeConsoleReporter._print_band_difference(
+                "Droite, 40–200 Hz",
+                getattr(value, "right_40_200_maximum_difference_db", None),
+                getattr(value, "right_40_200_maximum_difference_frequency_hz", None),
             )
         print(
             "Ces écarts décrivent les exports REW A/B ; aucun seuil de "
@@ -148,6 +164,16 @@ class SpeakerPlacementHomeConsoleReporter:
             print(f"  {label} : non comparable (grilles de fréquences différentes).")
         else:
             print(f"  {label} : écart maximal A/B de {value:.2f} dB")
+
+    @staticmethod
+    def _print_frequency(value):
+        if value is not None:
+            print(f"    Fréquence du maximum : {value:.2f} Hz")
+
+    @staticmethod
+    def _print_band_difference(label, value, frequency):
+        if value is not None:
+            print(f"  {label} : maximum A/B de {value:.2f} dB à {frequency:.2f} Hz")
 
     def _print_available_action(self, report, positioning):
         print()
