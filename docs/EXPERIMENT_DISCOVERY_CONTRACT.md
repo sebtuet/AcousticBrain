@@ -23,6 +23,12 @@ tests/fixtures/campaigns/historical_reference/
 est un conteneur technique de fichiers et de projets. Elle ne crée aucune
 `OptimizationIteration`, aucun protocole métier et aucune comparaison.
 
+Un dossier nommé `baseline` ou `exp-…` est découvert par son identifiant. Un
+test explicitement déclaré depuis le parcours public peut aussi porter un nom
+lisible tel que `test-canaux-001` : il est découvert uniquement parce que son
+manifest préserve un contrat `evidence_acquisition_plan_contract` explicite.
+Le nom ne remplace jamais ce contrat et un dossier arbitraire reste ignoré.
+
 ## Détection indépendante des noms
 
 `MeasurementRepository` parcourt récursivement chaque expérience. Les chemins
@@ -48,9 +54,16 @@ ni comparaison métier.
 
 ## État et ordre
 
-Un dossier est `READY` lorsque ses TXT de mesure fournissent LEFT, RIGHT et
-STEREO. Sinon il est `INCOMPLETE`. Les autres exports restent décrits même
-lorsqu’ils ne peuvent pas être affectés à un canal.
+Un dossier historique ou général est `READY` lorsque ses TXT de mesure
+fournissent LEFT, RIGHT et STEREO. Un dossier qui préserve à la fois le contrat
+de plan et la déclaration structurée `CHANNEL_ISOLATION` est `READY` lorsque
+ses TXT fournissent LEFT et RIGHT : son contrat ne requiert pas de mesure
+STEREO. Sinon le dossier est `INCOMPLETE`. Les autres exports restent décrits
+même lorsqu’ils ne peuvent pas être affectés à un canal.
+
+Cet état décrit uniquement la disponibilité technique minimale prévue par le
+contrat déclaré. Il ne prouve pas qu’une répétition a été effectuée, que les
+conditions étaient contrôlées ou qu’un résultat scientifique est établi.
 
 `baseline` est toujours présenté en premier. Les expériences sont ensuite
 ordonnées par le premier horodatage REW détecté, puis par identifiant stable.

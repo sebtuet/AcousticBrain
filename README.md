@@ -5,6 +5,11 @@ campaigns. Its analysis pipeline produces structured results; presenters and
 CLI reporters expose those results without changing the underlying scientific
 rules.
 
+The primary product goal is to help a user place left and right loudspeakers
+through reversible, measurement-guided experiments. The authoritative scope
+and development gate are defined in
+[`docs/PRODUCT_TARGET.md`](docs/PRODUCT_TARGET.md).
+
 The deterministic workflow is separate from the optional LLM Advisor. The
 Advisor can explain validated report objects, but it is disabled by default and
 is not a source of scientific authority.
@@ -52,6 +57,25 @@ Analyze the versioned example campaign:
 python main.py --measurements-root measurements
 ```
 
+This is the public placement homepage: it says whether the existing evidence
+supports one reversible loudspeaker test now, why, and the one public next
+step. It only presents established report objects; it does not move a speaker,
+declare an experiment, or claim acoustic causality. Use `--full-assessment`
+for the detailed technical report.
+
+When the homepage says that no move is justified yet, continue with its single
+suggested command, for example:
+
+```bash
+python main.py --measurements-root measurements --start-placement
+```
+
+It asks only for the declared prerequisites of the existing selected plan and
+writes its dedicated preparation registry only after an explicit confirmation.
+For a confirmed channel-isolation plan, it then lets the user select a displayed
+existing measurement, choose a simple new test name, and explicitly confirm the
+existing declaration workflow.
+
 Running `python main.py` without a measurement path uses the same historical
 default directory:
 
@@ -82,6 +106,8 @@ The CLI exposes the existing deterministic workflow at several levels:
 
 | Output | CLI option | Exposes |
 | --- | --- | --- |
+| Loudspeaker-placement homepage | no option | The one existing placement action or the one existing verification step needed before a move |
+| Start placement preparation | `--start-placement` | Interactive declaration of known prerequisites for the existing selected READY plan |
 | Acoustic observations | `--observations` | Descriptive observations projected from existing analyses |
 | Deterministic acoustic reasoning | `--reasoning` | Premises, inference steps, conclusions, contradictions and limitations |
 | Deterministic corrective actions | `--actions` | Declarative actions, applicability, parameters and blocking conditions |

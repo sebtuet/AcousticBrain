@@ -13,6 +13,10 @@ from .channel_isolation_plan_coverage import (
 from .channel_isolation_plan_result import (
     ChannelIsolationPlanResultEvaluator,
 )
+from .channel_isolation_repeatability import (
+    ChannelIsolationRepeatability,
+    ChannelIsolationRepeatabilityService,
+)
 from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,

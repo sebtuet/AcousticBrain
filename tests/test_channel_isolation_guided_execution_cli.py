@@ -68,10 +68,10 @@ def test_cli_routes_confirmed_preparation_to_public_declaration_preflight(
         in output
     )
     assert f"--evidence-plan-preparation-registry {path}" in output
-    assert "préflight de déclaration" in output
-    assert "déclaration reste ensuite une action explicite séparée" in output
-    assert "--channel-isolation-reference" not in output
-    assert "--channel-isolation-experiment" not in output
+    assert "préflight" in output
+    assert "ne les choisit pas à votre place" in output
+    assert "--channel-isolation-reference <EXPERIENCE_REFERENCE_EXISTANTE>" in output
+    assert "--channel-isolation-experiment <NOUVEL_ID_EXPERIENCE>" in output
     assert "Aucune expérience n’a été déclarée ou exécutée" in output
     assert path.read_bytes() == before
 

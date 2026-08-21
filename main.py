@@ -36,6 +36,8 @@ from acousticbrain.application import (
     ChannelIsolationOperationalWorksheetRevisionService,
     ChannelIsolationDocumentationReviewService,
     ChannelIsolationDeclarationReadinessService,
+    ChannelIsolationRepeatabilityService,
+    ExperimentDiscoveryService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
     SBIRProtocolInstanceViewService,
@@ -49,7 +51,6 @@ from acousticbrain.application import (
 )
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
-    ConsoleReporter,
     DeterministicAcousticReasoningConsoleReporter,
     DeterministicCorrectiveActionConsoleReporter,
     DeterministicEvidenceWeightingConsoleReporter,
@@ -67,12 +68,14 @@ from acousticbrain.report import (
     EvidencePlanUserViewPresenter,
     EvidencePlanOverviewConsoleReporter,
     EvidencePlanOverviewPresenter,
+    EvidenceAcquisitionPlanPresenter,
     GuidedGlobalStatusConsoleReporter,
     GuidedGlobalStatusPresenter,
     EvidencePlanPreparationUserViewConsoleReporter,
     EvidencePlanPreparationUserViewPresenter,
     SBIRProtocolInstanceViewConsoleReporter,
     SBIRProtocolInstanceViewPresenter,
+    SpeakerPlacementHomeConsoleReporter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -82,6 +85,8 @@ from acousticbrain.models import (
     ListeningPositionCampaignInstanceStatus,
     ExploratoryFeasibilityDecision,
     FeasibilityAnswer,
+    EvidencePlanPreparationConfirmationInput,
+    EvidencePlanPrerequisiteDeclaration,
     EvidencePlanPrerequisiteStatus,
     ExperimentDeclaration,
     ExperimentDescriptor,
@@ -107,6 +112,9 @@ from acousticbrain.persistence import (
 
 
 DEFAULT_MEASUREMENTS_ROOT = Path("measurements")
+DEFAULT_PLACEMENT_PREPARATION_REGISTRY = Path(
+    ".acousticbrain/evidence-plan-preparations.json"
+)
 
 
 def create_parser():
@@ -205,6 +213,14 @@ def create_parser():
         "--guided-status",
         action="store_true",
         help="show the current workflow state and exactly one safe next action",
+    )
+    parser.add_argument(
+        "--start-placement",
+        action="store_true",
+        help=(
+            "interactively record user-declared preparation for the existing "
+            "selected placement verification"
+        ),
     )
     parser.add_argument(
         "--guided-preparation-registry",
@@ -802,6 +818,269 @@ def generate_evidence_plan_preparation(
         print("Brouillon non écrit : aucun chemin de sortie demandé.")
     print("Aucune préparation enregistrée et aucune expérience exécutée.")
     return draft
+
+
+def start_placement(
+    measurements_root,
+    *,
+    brain=None,
+    registry_repository=None,
+    preparation_service=None,
+    input_func=input,
+):
+    """Guides one explicit preparation declaration for the selected READY plan."""
+    analysis = (brain or AcousticBrain()).analyze(
+        measurement_root=measurements_root,
+        compare_experiments=True,
+        analyze_causal_discrimination=True,
+        synthesize_evidence_acquisition=True,
+        return_context=True,
+    )
+    if not isinstance(analysis, tuple) or len(analysis) != 2:
+        raise ValueError("Placement start requires an exact analysis context.")
+    _, context = analysis
+    synthesis = getattr(context, "evidence_acquisition_plan_synthesis", None)
+    presented = EvidenceAcquisitionPlanPresenter().present(context)
+    if synthesis is None or presented is None:
+        raise ValueError("Placement start analysis contracts are unavailable.")
+    recommended = presented.recommended_plan
+    if recommended is None:
+        print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+        print()
+        print("Aucune vérification de positionnement READY n’est disponible.")
+        print("Aucune préparation, expérience ou mesure n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return None
+
+    matches = tuple(
+        value for value in synthesis.plans if value.plan_id == recommended.plan_id
+    )
+    if len(matches) != 1:
+        raise ValueError(
+            "Placement start requires one exact selected READY plan: "
+            f"{recommended.plan_id}."
+        )
+    plan = matches[0]
+    registry_path = measurements_root / DEFAULT_PLACEMENT_PREPARATION_REGISTRY
+    repository = registry_repository or EvidencePlanPreparationRegistryJsonRepository()
+    registry = repository.load(registry_path)
+    draft = GuidedEvidencePlanPreparationDraftService().generate(
+        plan.plan_id,
+        plans=synthesis.plans,
+        registry=registry,
+    )
+    confirmed = tuple(
+        value for value in registry.records
+        if value.confirmation_input.plan_id == plan.plan_id
+        and value.confirmation_input.plan_contract_fingerprint
+        == draft.confirmation_input.plan_contract_fingerprint
+        and value.all_prerequisites_status is not None
+    )
+    if len(confirmed) == 1 and plan.test_type.value == "CHANNEL_ISOLATION":
+        record = confirmed[0]
+        print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+        print()
+        print("La préparation de ce test est déjà enregistrée et confirmée.")
+        _guide_channel_isolation_declaration(
+            measurements_root,
+            plan,
+            record.confirmation_input.confirmation_id,
+            registry_path,
+            synthesis.plans,
+            registry,
+            input_func=input_func,
+        )
+        return record
+
+    print("ACOUSTICBRAIN — DÉMARRAGE DU PLACEMENT")
+    print()
+    print("Vérification contrôlée sélectionnée")
+    print(EvidencePlanUserViewPresenter._user_label(plan))
+    print(f"Plan : {plan.plan_id}")
+    print()
+    print("Avant toute mesure, répondez uniquement selon ce que vous savez.")
+    statuses = {}
+    for prerequisite in plan.required_inputs:
+        guidance = ChannelIsolationGuidedExecutionService._guidance(prerequisite)
+        print()
+        print(guidance.code)
+        print(guidance.meaning)
+        print("O = confirmé ; N = non confirmé ; I = je ne sais pas.")
+        print("Confirmé si : " + guidance.confirmed_when)
+        print("Non confirmé si : " + guidance.not_confirmed_when)
+        try:
+            answer = input_func("Votre réponse [I] : ").strip().upper()
+        except EOFError as error:
+            raise ValueError(
+                "Placement start requires an interactive response; no state was written."
+            ) from error
+        statuses[prerequisite] = {
+            "O": EvidencePlanPrerequisiteStatus.CONFIRMED,
+            "N": EvidencePlanPrerequisiteStatus.NOT_CONFIRMED,
+            "I": EvidencePlanPrerequisiteStatus.UNKNOWN,
+            "": EvidencePlanPrerequisiteStatus.UNKNOWN,
+        }.get(answer)
+        if statuses[prerequisite] is None:
+            raise ValueError(
+                "Réponse de préparation invalide. Utilisez O, N ou I ; "
+                "aucun état n’a été écrit."
+            )
+
+    confirmation = EvidencePlanPreparationConfirmationInput(
+        schema_version=draft.confirmation_input.schema_version,
+        confirmation_id=draft.confirmation_input.confirmation_id,
+        plan_id=draft.confirmation_input.plan_id,
+        plan_contract_fingerprint=draft.confirmation_input.plan_contract_fingerprint,
+        prerequisites=tuple(
+            EvidencePlanPrerequisiteDeclaration(code=code, status=statuses[code])
+            for code in plan.required_inputs
+        ),
+        declaration_source=draft.confirmation_input.declaration_source,
+    )
+    print()
+    print("Vos déclarations")
+    for item in confirmation.prerequisites:
+        print(f"- {item.code} : {item.status.value}")
+    print(
+        "Ces statuts ne sont pas vérifiés indépendamment et ne déclarent ni "
+        "n’exécutent une expérience."
+    )
+    try:
+        record = input_func(
+            "Enregistrer cette préparation dans le dossier de campagne ? [o/N] : "
+        ).strip().casefold()
+    except EOFError as error:
+        raise ValueError(
+            "Placement start requires an explicit recording choice; no state was written."
+        ) from error
+    if record not in ("o", "oui"):
+        print("Préparation non enregistrée. Aucune mesure ni expérience n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return None
+
+    result = (preparation_service or EvidencePlanPreparationWorkflowService(
+        repository=repository
+    )).record(
+        confirmation,
+        registry_path=registry_path,
+        plans=synthesis.plans,
+    )
+    print()
+    print("Préparation enregistrée.")
+    print(f"Registre : {Path(result.registry_path).resolve()}")
+    if result.record.all_prerequisites_status is None:
+        print("Les prérequis ne sont pas tous confirmés : aucune expérience ne peut être déclarée.")
+        print("Aucune mesure ni expérience n’a été créée.")
+        print("Causality status: NOT_ESTABLISHED")
+        return result
+    if plan.test_type.value == "CHANNEL_ISOLATION":
+        _guide_channel_isolation_declaration(
+            measurements_root,
+            plan,
+            result.record.confirmation_input.confirmation_id,
+            registry_path,
+            synthesis.plans,
+            repository.load(registry_path),
+            input_func=input_func,
+        )
+        return result
+    print("Les prérequis sont déclarés confirmés ; la déclaration reste une action séparée.")
+    print("Aucune mesure ni expérience n’a été créée.")
+    print("Causality status: NOT_ESTABLISHED")
+    return result
+
+
+def _guide_channel_isolation_declaration(
+    measurements_root,
+    plan,
+    confirmation_id,
+    registry_path,
+    plans,
+    registry,
+    *,
+    input_func,
+):
+    references = tuple(sorted(
+        value.name for value in measurements_root.iterdir()
+        if value.is_dir() and not value.name.startswith(".")
+    ))
+    if not references:
+        raise ValueError("Aucune mesure existante ne peut servir de point de départ.")
+    print()
+    print("Choisissez la mesure de départ")
+    print("Sélectionnez la mesure prise avant ce nouveau test contrôlé :")
+    for index, reference in enumerate(references, start=1):
+        print(f"{index}. {reference}")
+    try:
+        choice = input_func("Numéro de la mesure de départ : ").strip()
+    except EOFError as error:
+        raise ValueError("Un choix de mesure de départ est requis ; aucun test n’a été déclaré.") from error
+    if not choice.isdigit() or not 1 <= int(choice) <= len(references):
+        raise ValueError("Choisissez un numéro de mesure affiché ; aucun test n’a été déclaré.")
+    reference = references[int(choice) - 1]
+
+    ordinal = 1
+    while (measurements_root / f"test-canaux-{ordinal:03d}").exists():
+        ordinal += 1
+    suggested_name = f"test-canaux-{ordinal:03d}"
+    try:
+        experiment_id = input_func(
+            f"Nom du nouveau test [{suggested_name}] : "
+        ).strip() or suggested_name
+    except EOFError as error:
+        raise ValueError("Un nom de nouveau test est requis ; aucun test n’a été déclaré.") from error
+
+    readiness = ChannelIsolationDeclarationReadinessService().qualify(
+        measurements_root,
+        plan.plan_id,
+        confirmation_id,
+        reference,
+        experiment_id,
+        plans=plans,
+        registry=registry,
+    )
+    print()
+    print("Test prêt à être déclaré")
+    print(f"Mesure de départ : {readiness.reference_experiment_id}")
+    print(f"Nouveau test : {readiness.experiment_id}")
+    print("Aucune mesure n’a été effectuée.")
+    print()
+    print("Mesures REW à créer après la déclaration")
+    print(f"- L {readiness.experiment_id} A : première mesure de l’enceinte gauche")
+    print(f"- R {readiness.experiment_id} A : première mesure de l’enceinte droite")
+    print(f"- L {readiness.experiment_id} B : répétition de la mesure gauche")
+    print(f"- R {readiness.experiment_id} B : répétition de la mesure droite")
+    print(
+        "Dans REW, conservez L ou R dans le nom de chaque mesure : "
+        "AcousticBrain lit le canal depuis « * Measurement: » dans le TXT."
+    )
+    print(
+        "Exportez les quatre TXT dans : "
+        f"{measurements_root / readiness.experiment_id / 'measurements'}"
+    )
+    print(
+        "Vous pouvez aussi exporter les WAV d’impulsion dans : "
+        f"{measurements_root / readiness.experiment_id / 'impulse'}"
+    )
+    print("Aucune mesure stéréo L+R n’est requise par ce test contrôlé.")
+    try:
+        declare = input_func("Déclarer ce test maintenant ? [o/N] : ").strip().casefold()
+    except EOFError as error:
+        raise ValueError("Une confirmation de déclaration est requise ; aucun test n’a été déclaré.") from error
+    if declare not in ("o", "oui"):
+        print("Test non déclaré. Vous pourrez reprendre ce parcours plus tard.")
+        print("Causality status: NOT_ESTABLISHED")
+        return
+    evidence_plan_declaration_command.main((
+        str(measurements_root),
+        "--plan-id", readiness.plan_id,
+        "--experiment", readiness.experiment_id,
+        "--reference", readiness.reference_experiment_id,
+        "--preparation-registry", str(registry_path),
+        "--preparation", readiness.confirmation_id,
+    ))
+    print("Le test est déclaré, mais aucune mesure n’a encore été effectuée.")
+    print("Causality status: NOT_ESTABLISHED")
 
 
 def preview_evidence_plan_preparation(
@@ -1410,16 +1689,19 @@ def show_channel_isolation_journey(
         print("Revoir les prérequis non confirmés ; aucune déclaration d’expérience n’est disponible.")
     else:
         print(
-            "Lancer d’abord le préflight de déclaration, en fournissant vous-même "
-            "une référence existante et un nouvel identifiant d’expérience ; la "
-            "déclaration reste ensuite une action explicite séparée :"
+            "Choisissez d’abord une expérience de référence existante et un "
+            "nouvel identifiant encore inutilisé. AcousticBrain ne les choisit "
+            "pas à votre place. Lancez ensuite le préflight suivant en "
+            "remplaçant les deux champs entre chevrons :"
         )
-        print(
-            "python main.py --measurements-root "
-            f"{measurements_root} --channel-isolation-declaration-readiness "
-            f"{plan_id} --channel-isolation-preparation {confirmation_id} "
-            f"--evidence-plan-preparation-registry {registry_path}"
-        )
+        continuation = " " + chr(92)
+        print(f"python main.py{continuation}")
+        print(f"  --measurements-root {measurements_root}{continuation}")
+        print(f"  --channel-isolation-declaration-readiness {plan_id}{continuation}")
+        print(f"  --channel-isolation-preparation {confirmation_id}{continuation}")
+        print(f"  --evidence-plan-preparation-registry {registry_path}{continuation}")
+        print("  --channel-isolation-reference <EXPERIENCE_REFERENCE_EXISTANTE>" + continuation)
+        print("  --channel-isolation-experiment <NOUVEL_ID_EXPERIENCE>")
     print()
     print("Frontière scientifique")
     print("Cette checklist ne vérifie aucune condition physique et n’exécute aucune mesure.")
@@ -1932,7 +2214,9 @@ def run(
         if reasoning
         else AcousticObservationConsoleReporter()
         if observations
-        else ConsoleReporter()
+        else SpeakerPlacementHomeConsoleReporter(
+            measurements_root=measurements_root
+        )
     )
     arguments = dict(
         measurement_root=measurements_root,
@@ -1994,6 +2278,12 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
+    if standard_report and hasattr(report, "__dict__"):
+        report.channel_isolation_repeatability = (
+            ChannelIsolationRepeatabilityService().analyze(
+                ExperimentDiscoveryService().discover(measurements_root)
+            )
+        )
     if evidence_plan_overview:
         report.evidence_plan_overview = EvidencePlanOverviewPresenter().present(
             report
@@ -2077,11 +2367,13 @@ def main(
     channel_isolation_declaration_readiness_service=None,
     guided_global_status_presenter=None,
     guided_global_status_reporter=None,
+    placement_input=input,
     advisor_provider_instance=None,
     advisor_service=None,
 ):
     parser = create_parser()
     arguments = parser.parse_args(argv)
+    default_arguments = parser.parse_args(())
     decision_repository = (
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
@@ -2136,6 +2428,25 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.start_placement:
+            ignored = {"measurements_root", "start_placement"}
+            conflicting = tuple(
+                name for name, value in vars(arguments).items()
+                if name not in ignored
+                and value != getattr(default_arguments, name)
+            )
+            if conflicting:
+                option = "--" + conflicting[0].replace("_", "-")
+                raise ValueError(
+                    "--start-placement cannot be combined with " + option + "."
+                )
+            start_placement(
+                measurements_root,
+                brain=brain,
+                registry_repository=evidence_plan_preparation_registry_repository,
+                input_func=placement_input,
+            )
+            return 0
         positioning_specific_values = (
             arguments.positioning_experiment_id,
             arguments.positioning_reference,

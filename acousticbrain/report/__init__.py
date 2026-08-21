@@ -102,6 +102,7 @@ from .guided_room_description_presenter import (
     RoomDescriptionChangeProposalPresenter,
 )
 from .console import ConsoleReporter
+from .speaker_placement_home_console import SpeakerPlacementHomeConsoleReporter
 from .acoustic_observation_console import AcousticObservationConsoleReporter
 from .deterministic_acoustic_reasoning_console import (
     DeterministicAcousticReasoningConsoleReporter,
