@@ -213,7 +213,7 @@ def test_historical_experiment_without_channel_isolation_declaration_is_compatib
 
 
 def test_declared_channel_isolation_is_ready_with_left_and_right_only(tmp_path):
-    declared = tmp_path / "exp-001"
+    declared = tmp_path / "test-canaux-001"
     historical = tmp_path / "exp-002"
     channel_isolation_measurements(declared)
     channel_isolation_measurements(historical)
@@ -245,8 +245,10 @@ def test_declared_channel_isolation_is_ready_with_left_and_right_only(tmp_path):
 
     descriptors = ExperimentDiscoveryService().discover(tmp_path)
 
-    assert descriptors[0].state is ExperimentState.READY
-    assert descriptors[1].state is ExperimentState.INCOMPLETE
+    states = {item.experiment_id: item for item in descriptors}
+    assert states["test-canaux-001"].experiment_type is ExperimentType.EXPERIMENT
+    assert states["test-canaux-001"].state is ExperimentState.READY
+    assert states["exp-002"].state is ExperimentState.INCOMPLETE
     assert json.loads((declared / "manifest.json").read_text())["state"] == "READY"
     assert json.loads((historical / "manifest.json").read_text())["state"] == "INCOMPLETE"
 

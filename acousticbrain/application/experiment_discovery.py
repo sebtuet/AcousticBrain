@@ -52,13 +52,15 @@ class ExperimentDiscoveryService:
         descriptors = [
             self._descriptor(directory)
             for directory in self.repository.list_directories(measurement_root)
-            if self._experiment_type(directory.name) is not None
+            if self._is_discoverable_experiment(directory)
         ]
         return tuple(sorted(descriptors, key=self._sort_key))
 
     def _descriptor(self, directory):
         directory = Path(directory)
-        experiment_type = self._experiment_type(directory.name)
+        experiment_type = (
+            self._experiment_type(directory.name) or ExperimentType.EXPERIMENT
+        )
         existing = self.repository.load_manifest(directory) or {}
         assignments = existing.get("channel_assignments", {})
         if not isinstance(assignments, dict):
@@ -294,6 +296,12 @@ class ExperimentDiscoveryService:
             ),
             room_description=self._room_description(existing, directory.name),
         )
+
+    def _is_discoverable_experiment(self, directory):
+        if self._experiment_type(directory.name) is not None:
+            return True
+        manifest = self.repository.load_manifest(directory) or {}
+        return isinstance(manifest.get("evidence_acquisition_plan_contract"), dict)
 
     @classmethod
     def _existing_files_by_path(cls, manifest):

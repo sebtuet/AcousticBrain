@@ -28,6 +28,8 @@ confirmed, the command lists the existing measurement directories for the user
 to choose a starting measurement and proposes an unused human-readable test
 name. It runs the existing declaration preflight and declares the test only
 after a second explicit confirmation. It never chooses the reference itself.
+That declared test is subsequently discovered by its preserved plan contract,
+not by guessing from its human-readable name.
 Before that confirmation, it displays the four suggested REW measurement names
 (`L … A`, `R … A`, `L … B`, `R … B`) and the destination directories for TXT
 and optional impulse WAV exports. The REW `* Measurement:` value remains the

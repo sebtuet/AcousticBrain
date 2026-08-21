@@ -23,6 +23,12 @@ tests/fixtures/campaigns/historical_reference/
 est un conteneur technique de fichiers et de projets. Elle ne crée aucune
 `OptimizationIteration`, aucun protocole métier et aucune comparaison.
 
+Un dossier nommé `baseline` ou `exp-…` est découvert par son identifiant. Un
+test explicitement déclaré depuis le parcours public peut aussi porter un nom
+lisible tel que `test-canaux-001` : il est découvert uniquement parce que son
+manifest préserve un contrat `evidence_acquisition_plan_contract` explicite.
+Le nom ne remplace jamais ce contrat et un dossier arbitraire reste ignoré.
+
 ## Détection indépendante des noms
 
 `MeasurementRepository` parcourt récursivement chaque expérience. Les chemins
