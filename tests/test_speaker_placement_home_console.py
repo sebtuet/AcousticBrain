@@ -166,6 +166,30 @@ def test_homepage_preserves_repeated_capture_without_requesting_a_new_test(
     assert "verdict de comparaison n’est encore produit" in output
 
 
+def test_homepage_renders_descriptive_repeatability_without_a_verdict(capsys, tmp_path):
+    report = SimpleNamespace(
+        evidence_acquisition_plans=None,
+        loudspeaker_positioning_experiment=None,
+        channel_isolation_repeatability=(SimpleNamespace(
+            experiment_id="test-canaux-001",
+            left_maximum_difference_db=0.4,
+            right_maximum_difference_db=None,
+            left_right_difference_maximum_change_db=0.7,
+        ),),
+    )
+
+    SpeakerPlacementHomeConsoleReporter(
+        measurements_root=tmp_path,
+        positioning_presenter=_PositioningPresenter(_positioning()),
+    )._print_repeatability(report)
+
+    output = capsys.readouterr().out
+    assert "Répétabilité observée entre A et B" in output
+    assert "0.40 dB" in output
+    assert "non comparable" in output
+    assert "aucun seuil de stabilité" in output
+
+
 def test_default_main_cli_uses_the_placement_homepage(capsys, tmp_path):
     campaign = tmp_path / "measurements"
     campaign.mkdir()

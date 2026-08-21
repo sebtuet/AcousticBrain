@@ -42,6 +42,7 @@ class SpeakerPlacementHomeConsoleReporter:
                 print(f"- {fact}")
 
         self._print_repeated_capture_notice(report)
+        self._print_repeatability(report)
 
         if positioning.status == "ACTION_AVAILABLE":
             self._print_available_action(report, positioning)
@@ -50,7 +51,13 @@ class SpeakerPlacementHomeConsoleReporter:
 
         print()
         print("Frontière scientifique")
-        for limitation in positioning.limitations:
+        limitations = positioning.limitations
+        if self._repeated_captures(report):
+            limitations = tuple(
+                item for item in limitations
+                if item != "Une nouvelle mesure est nécessaire."
+            )
+        for limitation in limitations:
             print(f"- {limitation}")
         print(f"- Causality status: {positioning.causality_status}")
         print("- Cette vue ne déclare ni n’exécute aucune expérience.")
@@ -83,6 +90,36 @@ class SpeakerPlacementHomeConsoleReporter:
                 and item.preserved_plan_objective is not None
             )
         )
+
+    @staticmethod
+    def _print_repeatability(report):
+        values = getattr(report, "channel_isolation_repeatability", ())
+        if not values:
+            return
+        print()
+        print("Répétabilité observée entre A et B")
+        for value in values:
+            print(f"- {value.experiment_id}")
+            SpeakerPlacementHomeConsoleReporter._print_difference(
+                "Gauche", value.left_maximum_difference_db,
+            )
+            SpeakerPlacementHomeConsoleReporter._print_difference(
+                "Droite", value.right_maximum_difference_db,
+            )
+            SpeakerPlacementHomeConsoleReporter._print_difference(
+                "Écart gauche/droite", value.left_right_difference_maximum_change_db,
+            )
+        print(
+            "Ces écarts décrivent les exports REW A/B ; aucun seuil de "
+            "stabilité, verdict acoustique ou causalité n’en est déduit."
+        )
+
+    @staticmethod
+    def _print_difference(label, value):
+        if value is None:
+            print(f"  {label} : non comparable (grilles de fréquences différentes).")
+        else:
+            print(f"  {label} : écart maximal A/B de {value:.2f} dB")
 
     def _print_available_action(self, report, positioning):
         print()

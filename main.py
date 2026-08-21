@@ -36,6 +36,8 @@ from acousticbrain.application import (
     ChannelIsolationOperationalWorksheetRevisionService,
     ChannelIsolationDocumentationReviewService,
     ChannelIsolationDeclarationReadinessService,
+    ChannelIsolationRepeatabilityService,
+    ExperimentDiscoveryService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
     SBIRProtocolInstanceViewService,
@@ -2276,6 +2278,12 @@ def run(
             reference_qualification_declaration_analysis
         )
     report = brain.analyze(**arguments)
+    if standard_report:
+        report.channel_isolation_repeatability = (
+            ChannelIsolationRepeatabilityService().analyze(
+                ExperimentDiscoveryService().discover(measurements_root)
+            )
+        )
     if evidence_plan_overview:
         report.evidence_plan_overview = EvidencePlanOverviewPresenter().present(
             report
