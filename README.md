@@ -6,8 +6,8 @@ CLI reporters expose those results without changing the underlying scientific
 rules.
 
 The deterministic workflow is separate from the optional LLM Advisor. The
-Advisor can explain validated report objects, but it is disabled by default and
-is not a source of scientific authority.
+Advisor can explain the validated `CampaignUserAssessment`, but it is disabled
+by default and is not a source of scientific authority.
 
 AI-assisted contributions must follow the repository workflow defined in
 [`AGENTS.md`](AGENTS.md).
@@ -89,6 +89,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 | Next recommended experiment | `--evidence-acquisition` | One selected READY acquisition plan, or why none can be recommended |
 | Technical analysis readiness | `--analysis-readiness` | Existing experiment and analysis-family readiness decisions |
 | Assessment summary | `--assessment-summary` | A concise projection of the main existing report objects |
+| User assessment | `--user-assessment` | Human-readable deterministic explanation of established V1 states and the existing next plan |
 | Full assessment | `--full-assessment` | The five detailed deterministic reports in workflow order |
 | Experiment user view | `--experiment-view EXPERIMENT_ID` | Four-block read-only view of one exact experiment |
 | Evidence-plan user view | `--evidence-plan-view PLAN_ID` | Plain-language blockers and the only safe next action |
@@ -98,6 +99,39 @@ The CLI exposes the existing deterministic workflow at several levels:
 
 These options select different presentations of established deterministic
 objects. They do not introduce a separate acoustic analysis.
+
+### User-facing terminology
+
+Some output values are stable contract terms rather than claims about physical
+execution or scientific causality:
+
+- In
+  `EVIDENCE_ACQUISITION_SBIR_PLACEMENT_INTERACTION_REASONING_ACQUIRE_SUPPORTING_OBSERVATION_V2`,
+  `_V2` identifies version 2 of the internal additional-observation planning
+  contract. It does not mean AcousticBrain V2, a V2 product feature, or an SBIR
+  V2 protocol. The identifier is persisted in plan snapshots, manifests,
+  preparation records and SBIR registries, so it must not be renamed or
+  normalized.
+- For an `EvidenceAcquisitionPlan`, `READY` means that the planning contract
+  contains the information required for its current planning state. It does
+  not by itself mean that an experiment is executable, a protocol is resolved,
+  experimental prerequisites are satisfied, an experiment is declared or
+  executed, acquisition has occurred, or causality is established. Execution
+  preconditions are evaluated separately. In the SBIR `ADDITIONAL_OBSERVATION`
+  plan, acquiring the next observation can be planned without complete SBIR
+  geometry; comparing observed and expected frequencies requires that
+  geometry.
+- `SUPPORTED` means that the available observations support an existing
+  hypothesis under the applicable deterministic rules. It does not mean that
+  an acoustic cause is established, that the hypothesis is causally confirmed,
+  that a correction is validated, or that an intervention is automatically
+  recommended.
+
+The scientific chain remains `observation → evidence → hypothesis →
+verification`, never `observation → cause`. See
+[`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md),
+[`docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md`](docs/DETERMINISTIC_EVIDENCE_ACQUISITION.md),
+and [`docs/EXPERIMENT_PLANNING_CONTRACT.md`](docs/EXPERIMENT_PLANNING_CONTRACT.md).
 
 Print the concise view of one exact experiment:
 
@@ -404,6 +438,39 @@ shorter user-facing view:
 It uses the finalized `Report` produced by the deterministic workflow. It does
 not add a score, scientific conclusion, action or experiment.
 
+### Campaign user assessment
+
+```bash
+python main.py \
+  --measurements-root measurements \
+  --user-assessment
+```
+
+`--user-assessment` is the human-readable view of the established V1 report.
+It explains what the measurements show, what remains uncertain, which
+controlled verification is currently available, what V1 selected as the next
+measurement, and what must be confirmed first. Technical IDs and enum values
+remain available in a short final references section rather than being the
+primary message.
+
+The rendering preserves every deterministic reasoning state without ranking
+the findings, translates action applicability without promoting it to a
+physical recommendation, and reuses the existing selected evidence plan
+without selecting again.
+
+The view keeps `SUPPORTED`, `READY` and `APPLICABLE` within their V1 semantic
+boundaries: none establishes causality, execution readiness, physical safety
+or benefit. Required plan inputs remain explicitly unverified unless the V1
+report establishes otherwise. The command is read-only and uses no LLM.
+The linguistic simplification changes no conclusion, creates no severity or
+importance ranking, establishes no causality, and generates no physical
+correction recommendation.
+
+Use `--full-assessment` for the complete expert/audit rendering, or
+`--reasoning`, `--actions` and `--evidence-plan-view PLAN_ID` for the detailed
+source objects. See
+[`docs/CAMPAIGN_USER_ASSESSMENT_CONTRACT.md`](docs/CAMPAIGN_USER_ASSESSMENT_CONTRACT.md).
+
 ### Full assessment
 
 ```bash
@@ -514,7 +581,8 @@ is documentation only and is never loaded automatically.
 
 ## Optional LLM Advisor
 
-The Advisor is an optional, read-only consumer of deterministic report objects:
+Advisor V2 is an optional, read-only conversational explanation of the current
+deterministic `CampaignUserAssessment`:
 
 ```bash
 python main.py \
@@ -527,8 +595,20 @@ python main.py \
 The deterministic Mock provider works without network access. Ollama and OpenAI
 are explicit provider choices and may use their configured endpoints. Provider
 responses are validated before normal rendering. The Advisor does not create or
-modify scientific knowledge. See
+modify scientific knowledge. It does not rank findings, establish causality,
+invent a correction, treatment or placement, declare or execute an experiment,
+or use external acoustic knowledge to complete missing facts. Questions outside
+the supplied assessment receive a bounded not-established answer. See
 [`docs/OPTIONAL_LLM_ADVISOR.md`](docs/OPTIONAL_LLM_ADVISOR.md).
+
+For a local Ollama model, configure an explicit generation timeout appropriate
+to the model and hardware:
+
+```bash
+export OLLAMA_ADVISOR_ENDPOINT=http://localhost:11434
+export OLLAMA_ADVISOR_MODEL=qwen3:8b
+export OLLAMA_ADVISOR_TIMEOUT_SECONDS=120
+```
 
 Ollama is not required to install, import or run AcousticBrain's deterministic
 engine. The V1 Ollama Advisor uses its explicitly configured HTTP endpoint and
@@ -617,9 +697,10 @@ not declare or execute an experiment.
 
 ## Preserve an evidence-acquisition plan contract
 
-A `READY` evidence-acquisition plan can be declared as an experiment without
-losing its objective, variables, prerequisites, expected observations,
-criteria, limitations or provenance:
+A `READY` evidence-acquisition plan that passes its separate declaration
+preflight can be declared as an experiment without losing its objective,
+variables, prerequisites, expected observations, criteria, limitations or
+provenance:
 
 ```bash
 python main.py \
@@ -690,8 +771,9 @@ derives no verdict. See
 [`docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md`](docs/GUIDED_DECLARED_CHANNEL_ISOLATION_CONTRACT.md).
 
 `ADDITIONAL_OBSERVATION` plans keep pre-acquisition inputs disjoint from the
-evidence they are intended to acquire. The corrected SBIR plan uses a versioned
-V2 identity so historical contracts are never rewritten. See
+evidence they are intended to acquire. The corrected SBIR plan uses version 2
+of its internal planning-contract identity so historical contracts are never
+rewritten; this does not designate AcousticBrain V2 or an SBIR V2 protocol. See
 [`docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md`](docs/ADDITIONAL_OBSERVATION_PLAN_CONTRACT.md).
 Its user view keeps execution unavailable until an exact SBIR protocol instance
 declares the speaker, surface, geometry candidate, displacement and reference.

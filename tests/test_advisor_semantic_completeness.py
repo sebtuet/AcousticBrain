@@ -1,183 +1,88 @@
 from dataclasses import replace
-from types import SimpleNamespace
 
 import pytest
 
 import main as acousticbrain_main
 from acousticbrain.advisor import AdvisorContextBuilder, AdvisorService, MockAdvisorProvider
-from acousticbrain.models import (
-    AdvisorAudience,
-    AdvisorDetailLevel,
-    AdvisorDimensionStatus,
-    AdvisorResponseLanguage,
-    AdvisorResponseSource,
-    AdvisorValidationStatus,
-)
-from tests.test_optional_llm_advisor import Item, deterministic_report
+from acousticbrain.models import AdvisorAudience, AdvisorDetailLevel, AdvisorDimensionStatus, AdvisorResponseLanguage, AdvisorResponseSource, AdvisorValidationStatus
+from acousticbrain.report import CampaignAssessmentNextStep, CampaignAssessmentSource
+from tests.test_optional_llm_advisor import deterministic_report
 
 
-def report_with_plans():
+def report_with_plan():
     report = deterministic_report()
-    common = {
-        "source_reasoning_id": "REASONING_A",
-        "blocking_factor_id": "blocking.action_a.missing",
-        "objective": "Acquire deterministic evidence",
-        "required_inputs": (),
-        "expected_outputs": (),
-        "limitations": ("The plan changes no upstream object.",),
-    }
-    ready = Item(plan_id="PLAN_READY", status="READY", **common)
-    blocked = Item(
-        plan_id="PLAN_BLOCKED",
-        status="BLOCKED",
-        missing_parameters=("protocol_id",),
-        **common,
+    step = CampaignAssessmentNextStep(
+        plan_id="PLAN_READY", objective="Acquire deterministic evidence",
+        test_type="CHANNEL_ISOLATION", planning_status="READY",
+        selection_rationale="Selected by V1.", required_inputs=("documented_microphone_position",),
+        procedure=("Acquire separate channels.",), controlled_variables=("gain",),
+        variables_under_test=("active_channel",), measurements=("response",),
+        prerequisite_status="AVAILABILITY_NOT_VERIFIED", limitations=("Not executed.",),
+        priority="CRITICAL", estimated_effort="MEDIUM",
+        provenance=(CampaignAssessmentSource("EVIDENCE_PLAN", "PLAN_READY"),),
     )
-    report.evidence_acquisition_plans = SimpleNamespace(plans=(ready, blocked))
+    report.campaign_user_assessment = replace(
+        report.campaign_user_assessment,
+        recommended_next_step=step, prerequisites=step.required_inputs,
+        scientific_boundaries=(
+            *report.campaign_user_assessment.scientific_boundaries,
+            "READY does not establish execution readiness.",
+            "APPLICABLE does not establish benefit or physical safety.",
+        ),
+    )
     return report
 
 
-def advise_with(provider, *, language=AdvisorResponseLanguage.EN, report=None):
+def advise_with(provider, *, question="What should I do next?", language=AdvisorResponseLanguage.EN):
     return AdvisorService().advise(
-        report or report_with_plans(),
-        question="Explain the problems, blocking factors and plans.",
-        audience=AdvisorAudience.GENERAL,
-        detail_level=AdvisorDetailLevel.STANDARD,
-        provider=provider,
+        report_with_plan(), question=question, audience=AdvisorAudience.GENERAL,
+        detail_level=AdvisorDetailLevel.STANDARD, provider=provider,
         expected_response_language=language,
     )
 
 
 class MutatingProvider(MockAdvisorProvider):
-    def __init__(self, mutation):
+    def __init__(self, answer):
         super().__init__()
-        self.mutation = mutation
+        self.answer = answer
 
     def generate(self, request, context_projection):
-        output = super().generate(request, context_projection)
-        return self.mutation(output, request)
+        return replace(super().generate(request, context_projection), answer=self.answer)
 
 
-def test_context_declares_language_allowed_ids_labels_and_exact_plan_classes():
+def test_context_declares_language_sources_and_exact_selected_plan():
     context = AdvisorContextBuilder().build(
-        report_with_plans(), expected_response_language=AdvisorResponseLanguage.FR
+        report_with_plan(), expected_response_language=AdvisorResponseLanguage.FR
     )
-
-    assert context.expected_response_language is AdvisorResponseLanguage.FR
-    assert context.required_reasoning_ids == ("REASONING_A",)
-    assert context.required_blocking_factor_ids == ("blocking.action_a.missing",)
+    assert context.schema_version == "advisor-assessment-context.v1"
     assert context.required_ready_plan_ids == ("PLAN_READY",)
-    assert context.required_blocked_plan_ids == ("PLAN_BLOCKED",)
-    assert context.allowed_object_ids == tuple(value.object_id for value in context.objects)
-    assert dict(context.object_labels)["PLAN_READY"] == "Acquire deterministic evidence"
+    assert context.required_blocked_plan_ids == ()
+    assert "PLAN_READY" in context.allowed_source_ids
+    assert all(value.object_type != "EVIDENCE_WEIGHT" for value in context.objects)
 
 
-def test_context_rejects_an_unknown_plan_status_instead_of_classifying_it():
-    report = report_with_plans()
-    invalid = Item(**{
-        **report.evidence_acquisition_plans.plans[0].__dict__,
-        "status": "PENDING",
-    })
-    report.evidence_acquisition_plans = SimpleNamespace(plans=(invalid,))
-
-    with pytest.raises(ValueError, match="Advisor plan status is invalid"):
-        AdvisorContextBuilder().build(report)
-
-
-def test_compliant_mock_is_valid_in_french_and_covers_every_category():
-    response = advise_with(MockAdvisorProvider(), language=AdvisorResponseLanguage.FR)
-
-    assert response.validation_status is AdvisorValidationStatus.VALID
-    assert response.response_source is AdvisorResponseSource.PROVIDER
-    assert response.response_language is AdvisorResponseLanguage.FR
-    assert response.covered_reasoning_ids == ("REASONING_A",)
-    assert response.covered_blocking_factor_ids == ("blocking.action_a.missing",)
-    assert response.covered_ready_plan_ids == ("PLAN_READY",)
-    assert response.covered_blocked_plan_ids == ("PLAN_BLOCKED",)
-    assert "Résumé des problèmes" in response.answer_text
-    assert "READY" in response.answer_text and "BLOCKED" in response.answer_text
-
-
-@pytest.mark.parametrize(
-    ("field", "status", "violation"),
-    (
-        ("covered_reasoning_ids", "semantic_coverage_status", "MISSING_REASONING_COVERAGE"),
-        ("covered_blocking_factor_ids", "semantic_coverage_status", "MISSING_BLOCKING_FACTOR_COVERAGE"),
-        ("covered_ready_plan_ids", "semantic_coverage_status", "MISSING_READY_PLAN_COVERAGE"),
-        ("covered_blocked_plan_ids", "semantic_coverage_status", "MISSING_BLOCKED_PLAN_COVERAGE"),
-    ),
-)
-def test_missing_structured_coverage_is_rejected(field, status, violation):
-    response = advise_with(MutatingProvider(lambda output, _: replace(output, **{field: ()})))
-
+@pytest.mark.parametrize("answer", (
+    "The SUPPORTED finding is an established cause in this room.",
+    "The planning contract is READY, so it is ready to run immediately.",
+    "The APPLICABLE action will improve the result.",
+    "The prerequisite available state is confirmed.",
+    "The main problem is the asymmetric response.",
+    "The best treatment is absorption at the first reflection point.",
+    "The optimal placement is 40 cm forward.",
+))
+def test_semantic_overreach_is_rejected_locally(answer):
+    response = advise_with(MutatingProvider(answer))
     assert response.validation_status is AdvisorValidationStatus.INVALID
+    assert response.scientific_fidelity_status is AdvisorDimensionStatus.INVALID
     assert response.response_source is AdvisorResponseSource.LOCAL_SAFETY_RESPONSE
-    assert getattr(response, status) is AdvisorDimensionStatus.INVALID
-    assert any(value.startswith(violation) for value in response.unsupported_claims)
+    assert any(value.startswith("BOUNDED_SEMANTIC_OVERREACH") for value in response.unsupported_claims)
 
 
-def test_duplicate_unknown_reordered_and_cross_classified_plan_coverage_are_rejected():
-    mutations = (
-        lambda output, _: replace(output, covered_ready_plan_ids=("PLAN_READY", "PLAN_READY")),
-        lambda output, _: replace(output, covered_ready_plan_ids=("UNKNOWN_PLAN",)),
-        lambda output, _: replace(
-            output,
-            covered_ready_plan_ids=("PLAN_READY", "PLAN_BLOCKED"),
-            covered_blocked_plan_ids=("PLAN_BLOCKED",),
-        ),
-    )
-    for mutation in mutations:
-        response = advise_with(MutatingProvider(mutation))
-        assert response.semantic_coverage_status is AdvisorDimensionStatus.INVALID
-        assert response.response_source is AdvisorResponseSource.LOCAL_SAFETY_RESPONSE
-
-
-@pytest.mark.parametrize(
-    "answer",
-    (
-        "The answer restates only the supplied deterministic objects.",
-        "Generic answer with no useful synthesis.",
-        "The plan changes no upstream object.",
-        "Problem summary and blocking factors are preserved, but no plan is discussed at all despite the supplied context.",
-    ),
-)
-def test_degenerate_answers_are_rejected(answer):
-    response = advise_with(MutatingProvider(lambda output, _: replace(output, answer=answer)))
-
-    assert response.degeneracy_status is AdvisorDimensionStatus.INVALID
-    assert response.response_source is AdvisorResponseSource.LOCAL_SAFETY_RESPONSE
-
-
-def test_declared_language_and_manifest_text_language_are_validated_separately():
-    declared = advise_with(MutatingProvider(
-        lambda output, _: replace(output, response_language=AdvisorResponseLanguage.FR)
-    ))
-    french_text_declared_english = advise_with(MutatingProvider(
-        lambda output, _: replace(
-            output,
-            answer=(
-                "Résumé des problèmes déterministes avec les blocages préservés. "
-                "Plans READY prêts : PLAN_READY. Plans BLOCKED bloqués : PLAN_BLOCKED. "
-                "Aucune action bloquée n’est présentée comme applicable."
-            ),
-        )
-    ))
-
-    assert declared.response_language_status is AdvisorDimensionStatus.INVALID
-    assert french_text_declared_english.response_language_status is AdvisorDimensionStatus.INVALID
-
-
-def test_invalid_provider_gets_deterministic_structured_safety_answer_in_requested_language():
-    provider = MutatingProvider(lambda output, _: replace(output, covered_ready_plan_ids=()))
-    first = advise_with(provider, language=AdvisorResponseLanguage.FR)
-    second = advise_with(provider, language=AdvisorResponseLanguage.FR)
-
-    assert first == second
-    assert first.response_source is AdvisorResponseSource.LOCAL_SAFETY_RESPONSE
-    assert first.answer_text.startswith("Réponse locale de sûreté")
-    assert "PLAN_READY" in first.answer_text and "PLAN_BLOCKED" in first.answer_text
-    assert first.covered_ready_plan_ids == ("PLAN_READY",)
-    assert first.covered_blocked_plan_ids == ("PLAN_BLOCKED",)
+def test_safety_response_describes_ready_as_planning_not_execution():
+    response = advise_with(MutatingProvider("The plan is ready to execute now."))
+    assert "READY planning contracts" in response.answer_text
+    assert "executability not established" in response.answer_text
+    assert "ready to run" not in response.answer_text.casefold()
 
 
 def test_language_auto_detection_is_deterministic_and_explicit_choice_wins():

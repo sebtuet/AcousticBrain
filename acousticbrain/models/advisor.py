@@ -59,7 +59,7 @@ class AdvisorContextObject:
 
 
 @dataclass(frozen=True)
-class AdvisorDeterministicContext:
+class AdvisorAssessmentContext:
     schema_version: str
     project_id: str
     objects: tuple[AdvisorContextObject, ...]
@@ -72,6 +72,7 @@ class AdvisorDeterministicContext:
     required_ready_plan_ids: tuple[str, ...]
     required_blocked_plan_ids: tuple[str, ...]
     allowed_object_ids: tuple[str, ...]
+    allowed_source_ids: tuple[str, ...]
     object_labels: tuple[tuple[str, str], ...]
 
     def __post_init__(self):
@@ -102,6 +103,7 @@ class AdvisorDeterministicContext:
             self.required_ready_plan_ids,
             self.required_blocked_plan_ids,
             self.allowed_object_ids,
+            self.allowed_source_ids,
         ):
             if (
                 not isinstance(values, tuple)
@@ -124,6 +126,11 @@ class AdvisorDeterministicContext:
             raise ValueError("Advisor object labels must be unique string pairs.")
 
 
+# Backward-compatible import name for persisted/public Python integrations. The
+# V2 Advisor now uses the assessment-specific contract above.
+AdvisorDeterministicContext = AdvisorAssessmentContext
+
+
 @dataclass(frozen=True)
 class AdvisorRequest:
     schema_version: str
@@ -133,7 +140,7 @@ class AdvisorRequest:
     requested_detail_level: AdvisorDetailLevel
     selected_project_id: str
     selected_object_ids: tuple[str, ...]
-    deterministic_context: AdvisorDeterministicContext
+    deterministic_context: AdvisorAssessmentContext
     provider_configuration_reference: str
 
     def __post_init__(self):
@@ -156,7 +163,7 @@ class AdvisorRequest:
             or any(not isinstance(value, str) or not value for value in self.selected_object_ids)
         ):
             raise ValueError("Selected advisor ids must be a unique tuple.")
-        if not isinstance(self.deterministic_context, AdvisorDeterministicContext):
+        if not isinstance(self.deterministic_context, AdvisorAssessmentContext):
             raise ValueError("Advisor request requires deterministic context.")
 
 

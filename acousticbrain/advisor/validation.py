@@ -51,6 +51,7 @@ class AdvisorResponseValidator:
         if output.introduced_scores or re.search(r"\b\d+(?:\.\d+)?\s*%", output.answer):
             scientific.append("INTRODUCED_GLOBAL_SCORE_OR_PERCENTAGE")
         normalized_answer = output.answer.casefold()
+        self._validate_bounded_semantics(normalized_answer, context, scientific)
         semantic_override = any(value in normalized_answer for value in (
             "blocked action is applicable", "blocked action can be executed",
             "contradiction is resolved", "contradiction can be ignored",
@@ -184,19 +185,6 @@ class AdvisorResponseValidator:
             if candidate and (normalized == candidate or SequenceMatcher(None, normalized, candidate).ratio() >= 0.92):
                 violations.append("DEGENERATE_INTERNAL_TEXT_REPETITION")
                 break
-        lowered = output.answer.casefold()
-        categories = (
-            (context.required_reasoning_ids, ("problem", "problèm", "reasoning", "raisonnement", "hypoth"), "REASONING"),
-            (context.required_blocking_factor_ids, ("blocking", "blocked", "blocage", "bloqu", "contradiction", "missing", "manquant"), "BLOCKING_FACTOR"),
-            (context.required_ready_plan_ids, ("ready", "prêt"), "READY_PLAN"),
-            (context.required_blocked_plan_ids, ("blocked", "bloqué", "bloqués"), "BLOCKED_PLAN"),
-        )
-        for required, markers, label in categories:
-            if required and not any(marker in lowered for marker in markers):
-                violations.append(f"DEGENERATE_MISSING_{label}_SYNTHESIS")
-        plans = context.required_ready_plan_ids + context.required_blocked_plan_ids
-        if plans and not any(value in output.answer for value in plans):
-            violations.append("DEGENERATE_NO_PLAN_REFERENCE_IN_ANSWER")
 
     @staticmethod
     def _normalized(value):
@@ -213,9 +201,9 @@ class AdvisorResponseValidator:
                 + listed(context.required_reasoning_ids, "aucun")
                 + ". Facteurs de blocage préservés : "
                 + listed(context.required_blocking_factor_ids, "aucun")
-                + ". Plans READY — tests prêts : "
+                + ". Contrats de planification READY — exécution non établie : "
                 + listed(context.required_ready_plan_ids, "aucun")
-                + ". Plans BLOCKED — tests bloqués : "
+                + ". Contrats de planification BLOCKED : "
                 + listed(context.required_blocked_plan_ids, "aucun")
                 + ". La réponse du fournisseur a été rejetée; aucune conclusion scientifique ni action n’est modifiée."
             )
@@ -224,12 +212,28 @@ class AdvisorResponseValidator:
             + listed(context.required_reasoning_ids, "none")
             + ". Preserved blocking factors: "
             + listed(context.required_blocking_factor_ids, "none")
-            + ". READY plans — tests ready to run: "
+            + ". READY planning contracts — executability not established: "
             + listed(context.required_ready_plan_ids, "none")
-            + ". BLOCKED plans — blocked tests: "
+            + ". BLOCKED planning contracts: "
             + listed(context.required_blocked_plan_ids, "none")
             + ". The provider response was rejected; no scientific conclusion or action is modified."
         )
+
+    @staticmethod
+    def _validate_bounded_semantics(answer, context, violations):
+        # These strengthenings are never authorized by CampaignUserAssessment;
+        # the structured states above determine their semantics, not provider prose.
+        forbidden = [
+            "proven cause", "confirmed cause", "established cause",
+            "ready to run", "ready to execute", "executable now",
+            "will improve", "is beneficial", "safe to apply",
+            "prerequisite available", "prerequisite confirmed",
+            "the main problem is", "the most important problem is", "the worst issue is",
+            "the best treatment is", "the optimal placement is",
+        ]
+        matched = tuple(value for value in forbidden if value in answer)
+        if matched:
+            violations.append(f"BOUNDED_SEMANTIC_OVERREACH:{'|'.join(matched)}")
 
     @staticmethod
     def _validate_assertions(claim, by_id, violations):

@@ -29,6 +29,7 @@ from acousticbrain.report import (
     EvidenceAcquisitionPlanPresenter,
     AnalysisReadinessPresenter,
     AssessmentSummaryPresenter,
+    CampaignUserAssessmentPresenter,
 )
 
 
@@ -106,5 +107,8 @@ class ReportBuilder:
             ControlledReflectionHypothesisStatusPresenter().present(context)
         )
         report.assessment_summary = AssessmentSummaryPresenter().present(report)
+        report.campaign_user_assessment = CampaignUserAssessmentPresenter().present(
+            report
+        )
 
         return report

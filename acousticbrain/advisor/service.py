@@ -45,7 +45,8 @@ class AdvisorService:
         normalized = question.casefold()
         markers = (
             "é", "è", "à", "ç", "ù", "résume", "explique", "pourquoi",
-            "aucune", "quel", "quelle", "prêt", "bloqué", "français",
+            "aucune", "quel", "quelle", "qu’est-ce", "qu'est-ce", "bloque",
+            "prêt", "bloqué", "français",
         )
         return (
             AdvisorResponseLanguage.FR

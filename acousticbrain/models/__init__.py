@@ -124,6 +124,7 @@ from .advisor import (
     AdvisorAudience,
     AdvisorClaim,
     AdvisorContextObject,
+    AdvisorAssessmentContext,
     AdvisorDetailLevel,
     AdvisorDimensionStatus,
     AdvisorDeterministicContext,
