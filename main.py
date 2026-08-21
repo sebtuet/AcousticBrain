@@ -49,7 +49,6 @@ from acousticbrain.application import (
 )
 from acousticbrain.report import (
     AcousticObservationConsoleReporter,
-    ConsoleReporter,
     DeterministicAcousticReasoningConsoleReporter,
     DeterministicCorrectiveActionConsoleReporter,
     DeterministicEvidenceWeightingConsoleReporter,
@@ -73,6 +72,7 @@ from acousticbrain.report import (
     EvidencePlanPreparationUserViewPresenter,
     SBIRProtocolInstanceViewConsoleReporter,
     SBIRProtocolInstanceViewPresenter,
+    SpeakerPlacementHomeConsoleReporter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -1932,7 +1932,9 @@ def run(
         if reasoning
         else AcousticObservationConsoleReporter()
         if observations
-        else ConsoleReporter()
+        else SpeakerPlacementHomeConsoleReporter(
+            measurements_root=measurements_root
+        )
     )
     arguments = dict(
         measurement_root=measurements_root,

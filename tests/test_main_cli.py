@@ -20,6 +20,7 @@ from acousticbrain.report import (
     PresentedAnalysisReadinessReport,
     PresentedAssessmentSummary,
     Report,
+    ConsoleReporter,
 )
 
 
@@ -273,7 +274,7 @@ def test_main_passes_exact_relative_path_without_changing_cwd(tmp_path, monkeypa
         ),
     ),
 )
-def test_standard_cli_resolves_explicit_plan_references_without_printing_plan_report(
+def test_detailed_reporter_resolves_explicit_plan_references_without_printing_plan_report(
     tmp_path,
     capsys,
     source_plan_id,
@@ -287,6 +288,7 @@ def test_standard_cli_resolves_explicit_plan_references_without_printing_plan_re
     result = acousticbrain_main.main(
         ["--measurements-root", str(campaign)],
         brain=brain,
+        reporter=ConsoleReporter(),
     )
 
     assert result == 0
@@ -307,7 +309,7 @@ def test_standard_cli_resolves_explicit_plan_references_without_printing_plan_re
         ("mixed", "PLAN_RESULT_MIXED"),
     ),
 )
-def test_standard_cli_exposes_channel_isolation_result_evaluation_states(
+def test_detailed_reporter_exposes_channel_isolation_result_evaluation_states(
     tmp_path,
     capsys,
     case,
@@ -371,6 +373,7 @@ def test_standard_cli_exposes_channel_isolation_result_evaluation_states(
     result_code = acousticbrain_main.main(
         ["--measurements-root", str(campaign)],
         brain=RecordingBrain(report),
+        reporter=ConsoleReporter(),
     )
 
     assert result_code == 0

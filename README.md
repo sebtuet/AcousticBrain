@@ -57,6 +57,12 @@ Analyze the versioned example campaign:
 python main.py --measurements-root measurements
 ```
 
+This is the public placement homepage: it says whether the existing evidence
+supports one reversible loudspeaker test now, why, and the one public next
+step. It only presents established report objects; it does not move a speaker,
+declare an experiment, or claim acoustic causality. Use `--full-assessment`
+for the detailed technical report.
+
 Running `python main.py` without a measurement path uses the same historical
 default directory:
 
@@ -87,6 +93,7 @@ The CLI exposes the existing deterministic workflow at several levels:
 
 | Output | CLI option | Exposes |
 | --- | --- | --- |
+| Loudspeaker-placement homepage | no option | The one existing placement action or the one existing verification step needed before a move |
 | Acoustic observations | `--observations` | Descriptive observations projected from existing analyses |
 | Deterministic acoustic reasoning | `--reasoning` | Premises, inference steps, conclusions, contradictions and limitations |
 | Deterministic corrective actions | `--actions` | Declarative actions, applicability, parameters and blocking conditions |
