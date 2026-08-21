@@ -97,46 +97,44 @@ class SpeakerPlacementHomeConsoleReporter:
         if not values:
             return
         print()
-        print("Répétabilité observée entre A et B")
-        for value in values:
-            print(f"- {value.experiment_id}")
-            SpeakerPlacementHomeConsoleReporter._print_difference(
-                "Gauche", value.left_maximum_difference_db,
-            )
-            SpeakerPlacementHomeConsoleReporter._print_frequency(
-                getattr(value, "left_maximum_difference_frequency_hz", None),
-            )
-            SpeakerPlacementHomeConsoleReporter._print_difference(
-                "Droite", value.right_maximum_difference_db,
-            )
-            SpeakerPlacementHomeConsoleReporter._print_frequency(
-                getattr(value, "right_maximum_difference_frequency_hz", None),
-            )
-            SpeakerPlacementHomeConsoleReporter._print_difference(
-                "Écart gauche/droite", value.left_right_difference_maximum_change_db,
-            )
-            SpeakerPlacementHomeConsoleReporter._print_band_difference(
-                "Gauche, 40–200 Hz",
-                getattr(value, "left_40_200_maximum_difference_db", None),
-                getattr(value, "left_40_200_maximum_difference_frequency_hz", None),
-            )
-            SpeakerPlacementHomeConsoleReporter._print_band_difference(
-                "Droite, 40–200 Hz",
-                getattr(value, "right_40_200_maximum_difference_db", None),
-                getattr(value, "right_40_200_maximum_difference_frequency_hz", None),
-            )
+        value = values[-1]
+        print("Dernier test contrôlé — répétabilité A/B")
+        print(f"- {value.experiment_id}")
+        SpeakerPlacementHomeConsoleReporter._print_difference(
+            "Gauche", value.left_maximum_difference_db,
+        )
+        SpeakerPlacementHomeConsoleReporter._print_frequency(
+            getattr(value, "left_maximum_difference_frequency_hz", None),
+        )
+        SpeakerPlacementHomeConsoleReporter._print_difference(
+            "Droite", value.right_maximum_difference_db,
+        )
+        SpeakerPlacementHomeConsoleReporter._print_frequency(
+            getattr(value, "right_maximum_difference_frequency_hz", None),
+        )
+        SpeakerPlacementHomeConsoleReporter._print_difference(
+            "Écart gauche/droite", value.left_right_difference_maximum_change_db,
+        )
+        SpeakerPlacementHomeConsoleReporter._print_band_difference(
+            "Gauche, 40–200 Hz",
+            getattr(value, "left_40_200_maximum_difference_db", None),
+            getattr(value, "left_40_200_maximum_difference_frequency_hz", None),
+        )
+        SpeakerPlacementHomeConsoleReporter._print_band_difference(
+            "Droite, 40–200 Hz",
+            getattr(value, "right_40_200_maximum_difference_db", None),
+            getattr(value, "right_40_200_maximum_difference_frequency_hz", None),
+        )
         print(
             "Ces écarts décrivent les exports REW A/B ; aucun seuil de "
             "stabilité, verdict acoustique ou causalité n’en est déduit."
         )
-        for value in values:
-            baseline_differences = getattr(value, "baseline_differences", ())
-            if not baseline_differences:
-                continue
+        baseline_differences = getattr(value, "baseline_differences", ())
+        if baseline_differences:
             reference = getattr(value, "reference_experiment_id", None)
             print(
                 "Écart descriptif à la référence "
-                f"{reference or 'indisponible'} — {value.experiment_id}"
+                f"{reference or 'indisponible'}"
             )
             for baseline in baseline_differences:
                 print(f"  Répétition {baseline.label}")
@@ -150,6 +148,8 @@ class SpeakerPlacementHomeConsoleReporter:
                     "Écart gauche/droite",
                     baseline.left_right_difference_maximum_change_db,
                 )
+        if len(values) > 1:
+            print(f"Historique conservé : {len(values) - 1} test(s) antérieur(s).")
 
     @staticmethod
     def _print_baseline_difference(label, value):

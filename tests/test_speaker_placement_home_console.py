@@ -184,7 +184,7 @@ def test_homepage_renders_descriptive_repeatability_without_a_verdict(capsys, tm
     )._print_repeatability(report)
 
     output = capsys.readouterr().out
-    assert "Répétabilité observée entre A et B" in output
+    assert "Dernier test contrôlé — répétabilité A/B" in output
     assert "0.40 dB" in output
     assert "non comparable" in output
     assert "aucun seuil de stabilité" in output
