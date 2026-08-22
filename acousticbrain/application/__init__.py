@@ -31,6 +31,11 @@ from .channel_isolation_repeatability_qualification import (
     ChannelIsolationRepeatabilityQualificationService,
     ChannelIsolationRepeatabilityQualificationStatus,
 )
+from .placement_comparison_qualification import (
+    PlacementComparisonQualification,
+    PlacementComparisonQualificationService,
+    PlacementComparisonStatus,
+)
 from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,
