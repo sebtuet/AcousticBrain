@@ -42,6 +42,7 @@ class ChannelIsolationRepeatabilityBandFacts:
     """Numerical A/B differences inside an explicitly supplied frequency band."""
 
     experiment_id: str
+    labels: tuple[str, str]
     lower_hz: float
     upper_hz: float
     left_maximum_difference_db: float | None
@@ -149,6 +150,7 @@ class ChannelIsolationRepeatabilityService:
             )
             results.append(ChannelIsolationRepeatabilityBandFacts(
                 experiment_id=descriptor.experiment_id,
+                labels=self.REQUIRED_LABELS,
                 lower_hz=lower_hz,
                 upper_hz=upper_hz,
                 left_maximum_difference_db=left_value,

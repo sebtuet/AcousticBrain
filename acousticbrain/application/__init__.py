@@ -24,6 +24,13 @@ from .channel_isolation_repeatability_evaluation import (
     RepeatabilityEvaluationContract,
     RepeatabilityEvaluationStatus,
 )
+from .channel_isolation_repeatability_qualification import (
+    ChannelIsolationRepeatabilityMetric,
+    ChannelIsolationRepeatabilityQualification,
+    ChannelIsolationRepeatabilityQualificationProvenance,
+    ChannelIsolationRepeatabilityQualificationService,
+    ChannelIsolationRepeatabilityQualificationStatus,
+)
 from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,
