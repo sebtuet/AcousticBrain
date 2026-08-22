@@ -1,10 +1,17 @@
+from dataclasses import FrozenInstanceError, replace
 from types import SimpleNamespace
+
+import pytest
 
 from acousticbrain.application import (
     ChannelIsolationRepeatabilityEvaluationService,
+    ChannelIsolationRepeatabilityQualificationService,
     ChannelIsolationRepeatabilityService,
     RepeatabilityEvaluationContract,
     RepeatabilityEvaluationStatus,
+)
+from acousticbrain.application.channel_isolation_repeatability_evaluation import (
+    ChannelIsolationRepeatabilityEvaluation,
 )
 from acousticbrain.models import (
     EvidenceAcquisitionTestType,
@@ -170,3 +177,100 @@ def test_repeatability_evaluation_uses_custom_band_without_code_changes():
     assert result[0].left_maximum_difference_db == 9.700000000000003
     assert result[0].right_maximum_difference_db == 9.5
     assert result[0].status is RepeatabilityEvaluationStatus.REPEATABILITY_ACCEPTABLE_IN_BAND
+
+
+def _evaluations(*, contract=None):
+    return ChannelIsolationRepeatabilityEvaluationService(
+        ChannelIsolationRepeatabilityService(_BandImporter())
+    ).evaluate((_descriptor(),), contract=contract)
+
+
+def test_repeatability_qualification_preserves_acceptable_source_verdict_and_metrics():
+    source = _evaluations()
+
+    result = ChannelIsolationRepeatabilityQualificationService().qualify(source)
+
+    assert len(result) == 1
+    value = result[0]
+    assert value.repeatability_contract_id == "repeatability_contract.v1"
+    assert value.repeatability_contract_version == "v1"
+    assert value.left_channel_metric.maximum_difference_db == source[0].left_maximum_difference_db
+    assert value.right_channel_metric.maximum_difference_db == source[0].right_maximum_difference_db
+    assert value.source_numeric_verdict is RepeatabilityEvaluationStatus.REPEATABILITY_ACCEPTABLE_IN_BAND
+    assert value.qualification_status.value == "QUALIFIED"
+    assert value.reason_codes == ("REPEATABILITY_ACCEPTABLE_IN_BAND",)
+    assert value.provenance.experiment_id == "test-canaux-002"
+    assert value.provenance.capture_labels == ("A", "B")
+    assert value.provenance.threshold_db == 3.0
+    assert value.causality_status == "NOT_ESTABLISHED"
+
+
+def test_repeatability_qualification_maps_uncertain_source_verdict_without_recalculation():
+    source = _evaluations(contract=RepeatabilityEvaluationContract(threshold_db=1.0))
+
+    value = ChannelIsolationRepeatabilityQualificationService().qualify(source)[0]
+
+    assert value.source_numeric_verdict is RepeatabilityEvaluationStatus.REPEATABILITY_UNCERTAIN
+    assert value.qualification_status.value == "NOT_QUALIFIED"
+    assert value.reason_codes == ("REPEATABILITY_UNCERTAIN",)
+
+
+def test_repeatability_qualification_preserves_inclusive_limit_as_qualified():
+    source = ChannelIsolationRepeatabilityEvaluationService(
+        ChannelIsolationRepeatabilityService(_Importer())
+    ).evaluate(
+        (_descriptor(),),
+        contract=RepeatabilityEvaluationContract(threshold_db=2.0),
+    )
+
+    value = ChannelIsolationRepeatabilityQualificationService().qualify(source)[0]
+
+    assert value.source_numeric_verdict is RepeatabilityEvaluationStatus.REPEATABILITY_ACCEPTABLE_IN_BAND
+    assert value.qualification_status.value == "QUALIFIED"
+
+
+def test_repeatability_qualification_maps_not_evaluable_source_to_indeterminate():
+    source = ChannelIsolationRepeatabilityEvaluation(
+        experiment_id="test-incomplete",
+        contract_id="repeatability_contract.v1",
+        contract_version="v1",
+        labels=("A", "B"),
+        lower_hz=40.0,
+        upper_hz=200.0,
+        threshold_db=3.0,
+        left_maximum_difference_db=None,
+        left_maximum_difference_frequency_hz=None,
+        right_maximum_difference_db=None,
+        right_maximum_difference_frequency_hz=None,
+        status=RepeatabilityEvaluationStatus.NOT_EVALUABLE,
+    )
+
+    value = ChannelIsolationRepeatabilityQualificationService().qualify((source,))[0]
+
+    assert value.qualification_status.value == "INDETERMINATE"
+    assert value.reason_codes == ("NOT_EVALUABLE",)
+
+
+def test_repeatability_qualification_is_immutable_and_does_not_mutate_source():
+    source = _evaluations()
+    before = repr(source)
+    value = ChannelIsolationRepeatabilityQualificationService().qualify(source)[0]
+
+    with pytest.raises(FrozenInstanceError):
+        value.reason_codes = ()
+
+    assert repr(source) == before
+
+
+def test_repeatability_qualification_is_independent_of_source_collection_order():
+    source = _evaluations()[0]
+    reversed_sources = (
+        replace(source, experiment_id="test-b"),
+        replace(source, experiment_id="test-a"),
+    )
+
+    values = ChannelIsolationRepeatabilityQualificationService().qualify(reversed_sources)
+
+    assert tuple(value.provenance.experiment_id for value in values) == (
+        "test-a", "test-b",
+    )

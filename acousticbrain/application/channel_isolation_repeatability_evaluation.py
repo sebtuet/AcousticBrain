@@ -17,6 +17,7 @@ class RepeatabilityEvaluationContract:
     """A declared numerical convention, not a physical-stability conclusion."""
 
     contract_id: str = "repeatability_contract.v1"
+    contract_version: str = "v1"
     lower_hz: float = 40.0
     upper_hz: float = 200.0
     threshold_db: float = 3.0
@@ -24,6 +25,12 @@ class RepeatabilityEvaluationContract:
     def __post_init__(self):
         if not self.contract_id:
             raise ValueError("Repeatability contract identifier is required.")
+        if not self.contract_version:
+            raise ValueError("Repeatability contract version is required.")
+        if not self.contract_id.endswith(f".{self.contract_version}"):
+            raise ValueError(
+                "Repeatability contract identity must include its explicit version."
+            )
         if self.lower_hz <= 0 or self.upper_hz <= self.lower_hz:
             raise ValueError("Repeatability evaluation band must be increasing and positive.")
         if self.threshold_db < 0:
@@ -34,6 +41,8 @@ class RepeatabilityEvaluationContract:
 class ChannelIsolationRepeatabilityEvaluation:
     experiment_id: str
     contract_id: str
+    contract_version: str
+    labels: tuple[str, str]
     lower_hz: float
     upper_hz: float
     threshold_db: float
@@ -82,6 +91,8 @@ class ChannelIsolationRepeatabilityEvaluationService:
             results.append(ChannelIsolationRepeatabilityEvaluation(
                 experiment_id=facts.experiment_id,
                 contract_id=contract.contract_id,
+                contract_version=contract.contract_version,
+                labels=facts.labels,
                 lower_hz=contract.lower_hz,
                 upper_hz=contract.upper_hz,
                 threshold_db=contract.threshold_db,
