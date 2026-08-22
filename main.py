@@ -38,6 +38,8 @@ from acousticbrain.application import (
     ChannelIsolationDeclarationReadinessService,
     ChannelIsolationRepeatabilityService,
     ChannelIsolationRepeatabilityEvaluationService,
+    ChannelIsolationRepeatabilityQualificationService,
+    PlacementComparisonSelectionQualificationService,
     ExperimentDiscoveryService,
     ExploratoryExperimentDeclarationService,
     SBIRProtocolInstancePreviewService,
@@ -2290,7 +2292,24 @@ def run(
         arguments["campaign_reference_qualification_declaration_analysis"] = (
             reference_qualification_declaration_analysis
         )
-    report = brain.analyze(**arguments)
+    repeatability_qualifications = ()
+    if placement_comparison is not None:
+        descriptors = ExperimentDiscoveryService().discover(measurements_root)
+        evaluations = ChannelIsolationRepeatabilityEvaluationService().evaluate(
+            descriptors
+        )
+        repeatability_qualifications = (
+            ChannelIsolationRepeatabilityQualificationService().qualify(evaluations)
+        )
+        arguments["channel_isolation_repeatability_qualifications"] = (
+            repeatability_qualifications
+        )
+        arguments["return_context"] = True
+    analysis_result = brain.analyze(**arguments)
+    if placement_comparison is not None:
+        report, comparison_context = analysis_result
+    else:
+        report = analysis_result
     if standard_report and hasattr(report, "__dict__"):
         descriptors = ExperimentDiscoveryService().discover(measurements_root)
         report.channel_isolation_repeatability = (
@@ -2312,9 +2331,14 @@ def run(
             report, experiment_view
         )
     if placement_comparison is not None:
+        qualification = PlacementComparisonSelectionQualificationService().qualify(
+            comparison_context.experiment_comparison_analysis,
+            placement_comparison,
+            repeatability_qualifications,
+        )
         report.placement_comparison_selection = (
             PlacementComparisonSelectionPresenter().present(
-                report, placement_comparison
+                report, placement_comparison, qualification=qualification
             )
         )
     if advisor:
