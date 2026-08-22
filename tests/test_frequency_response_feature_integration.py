@@ -14,6 +14,7 @@ from acousticbrain.models import (
     MeasurementAnalysisFamily,
     MeasurementReadinessStatus,
 )
+from acousticbrain.report import ConsoleReporter
 
 
 BASELINE = Path(__file__).resolve().parents[1] / "measurements" / "baseline"
@@ -141,7 +142,7 @@ def test_new_observations_do_not_enter_existing_causal_reasoning(tmp_path):
         ),
     ),
 )
-def test_standard_cli_resolves_plan_reference_against_real_pipeline(
+def test_detailed_reporter_resolves_plan_reference_against_real_pipeline(
     tmp_path,
     capsys,
     source_plan_id,
@@ -158,7 +159,7 @@ def test_standard_cli_resolves_plan_reference_against_real_pipeline(
             encoding="utf-8",
         )
 
-    acousticbrain_main.run(root)
+    acousticbrain_main.run(root, reporter=ConsoleReporter())
 
     output = capsys.readouterr().out
     assert f"Source evidence acquisition plan : {expected_source}" in output
@@ -175,7 +176,7 @@ def test_standard_cli_resolves_plan_reference_against_real_pipeline(
     assert "NEXT RECOMMENDED EXPERIMENT" not in output
 
 
-def test_standard_cli_exposes_complete_channel_isolation_coverage(
+def test_detailed_reporter_exposes_complete_channel_isolation_coverage(
     tmp_path,
     capsys,
 ):
@@ -232,7 +233,7 @@ def test_standard_cli_exposes_complete_channel_isolation_coverage(
         encoding="utf-8",
     )
 
-    acousticbrain_main.run(root)
+    acousticbrain_main.run(root, reporter=ConsoleReporter())
 
     output = capsys.readouterr().out
     assert "Plan reference status : PLAN_REFERENCE_RESOLVED" in output
