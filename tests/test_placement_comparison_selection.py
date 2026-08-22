@@ -5,6 +5,7 @@ import pytest
 from acousticbrain.report import (
     PlacementComparisonSelectionConsoleReporter,
     PlacementComparisonSelectionPresenter,
+    PresentedPlacementComparisonSelection,
     Report,
 )
 
@@ -109,4 +110,51 @@ def test_console_explains_a_blocked_comparison_without_internal_reason_codes(cap
     output = capsys.readouterr().out
     assert "COMPARAISON IMPOSSIBLE" in output
     assert "reason" not in output.lower()
+    assert "Causality status: NOT_ESTABLISHED" in output
+
+
+def test_console_explains_a_repeatability_block_without_reason_codes(capsys):
+    rendered = Report(project_name="selection-fixture")
+    rendered.placement_comparison_selection = PresentedPlacementComparisonSelection(
+        comparison_id="trace:comparison:local:a:b",
+        reference_experiment_id="position-a",
+        target_experiment_id="position-b",
+        comparison_type="LOCAL",
+        eligibility="NOT_COMPARABLE",
+        comparison_blocked=True,
+        repeatability_blocked=True,
+    )
+
+    PlacementComparisonSelectionConsoleReporter().print(rendered)
+
+    output = capsys.readouterr().out
+    assert "COMPARAISON IMPOSSIBLE" in output
+    assert "pas suffisamment fiables" in output
+    assert "reason" not in output.lower()
+
+
+@pytest.mark.parametrize(
+    ("status", "label"),
+    (
+        ("BETTER", "MEILLEUR"),
+        ("WORSE", "PIRE"),
+        ("EQUIVALENT", "ÉQUIVALENT"),
+        ("INDETERMINATE", "INDÉTERMINÉ"),
+    ),
+)
+def test_console_translates_only_an_existing_placement_qualification(status, label, capsys):
+    rendered = Report(project_name="selection-fixture")
+    rendered.placement_comparison_selection = PresentedPlacementComparisonSelection(
+        comparison_id="trace:comparison:local:a:b",
+        reference_experiment_id="position-a",
+        target_experiment_id="position-b",
+        comparison_type="LOCAL",
+        eligibility="COMPARABLE",
+        placement_result=status,
+    )
+
+    PlacementComparisonSelectionConsoleReporter().print(rendered)
+
+    output = capsys.readouterr().out
+    assert f"Résultat : {label}" in output
     assert "Causality status: NOT_ESTABLISHED" in output

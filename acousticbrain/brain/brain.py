@@ -84,6 +84,7 @@ class AcousticBrain:
         exploratory_proposal_inputs=(),
         exploratory_feasibility_decisions=None,
         analyze_exploratory=False,
+        channel_isolation_repeatability_qualifications=(),
         return_context=False,
     ):
 
@@ -147,6 +148,9 @@ class AcousticBrain:
                     exploratory_proposal_inputs=exploratory_proposal_inputs,
                     exploratory_feasibility_decisions=exploratory_feasibility_decisions,
                     analyze_exploratory=analyze_exploratory,
+                    channel_isolation_repeatability_qualifications=(
+                        channel_isolation_repeatability_qualifications
+                    ),
                     return_context=return_context,
                 )
             if project is None:
@@ -213,6 +217,7 @@ class AcousticBrain:
         exploratory_proposal_inputs,
         exploratory_feasibility_decisions,
         analyze_exploratory,
+        channel_isolation_repeatability_qualifications,
         return_context,
     ):
         contexts = {}
@@ -250,6 +255,9 @@ class AcousticBrain:
             contexts,
             optimization_session=optimization_session,
             detailed_traceability=detailed_traceability,
+            channel_isolation_repeatability_qualifications=(
+                channel_isolation_repeatability_qualifications
+            ),
         )
         if current_context is None:
             current_context = type(

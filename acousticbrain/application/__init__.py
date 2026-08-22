@@ -36,6 +36,10 @@ from .placement_comparison_qualification import (
     PlacementComparisonQualificationService,
     PlacementComparisonStatus,
 )
+from .placement_comparison_selection_qualification import (
+    PlacementComparisonSelectionQualification,
+    PlacementComparisonSelectionQualificationService,
+)
 from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,
