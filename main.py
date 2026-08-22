@@ -77,6 +77,8 @@ from acousticbrain.report import (
     SBIRProtocolInstanceViewConsoleReporter,
     SBIRProtocolInstanceViewPresenter,
     SpeakerPlacementHomeConsoleReporter,
+    PlacementComparisonSelectionConsoleReporter,
+    PlacementComparisonSelectionPresenter,
 )
 from acousticbrain.models import (
     AdvisorAudience,
@@ -198,6 +200,12 @@ def create_parser():
         default=None,
         metavar="EXPERIMENT_ID",
         help="print the read-only four-block view for one exact experiment",
+    )
+    parser.add_argument(
+        "--placement-comparison",
+        default=None,
+        metavar="COMPARISON_ID",
+        help="select one exact existing placement comparison by its trace identifier",
     )
     parser.add_argument(
         "--evidence-plan-view",
@@ -2173,6 +2181,7 @@ def run(
     assessment_summary=False,
     exploratory=False,
     experiment_view=None,
+    placement_comparison=None,
     evidence_plan_view=None,
     evidence_plan_overview=False,
     exploratory_proposal_inputs=(),
@@ -2195,6 +2204,8 @@ def run(
         if evidence_plan_view is not None
         else ExperimentUserViewConsoleReporter()
         if experiment_view is not None
+        else PlacementComparisonSelectionConsoleReporter()
+        if placement_comparison is not None
         else AdvisorConsoleReporter()
         if advisor
         else ExploratoryConsoleReporter()
@@ -2252,6 +2263,7 @@ def run(
         advisor,
         exploratory,
         experiment_view is not None,
+        placement_comparison is not None,
         evidence_plan_view is not None,
         evidence_plan_overview,
     ))
@@ -2298,6 +2310,12 @@ def run(
     if experiment_view is not None:
         report.experiment_user_view = ExperimentUserViewPresenter().present(
             report, experiment_view
+        )
+    if placement_comparison is not None:
+        report.placement_comparison_selection = (
+            PlacementComparisonSelectionPresenter().present(
+                report, placement_comparison
+            )
         )
     if advisor:
         report.advisor_response = (advisor_service or AdvisorService()).advise(
@@ -2377,6 +2395,19 @@ def main(
     parser = create_parser()
     arguments = parser.parse_args(argv)
     default_arguments = parser.parse_args(())
+    if arguments.placement_comparison is not None:
+        ignored = {"measurements_root", "placement_comparison"}
+        conflicting = tuple(
+            name for name, value in vars(arguments).items()
+            if name not in ignored
+            and value != getattr(default_arguments, name)
+        )
+        if conflicting:
+            parser.error(
+                "--placement-comparison cannot be combined with --"
+                + conflicting[0].replace("_", "-")
+                + "."
+            )
     decision_repository = (
         exploratory_decision_repository or ExploratoryFeasibilityJsonRepository()
     )
@@ -3777,6 +3808,7 @@ def main(
             assessment_summary=arguments.assessment_summary,
             exploratory=arguments.exploratory,
             experiment_view=arguments.experiment_view,
+            placement_comparison=arguments.placement_comparison,
             evidence_plan_view=arguments.evidence_plan_view,
             evidence_plan_overview=arguments.evidence_plan_overview,
             exploratory_proposal_inputs=proposal_inputs,

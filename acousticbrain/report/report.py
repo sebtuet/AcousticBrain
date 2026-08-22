@@ -67,6 +67,9 @@ from .exploratory_presenter import (
     PresentedExploratoryResult,
 )
 from .experiment_user_view_presenter import PresentedExperimentUserView
+from .placement_comparison_selection_presenter import (
+    PresentedPlacementComparisonSelection,
+)
 from .evidence_plan_user_view_presenter import (
     PresentedEvidencePlanOverview,
     PresentedEvidencePlanUserView,
@@ -154,6 +157,7 @@ class Report:
     exploratory_result: PresentedExploratoryResult | None = None
 
     experiment_user_view: PresentedExperimentUserView | None = None
+    placement_comparison_selection: PresentedPlacementComparisonSelection | None = None
     evidence_plan_user_view: PresentedEvidencePlanUserView | None = None
     evidence_plan_overview: PresentedEvidencePlanOverview | None = None
 
