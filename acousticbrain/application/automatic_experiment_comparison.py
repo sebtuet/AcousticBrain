@@ -21,6 +21,10 @@ from acousticbrain.models import (
 )
 
 from .optimization_session import OptimizationSessionService
+from .channel_isolation_repeatability_qualification import (
+    ChannelIsolationRepeatabilityQualification,
+    ChannelIsolationRepeatabilityQualificationStatus,
+)
 
 
 @dataclass(frozen=True)
@@ -229,12 +233,26 @@ class AutomaticExperimentComparisonService:
         *,
         optimization_session=None,
         detailed_traceability=False,
+        channel_isolation_repeatability_qualifications=(),
     ):
-        analyzed = {
-            item.descriptor.experiment_id: self._analyzed(item, analyzed_contexts)
+        descriptors = acoustic_session.descriptors
+        qualification_by_experiment_id = self._qualification_index(
+            channel_isolation_repeatability_qualifications,
+            descriptor_ids={item.experiment_id for item in descriptors},
+        )
+        imported_by_experiment_id = {
+            item.descriptor.experiment_id: item
             for item in acoustic_session.experiments
         }
-        descriptors = acoustic_session.descriptors
+        analyzed = {}
+
+        def analyzed_experiment(experiment_id):
+            if experiment_id not in analyzed:
+                analyzed[experiment_id] = self._analyzed(
+                    imported_by_experiment_id[experiment_id], analyzed_contexts
+                )
+            return analyzed[experiment_id]
+
         chronology = tuple(item.experiment_id for item in descriptors)
         baseline = acoustic_session.baseline
         local = []
@@ -244,23 +262,53 @@ class AutomaticExperimentComparisonService:
                 continue
             parent, reasons = self._local_parent(after, descriptors, index)
             metadata = self._metadata(after, optimization_session)
-            local.append(self._compare(
-                analyzed.get(parent.experiment_id) if parent else None,
-                analyzed[after.experiment_id],
-                ExperimentComparisonType.LOCAL,
-                tuple(reasons),
-                metadata,
-            ))
-            cumulative.append(self._compare(
-                analyzed.get(baseline.descriptor.experiment_id)
-                if baseline is not None else None,
-                analyzed[after.experiment_id],
-                ExperimentComparisonType.CUMULATIVE,
-                (() if baseline is not None else (
-                    ComparisonIneligibilityReason.INVALID_CHRONOLOGY,
-                )),
-                metadata,
-            ))
+            local_qualifications = self._blocking_qualifications(
+                parent, after, qualification_by_experiment_id
+            )
+            cumulative_qualifications = self._blocking_qualifications(
+                baseline.descriptor if baseline is not None else None,
+                after,
+                qualification_by_experiment_id,
+            )
+            if local_qualifications:
+                local.append(self._blocked_comparison(
+                    parent,
+                    after,
+                    ExperimentComparisonType.LOCAL,
+                    tuple(reasons),
+                    metadata,
+                    local_qualifications,
+                ))
+            else:
+                local.append(self._compare(
+                    analyzed_experiment(parent.experiment_id) if parent else None,
+                    analyzed_experiment(after.experiment_id),
+                    ExperimentComparisonType.LOCAL,
+                    tuple(reasons),
+                    metadata,
+                ))
+            if cumulative_qualifications:
+                cumulative.append(self._blocked_comparison(
+                    baseline.descriptor if baseline is not None else None,
+                    after,
+                    ExperimentComparisonType.CUMULATIVE,
+                    (() if baseline is not None else (
+                        ComparisonIneligibilityReason.INVALID_CHRONOLOGY,
+                    )),
+                    metadata,
+                    cumulative_qualifications,
+                ))
+            else:
+                cumulative.append(self._compare(
+                    analyzed_experiment(baseline.descriptor.experiment_id)
+                    if baseline is not None else None,
+                    analyzed_experiment(after.experiment_id),
+                    ExperimentComparisonType.CUMULATIVE,
+                    (() if baseline is not None else (
+                        ComparisonIneligibilityReason.INVALID_CHRONOLOGY,
+                    )),
+                    metadata,
+                ))
         return ExperimentComparisonAnalysis(
             sequence=ExperimentComparisonSequence(
                 chronology=chronology,
@@ -273,6 +321,142 @@ class AutomaticExperimentComparisonService:
                 "AutomaticExperimentComparisonService",
             ),
             detailed_traceability=detailed_traceability,
+        )
+
+    @staticmethod
+    def _qualification_index(qualifications, *, descriptor_ids):
+        index = {}
+        for qualification in qualifications:
+            if not isinstance(
+                qualification, ChannelIsolationRepeatabilityQualification
+            ):
+                raise TypeError(
+                    "Channel-isolation repeatability qualifications are required."
+                )
+            experiment_id = qualification.provenance.experiment_id
+            if experiment_id not in descriptor_ids:
+                raise ValueError(
+                    "Repeatability qualification experiment is not present in "
+                    f"the comparison session: {experiment_id}."
+                )
+            if experiment_id in index:
+                raise ValueError(
+                    "Repeatability qualification is ambiguous for experiment: "
+                    f"{experiment_id}."
+                )
+            index[experiment_id] = qualification
+        return index
+
+    @staticmethod
+    def _blocking_qualifications(before, after, qualification_by_experiment_id):
+        return tuple(
+            qualification
+            for descriptor in (before, after)
+            if descriptor is not None
+            for qualification in (
+                qualification_by_experiment_id.get(descriptor.experiment_id),
+            )
+            if qualification is not None and (
+                qualification.qualification_status
+                is not ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED
+            )
+        )
+
+    @staticmethod
+    def _qualification_ineligibility_reason(qualification):
+        if (
+            qualification.qualification_status
+            is ChannelIsolationRepeatabilityQualificationStatus.NOT_QUALIFIED
+        ):
+            return ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_NOT_QUALIFIED
+        return ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_INDETERMINATE
+
+    def _blocked_comparison(
+        self,
+        before,
+        after,
+        comparison_type,
+        initial_reasons,
+        metadata,
+        qualifications,
+    ):
+        """Returns a refusal without projecting facts or calculating deltas."""
+        before_id = before.experiment_id if before else "UNRESOLVED"
+        reasons = tuple(dict.fromkeys((
+            *initial_reasons,
+            *(
+                self._qualification_ineligibility_reason(qualification)
+                for qualification in qualifications
+            ),
+        )))
+        (
+            source_protocol,
+            hypothesis,
+            _,
+            required_facts,
+            experiment_parameters,
+            declaration,
+        ) = metadata
+        result_id = f"comparison:{comparison_type.value.lower()}:{before_id}:{after.experiment_id}"
+        trace = ExperimentComparisonTrace(
+            trace_id=f"trace:{result_id}",
+            comparison_type=comparison_type,
+            before_experiment_id=before_id,
+            after_experiment_id=after.experiment_id,
+            before_file_hash=before.content_hash if before else "",
+            after_file_hash=after.content_hash,
+            before_fact_codes=(),
+            after_fact_codes=(),
+            delta_fact_codes=(),
+            observed_fact_codes=(),
+            hypothesis_code=hypothesis,
+            evolution_outcome=ExperimentEvolutionOutcome.INCONCLUSIVE,
+            acoustic_outcome=ExperimentAcousticOutcome.INCONCLUSIVE,
+            experimental_result_codes=(),
+            unresolved_discrimination_codes=(),
+        )
+        return ExperimentEvolutionResult(
+            result_id=result_id,
+            before_experiment_id=before_id,
+            after_experiment_id=after.experiment_id,
+            comparison_type=comparison_type,
+            source_protocol_id=source_protocol,
+            source_hypothesis_code=hypothesis,
+            experiment_parameters=experiment_parameters,
+            initial_hypothesis_status=None,
+            outcome=ExperimentEvolutionOutcome.INCONCLUSIVE,
+            acoustic_outcome=ExperimentAcousticOutcome.INCONCLUSIVE,
+            experimental_result_codes=(),
+            eligibility=ComparisonEligibilityStatus.NOT_COMPARABLE,
+            ineligibility_reasons=reasons,
+            fact_deltas=(),
+            observed_facts=(),
+            counter_facts=(),
+            unavailable_fact_codes=(),
+            unresolved_discriminations=(),
+            applied_rule_codes=(),
+            applied_threshold_codes=(),
+            technical_confidence=None,
+            provenance_codes=(),
+            trace=trace,
+            experiment_kind=declaration.experiment_kind,
+            reference_experiment_code=declaration.reference_experiment_code,
+            modified_variables=declaration.modified_variables,
+            controlled_variables=declaration.controlled_variables,
+            declaration_user_note=declaration.user_note,
+            declaration_field_provenance=declaration.field_provenance,
+            required_fact_codes=required_facts,
+            causality_status="NOT_ESTABLISHED",
+            repeatability_qualification_statuses=tuple(
+                qualification.qualification_status.value
+                for qualification in qualifications
+            ),
+            repeatability_qualification_reason_codes=tuple(
+                qualification.reason_codes for qualification in qualifications
+            ),
+            repeatability_qualification_provenances=tuple(
+                qualification.provenance for qualification in qualifications
+            ),
         )
 
     def _analyzed(self, imported, contexts):

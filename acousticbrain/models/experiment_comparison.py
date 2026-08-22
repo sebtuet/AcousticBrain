@@ -32,6 +32,12 @@ class ComparisonIneligibilityReason(Enum):
     IDENTICAL_CONTENT = "IDENTICAL_CONTENT"
     INSUFFICIENT_BEFORE_DATA = "INSUFFICIENT_BEFORE_DATA"
     INSUFFICIENT_AFTER_DATA = "INSUFFICIENT_AFTER_DATA"
+    REPEATABILITY_QUALIFICATION_NOT_QUALIFIED = (
+        "REPEATABILITY_QUALIFICATION_NOT_QUALIFIED"
+    )
+    REPEATABILITY_QUALIFICATION_INDETERMINATE = (
+        "REPEATABILITY_QUALIFICATION_INDETERMINATE"
+    )
 
 
 class ExperimentEvolutionOutcome(Enum):
@@ -166,6 +172,9 @@ class ExperimentEvolutionResult:
     declaration_field_provenance: tuple[tuple[str, str], ...] = ()
     required_fact_codes: tuple[str, ...] = ()
     causality_status: str = "NOT_ESTABLISHED"
+    repeatability_qualification_statuses: tuple[str, ...] = ()
+    repeatability_qualification_reason_codes: tuple[tuple[str, ...], ...] = ()
+    repeatability_qualification_provenances: tuple[object, ...] = ()
 
     def __post_init__(self):
         collections = (
@@ -178,9 +187,17 @@ class ExperimentEvolutionResult:
             self.modified_variables, self.controlled_variables,
             self.declaration_field_provenance,
             self.required_fact_codes,
+            self.repeatability_qualification_statuses,
+            self.repeatability_qualification_reason_codes,
+            self.repeatability_qualification_provenances,
         )
         if any(not isinstance(value, tuple) for value in collections):
             raise ValueError("Evolution-result collections must be tuples.")
+        if any(
+            not isinstance(reason_codes, tuple)
+            for reason_codes in self.repeatability_qualification_reason_codes
+        ):
+            raise ValueError("Repeatability qualification reasons must be tuples.")
         if self.causality_status != "NOT_ESTABLISHED":
             raise ValueError("Automatic comparison cannot establish causality.")
         if self.technical_confidence is not None and (
