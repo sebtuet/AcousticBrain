@@ -7,8 +7,15 @@ from acousticbrain.application import (
     AcousticSession,
     AnalyzedExperiment,
     AutomaticExperimentComparisonService,
+    ChannelIsolationRepeatabilityMetric,
+    ChannelIsolationRepeatabilityQualification,
+    ChannelIsolationRepeatabilityQualificationProvenance,
+    ChannelIsolationRepeatabilityQualificationStatus,
     ImportedExperiment,
     OptimizationSessionService,
+)
+from acousticbrain.application.channel_isolation_repeatability_evaluation import (
+    RepeatabilityEvaluationStatus,
 )
 from acousticbrain.application.automatic_experiment_comparison import (
     ExperimentFactProjector,
@@ -113,7 +120,14 @@ class Projector:
 
 
 def comparison(
-    monkeypatch, descriptors, supports, *, statuses=None, optimization_session=None
+    monkeypatch,
+    descriptors,
+    supports,
+    *,
+    statuses=None,
+    optimization_session=None,
+    qualifications=(),
+    fact_projector=None,
 ):
     statuses = statuses or {}
     monkeypatch.setattr(
@@ -135,11 +149,44 @@ def comparison(
         )
         for item in descriptors
     }
-    return AutomaticExperimentComparisonService(Projector()).analyze(
+    return AutomaticExperimentComparisonService(fact_projector or Projector()).analyze(
         session,
         contexts,
         optimization_session=optimization_session,
         detailed_traceability=True,
+        channel_isolation_repeatability_qualifications=qualifications,
+    )
+
+
+def repeatability_qualification(experiment_id, status):
+    source_verdict = {
+        ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED: (
+            RepeatabilityEvaluationStatus.REPEATABILITY_ACCEPTABLE_IN_BAND
+        ),
+        ChannelIsolationRepeatabilityQualificationStatus.NOT_QUALIFIED: (
+            RepeatabilityEvaluationStatus.REPEATABILITY_UNCERTAIN
+        ),
+        ChannelIsolationRepeatabilityQualificationStatus.INDETERMINATE: (
+            RepeatabilityEvaluationStatus.NOT_EVALUABLE
+        ),
+    }[status]
+    return ChannelIsolationRepeatabilityQualification(
+        repeatability_contract_id="repeatability_contract.v1",
+        repeatability_contract_version="v1",
+        left_channel_metric=ChannelIsolationRepeatabilityMetric(0.2, 81.0),
+        right_channel_metric=ChannelIsolationRepeatabilityMetric(0.3, 82.0),
+        source_numeric_verdict=source_verdict,
+        qualification_status=status,
+        reason_codes=(source_verdict.value,),
+        provenance=ChannelIsolationRepeatabilityQualificationProvenance(
+            experiment_id=experiment_id,
+            capture_labels=("A", "B"),
+            repeatability_contract_id="repeatability_contract.v1",
+            repeatability_contract_version="v1",
+            lower_hz=40.0,
+            upper_hz=200.0,
+            threshold_db=3.0,
+        ),
     )
 
 
@@ -161,6 +208,163 @@ def test_builds_deterministic_local_and_cumulative_chronology(monkeypatch):
     ]
     assert [item.before_experiment_id for item in
             result.sequence.cumulative_comparisons] == ["baseline", "baseline"]
+
+
+def test_qualified_repeatability_leaves_existing_comparison_result_unchanged(
+    monkeypatch,
+):
+    descriptors = (descriptor("baseline", baseline=True), descriptor("exp-001"))
+    supports = {"baseline": 70.0, "exp-001": 75.0}
+
+    original = comparison(monkeypatch, descriptors, supports)
+    qualified = comparison(
+        monkeypatch,
+        descriptors,
+        supports,
+        qualifications=(repeatability_qualification(
+            "exp-001", ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED
+        ),),
+    )
+
+    assert qualified == original
+
+
+@pytest.mark.parametrize(
+    ("status", "reason"),
+    [
+        (
+            ChannelIsolationRepeatabilityQualificationStatus.NOT_QUALIFIED,
+            ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_NOT_QUALIFIED,
+        ),
+        (
+            ChannelIsolationRepeatabilityQualificationStatus.INDETERMINATE,
+            ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_INDETERMINATE,
+        ),
+    ],
+)
+def test_unqualified_repeatability_blocks_before_any_comparison_projection(
+    monkeypatch, status, reason,
+):
+    descriptors = (descriptor("baseline", baseline=True), descriptor("exp-001"))
+    qualification = repeatability_qualification("exp-001", status)
+
+    class FailingProjector:
+        def project(self, context):
+            raise AssertionError("A blocked comparison must not project facts.")
+
+    result = comparison(
+        monkeypatch,
+        descriptors,
+        {"baseline": 70.0, "exp-001": 75.0},
+        qualifications=(qualification,),
+        fact_projector=FailingProjector(),
+    )
+
+    for blocked in (
+        *result.sequence.local_comparisons,
+        *result.sequence.cumulative_comparisons,
+    ):
+        assert blocked.eligibility is ComparisonEligibilityStatus.NOT_COMPARABLE
+        assert blocked.ineligibility_reasons == (reason,)
+        assert blocked.fact_deltas == ()
+        assert blocked.observed_facts == ()
+        assert blocked.repeatability_qualification_statuses == (status.value,)
+        assert blocked.repeatability_qualification_reason_codes == (
+            qualification.reason_codes,
+        )
+        assert blocked.repeatability_qualification_provenances == (
+            qualification.provenance,
+        )
+        assert blocked.causality_status == "NOT_ESTABLISHED"
+
+
+def test_repeatability_qualification_rejects_ambiguous_experiment_identity(
+    monkeypatch,
+):
+    descriptors = (descriptor("baseline", baseline=True), descriptor("exp-001"))
+    qualification = repeatability_qualification(
+        "exp-001", ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED
+    )
+
+    with pytest.raises(ValueError, match="ambiguous for experiment: exp-001"):
+        comparison(
+            monkeypatch,
+            descriptors,
+            {"baseline": 70.0, "exp-001": 75.0},
+            qualifications=(qualification, qualification),
+        )
+
+
+def test_qualified_repeatability_inputs_have_no_order_dependent_effect(
+    monkeypatch,
+):
+    descriptors = (
+        descriptor("baseline", baseline=True),
+        descriptor("exp-001"),
+        descriptor("exp-002"),
+    )
+    qualifications = (
+        repeatability_qualification(
+            "exp-001", ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED
+        ),
+        repeatability_qualification(
+            "exp-002", ChannelIsolationRepeatabilityQualificationStatus.QUALIFIED
+        ),
+    )
+    supports = {"baseline": 70.0, "exp-001": 75.0, "exp-002": 72.0}
+
+    first = comparison(
+        monkeypatch, descriptors, supports, qualifications=qualifications
+    )
+    reversed_input = comparison(
+        monkeypatch, descriptors, supports, qualifications=tuple(reversed(qualifications))
+    )
+
+    assert reversed_input == first
+
+
+def test_non_qualified_reference_blocks_its_later_local_comparison(
+    monkeypatch,
+):
+    descriptors = (
+        descriptor("baseline", baseline=True),
+        descriptor("exp-001"),
+        descriptor("exp-002"),
+    )
+    first = repeatability_qualification(
+        "exp-001",
+        ChannelIsolationRepeatabilityQualificationStatus.NOT_QUALIFIED,
+    )
+    second = repeatability_qualification(
+        "exp-002",
+        ChannelIsolationRepeatabilityQualificationStatus.INDETERMINATE,
+    )
+
+    result = comparison(
+        monkeypatch,
+        descriptors,
+        {"baseline": 70.0, "exp-001": 75.0, "exp-002": 72.0},
+        qualifications=(second, first),
+    )
+    blocked = result.sequence.local_comparisons[1]
+
+    assert blocked.eligibility is ComparisonEligibilityStatus.NOT_COMPARABLE
+    assert blocked.ineligibility_reasons == (
+        ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_NOT_QUALIFIED,
+        ComparisonIneligibilityReason.REPEATABILITY_QUALIFICATION_INDETERMINATE,
+    )
+    assert blocked.repeatability_qualification_statuses == (
+        ChannelIsolationRepeatabilityQualificationStatus.NOT_QUALIFIED.value,
+        ChannelIsolationRepeatabilityQualificationStatus.INDETERMINATE.value,
+    )
+    assert blocked.repeatability_qualification_reason_codes == (
+        first.reason_codes,
+        second.reason_codes,
+    )
+    assert blocked.repeatability_qualification_provenances == (
+        first.provenance,
+        second.provenance,
+    )
 
 
 def test_explicit_parent_has_priority_and_ambiguous_parent_is_not_guessed(monkeypatch):
