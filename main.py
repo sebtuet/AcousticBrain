@@ -19,6 +19,10 @@ from acousticbrain.advisor import (
     OpenAIAdvisorProvider,
 )
 from acousticbrain.brain import AcousticBrain
+from acousticbrain.acquisition import (
+    NativePlacementCaptureConfig,
+    NativePlacementCaptureService,
+)
 from acousticbrain.commands import (
     accept_positioning_proposal as positioning_proposal_acceptance_command,
     declare_evidence_plan_experiment as evidence_plan_declaration_command,
@@ -504,6 +508,44 @@ def create_parser():
     )
     parser.add_argument(
         "--channel-isolation-experiment", default=None, metavar="EXPERIMENT_ID"
+    )
+    parser.add_argument(
+        "--native-placement-capture",
+        action="store_true",
+        help=(
+            "run the experimental native LEFT/RIGHT A/B placement capture before "
+            "the existing repeatability pipeline"
+        ),
+    )
+    parser.add_argument("--input-device", default=None, metavar="DEVICE")
+    parser.add_argument("--output-device", default=None, metavar="DEVICE")
+    parser.add_argument("--calibration-file", type=Path, default=None, metavar="PATH")
+    parser.add_argument(
+        "--native-sample-rate",
+        type=int,
+        default=44100,
+        metavar="HZ",
+        help="sample rate for --native-placement-capture (default: 44100)",
+    )
+    parser.add_argument(
+        "--native-sweep-duration",
+        type=float,
+        default=5.0,
+        metavar="SECONDS",
+        help="log sweep duration for --native-placement-capture (default: 5.0)",
+    )
+    parser.add_argument(
+        "--native-sweep-level-dbfs",
+        type=float,
+        default=-24.0,
+        metavar="DBFS",
+        help="digital sweep level for --native-placement-capture (default: -24)",
+    )
+    parser.add_argument(
+        "--native-experiment-id",
+        default=None,
+        metavar="EXPERIMENT_ID",
+        help="optional deterministic experiment id for experimental native capture",
     )
     parser.add_argument(
         "--exploratory-proposal",
@@ -2368,6 +2410,14 @@ def run(
     return report
 
 
+def _format_native_repeatability(value_db, frequency_hz, status):
+    if value_db is None:
+        return f"non évaluable ({status})"
+    if frequency_hz is None:
+        return f"{value_db:.2f} dB max ({status})"
+    return f"{value_db:.2f} dB max à {frequency_hz:.1f} Hz ({status})"
+
+
 def main(
     argv=None,
     *,
@@ -2410,6 +2460,7 @@ def main(
     channel_isolation_operational_worksheet_revision_service=None,
     channel_isolation_documentation_review_service=None,
     channel_isolation_declaration_readiness_service=None,
+    native_placement_capture_service=None,
     guided_global_status_presenter=None,
     guided_global_status_reporter=None,
     placement_input=input,
@@ -2486,6 +2537,77 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
+        if arguments.native_placement_capture:
+            ignored = {
+                "measurements_root",
+                "native_placement_capture",
+                "input_device",
+                "output_device",
+                "calibration_file",
+                "native_sample_rate",
+                "native_sweep_duration",
+                "native_sweep_level_dbfs",
+                "native_experiment_id",
+            }
+            conflicting = tuple(
+                name for name, value in vars(arguments).items()
+                if name not in ignored
+                and value != getattr(default_arguments, name)
+            )
+            if conflicting:
+                option = "--" + conflicting[0].replace("_", "-")
+                raise ValueError(
+                    "--native-placement-capture cannot be combined with " + option + "."
+                )
+            missing = tuple(
+                option for option, value in (
+                    ("--input-device", arguments.input_device),
+                    ("--output-device", arguments.output_device),
+                    ("--calibration-file", arguments.calibration_file),
+                )
+                if value is None
+            )
+            if missing:
+                raise ValueError(
+                    "--native-placement-capture requires " + ", ".join(missing) + "."
+                )
+            summary = (
+                native_placement_capture_service
+                or NativePlacementCaptureService()
+            ).capture(NativePlacementCaptureConfig(
+                measurements_root=measurements_root,
+                input_device=arguments.input_device,
+                output_device=arguments.output_device,
+                calibration_file=arguments.calibration_file,
+                sample_rate_hz=arguments.native_sample_rate,
+                sweep_duration_s=arguments.native_sweep_duration,
+                sweep_level_dbfs=arguments.native_sweep_level_dbfs,
+                experiment_id=arguments.native_experiment_id,
+            ))
+            print()
+            print("Répétabilité :")
+            if not summary.evaluations:
+                print("Gauche : non évaluable")
+                print("Droite : non évaluable")
+            else:
+                evaluation = summary.evaluations[0]
+                print(
+                    "Gauche : "
+                    + _format_native_repeatability(
+                        evaluation.left_maximum_difference_db,
+                        evaluation.left_maximum_difference_frequency_hz,
+                        evaluation.status.value,
+                    )
+                )
+                print(
+                    "Droite : "
+                    + _format_native_repeatability(
+                        evaluation.right_maximum_difference_db,
+                        evaluation.right_maximum_difference_frequency_hz,
+                        evaluation.status.value,
+                    )
+                )
+            return 0
         if arguments.start_placement:
             ignored = {"measurements_root", "start_placement"}
             conflicting = tuple(
