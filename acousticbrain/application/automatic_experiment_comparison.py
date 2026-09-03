@@ -52,6 +52,12 @@ class ExperimentFactProjector:
         readiness = self._readiness(context)
         global_analysis = context.global_analysis
         for domain in global_analysis.domains:
+            domain_readiness = readiness.get(
+                self.DOMAIN_READINESS_FAMILY.get(domain.code, domain.code),
+                "AVAILABLE",
+            )
+            if domain_readiness == "BLOCKED":
+                continue
             facts.append(self._fact(
                 f"global.domain.{domain.code.lower()}.score",
                 domain.score,
@@ -60,10 +66,7 @@ class ExperimentFactProjector:
                 domain.source_analysis,
                 self.SCORE_THRESHOLD,
                 True,
-                readiness.get(
-                    self.DOMAIN_READINESS_FAMILY.get(domain.code, domain.code),
-                    "AVAILABLE",
-                ),
+                domain_readiness,
             ))
         reasoning = context.acoustic_reasoning_analysis
         if reasoning is not None:
@@ -112,7 +115,7 @@ class ExperimentFactProjector:
     def _append_specific_facts(self, context, facts, readiness):
         spatial = context.spatial_analysis
         pair = spatial.pair_analysis if spatial is not None else None
-        if pair is not None:
+        if pair is not None and readiness.get("SPATIAL", "AVAILABLE") != "BLOCKED":
             facts.append(self._fact(
                 "spatial.left_right.level_difference_abs_db",
                 abs(pair.broadband_level_difference_db)
@@ -121,7 +124,7 @@ class ExperimentFactProjector:
                 readiness.get("SPATIAL", "AVAILABLE"),
             ))
         drr = context.direct_reverberant_analysis
-        if drr is not None:
+        if drr is not None and readiness.get("DIRECT_REVERBERANT", "AVAILABLE") != "BLOCKED":
             values = tuple(drr.left_right_direct_to_reverberant_differences_db.values())
             facts.append(self._fact(
                 "direct_reverberant.left_right.maximum_difference_abs_db",
@@ -130,7 +133,7 @@ class ExperimentFactProjector:
                 0.5, False, readiness.get("DIRECT_REVERBERANT", "AVAILABLE"),
             ))
         decay = context.bass_decay_analysis
-        if decay is not None:
+        if decay is not None and readiness.get("BASS_DECAY", "AVAILABLE") != "BLOCKED":
             differences = decay.left_right_band_differences
             facts.append(self._fact(
                 "bass_decay.left_right.maximum_difference_abs_s",
@@ -149,7 +152,7 @@ class ExperimentFactProjector:
                 readiness.get("BASS_DECAY", "AVAILABLE"),
             ))
         etc = context.etc_analysis
-        if etc is not None:
+        if etc is not None and readiness.get("ETC", "AVAILABLE") != "BLOCKED":
             facts.append(self._fact(
                 "etc.channel_specific_event_count",
                 etc.left_only_event_count + etc.right_only_event_count,
@@ -163,7 +166,7 @@ class ExperimentFactProjector:
             sbir_geometry.best_match if sbir_geometry is not None else None
         )
         sbir = context.sbir
-        if geometry_match is not None:
+        if geometry_match is not None and readiness.get("FREQUENCY", "AVAILABLE") != "BLOCKED":
             facts.append(self._fact(
                 "sbir.target_null_frequency_hz",
                 geometry_match.observed_dip.frequency,
@@ -176,7 +179,7 @@ class ExperimentFactProjector:
                 "DB", "SBIR", "SBIRGeometryCorrelationAnalysis", 1.0, False,
                 readiness.get("FREQUENCY", "AVAILABLE"),
             ))
-        elif sbir is not None:
+        elif sbir is not None and readiness.get("FREQUENCY", "AVAILABLE") != "BLOCKED":
             facts.append(self._fact(
                 "sbir.target_null_frequency_hz",
                 sbir.best_match.measured_frequency if sbir.best_match else None,

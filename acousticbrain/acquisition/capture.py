@@ -50,7 +50,15 @@ class SoundDeviceCaptureEngine:
         post_silence = np.zeros(int(round(post_silence_s * sample_rate_hz)), dtype=float)
         mono = np.concatenate((pre_silence, sweep, post_silence))
         output = np.zeros((len(mono), 2), dtype=np.float32)
-        output[:, 0 if channel == "LEFT" else 1] = mono.astype(np.float32)
+        if channel == "LEFT":
+            output[:, 0] = mono.astype(np.float32)
+        elif channel == "RIGHT":
+            output[:, 1] = mono.astype(np.float32)
+        elif channel == "STEREO":
+            output[:, 0] = mono.astype(np.float32)
+            output[:, 1] = mono.astype(np.float32)
+        else:
+            raise ValueError(f"Unsupported native output channel: {channel}")
         recorded = sd.playrec(
             output,
             samplerate=sample_rate_hz,

@@ -45,6 +45,7 @@ class NativePlacementCaptureService:
         (ImpulseChannel.LEFT, "B"),
         (ImpulseChannel.RIGHT, "A"),
         (ImpulseChannel.RIGHT, "B"),
+        (ImpulseChannel.STEREO, None),
     )
 
     def __init__(
@@ -88,7 +89,7 @@ class NativePlacementCaptureService:
         written = {}
         capture_diagnostics = {}
         for channel, repeat in self.SEQUENCE:
-            label = f"{channel.value} {repeat}"
+            label = self._capture_label(channel, repeat)
             self.output_func(f"{label} dans 3...")
             self.countdown()
             self.output_func("[sweep]")
@@ -99,7 +100,7 @@ class NativePlacementCaptureService:
                 input_device=config.input_device,
                 output_device=config.output_device,
             )
-            raw_wav_relative_path = f"native-diagnostics/{channel.value}_{repeat}.wav"
+            raw_wav_relative_path = self._raw_wav_relative_path(channel, repeat)
             self._write_raw_wav(
                 experiment_directory / raw_wav_relative_path,
                 sample_rate_hz=parameters.sample_rate_hz,
@@ -124,10 +125,14 @@ class NativePlacementCaptureService:
                 response.diagnostics if response is not None else detection,
             )
             if response is not None:
-                relative_path = f"measurements/{channel.value} {experiment_id} {repeat}.txt"
+                relative_path = self._measurement_relative_path(
+                    channel, repeat, experiment_id
+                )
                 self._write_rew_compatible_txt(
                     experiment_directory / relative_path,
-                    measurement_name=f"{channel.value} {experiment_id} {repeat}",
+                    measurement_name=self._measurement_name(
+                        channel, repeat, experiment_id
+                    ),
                     response=response,
                 )
                 written[relative_path] = channel.value
@@ -167,8 +172,32 @@ class NativePlacementCaptureService:
         self.output_func(f"Sortie : {config.output_device}")
         self.output_func(f"Calibration : {Path(config.calibration_file).name}")
         self.output_func(f"Sample rate : {config.sample_rate_hz} Hz")
-        self.output_func("Séquence : LEFT A, LEFT B, RIGHT A, RIGHT B")
+        self.output_func("Séquence : LEFT A, LEFT B, RIGHT A, RIGHT B, L+R")
         self.output_func("")
+
+    @staticmethod
+    def _capture_label(channel, repeat):
+        if channel is ImpulseChannel.STEREO:
+            return "L+R"
+        return f"{channel.value} {repeat}"
+
+    @staticmethod
+    def _raw_wav_relative_path(channel, repeat):
+        if channel is ImpulseChannel.STEREO:
+            return "native-diagnostics/L+R.wav"
+        return f"native-diagnostics/{channel.value}_{repeat}.wav"
+
+    @staticmethod
+    def _measurement_relative_path(channel, repeat, experiment_id):
+        if channel is ImpulseChannel.STEREO:
+            return f"measurements/L+R {experiment_id}.txt"
+        return f"measurements/{channel.value} {experiment_id} {repeat}.txt"
+
+    @staticmethod
+    def _measurement_name(channel, repeat, experiment_id):
+        if channel is ImpulseChannel.STEREO:
+            return f"L+R {experiment_id}"
+        return f"{channel.value} {experiment_id} {repeat}"
 
     def _print_capture_diagnostics(self, label, captured, response_diagnostics):
         capture = captured.diagnostics
@@ -320,7 +349,11 @@ class NativePlacementCaptureService:
                     "level_dbfs": parameters.level_dbfs,
                 },
                 "sequence": [
-                    {"channel": channel.value, "repeat": repeat}
+                    (
+                        {"channel": channel.value}
+                        if repeat is None
+                        else {"channel": channel.value, "repeat": repeat}
+                    )
                     for channel, repeat in self.SEQUENCE
                 ],
                 "captures": capture_diagnostics,
@@ -339,13 +372,19 @@ class NativePlacementCaptureService:
                     "corrective_action_id": "native-placement-capture",
                     "evidence_weight_id": "native-placement-capture",
                     "blocking_factor_ids": ["NATIVE_CAPTURE_EXPERIMENTAL"],
-                    "objective": "Capture LEFT/RIGHT A/B repeatability natively.",
+                    "objective": "Capture LEFT/RIGHT A/B repeatability and measured L+R natively.",
                     "test_type": "CHANNEL_ISOLATION",
-                    "instructions": ["Capture LEFT A, LEFT B, RIGHT A, RIGHT B."],
+                    "instructions": ["Capture LEFT A, LEFT B, RIGHT A, RIGHT B, L+R."],
                     "required_inputs": ["UMIK_CALIBRATION", "STEREO_OUTPUT"],
                     "controlled_variables": ["MICROPHONE_POSITION", "LOUDSPEAKER_POSITION"],
                     "independent_variables": ["REPEAT_LABEL"],
-                    "measurements_to_capture": ["LEFT_A", "LEFT_B", "RIGHT_A", "RIGHT_B"],
+                    "measurements_to_capture": [
+                        "LEFT_A",
+                        "LEFT_B",
+                        "RIGHT_A",
+                        "RIGHT_B",
+                        "L+R",
+                    ],
                     "expected_observations": ["A_B_REPEATABILITY"],
                     "success_criteria": ["TXT_MEASUREMENTS_DISCOVERABLE"],
                     "failure_criteria": ["CAPTURE_NOT_COMPLETED"],

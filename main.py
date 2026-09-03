@@ -43,6 +43,8 @@ from acousticbrain.application import (
     ChannelIsolationRepeatabilityService,
     ChannelIsolationRepeatabilityEvaluationService,
     ChannelIsolationRepeatabilityQualificationService,
+    GuidedNativePlacementSessionConfig,
+    GuidedNativePlacementSessionService,
     PlacementComparisonSelectionQualificationService,
     ExperimentDiscoveryService,
     ExploratoryExperimentDeclarationService,
@@ -83,6 +85,7 @@ from acousticbrain.report import (
     SBIRProtocolInstanceViewConsoleReporter,
     SBIRProtocolInstanceViewPresenter,
     SpeakerPlacementHomeConsoleReporter,
+    GuidedNativePlacementSessionConsoleReporter,
     PlacementComparisonSelectionConsoleReporter,
     PlacementComparisonSelectionPresenter,
 )
@@ -515,6 +518,14 @@ def create_parser():
         help=(
             "run the experimental native LEFT/RIGHT A/B placement capture before "
             "the existing repeatability pipeline"
+        ),
+    )
+    parser.add_argument(
+        "--native-placement-session",
+        action="store_true",
+        help=(
+            "run the experimental guided native reference/candidate placement "
+            "session"
         ),
     )
     parser.add_argument("--input-device", default=None, metavar="DEVICE")
@@ -2461,6 +2472,7 @@ def main(
     channel_isolation_documentation_review_service=None,
     channel_isolation_declaration_readiness_service=None,
     native_placement_capture_service=None,
+    guided_native_placement_session_service=None,
     guided_global_status_presenter=None,
     guided_global_status_reporter=None,
     placement_input=input,
@@ -2470,6 +2482,11 @@ def main(
     parser = create_parser()
     arguments = parser.parse_args(argv)
     default_arguments = parser.parse_args(())
+    if arguments.native_placement_capture and arguments.native_placement_session:
+        parser.error(
+            "--native-placement-session cannot be combined with "
+            "--native-placement-capture."
+        )
     if arguments.placement_comparison is not None:
         ignored = {"measurements_root", "placement_comparison"}
         conflicting = tuple(
@@ -2537,10 +2554,11 @@ def main(
         return 0
     try:
         measurements_root = validate_measurements_root(arguments.measurements_root)
-        if arguments.native_placement_capture:
+        if arguments.native_placement_capture or arguments.native_placement_session:
             ignored = {
                 "measurements_root",
                 "native_placement_capture",
+                "native_placement_session",
                 "input_device",
                 "output_device",
                 "calibration_file",
@@ -2557,7 +2575,14 @@ def main(
             if conflicting:
                 option = "--" + conflicting[0].replace("_", "-")
                 raise ValueError(
-                    "--native-placement-capture cannot be combined with " + option + "."
+                    (
+                        "--native-placement-session"
+                        if arguments.native_placement_session
+                        else "--native-placement-capture"
+                    )
+                    + " cannot be combined with "
+                    + option
+                    + "."
                 )
             missing = tuple(
                 option for option, value in (
@@ -2569,8 +2594,30 @@ def main(
             )
             if missing:
                 raise ValueError(
-                    "--native-placement-capture requires " + ", ".join(missing) + "."
+                    (
+                        "--native-placement-session"
+                        if arguments.native_placement_session
+                        else "--native-placement-capture"
+                    )
+                    + " requires "
+                    + ", ".join(missing)
+                    + "."
                 )
+            if arguments.native_placement_session:
+                result = (
+                    guided_native_placement_session_service
+                    or GuidedNativePlacementSessionService(input_func=placement_input)
+                ).run(GuidedNativePlacementSessionConfig(
+                    measurements_root=measurements_root,
+                    input_device=arguments.input_device,
+                    output_device=arguments.output_device,
+                    calibration_file=arguments.calibration_file,
+                    sample_rate_hz=arguments.native_sample_rate,
+                    sweep_duration_s=arguments.native_sweep_duration,
+                    sweep_level_dbfs=arguments.native_sweep_level_dbfs,
+                ))
+                GuidedNativePlacementSessionConsoleReporter().print(result)
+                return 0
             summary = (
                 native_placement_capture_service
                 or NativePlacementCaptureService()

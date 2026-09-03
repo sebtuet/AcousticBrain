@@ -81,7 +81,13 @@ def test_native_capture_writes_rew_compatible_channel_isolation_experiment(tmp_p
     experiment = root / "exp-native-test"
     manifest = json.loads((experiment / "manifest.json").read_text(encoding="utf-8"))
     assert summary.experiment_directory == experiment
-    assert [call[0] for call in engine.calls] == ["LEFT", "LEFT", "RIGHT", "RIGHT"]
+    assert [call[0] for call in engine.calls] == [
+        "LEFT",
+        "LEFT",
+        "RIGHT",
+        "RIGHT",
+        "STEREO",
+    ]
     assert manifest["native_acquisition"]["experimental"] is True
     assert manifest["native_acquisition"]["identity"] == (
         "acousticbrain.native_placement_capture.v1"
@@ -93,6 +99,7 @@ def test_native_capture_writes_rew_compatible_channel_isolation_experiment(tmp_p
         "measurements/LEFT exp-native-test B.txt": "LEFT",
         "measurements/RIGHT exp-native-test A.txt": "RIGHT",
         "measurements/RIGHT exp-native-test B.txt": "RIGHT",
+        "measurements/L+R exp-native-test.txt": "STEREO",
     }
     assert (
         manifest["evidence_acquisition_plan_contract"]["plan"]["test_type"]
@@ -113,11 +120,18 @@ def test_native_capture_writes_rew_compatible_channel_isolation_experiment(tmp_p
     assert (
         experiment / manifest["native_acquisition"]["captures"]["LEFT_A"]["raw_wav_path"]
     ).is_file()
+    assert (
+        experiment / manifest["native_acquisition"]["captures"]["L+R"]["raw_wav_path"]
+    ).is_file()
     text = (experiment / "measurements/LEFT exp-native-test A.txt").read_text(
         encoding="utf-8"
     )
     assert "* Measurement: LEFT exp-native-test A" in text
     assert "* Freq(Hz) SPL(dB) Phase(degrees)" in text
+    stereo_text = (experiment / "measurements/L+R exp-native-test.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "* Measurement: L+R exp-native-test" in stereo_text
     assert summary.evaluations
     rendered_output = "\n".join(output)
     assert "Diagnostics LEFT A :" in rendered_output
@@ -230,6 +244,40 @@ def test_sounddevice_engine_selects_duplex_devices_with_stream_device_tuple(monk
     assert np.allclose(data[10:13, 1], [0.1, 0.2, 0.3])
     assert np.allclose(data[13:, 1], 0.0)
     assert captured.recorded.tolist() == [1.0] * 63
+
+
+@pytest.mark.parametrize(
+    ("channel", "expected_left", "expected_right"),
+    (
+        ("LEFT", [0.1, 0.2, 0.3], [0.0, 0.0, 0.0]),
+        ("RIGHT", [0.0, 0.0, 0.0], [0.1, 0.2, 0.3]),
+        ("STEREO", [0.1, 0.2, 0.3], [0.1, 0.2, 0.3]),
+    ),
+)
+def test_sounddevice_engine_routes_native_channels_explicitly(
+    monkeypatch, channel, expected_left, expected_right
+):
+    calls = []
+
+    class FakeSoundDevice:
+        @staticmethod
+        def playrec(data, **kwargs):
+            calls.append(data)
+            return np.ones((len(data), 1), dtype=np.float32)
+
+    monkeypatch.setitem(sys.modules, "sounddevice", FakeSoundDevice)
+
+    SoundDeviceCaptureEngine().capture(
+        np.array([0.1, 0.2, 0.3], dtype=float),
+        channel=channel,
+        sample_rate_hz=10,
+        input_device="UMIK-1",
+        output_device="AirPlay",
+    )
+
+    data = calls[0]
+    assert np.allclose(data[10:13, 0], expected_left)
+    assert np.allclose(data[10:13, 1], expected_right)
 
 
 def test_native_capture_envelope_can_contain_airplay_delayed_full_sweep(monkeypatch):

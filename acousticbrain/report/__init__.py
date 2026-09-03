@@ -108,6 +108,9 @@ from .placement_comparison_selection_presenter import (
     PlacementComparisonSelectionPresenter,
     PresentedPlacementComparisonSelection,
 )
+from .guided_native_placement_session_presenter import (
+    GuidedNativePlacementSessionConsoleReporter,
+)
 from .acoustic_observation_console import AcousticObservationConsoleReporter
 from .deterministic_acoustic_reasoning_console import (
     DeterministicAcousticReasoningConsoleReporter,

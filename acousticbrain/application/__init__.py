@@ -40,6 +40,14 @@ from .placement_comparison_selection_qualification import (
     PlacementComparisonSelectionQualification,
     PlacementComparisonSelectionQualificationService,
 )
+from .guided_native_placement_session import (
+    GuidedNativePlacementSessionConfig,
+    GuidedNativePlacementSessionResult,
+    GuidedNativePlacementSessionService,
+    GuidedNativePlacementSessionStatus,
+    GuidedNativePlacementVerdict,
+    GuidedNativePlacementVerdictProjector,
+)
 from .channel_isolation_guided_execution import (
     ChannelIsolationExecutionChecklist,
     ChannelIsolationGuidedExecutionJourney,
@@ -144,7 +152,11 @@ from .reflection_hypothesis_status_update import (
     ControlledReflectionHypothesisStatusUpdateService,
 )
 from .experiment_campaign_synthesis import ExperimentCampaignSynthesisService
-from .acoustic_session import AcousticSession, ImportedExperiment
+from .acoustic_session import (
+    AcousticSession,
+    CanonicalMeasurementRepresentation,
+    ImportedExperiment,
+)
 from .automatic_experiment_comparison import (
     AnalyzedExperiment,
     AutomaticExperimentComparisonService,

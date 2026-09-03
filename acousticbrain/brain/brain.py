@@ -117,7 +117,15 @@ class AcousticBrain:
                 raise ValueError(
                     "measurement_root cannot be combined with project or session_context."
                 )
-            acoustic_session = AcousticSession.auto_open(measurement_root)
+            if channel_isolation_repeatability_qualifications:
+                acoustic_session = AcousticSession.auto_open(
+                    measurement_root,
+                    channel_isolation_repeatability_qualifications=(
+                        channel_isolation_repeatability_qualifications
+                    ),
+                )
+            else:
+                acoustic_session = AcousticSession.auto_open(measurement_root)
             project = acoustic_session.current_project
             experiment_descriptors = acoustic_session.descriptors
             plan_experiments = True
